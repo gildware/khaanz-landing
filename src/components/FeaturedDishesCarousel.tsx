@@ -2,20 +2,15 @@
 
 import { useState } from "react";
 
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { useMenuData } from "@/contexts/menu-data-context";
 import { ItemCustomizeSheet } from "@/components/ItemCustomizeSheet";
 import { MenuItemImage } from "@/components/MenuItemImage";
+import { useMenuData } from "@/contexts/menu-data-context";
 import { isMenuItemAvailable } from "@/lib/menu-availability";
 import type { MenuItem } from "@/types/menu";
-import { cn } from "@/lib/utils";
 
+/**
+ * Native horizontal scroll (no Embla). Embla has caused WebKit crashes on iOS / in-app browsers.
+ */
 export function FeaturedDishesCarousel() {
   const { data } = useMenuData();
   const featured = (data?.items ?? []).filter(
@@ -23,9 +18,6 @@ export function FeaturedDishesCarousel() {
   );
   const [active, setActive] = useState<MenuItem | null>(null);
   const [open, setOpen] = useState(false);
-
-  /** Embla `loop` with few slides can crash Mobile Safari / in-app browsers. */
-  const carouselLoop = featured.length >= 4;
 
   if (featured.length === 0) {
     return null;
@@ -41,54 +33,51 @@ export function FeaturedDishesCarousel() {
           <p className="text-muted-foreground text-sm">Crowd favourites tonight</p>
         </div>
       </div>
-      <Carousel
-        opts={{ align: "start", loop: carouselLoop }}
-        className="w-full"
+      <div
+        className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0"
+        role="list"
+        aria-label="Recommended dishes"
       >
-        <CarouselContent className="-ml-2 md:-ml-4">
-          {featured.map((item) => (
-            <CarouselItem
-              key={item.id}
-              className="basis-[calc((100%-0.75rem)/2.35)] pl-2 sm:basis-1/2 md:basis-1/3 md:pl-4 lg:basis-1/4"
+        {featured.map((item) => (
+          <div
+            key={item.id}
+            role="listitem"
+            className="w-[min(calc((100vw-2.5rem)/2.35),200px)] shrink-0 snap-start sm:w-[200px]"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setActive(item);
+                setOpen(true);
+              }}
+              className="group relative w-full overflow-hidden rounded-2xl border border-border bg-card text-left shadow-md ring-1 ring-border/40 transition-all hover:-translate-y-1 hover:ring-primary/25"
             >
-              <button
-                type="button"
-                onClick={() => {
-                  setActive(item);
-                  setOpen(true);
-                }}
-                className={cn(
-                  "group relative w-full overflow-hidden rounded-2xl border border-border bg-card text-left shadow-md ring-1 ring-border/40 transition-all hover:-translate-y-1 hover:ring-primary/25",
-                )}
-              >
-                <div className="relative aspect-[5/4] w-full">
-                  <MenuItemImage
-                    src={item.image}
-                    alt={item.name}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    sizes="280px"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
-                  <div className="absolute right-2 bottom-2 left-2">
-                    <p className="line-clamp-2 font-heading font-semibold text-white drop-shadow">
-                      {item.name}
-                    </p>
-                    <p className="text-white/90 text-xs tabular-nums">
-                      ₹
-                      {item.variations.length > 0
-                        ? Math.min(...item.variations.map((v) => v.price))
-                        : 0}
-                    </p>
-                  </div>
+              <div className="relative aspect-[5/4] w-full">
+                <MenuItemImage
+                  src={item.image}
+                  alt={item.name}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  sizes="(max-width: 640px) 45vw, 200px"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                <div className="absolute right-2 bottom-2 left-2">
+                  <p className="line-clamp-2 font-heading font-semibold text-white drop-shadow">
+                    {item.name}
+                  </p>
+                  <p className="text-white/90 text-xs tabular-nums">
+                    ₹
+                    {item.variations.length > 0
+                      ? Math.min(...item.variations.map((v) => v.price))
+                      : 0}
+                  </p>
                 </div>
-              </button>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="hidden sm:flex -left-2 border-border bg-background/80" />
-        <CarouselNext className="hidden sm:flex -right-2 border-border bg-background/80" />
-      </Carousel>
+              </div>
+            </button>
+          </div>
+        ))}
+      </div>
 
       <ItemCustomizeSheet
         item={active}
