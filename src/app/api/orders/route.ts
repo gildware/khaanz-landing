@@ -1,11 +1,10 @@
-import { mkdir, writeFile } from "fs/promises";
-import { join } from "path";
 import { randomUUID } from "crypto";
 
 import { after } from "next/server";
 
 import { buildInvoicePdf } from "@/lib/invoice-pdf";
 import { parseOrderCreateBody } from "@/lib/parse-order-create-body";
+import { persistInvoicePdf } from "@/lib/persist-invoice-pdf";
 import { readRestaurantSettings } from "@/lib/settings-repository";
 import {
   isWhatsAppCloudConfigured,
@@ -17,8 +16,6 @@ import {
 } from "@/utils/whatsapp";
 
 export const runtime = "nodejs";
-
-const INVOICES_DIR = join(process.cwd(), "data", "invoices");
 
 function restaurantDisplayName(): string {
   const n = process.env.RESTAURANT_INVOICE_NAME?.trim();
@@ -72,11 +69,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    await mkdir(INVOICES_DIR, { recursive: true });
-    await writeFile(
-      join(INVOICES_DIR, `${orderId}.pdf`),
-      Buffer.from(pdfBytes),
-    );
+    await persistInvoicePdf(orderId, pdfBytes);
   } catch (e) {
     console.error("invoice write failed", e);
     return Response.json(

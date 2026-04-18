@@ -1,6 +1,10 @@
 import { readFile } from "fs/promises";
 import { join } from "path";
 
+import { get } from "@vercel/blob";
+
+import { invoiceBlobPathname } from "@/lib/persist-invoice-pdf";
+
 export const runtime = "nodejs";
 
 const UUID_RE =
@@ -16,16 +20,25 @@ export async function GET(
   }
 
   const path = join(process.cwd(), "data", "invoices", `${orderId}.pdf`);
+  const pdfHeaders = {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `attachment; filename="invoice-${orderId}.pdf"`,
+    "Cache-Control": "private, no-store",
+  } as const;
+
   try {
     const buf = await readFile(path);
-    return new Response(buf, {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="invoice-${orderId}.pdf"`,
-        "Cache-Control": "private, no-store",
-      },
-    });
+    return new Response(buf, { headers: pdfHeaders });
   } catch {
-    return new Response("Not found", { status: 404 });
+    /* On Vercel, invoices live in Blob when `BLOB_READ_WRITE_TOKEN` is set. */
   }
+
+  if (process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
+    const blob = await get(invoiceBlobPathname(orderId), { access: "public" });
+    if (blob?.statusCode === 200 && blob.stream) {
+      return new Response(blob.stream, { headers: pdfHeaders });
+    }
+  }
+
+  return new Response("Not found", { status: 404 });
 }
