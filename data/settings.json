@@ -1,0 +1,11 @@
+{
+  "whatsappPhoneE164": "919876543210",
+  "pickup": {
+    "start": "11:00",
+    "end": "22:00"
+  },
+  "delivery": {
+    "start": "11:00",
+    "end": "20:00"
+  }
+}

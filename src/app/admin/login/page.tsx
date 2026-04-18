@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
@@ -7,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SITE } from "@/lib/site";
 
 function AdminLoginForm() {
   const router = useRouter();
@@ -37,11 +39,23 @@ function AdminLoginForm() {
         onSubmit={(e) => void submit(e)}
         className="w-full max-w-sm space-y-6 rounded-2xl border bg-card p-8 shadow-lg"
       >
-        <div>
+        <div className="space-y-4">
+          <div className="relative mx-auto h-14 w-48">
+            <Image
+              src={SITE.logoPath}
+              alt={SITE.name}
+              fill
+              className="object-contain"
+              sizes="192px"
+              priority
+            />
+          </div>
+          <div>
           <h1 className="font-semibold text-2xl">Admin login</h1>
           <p className="text-muted-foreground text-sm">
             Password is set with ADMIN_PASSWORD (see README).
           </p>
+          </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor="pw">Password</Label>

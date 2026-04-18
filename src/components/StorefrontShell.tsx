@@ -6,6 +6,7 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { FloatingCartButton } from "@/components/FloatingCartButton";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { MenuExploreProvider } from "@/contexts/menu-explore-context";
+import { RestaurantSettingsProvider } from "@/contexts/restaurant-settings-context";
 import { Providers } from "@/components/providers";
 
 export function StorefrontShell({ children }: { children: React.ReactNode }) {
@@ -18,12 +19,14 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
 
   return (
     <Providers>
-      <MenuExploreProvider>
-        {children}
-        <CartDrawer />
-        <FloatingCartButton />
-        <MobileBottomNav />
-      </MenuExploreProvider>
+      <RestaurantSettingsProvider>
+        <MenuExploreProvider>
+          {children}
+          <CartDrawer />
+          <FloatingCartButton />
+          <MobileBottomNav />
+        </MenuExploreProvider>
+      </RestaurantSettingsProvider>
     </Providers>
   );
 }

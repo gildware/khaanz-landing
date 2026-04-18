@@ -36,7 +36,7 @@ export function LocationMapPicker({
       longitude={longitude}
       onPositionChange={onPositionChange}
       flyTrigger={flyTrigger}
-      className="h-56 w-full rounded-xl border border-white/10 shadow-inner z-0"
+      className="h-56 w-full rounded-xl border border-border shadow-inner z-0"
     />
   );
 }

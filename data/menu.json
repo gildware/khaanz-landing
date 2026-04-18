@@ -40,7 +40,8 @@
           "price": 400
         }
       ],
-      "addons": []
+      "addons": [],
+      "available": false
     },
     {
       "id": "chicken-royale-pizza",

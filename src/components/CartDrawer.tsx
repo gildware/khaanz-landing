@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Trash2Icon } from "lucide-react";
 
+import { MenuItemImage } from "@/components/MenuItemImage";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -31,9 +31,9 @@ export function CartDrawer() {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent
         side="bottom"
-        className="flex max-h-[88dvh] flex-col rounded-t-3xl border-t border-white/10 bg-popover/95 p-0 backdrop-blur-xl"
+        className="flex max-h-[88dvh] flex-col rounded-t-3xl border-t border-border bg-popover/95 p-0 backdrop-blur-xl"
       >
-        <SheetHeader className="border-b border-white/5 px-4 py-3 text-left">
+        <SheetHeader className="border-b border-border/70 px-4 py-3 text-left">
           <SheetTitle className="font-heading text-lg">Your order</SheetTitle>
         </SheetHeader>
 
@@ -45,10 +45,10 @@ export function CartDrawer() {
               {items.map((line) => (
                 <li
                   key={line.lineId}
-                  className="flex gap-3 rounded-2xl border border-white/10 bg-muted/20 p-3"
+                  className="flex gap-3 rounded-2xl border border-border bg-muted/20 p-3"
                 >
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl">
-                    <Image
+                    <MenuItemImage
                       src={line.image}
                       alt=""
                       fill
@@ -97,7 +97,7 @@ export function CartDrawer() {
 
         {items.length > 0 && (
           <>
-            <Separator className="bg-white/10" />
+            <Separator className="bg-border" />
             <div className="space-y-3 px-4 py-4">
               <div className="flex items-center justify-between text-lg">
                 <span className="text-muted-foreground">Grand total</span>
@@ -109,7 +109,7 @@ export function CartDrawer() {
                 href="/checkout"
                 className={cn(
                   buttonVariants({ size: "lg" }),
-                  "bg-cta-gradient h-12 w-full rounded-full border-0 font-semibold text-lg text-white shadow-lg shadow-red-950/40",
+                  "bg-cta-gradient h-12 w-full rounded-full border-0 font-semibold text-lg text-primary-foreground shadow-lg shadow-cta",
                 )}
                 onClick={() => setOpen(false)}
               >
@@ -126,7 +126,7 @@ export function CartDrawer() {
 function EmptyCartInline() {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-4 flex size-24 items-center justify-center rounded-full bg-muted/50 ring-1 ring-white/10">
+      <div className="mb-4 flex size-24 items-center justify-center rounded-full bg-muted/50 ring-1 ring-border">
         <svg
           className="size-12 text-muted-foreground"
           viewBox="0 0 24 24"

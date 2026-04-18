@@ -16,10 +16,11 @@ import { Separator } from "@/components/ui/separator";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { getAddonsForItem } from "@/data/menu";
 import { computeUnitPrice } from "@/lib/cart-line";
+import { isMenuItemAvailable } from "@/lib/menu-availability";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItem, MenuVariation } from "@/types/menu";
+import { MenuItemImage } from "@/components/MenuItemImage";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 
 export interface ItemCustomizeSheetProps {
   item: MenuItem | null;
@@ -74,6 +75,10 @@ export function ItemCustomizeSheet({
 
   const handleAdd = () => {
     if (!item || !variation) return;
+    if (!isMenuItemAvailable(item)) {
+      toast.error("This item is not available to order right now.");
+      return;
+    }
     addItem({ item, variation, addons: selectedAddons });
     toast.success(`${item.name} added to cart`, {
       description: `${variation.name} · ₹${unitPrice}`,
@@ -85,15 +90,15 @@ export function ItemCustomizeSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-h-[90dvh] rounded-t-3xl border-t border-white/10 bg-popover/95 p-0 backdrop-blur-xl">
-        <SheetHeader className="border-b border-white/5 p-4 pb-2">
+      <SheetContent side="bottom" className="max-h-[90dvh] rounded-t-3xl border-t border-border bg-popover/95 p-0 backdrop-blur-xl">
+        <SheetHeader className="border-b border-border/70 p-4 pb-2">
           <SheetTitle className="text-left font-heading text-lg">
             Customize
           </SheetTitle>
         </SheetHeader>
-        <div className="flex gap-3 border-b border-white/5 p-4">
-          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl ring-1 ring-white/10">
-            <Image
+        <div className="flex gap-3 border-b border-border/70 p-4">
+          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl ring-1 ring-border">
+            <MenuItemImage
               src={item.image}
               alt=""
               fill
@@ -141,14 +146,14 @@ export function ItemCustomizeSheet({
 
             {addons.length > 0 && (
               <>
-                <Separator className="bg-white/10" />
+                <Separator className="bg-border" />
                 <div>
                   <p className="mb-2 font-medium text-sm">Add-ons</p>
                   <div className="space-y-3">
                     {addons.map((a) => (
                       <label
                         key={a.id}
-                        className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/5 bg-muted/20 px-3 py-2 transition-colors hover:bg-muted/35"
+                        className="flex cursor-pointer items-center gap-3 rounded-xl border border-border/70 bg-muted/20 px-3 py-2 transition-colors hover:bg-muted/35"
                       >
                         <Checkbox
                           checked={selectedAddonIds.has(a.id)}
@@ -167,7 +172,7 @@ export function ItemCustomizeSheet({
           </div>
         </div>
 
-        <SheetFooter className="border-t border-white/10 bg-background/80 p-4">
+        <SheetFooter className="border-t border-border bg-background/80 p-4">
           <div className="flex w-full items-center justify-between gap-3">
             <div>
               <p className="text-muted-foreground text-xs">Item total</p>
@@ -178,9 +183,9 @@ export function ItemCustomizeSheet({
             <Button
               type="button"
               size="lg"
-              className="bg-cta-gradient min-w-[10rem] rounded-full font-semibold text-white shadow-lg shadow-red-950/40"
+              className="bg-cta-gradient min-w-[10rem] rounded-full font-semibold text-primary-foreground shadow-lg shadow-cta"
               onClick={handleAdd}
-              disabled={!variation}
+              disabled={!variation || !isMenuItemAvailable(item)}
             >
               Add to cart
             </Button>

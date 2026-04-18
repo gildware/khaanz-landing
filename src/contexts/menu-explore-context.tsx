@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { useMenuData } from "@/contexts/menu-data-context";
+import { isMenuItemAvailable } from "@/lib/menu-availability";
 
 type MenuExploreContextValue = {
   category: string | "all";
@@ -30,10 +31,20 @@ export function MenuExploreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const categories = data?.categories ?? [];
+    const items = data?.items ?? [];
     if (category !== "all" && !categories.includes(category)) {
       setCategoryState("all");
+      return;
     }
-  }, [data?.categories, category]);
+    if (category !== "all") {
+      const hasAvailable = items.some(
+        (i) => i.category === category && isMenuItemAvailable(i),
+      );
+      if (!hasAvailable) {
+        setCategoryState("all");
+      }
+    }
+  }, [data?.categories, data?.items, category]);
 
   const setCategory = useCallback((c: string | "all") => {
     setCategoryState(c);

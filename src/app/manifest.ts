@@ -1,24 +1,28 @@
 import type { MetadataRoute } from "next";
 
+import { SITE } from "@/lib/site";
+
 export default function manifest(): MetadataRoute.Manifest {
+  const logo = SITE.logoPath;
   return {
-    name: "Khaanz — Order Fresh",
-    short_name: "Khaanz",
-    description: "Order delicious food for delivery. Mobile-first restaurant ordering.",
+    name: "KHAANZ — Fast food and restaurant",
+    short_name: "KHAANZ",
+    description:
+      "Order fresh fast food at KHAANZ. Browse the menu and confirm on WhatsApp.",
     start_url: "/",
     display: "standalone",
     background_color: "#050505",
-    theme_color: "#b91c1c",
+    theme_color: "#1a1f2b",
     orientation: "portrait-primary",
     icons: [
       {
-        src: "/icons/icon-192.png",
+        src: logo,
         sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/icons/icon-512.png",
+        src: logo,
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

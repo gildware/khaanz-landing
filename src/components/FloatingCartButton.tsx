@@ -34,12 +34,12 @@ export function FloatingCartButton({ className }: { className?: string }) {
         type="button"
         onClick={() => setCartOpen(true)}
         className={cn(
-          "bg-cta-gradient pointer-events-auto h-12 gap-3 rounded-full px-6 font-semibold text-white shadow-2xl shadow-red-950/50 transition-transform hover:scale-[1.02] active:scale-[0.98]",
+          "bg-cta-gradient pointer-events-auto h-12 gap-3 rounded-full px-6 font-semibold text-primary-foreground shadow-2xl shadow-cta transition-transform hover:scale-[1.02] active:scale-[0.98]",
         )}
       >
         <ShoppingBagIcon className="size-5" />
         <span>View cart · ₹{totalAmount}</span>
-        <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
+        <span className="rounded-full bg-primary-foreground/25 px-2 py-0.5 text-xs text-primary-foreground">
           {totalItems} items
         </span>
       </Button>

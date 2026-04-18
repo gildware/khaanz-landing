@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -8,9 +9,11 @@ import {
   UtensilsCrossedIcon,
   PlusSquareIcon,
   LogOutIcon,
+  SettingsIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -18,6 +21,7 @@ const links = [
   { href: "/admin/categories", label: "Categories", icon: LayersIcon },
   { href: "/admin/items", label: "Menu items", icon: UtensilsCrossedIcon },
   { href: "/admin/addons", label: "Add-ons", icon: PlusSquareIcon },
+  { href: "/admin/settings", label: "Restaurant", icon: SettingsIcon },
 ];
 
 export function AdminSidebar() {
@@ -33,7 +37,18 @@ export function AdminSidebar() {
   return (
     <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-card/50">
       <div className="border-b border-border p-4">
-        <p className="font-semibold">Khaanz Admin</p>
+        <Link href="/admin/dashboard" className="mb-3 block">
+          <span className="relative block h-9 w-36">
+            <Image
+              src={SITE.logoPath}
+              alt={SITE.name}
+              fill
+              className="object-contain object-left"
+              sizes="144px"
+            />
+          </span>
+        </Link>
+        <p className="font-semibold">Admin</p>
         <p className="text-muted-foreground text-xs">Menu & catalogue</p>
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-2">

@@ -2,6 +2,10 @@ import { useMemo } from "react";
 
 import { useCartStore } from "@/store/cartStore";
 
+/**
+ * Cart lines are kept in sync with menu availability by {@link CartAvailabilitySync}
+ * (unavailable items are removed from the store when menu data is present).
+ */
 export function useCartTotals() {
   const items = useCartStore((s) => s.items);
   return useMemo(() => {

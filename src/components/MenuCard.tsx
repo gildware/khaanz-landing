@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import { PlusIcon } from "lucide-react";
 
 import { ItemCustomizeSheet } from "@/components/ItemCustomizeSheet";
+import { MenuItemImage } from "@/components/MenuItemImage";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,11 +36,11 @@ export function MenuCard({ item }: MenuCardProps) {
   return (
     <>
       <Card
-        className="group cursor-pointer overflow-hidden border-white/10 bg-card/40 shadow-lg ring-1 ring-white/5 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:ring-primary/30"
+        className="group flex cursor-pointer flex-col overflow-hidden border-border bg-card shadow-md ring-1 ring-border/40 transition-all duration-300 hover:-translate-y-0.5 hover:ring-primary/25"
         onClick={openSheet}
       >
-        <div className="relative aspect-[4/3] w-full overflow-hidden">
-          <Image
+        <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden">
+          <MenuItemImage
             src={item.image}
             alt={item.name}
             fill
@@ -48,7 +48,7 @@ export function MenuCard({ item }: MenuCardProps) {
             sizes="(max-width: 640px) 50vw, 33vw"
             priority={false}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
           <span
             className={cn(
               "absolute top-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
@@ -65,22 +65,24 @@ export function MenuCard({ item }: MenuCardProps) {
             </span>
           )}
         </div>
-        <div className="flex flex-1 flex-col gap-2 p-3 pt-2">
-          <div>
-            <h3 className="font-heading font-semibold leading-snug">{item.name}</h3>
-            <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
+        <div className="flex flex-col gap-0.5 px-2 pb-2 pt-1.5">
+          <div className="flex min-h-0 flex-col gap-0.5 overflow-hidden">
+            <h3 className="line-clamp-2 min-h-[2lh] break-words font-heading text-[0.9375rem] font-semibold leading-tight">
+              {item.name}
+            </h3>
+            <p className="line-clamp-2 min-h-[2lh] break-words text-xs leading-tight text-muted-foreground">
               {item.description}
             </p>
           </div>
-          <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-            <p className="font-heading text-lg font-bold text-primary tabular-nums">
-              from ₹{Math.min(...item.variations.map((v) => v.price))}
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            <p className="font-heading text-base font-bold text-primary tabular-nums leading-none">
+              ₹{Math.min(...item.variations.map((v) => v.price))}
             </p>
             {linesForItem.length === 0 && (
               <Button
                 type="button"
                 size="sm"
-                className="bg-cta-gradient rounded-full font-semibold text-white shadow-md shadow-red-950/40"
+                className="bg-cta-gradient rounded-full font-semibold text-primary-foreground shadow-md shadow-cta"
                 onClick={(e) => {
                   e.stopPropagation();
                   openSheet();
@@ -138,13 +140,15 @@ export function MenuCard({ item }: MenuCardProps) {
 
 export function MenuCardSkeleton() {
   return (
-    <Card className="overflow-hidden border-white/10">
-      <Skeleton className="aspect-[4/3] w-full rounded-none" />
-      <div className="space-y-2 p-3">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-2/3" />
-        <div className="flex justify-between pt-2">
+    <Card className="flex flex-col overflow-hidden border-border shadow-sm">
+      <Skeleton className="aspect-[4/3] w-full shrink-0 rounded-none" />
+      <div className="flex flex-col gap-0.5 px-2 pb-2 pt-1.5">
+        <div className="h-16 space-y-1.5">
+          <Skeleton className="h-3.5 w-3/4" />
+          <Skeleton className="h-2.5 w-full" />
+          <Skeleton className="h-2.5 w-2/3" />
+        </div>
+        <div className="flex items-center justify-between gap-2 pt-0.5">
           <Skeleton className="h-6 w-16" />
           <Skeleton className="h-8 w-20 rounded-full" />
         </div>

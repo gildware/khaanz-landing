@@ -2,18 +2,27 @@
 
 import { useMenuExplore } from "@/contexts/menu-explore-context";
 import { useMenuData } from "@/contexts/menu-data-context";
+import { isMenuItemAvailable } from "@/lib/menu-availability";
 import { cn } from "@/lib/utils";
+import { useMemo } from "react";
 
 const ALL = "all" as const;
 
 export function CategoryTabs() {
   const { category, setCategory } = useMenuExplore();
   const { data } = useMenuData();
-  const list = data?.categories ?? [];
+
+  const categoriesWithStock = useMemo(() => {
+    const list = data?.categories ?? [];
+    const items = data?.items ?? [];
+    return list.filter((cat) =>
+      items.some((i) => i.category === cat && isMenuItemAvailable(i)),
+    );
+  }, [data?.categories, data?.items]);
 
   const chips: { id: string | typeof ALL; label: string }[] = [
     { id: ALL, label: "All" },
-    ...list.map((c) => ({ id: c, label: c })),
+    ...categoriesWithStock.map((c) => ({ id: c, label: c })),
   ];
 
   return (
@@ -27,7 +36,7 @@ export function CategoryTabs() {
             "shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200",
             category === c.id
               ? "border-primary bg-primary/20 text-primary shadow-md shadow-primary/10"
-              : "border-white/10 bg-card/40 text-muted-foreground hover:border-white/20 hover:text-foreground",
+              : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground",
           )}
         >
           {c.label}

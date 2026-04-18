@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Trash2Icon } from "lucide-react";
 
 import { Header } from "@/components/Header";
+import { MenuItemImage } from "@/components/MenuItemImage";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -25,7 +25,7 @@ export default function CartPage() {
       <main className="mx-auto max-w-lg space-y-6 px-4 py-8">
         <h1 className="font-heading text-2xl font-bold">Cart</h1>
         {items.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/15 p-12 text-center">
+          <div className="rounded-2xl border border-dashed border-border p-12 text-center">
             <p className="text-muted-foreground">Nothing here yet.</p>
             <Link
               href="/"
@@ -42,10 +42,10 @@ export default function CartPage() {
               {items.map((line) => (
                 <li
                   key={line.lineId}
-                  className="flex gap-3 rounded-2xl border border-white/10 bg-card/40 p-3 backdrop-blur-sm"
+                  className="flex gap-3 rounded-2xl border border-border bg-card/40 p-3 backdrop-blur-sm"
                 >
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
-                    <Image
+                    <MenuItemImage
                       src={line.image}
                       alt=""
                       fill
@@ -84,7 +84,7 @@ export default function CartPage() {
                 </li>
               ))}
             </ul>
-            <Separator className="bg-white/10" />
+            <Separator className="bg-border" />
             <div className="flex items-center justify-between text-lg">
               <span className="text-muted-foreground">Total</span>
               <span className="font-heading text-2xl font-bold text-primary tabular-nums">
@@ -95,7 +95,7 @@ export default function CartPage() {
               href="/checkout"
               className={cn(
                 buttonVariants({ size: "lg" }),
-                "bg-cta-gradient flex h-12 w-full items-center justify-center rounded-full font-semibold text-white shadow-lg shadow-red-950/40",
+                "bg-cta-gradient flex h-12 w-full items-center justify-center rounded-full font-semibold text-primary-foreground shadow-lg shadow-cta",
               )}
             >
               Go to checkout

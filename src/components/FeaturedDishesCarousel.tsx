@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 
 import {
@@ -12,12 +11,16 @@ import {
 } from "@/components/ui/carousel";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { ItemCustomizeSheet } from "@/components/ItemCustomizeSheet";
+import { MenuItemImage } from "@/components/MenuItemImage";
+import { isMenuItemAvailable } from "@/lib/menu-availability";
 import type { MenuItem } from "@/types/menu";
 import { cn } from "@/lib/utils";
 
 export function FeaturedDishesCarousel() {
   const { data } = useMenuData();
-  const featured = (data?.items ?? []).filter((i) => i.recommended);
+  const featured = (data?.items ?? []).filter(
+    (i) => i.recommended && isMenuItemAvailable(i),
+  );
   const [active, setActive] = useState<MenuItem | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -48,24 +51,24 @@ export function FeaturedDishesCarousel() {
                   setOpen(true);
                 }}
                 className={cn(
-                  "group relative w-full overflow-hidden rounded-2xl border border-white/10 bg-card/40 text-left shadow-lg ring-1 ring-white/5 transition-all hover:-translate-y-1 hover:ring-primary/30",
+                  "group relative w-full overflow-hidden rounded-2xl border border-border bg-card text-left shadow-md ring-1 ring-border/40 transition-all hover:-translate-y-1 hover:ring-primary/25",
                 )}
               >
                 <div className="relative aspect-[5/4] w-full">
-                  <Image
+                  <MenuItemImage
                     src={item.image}
                     alt={item.name}
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                     sizes="280px"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
                   <div className="absolute right-2 bottom-2 left-2">
-                    <p className="font-heading font-semibold text-white drop-shadow">
+                    <p className="line-clamp-2 font-heading font-semibold text-white drop-shadow">
                       {item.name}
                     </p>
-                    <p className="text-red-200/95 text-xs">
-                      from ₹{Math.min(...item.variations.map((v) => v.price))}
+                    <p className="text-white/90 text-xs tabular-nums">
+                      ₹{Math.min(...item.variations.map((v) => v.price))}
                     </p>
                   </div>
                 </div>
@@ -73,8 +76,8 @@ export function FeaturedDishesCarousel() {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="hidden sm:flex -left-2 border-white/20 bg-background/80" />
-        <CarouselNext className="hidden sm:flex -right-2 border-white/20 bg-background/80" />
+        <CarouselPrevious className="hidden sm:flex -left-2 border-border bg-background/80" />
+        <CarouselNext className="hidden sm:flex -right-2 border-border bg-background/80" />
       </Carousel>
 
       <ItemCustomizeSheet

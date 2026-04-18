@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { MenuCard, MenuCardSkeleton } from "@/components/MenuCard";
 import { useMenuExplore } from "@/contexts/menu-explore-context";
 import { useMenuData } from "@/contexts/menu-data-context";
+import { isMenuItemAvailable } from "@/lib/menu-availability";
 import type { MenuItem } from "@/types/menu";
 
 function matchesSearch(item: MenuItem, q: string): boolean {
@@ -21,7 +22,10 @@ export function MenuGrid() {
   const { category, searchQuery } = useMenuExplore();
   const { data } = useMenuData();
 
-  const menuItems = useMemo(() => data?.items ?? [], [data?.items]);
+  const menuItems = useMemo(
+    () => (data?.items ?? []).filter(isMenuItemAvailable),
+    [data?.items],
+  );
   const categories = useMemo(() => data?.categories ?? [], [data?.categories]);
 
   const q = searchQuery.trim().toLowerCase();
@@ -55,7 +59,7 @@ export function MenuGrid() {
   if (category === "all" && groupedByCategory) {
     if (groupedByCategory.length === 0) {
       return (
-        <div className="rounded-2xl border border-dashed border-white/15 bg-muted/20 px-6 py-16 text-center">
+        <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
           <p className="font-medium text-muted-foreground">
             No dishes match your filters.
           </p>
@@ -76,7 +80,7 @@ export function MenuGrid() {
             >
               {row.name}
             </h3>
-            <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
+            <div className="no-scrollbar -mx-4 flex items-start gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
               {row.items.map((item) => (
                 <div
                   key={item.id}
@@ -97,7 +101,7 @@ export function MenuGrid() {
 
   if (filtered.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-white/15 bg-muted/20 px-6 py-16 text-center">
+      <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
         <p className="font-medium text-muted-foreground">
           No dishes match your filters.
         </p>
@@ -109,7 +113,7 @@ export function MenuGrid() {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-2 items-start gap-3 sm:gap-4 lg:grid-cols-3">
       {filtered.map((item) => (
         <MenuCard key={item.id} item={item} />
       ))}
@@ -123,7 +127,7 @@ export function MenuGridSkeletonBlock() {
       {Array.from({ length: 3 }).map((_, s) => (
         <div key={s} className="space-y-3">
           <div className="h-6 w-40 animate-pulse rounded-md bg-muted" />
-          <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 md:mx-0 md:px-0">
+          <div className="no-scrollbar -mx-4 flex items-start gap-3 overflow-x-auto px-4 md:mx-0 md:px-0">
             {Array.from({ length: 4 }).map((__, i) => (
               <div
                 key={i}

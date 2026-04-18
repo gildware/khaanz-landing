@@ -3,16 +3,20 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type Props = { searchParams: Promise<{ name?: string }> };
+type Props = {
+  searchParams: Promise<{ name?: string; order?: string; sent?: string }>;
+};
 
 export default async function SuccessPage({ searchParams }: Props) {
-  const { name } = await searchParams;
+  const { name, order, sent } = await searchParams;
+  const invoiceHref = order ? `/api/orders/${order}/invoice` : null;
+  const pdfSentToKitchen = sent === "1";
 
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-gradient-to-b from-background to-zinc-950 px-6 pb-12 text-center">
-      <div className="flex size-20 items-center justify-center rounded-full bg-emerald-500/20 ring-2 ring-emerald-500/40">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-gradient-to-b from-background to-muted px-6 pb-12 text-center">
+      <div className="flex size-20 items-center justify-center rounded-full bg-emerald-100 ring-2 ring-emerald-600/35">
         <svg
-          className="size-10 text-emerald-400"
+          className="size-10 text-emerald-600"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -29,9 +33,32 @@ export default async function SuccessPage({ searchParams }: Props) {
       <div className="max-w-md space-y-2">
         <h1 className="font-heading text-3xl font-bold">Order sent</h1>
         <p className="text-muted-foreground">
-          Thanks{name ? `, ${name}` : ""}! WhatsApp should open with your order
-          details. The restaurant will confirm shortly.
+          Thanks{name ? `, ${name}` : ""}!
+          {pdfSentToKitchen ? (
+            <>
+              {" "}
+              Your invoice PDF was sent to the restaurant on WhatsApp. They will
+              confirm shortly.
+            </>
+          ) : (
+            <>
+              {" "}
+              {invoiceHref
+                ? "We opened WhatsApp with your order text. The kitchen may not have received a PDF automatically—download your invoice below if you need a copy."
+                : "WhatsApp should open with your order details. The restaurant will confirm shortly."}
+            </>
+          )}
         </p>
+        {invoiceHref && (
+          <p className="pt-2">
+            <a
+              href={invoiceHref}
+              className="font-medium text-primary underline underline-offset-4"
+            >
+              Download invoice (PDF)
+            </a>
+          </p>
+        )}
       </div>
       <Link
         href="/"

@@ -1,7 +1,10 @@
 "use client";
 
-import { SearchIcon, ShoppingBagIcon, UtensilsCrossedIcon, XIcon } from "lucide-react";
+import { SearchIcon, ShoppingBagIcon, XIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+
+import { SITE } from "@/lib/site";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,20 +21,23 @@ export function Header() {
   const { totalItems } = useCartTotals();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-background/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-        <Link href="/" className="flex shrink-0 items-center gap-2">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-600 to-red-950 shadow-lg shadow-red-950/50">
-            <UtensilsCrossedIcon className="size-5 text-white" />
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-2"
+          aria-label={`${SITE.name} — home`}
+        >
+          <span className="relative block h-10 w-[8.5rem] shrink-0 sm:h-11 sm:w-[9.5rem]">
+            <Image
+              src={SITE.logoPath}
+              alt={`${SITE.name} — ${SITE.tagline}`}
+              fill
+              priority
+              sizes="(max-width: 640px) 140px, 160px"
+              className="object-contain object-left"
+            />
           </span>
-          <div className="hidden min-[380px]:block">
-            <p className="font-heading text-lg font-bold leading-none tracking-tight">
-              Khaanz
-            </p>
-            <p className="text-muted-foreground text-[10px] uppercase tracking-widest">
-              Fresh · Fast
-            </p>
-          </div>
         </Link>
 
         <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
@@ -71,7 +77,7 @@ export function Header() {
         )}
       >
         <div className="overflow-hidden">
-          <div className="border-t border-white/5 px-4 py-3">
+          <div className="border-t border-border/70 px-4 py-3">
             <div className="relative mx-auto max-w-6xl">
               <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -81,7 +87,7 @@ export function Header() {
                   setCategory("all");
                 }}
                 placeholder="Search dishes, ingredients…"
-                className="h-11 rounded-full border-white/10 bg-muted/30 pl-10"
+                className="h-11 rounded-full border-border bg-muted/30 pl-10"
               />
             </div>
           </div>

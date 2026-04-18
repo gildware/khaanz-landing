@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 import { buildLineId, computeUnitPrice } from "@/lib/cart-line";
+import { isMenuItemAvailable } from "@/lib/menu-availability";
 import type { CartLine, MenuAddon, MenuItem, MenuVariation } from "@/types/menu";
 
 export interface AddItemPayload {
@@ -25,6 +26,7 @@ export const useCartStore = create<CartState>()(
       items: [],
 
       addItem: ({ item, variation, addons }) => {
+        if (!isMenuItemAvailable(item)) return;
         const unitPrice = computeUnitPrice(variation, addons);
         const lineId = buildLineId(item.id, variation, addons);
 

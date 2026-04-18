@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import Image from "next/image";
-
 import { ItemFormDialog } from "@/components/admin/item-form-dialog";
+import { MenuItemImage } from "@/components/MenuItemImage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -69,13 +68,12 @@ export default function AdminItemsPage() {
             <TableRow key={item.id}>
               <TableCell>
                 <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
-                  <Image
+                  <MenuItemImage
                     src={item.image}
                     alt=""
                     fill
                     className="object-cover"
                     sizes="48px"
-                    unoptimized={item.image.startsWith("data:")}
                   />
                 </div>
               </TableCell>
