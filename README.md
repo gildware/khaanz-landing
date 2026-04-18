@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Khaanz — Restaurant ordering PWA + Admin (single app)
 
-## Getting Started
+One Next.js 15 app:
 
-First, run the development server:
+- **Customer:** `/` — menu (from API), cart, checkout with map, WhatsApp order.
+- **Admin:** `/admin/*` — manage categories, items, variations, add-ons; saves to **`data/menu.json`** on disk.
+
+Menu is served at **`GET /api/menu`** (no cache). The storefront uses **SWR** with a **~3s refresh** so changes from admin show up on the customer UI without a full reload.
+
+## Requirements
+
+- Node.js 20+
+- npm 10+
+
+## Install
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # optional: set secrets
+npm run seed:menu            # creates data/menu.json from defaults if missing
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy `.env.example` to `.env.local`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Purpose |
+|----------|---------|
+| `ADMIN_PASSWORD` | Password for `/admin/login` (default in code: `khaanzadmin` if unset) |
+| `ADMIN_SESSION_SECRET` | Signing key for the admin JWT cookie (must match everywhere; change in production) |
 
-## Learn More
+WhatsApp number is in `src/utils/whatsapp.ts`.
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command | Description |
+|--------|-------------|
+| `npm run dev` | Dev server — [http://localhost:3000](http://localhost:3000) (webpack; stable) |
+| `npm run dev:turbo` | Same with Turbopack (faster; if you see ENOENT / manifest errors, use `npm run dev` and `rm -rf .next`) |
+| `npm run build` | Production build |
+| `npm start` | Production server |
+| `npm run lint` | ESLint |
+| `npm run seed:menu` | Write `data/menu.json` from `src/data/menu.ts` defaults (if file missing, repository helper does this too) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**URLs**
 
-## Deploy on Vercel
+| Area | Path |
+|------|------|
+| Menu & order | `/`, `/cart`, `/checkout`, `/success` |
+| Admin | `/admin/login`, `/admin/dashboard`, `/admin/categories`, `/admin/items`, `/admin/addons` |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## How menu sync works
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Source of truth on disk:** `data/menu.json` (categories, globalAddons, items).
+2. **`GET /api/menu`** reads that file (falls back to defaults from `getDefaultMenuPayload()` if missing).
+3. **`PUT /api/admin/menu`** (requires admin cookie) overwrites the file.
+4. **Customer UI** polls `/api/menu` every few seconds (SWR `refreshInterval`), so edits in admin appear on the shop quickly.
+
+### Hosting note (important)
+
+Writing to `data/menu.json` works on a **long‑running Node server** (Docker, VPS, `next start` on a VM). On **serverless** platforms (e.g. Vercel), the filesystem is often **read-only** or **ephemeral**, so persisting menu changes to a repo file may not work. For production serverless, use a database or object storage and point `readMenuPayload` / `writeMenuPayload` at that instead.
+
+## PWA
+
+- Service worker is disabled in development (`@ducanh2912/next-pwa`).
+- Use production build + `npm start` to test install / offline.
+- Offline fallback: `/offline`.
+
+## API routes
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/menu` | No | Current menu JSON |
+| POST | `/api/admin/login` | No | Sets httpOnly `admin_token` cookie |
+| POST | `/api/admin/logout` | No | Clears cookie |
+| PUT | `/api/admin/menu` | Yes | Writes `data/menu.json` |
+
+## Project layout
+
+```
+data/
+  menu.json              # Live menu (git-tracked; updated by admin)
+src/
+  app/
+    admin/               # Admin UI + login
+    api/menu/            # Public menu API
+    api/admin/           # Login, logout, menu PUT
+  components/
+  contexts/
+    menu-data-context.tsx   # SWR → /api/menu
+  data/menu.ts           # Default seed only (getDefaultMenuPayload)
+  lib/menu-repository.ts # fs read/write
+  middleware.ts          # Protects /admin/* (except /admin/login)
+```
+
+## Licence
+
+Private / use as needed for your restaurant.

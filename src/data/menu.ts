@@ -1,0 +1,332 @@
+import type { MenuPayload } from "@/types/menu-payload";
+import type { MenuAddon, MenuItem } from "../types/menu";
+
+export const MENU_CATEGORIES = [
+  "Pizza Zone",
+  "Chef Specials",
+  "Momo Mania",
+  "Rice Royale",
+  "Tandoor Breads",
+  "Fries & More",
+  "Noodle Hub",
+  "Spicy Chinese",
+  "Parathas & Rolls",
+  "Mojitos",
+  "Shakes",
+] as const;
+
+export type MenuCategory = (typeof MENU_CATEGORIES)[number];
+
+/** Global add-ons available for every item at customization time */
+export const GLOBAL_ADDONS: MenuAddon[] = [
+  { id: "ga-mayo", name: "Extra Mayonnaise", price: 10 },
+  { id: "ga-cheese", name: "Extra Cheese", price: 30 },
+  { id: "ga-chicken", name: "Extra Chicken", price: 60 },
+];
+
+const u = (photoId: string) =>
+  `https://images.unsplash.com/${photoId}?w=800&q=80&auto=format&fit=crop`;
+
+export const menuItems: MenuItem[] = [
+  {
+    id: "cheesy-bliss-pizza",
+    name: "Cheesy Bliss Pizza",
+    category: "Pizza Zone",
+    description: "Loaded mozzarella, house tomato sauce, and fresh basil.",
+    image: u("photo-1513104890138-7c749354f784"),
+    isVeg: true,
+    recommended: true,
+    variations: [
+      { id: "cb-small", name: "Small", price: 180 },
+      { id: "cb-large", name: "Large", price: 400 },
+    ],
+    addons: [],
+  },
+  {
+    id: "chicken-royale-pizza",
+    name: "Chicken Royale Pizza",
+    category: "Pizza Zone",
+    description: "Grilled chicken, peppers, onions, and signature spice blend.",
+    image: u("photo-1628840042765-356cda07504e"),
+    isVeg: false,
+    recommended: true,
+    variations: [
+      { id: "cr-small", name: "Small", price: 350 },
+      { id: "cr-large", name: "Large", price: 650 },
+    ],
+    addons: [],
+  },
+  {
+    id: "margherita-classic",
+    name: "Margherita Classic",
+    category: "Pizza Zone",
+    description: "San Marzano tomatoes, buffalo mozzarella, olive oil.",
+    image: u("photo-1574071318508-1cdbab80d002"),
+    isVeg: true,
+    variations: [
+      { id: "mg-small", name: "Small", price: 199 },
+      { id: "mg-large", name: "Large", price: 379 },
+    ],
+    addons: [],
+  },
+  {
+    id: "butter-chicken",
+    name: "Butter Chicken",
+    category: "Chef Specials",
+    description: "Creamy tomato gravy with tender tandoori chicken.",
+    image: u("photo-1603894584373-5ac82b2ae398"),
+    isVeg: false,
+    recommended: true,
+    variations: [
+      { id: "bc-half", name: "Half", price: 300 },
+      { id: "bc-full", name: "Full", price: 550 },
+    ],
+    addons: [],
+  },
+  {
+    id: "kadai-chicken",
+    name: "Kadai Chicken",
+    category: "Chef Specials",
+    description: "Wok-tossed with capsicum, onion, and kadai masala.",
+    image: u("photo-1588166524941-3bf61a9c41db"),
+    isVeg: false,
+    variations: [
+      { id: "kc-half", name: "Half", price: 300 },
+      { id: "kc-full", name: "Full", price: 550 },
+    ],
+    addons: [],
+  },
+  {
+    id: "fried-chicken",
+    name: "Fried Chicken",
+    category: "Chef Specials",
+    description: "Crispy golden crust with secret spice rub.",
+    image: u("photo-1626082926499-eeaf5ee27f95"),
+    isVeg: false,
+    variations: [
+      { id: "fc-half", name: "Half", price: 250 },
+      { id: "fc-full", name: "Full", price: 550 },
+    ],
+    addons: [],
+  },
+  {
+    id: "chicken-steam-momo",
+    name: "Chicken Steam Momo",
+    category: "Momo Mania",
+    description: "Juicy minced chicken in soft steamed dumplings.",
+    image: u("photo-1496116218417-1a781b1c416c"),
+    isVeg: false,
+    variations: [
+      { id: "csm-8", name: "8 pcs", price: 120 },
+      { id: "csm-12", name: "12 pcs", price: 170 },
+    ],
+    addons: [],
+  },
+  {
+    id: "veg-steam-momo",
+    name: "Veg Steam Momo",
+    category: "Momo Mania",
+    description: "Cabbage, carrot, and mild spices — steamed to perfection.",
+    image: u("photo-1525755662778-bafe5cb41721"),
+    isVeg: true,
+    variations: [
+      { id: "vsm-8", name: "8 pcs", price: 90 },
+      { id: "vsm-12", name: "12 pcs", price: 130 },
+    ],
+    addons: [],
+  },
+  {
+    id: "fried-chicken-biryani",
+    name: "Fried Chicken Biryani",
+    category: "Rice Royale",
+    description: "Aromatic basmati with crispy chicken and fried onions.",
+    image: u("photo-1563379091339-03246963ba2b"),
+    isVeg: false,
+    variations: [
+      { id: "fcb-half", name: "Half", price: 100 },
+      { id: "fcb-full", name: "Full", price: 180 },
+    ],
+    addons: [],
+  },
+  {
+    id: "veg-dum-biryani",
+    name: "Veg Dum Biryani",
+    category: "Rice Royale",
+    description: "Layered vegetables, saffron rice, and mint raita on the side.",
+    image: u("photo-1596797038530-2c107229644b"),
+    isVeg: true,
+    variations: [
+      { id: "vdb-half", name: "Half", price: 90 },
+      { id: "vdb-full", name: "Full", price: 160 },
+    ],
+    addons: [],
+  },
+  {
+    id: "butter-naan",
+    name: "Butter Naan",
+    category: "Tandoor Breads",
+    description: "Soft leavened bread brushed with butter.",
+    image: u("photo-1601050690597-df0568f70950"),
+    isVeg: true,
+    variations: [{ id: "bn-1", name: "Single", price: 50 }],
+    addons: [],
+  },
+  {
+    id: "garlic-naan",
+    name: "Garlic Naan",
+    category: "Tandoor Breads",
+    description: "Naan topped with roasted garlic and coriander.",
+    image: u("photo-1626074357427-bfda8a5e1f6d"),
+    isVeg: true,
+    variations: [{ id: "gn-1", name: "Single", price: 60 }],
+    addons: [],
+  },
+  {
+    id: "french-fries",
+    name: "French Fries",
+    category: "Fries & More",
+    description: "Crispy potato fries with light seasoning.",
+    image: u("photo-1573080496219-bb080dd4f877"),
+    isVeg: true,
+    variations: [
+      { id: "ff-half", name: "Half", price: 70 },
+      { id: "ff-full", name: "Full", price: 120 },
+    ],
+    addons: [],
+  },
+  {
+    id: "peri-peri-fries",
+    name: "Peri Peri Fries",
+    category: "Fries & More",
+    description: "Spicy peri peri dust and lime zest.",
+    image: u("photo-1573080496219-bb080dd4f877"),
+    isVeg: true,
+    variations: [
+      { id: "ppf-half", name: "Half", price: 80 },
+      { id: "ppf-full", name: "Full", price: 140 },
+    ],
+    addons: [],
+  },
+  {
+    id: "veg-chowmein",
+    name: "Veg Chowmein",
+    category: "Noodle Hub",
+    description: "Wok-fried noodles with seasonal vegetables.",
+    image: u("photo-1612929633738-8fe44f7ec841"),
+    isVeg: true,
+    variations: [
+      { id: "vc-half", name: "Half", price: 90 },
+      { id: "vc-full", name: "Full", price: 170 },
+    ],
+    addons: [],
+  },
+  {
+    id: "chicken-chowmein",
+    name: "Chicken Chowmein",
+    category: "Noodle Hub",
+    description: "Stir-fried noodles with shredded chicken and soy glaze.",
+    image: u("photo-1617093727343-374954b7b0d6"),
+    isVeg: false,
+    variations: [
+      { id: "cc-half", name: "Half", price: 120 },
+      { id: "cc-full", name: "Full", price: 220 },
+    ],
+    addons: [],
+  },
+  {
+    id: "chilli-chicken",
+    name: "Chilli Chicken",
+    category: "Spicy Chinese",
+    description: "Indo-Chinese favourite with capsicum and dry red chillies.",
+    image: u("photo-1599487488170-d11ec9c172f0"),
+    isVeg: false,
+    variations: [
+      { id: "chc-half", name: "Half", price: 280 },
+      { id: "chc-full", name: "Full", price: 520 },
+    ],
+    addons: [],
+  },
+  {
+    id: "paneer-paratha",
+    name: "Paneer Paratha",
+    category: "Parathas & Rolls",
+    description: "Stuffed whole wheat flatbread with spiced paneer.",
+    image: u("photo-1606491956689-2eae86667875"),
+    isVeg: true,
+    variations: [{ id: "pp-1", name: "Single", price: 90 }],
+    addons: [],
+  },
+  {
+    id: "egg-chicken-roll",
+    name: "Chicken Egg Roll",
+    category: "Parathas & Rolls",
+    description: "Flaky paratha roll with egg and spiced chicken.",
+    image: u("photo-1529692236671-f1f6cf9683ba"),
+    isVeg: false,
+    variations: [{ id: "cer-1", name: "Single", price: 110 }],
+    addons: [],
+  },
+  {
+    id: "virgin-mojito",
+    name: "Virgin Mojito",
+    category: "Mojitos",
+    description: "Mint, lime, soda, and a touch of sweetness — refreshing.",
+    image: u("photo-1513558161293-cdaf765ed2fd"),
+    isVeg: true,
+    variations: [{ id: "vm-reg", name: "Regular", price: 150 }],
+    addons: [],
+  },
+  {
+    id: "green-mojito",
+    name: "Green Apple Mojito",
+    category: "Mojitos",
+    description: "Green apple syrup, mint, and crushed ice.",
+    image: u("photo-1546171753-97d7676e4602"),
+    isVeg: true,
+    variations: [{ id: "gam-reg", name: "Regular", price: 160 }],
+    addons: [],
+  },
+  {
+    id: "cold-coffee",
+    name: "Cold Coffee",
+    category: "Shakes",
+    description: "Chilled coffee blended with ice cream.",
+    image: u("photo-1461023058943-07fcbe16d735"),
+    isVeg: true,
+    recommended: true,
+    variations: [{ id: "ccf-reg", name: "Regular", price: 160 }],
+    addons: [],
+  },
+  {
+    id: "oreo-biscuit-shake",
+    name: "Oreo Biscuit Shake",
+    category: "Shakes",
+    description: "Creamy shake with Oreo crumbs and whipped cream.",
+    image: u("photo-1572490122747-3968b75cc699"),
+    isVeg: true,
+    variations: [{ id: "obs-reg", name: "Regular", price: 160 }],
+    addons: [],
+  },
+];
+
+export function getDefaultMenuPayload(): MenuPayload {
+  return {
+    categories: [...MENU_CATEGORIES],
+    globalAddons: structuredClone(GLOBAL_ADDONS),
+    items: structuredClone(menuItems),
+  };
+}
+
+export function getItemById(
+  items: MenuItem[],
+  id: string,
+): MenuItem | undefined {
+  return items.find((i) => i.id === id);
+}
+
+export function getAddonsForItem(
+  item: MenuItem,
+  globalAddons: MenuAddon[],
+): MenuAddon[] {
+  return [...item.addons, ...globalAddons];
+}
