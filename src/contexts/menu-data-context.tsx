@@ -29,9 +29,9 @@ export function MenuDataProvider({ children }: { children: ReactNode }) {
     "/api/menu",
     fetcher,
     {
-      refreshInterval: 3000,
+      refreshInterval: 60_000,
       revalidateOnFocus: true,
-      dedupingInterval: 2000,
+      dedupingInterval: 5000,
     },
   );
 

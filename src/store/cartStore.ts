@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
+import { createSafeLocalStorage } from "@/lib/safe-local-storage";
+
 import {
   buildComboLineId,
   buildLineId,
@@ -128,7 +130,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "khaanz-cart",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(createSafeLocalStorage),
       partialize: (state) => ({ items: state.items }),
       merge: (persistedState, currentState) => {
         const p = persistedState as Partial<CartState> | undefined;

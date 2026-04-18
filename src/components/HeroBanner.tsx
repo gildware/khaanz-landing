@@ -17,8 +17,8 @@ export function HeroBanner() {
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-red-50/95 via-orange-50/70 to-background p-6 shadow-lg md:p-10">
-      <div className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-primary/15 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-16 -left-16 size-56 rounded-full bg-amber-200/40 blur-3xl" />
+      <div className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-primary/15 blur-2xl md:blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-16 -left-16 size-56 rounded-full bg-amber-200/40 blur-2xl md:blur-3xl" />
       <div className="relative z-10 space-y-4">
         <div className="max-w-xl space-y-4">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-primary text-xs font-semibold uppercase tracking-wider">

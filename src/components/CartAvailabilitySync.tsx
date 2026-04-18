@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect } from "react";
+import { useEffect } from "react";
 
 import { useMenuData } from "@/contexts/menu-data-context";
 import { isComboAvailable } from "@/lib/menu-combos";
@@ -14,7 +14,7 @@ export function CartAvailabilitySync() {
   const rawItems = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!data?.items) return;
     const byId = new Map(data.items.map((i) => [i.id, i]));
     const combos = data.combos ?? [];

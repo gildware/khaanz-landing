@@ -24,6 +24,13 @@ export function FeaturedDishesCarousel() {
   const [active, setActive] = useState<MenuItem | null>(null);
   const [open, setOpen] = useState(false);
 
+  /** Embla `loop` with few slides can crash Mobile Safari / in-app browsers. */
+  const carouselLoop = featured.length >= 4;
+
+  if (featured.length === 0) {
+    return null;
+  }
+
   return (
     <section className="space-y-3">
       <div className="flex items-end justify-between gap-2 px-1">
@@ -35,7 +42,7 @@ export function FeaturedDishesCarousel() {
         </div>
       </div>
       <Carousel
-        opts={{ align: "start", loop: true }}
+        opts={{ align: "start", loop: carouselLoop }}
         className="w-full"
       >
         <CarouselContent className="-ml-2 md:-ml-4">
@@ -68,7 +75,10 @@ export function FeaturedDishesCarousel() {
                       {item.name}
                     </p>
                     <p className="text-white/90 text-xs tabular-nums">
-                      ₹{Math.min(...item.variations.map((v) => v.price))}
+                      ₹
+                      {item.variations.length > 0
+                        ? Math.min(...item.variations.map((v) => v.price))
+                        : 0}
                     </p>
                   </div>
                 </div>

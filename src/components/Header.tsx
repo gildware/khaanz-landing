@@ -38,9 +38,6 @@ export function Header() {
               className="object-contain object-left"
             />
           </span>
-          <span className="font-heading text-sm font-semibold leading-tight tracking-tight sm:text-base">
-            {SITE.name}- {SITE.location}
-          </span>
         </Link>
 
         <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">

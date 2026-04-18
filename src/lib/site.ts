@@ -19,8 +19,6 @@ export function getSiteUrl(): URL {
 
 export const SITE = {
   name: "KHAANZ",
-  /** Shown in header next to logo: "KHAANZ- {location}" */
-  location: "Bijbehara",
   tagline: "Fast food and restaurant",
   /** Default description for meta tags and structured data */
   description:

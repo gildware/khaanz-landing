@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { CartAvailabilitySync } from "@/components/CartAvailabilitySync";
+import { ServiceWorkerUnregister } from "@/components/ServiceWorkerUnregister";
 import { SiteJsonLd } from "@/components/SiteJsonLd";
 import { MenuDataProvider } from "@/contexts/menu-data-context";
 import { StorefrontShell } from "@/components/StorefrontShell";
@@ -113,6 +114,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-[100dvh] antialiased`}
       >
         <SiteJsonLd />
+        <ServiceWorkerUnregister />
         <MenuDataProvider>
           <CartAvailabilitySync />
           <StorefrontShell>{children}</StorefrontShell>
