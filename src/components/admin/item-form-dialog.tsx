@@ -23,6 +23,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { MENU_ITEM_PLACEHOLDER_IMAGE } from "@/lib/menu-item-image";
 import type { MenuAddon, MenuItem, MenuVariation } from "@/types/menu";
 
 function newId(prefix: string) {
@@ -34,7 +35,7 @@ const emptyItem = (categories: string[]): MenuItem => ({
   name: "",
   category: categories[0] ?? "Pizza Zone",
   description: "",
-  image: "https://images.unsplash.com/photo-1513104890138-7c749354f784?w=800&q=80",
+  image: MENU_ITEM_PLACEHOLDER_IMAGE,
   isVeg: true,
   variations: [{ id: newId("v"), name: "Regular", price: 99 }],
   addons: [],

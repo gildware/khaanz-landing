@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { PlusIcon } from "lucide-react";
 
-import { ItemCustomizeSheet } from "@/components/ItemCustomizeSheet";
 import { MenuItemImage } from "@/components/MenuItemImage";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { Button } from "@/components/ui/button";
@@ -15,10 +14,11 @@ import { cn } from "@/lib/utils";
 
 export interface MenuCardProps {
   item: MenuItem;
+  /** Open the customize sheet for this item (parent should render a single shared `ItemCustomizeSheet`). */
+  onCustomizeRequest: () => void;
 }
 
-export function MenuCard({ item }: MenuCardProps) {
-  const [sheetOpen, setSheetOpen] = useState(false);
+export function MenuCard({ item, onCustomizeRequest }: MenuCardProps) {
   const items = useCartStore((s) => s.items);
   const increaseQty = useCartStore((s) => s.increaseQty);
   const decreaseQty = useCartStore((s) => s.decreaseQty);
@@ -34,13 +34,11 @@ export function MenuCard({ item }: MenuCardProps) {
   const singleLine = linesForItem.length === 1 ? linesForItem[0] : undefined;
   const multiCount = linesForItem.reduce((s, l) => s + l.quantity, 0);
 
-  const openSheet = () => setSheetOpen(true);
-
   return (
     <>
       <Card
         className="group flex cursor-pointer flex-col overflow-hidden border-border bg-card pt-0 shadow-md ring-1 ring-border/40 transition-all duration-300 hover:-translate-y-0.5 hover:ring-primary/25"
-        onClick={openSheet}
+        onClick={onCustomizeRequest}
       >
         <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden">
           <MenuItemImage
@@ -88,7 +86,7 @@ export function MenuCard({ item }: MenuCardProps) {
                 className="bg-cta-gradient rounded-full font-semibold text-primary-foreground shadow-md shadow-cta"
                 onClick={(e) => {
                   e.stopPropagation();
-                  openSheet();
+                  onCustomizeRequest();
                 }}
               >
                 <PlusIcon className="size-4" />
@@ -121,7 +119,7 @@ export function MenuCard({ item }: MenuCardProps) {
                   className="rounded-full"
                   onClick={(e) => {
                     e.stopPropagation();
-                    openSheet();
+                    onCustomizeRequest();
                   }}
                 >
                   Add more
@@ -131,12 +129,6 @@ export function MenuCard({ item }: MenuCardProps) {
           </div>
         </div>
       </Card>
-
-      <ItemCustomizeSheet
-        item={item}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-      />
     </>
   );
 }

@@ -24,6 +24,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { MENU_ITEM_PLACEHOLDER_IMAGE } from "@/lib/menu-item-image";
 import {
   computeComboRetailTotal,
   normalizeMenuCombos,
@@ -38,8 +39,7 @@ const emptyCombo = (): MenuCombo => ({
   id: newId("combo"),
   name: "",
   description: "",
-  image:
-    "https://images.unsplash.com/photo-1513104890138-7c749354f784?w=800&q=80",
+  image: MENU_ITEM_PLACEHOLDER_IMAGE,
   price: 0,
   isVeg: true,
   available: true,

@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { ComboCard } from "@/components/ComboCard";
+import { ItemCustomizeSheet } from "@/components/ItemCustomizeSheet";
 import { MenuCard, MenuCardSkeleton } from "@/components/MenuCard";
 import { useMenuExplore } from "@/contexts/menu-explore-context";
 import { useMenuData } from "@/contexts/menu-data-context";
@@ -32,6 +33,19 @@ function matchesComboSearch(combo: MenuCombo, q: string): boolean {
 export function MenuGrid() {
   const { category, searchQuery } = useMenuExplore();
   const { data } = useMenuData();
+  const [customizeItem, setCustomizeItem] = useState<MenuItem | null>(null);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+
+  const customizeSheet = (
+    <ItemCustomizeSheet
+      item={customizeItem}
+      open={customizeOpen}
+      onOpenChange={(open) => {
+        setCustomizeOpen(open);
+        if (!open) setCustomizeItem(null);
+      }}
+    />
+  );
 
   const menuItems = useMemo(
     () => (data?.items ?? []).filter(isMenuItemAvailable),
@@ -77,22 +91,28 @@ export function MenuGrid() {
   if (category === COMBOS_TAB_ID) {
     if (visibleCombos.length === 0) {
       return (
-        <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
-          <p className="font-medium text-muted-foreground">
-            No combos match your filters.
-          </p>
-          <p className="mt-1 text-muted-foreground text-sm">
-            Try another category or clear search.
-          </p>
-        </div>
+        <>
+          <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
+            <p className="font-medium text-muted-foreground">
+              No combos match your filters.
+            </p>
+            <p className="mt-1 text-muted-foreground text-sm">
+              Try another category or clear search.
+            </p>
+          </div>
+          {customizeSheet}
+        </>
       );
     }
     return (
-      <div className="grid grid-cols-2 items-start gap-3 sm:gap-4 lg:grid-cols-3">
-        {visibleCombos.map((c) => (
-          <ComboCard key={c.id} combo={c} />
-        ))}
-      </div>
+      <>
+        <div className="grid grid-cols-2 items-start gap-3 sm:gap-4 lg:grid-cols-3">
+          {visibleCombos.map((c) => (
+            <ComboCard key={c.id} combo={c} />
+          ))}
+        </div>
+        {customizeSheet}
+      </>
     );
   }
 
@@ -101,18 +121,22 @@ export function MenuGrid() {
       groupedByCategory.length > 0 || visibleCombos.length > 0;
     if (!hasAnyRows) {
       return (
-        <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
-          <p className="font-medium text-muted-foreground">
-            No dishes match your filters.
-          </p>
-          <p className="mt-1 text-muted-foreground text-sm">
-            Try another category or clear search.
-          </p>
-        </div>
+        <>
+          <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
+            <p className="font-medium text-muted-foreground">
+              No dishes match your filters.
+            </p>
+            <p className="mt-1 text-muted-foreground text-sm">
+              Try another category or clear search.
+            </p>
+          </div>
+          {customizeSheet}
+        </>
       );
     }
 
     return (
+      <>
       <div className="space-y-10">
         {visibleCombos.length > 0 && (
           <section aria-labelledby="menu-combos-heading">
@@ -148,13 +172,21 @@ export function MenuGrid() {
                   key={item.id}
                   className="w-[min(calc((100vw-2.5rem)/2.35),200px)] shrink-0 sm:w-[200px]"
                 >
-                  <MenuCard item={item} />
+                  <MenuCard
+                    item={item}
+                    onCustomizeRequest={() => {
+                      setCustomizeItem(item);
+                      setCustomizeOpen(true);
+                    }}
+                  />
                 </div>
               ))}
             </div>
           </section>
         ))}
       </div>
+      {customizeSheet}
+      </>
     );
   }
 
@@ -162,23 +194,36 @@ export function MenuGrid() {
 
   if (filtered.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
-        <p className="font-medium text-muted-foreground">
-          No dishes match your filters.
-        </p>
-        <p className="mt-1 text-muted-foreground text-sm">
-          Try another category or clear search.
-        </p>
-      </div>
+      <>
+        <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
+          <p className="font-medium text-muted-foreground">
+            No dishes match your filters.
+          </p>
+          <p className="mt-1 text-muted-foreground text-sm">
+            Try another category or clear search.
+          </p>
+        </div>
+        {customizeSheet}
+      </>
     );
   }
 
   return (
+    <>
     <div className="grid grid-cols-2 items-start gap-3 sm:gap-4 lg:grid-cols-3">
       {filtered.map((item) => (
-        <MenuCard key={item.id} item={item} />
+        <MenuCard
+          key={item.id}
+          item={item}
+          onCustomizeRequest={() => {
+            setCustomizeItem(item);
+            setCustomizeOpen(true);
+          }}
+        />
       ))}
     </div>
+    {customizeSheet}
+    </>
   );
 }
 
