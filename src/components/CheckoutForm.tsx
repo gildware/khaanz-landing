@@ -74,6 +74,8 @@ export function CheckoutForm() {
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("asap");
   const [placingOrder, setPlacingOrder] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
+  /** `datetime-local` min/max must not SSR with Node's TZ — iPhone TZ differs → hydration mismatch. */
+  const [clientScheduleReady, setClientScheduleReady] = useState(false);
 
   const steps = useMemo(
     () =>
@@ -187,6 +189,10 @@ export function CheckoutForm() {
       setStep(maxStepIndex);
     }
   }, [fulfillment, step, maxStepIndex]);
+
+  useEffect(() => {
+    setClientScheduleReady(true);
+  }, []);
 
   const placeOrder = async () => {
     if (!settings) return;
@@ -446,8 +452,8 @@ export function CheckoutForm() {
                 <Input
                   id="schedule-at"
                   type="datetime-local"
-                  min={minScheduleLocal}
-                  max={maxScheduleLocal}
+                  min={clientScheduleReady ? minScheduleLocal : undefined}
+                  max={clientScheduleReady ? maxScheduleLocal : undefined}
                   value={scheduledAtLocal}
                   onChange={(e) => setScheduledAtLocal(e.target.value)}
                   className="h-12 rounded-xl border-border bg-muted/30 font-mono text-sm"

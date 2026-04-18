@@ -15,6 +15,10 @@ export function CartAvailabilitySync() {
   const removeItem = useCartStore((s) => s.removeItem);
 
   useEffect(() => {
+    void useCartStore.persist.rehydrate();
+  }, []);
+
+  useEffect(() => {
     if (!data?.items) return;
     const byId = new Map(data.items.map((i) => [i.id, i]));
     const combos = data.combos ?? [];

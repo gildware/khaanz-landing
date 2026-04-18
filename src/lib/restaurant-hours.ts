@@ -1,5 +1,8 @@
 import type { RestaurantSettingsPayload, TimeRange } from "@/types/restaurant-settings";
 
+/** Opening hours in settings are wall-clock times in this zone (India). */
+const RESTAURANT_TZ = "Asia/Kolkata";
+
 export function minutesFromHHMM(s: string): number | null {
   const m = /^(\d{2}):(\d{2})$/.exec(s.trim());
   if (!m) return null;
@@ -9,6 +12,28 @@ export function minutesFromHHMM(s: string): number | null {
   return h * 60 + min;
 }
 
+/**
+ * Minutes since midnight in the restaurant timezone. Using `getHours()` on the
+ * server vs the phone would mix UTC and IST and break SSR hydration for any UI
+ * that depends on open/closed (e.g. checkout).
+ */
+export function minutesOfDayInRestaurantTz(now: Date): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: RESTAURANT_TZ,
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(now);
+  let h = 0;
+  let min = 0;
+  for (const p of parts) {
+    if (p.type === "hour") h = Number(p.value);
+    if (p.type === "minute") min = Number(p.value);
+  }
+  return h * 60 + min;
+}
+
+/** @deprecated Prefer {@link minutesOfDayInRestaurantTz} for ordering hours. */
 export function minutesOfDay(d: Date): number {
   return d.getHours() * 60 + d.getMinutes();
 }
@@ -18,7 +43,7 @@ export function isOpenDuringRange(now: Date, range: TimeRange): boolean {
   const start = minutesFromHHMM(range.start);
   const end = minutesFromHHMM(range.end);
   if (start === null || end === null) return false;
-  const m = minutesOfDay(now);
+  const m = minutesOfDayInRestaurantTz(now);
   return m >= start && m < end;
 }
 

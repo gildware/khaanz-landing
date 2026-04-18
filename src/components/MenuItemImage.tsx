@@ -34,7 +34,10 @@ export function MenuItemImage({
       {...rest}
       src={displaySrc}
       unoptimized={unoptimized}
-      onError={() => setDisplaySrc(MENU_ITEM_PLACEHOLDER_IMAGE)}
+      onError={() => {
+        /* Defer past React hydration — immediate onError can mismatch SSR markup. */
+        setTimeout(() => setDisplaySrc(MENU_ITEM_PLACEHOLDER_IMAGE), 0);
+      }}
     />
   );
 }

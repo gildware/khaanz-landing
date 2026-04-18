@@ -131,6 +131,8 @@ export const useCartStore = create<CartState>()(
     {
       name: "khaanz-cart",
       storage: createJSONStorage(createSafeLocalStorage),
+      /** Avoid SSR HTML vs client mismatch: rehydrate after mount in `CartAvailabilitySync`. */
+      skipHydration: true,
       partialize: (state) => ({ items: state.items }),
       merge: (persistedState, currentState) => {
         const p = persistedState as Partial<CartState> | undefined;
