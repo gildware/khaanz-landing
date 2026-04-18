@@ -41,7 +41,6 @@ import {
   parseDatetimeLocalValue,
   type ScheduleMode,
 } from "@/lib/order-schedule";
-import { buildSameOriginUrl } from "@/lib/public-site-url";
 import { cn } from "@/lib/utils";
 
 function isValidIndianMobile(phone: string): boolean {
@@ -251,11 +250,11 @@ export function CheckoutForm() {
         typeof (data as { orderId: unknown }).orderId === "string"
           ? (data as { orderId: string }).orderId
           : null;
-      const invoiceSentViaWhatsApp =
+      const messageSentViaWhatsApp =
         data &&
         typeof data === "object" &&
-        "invoiceSentViaWhatsApp" in data &&
-        (data as { invoiceSentViaWhatsApp: unknown }).invoiceSentViaWhatsApp ===
+        "messageSentViaWhatsApp" in data &&
+        (data as { messageSentViaWhatsApp: unknown }).messageSentViaWhatsApp ===
           true;
 
       if (!orderId) {
@@ -263,7 +262,7 @@ export function CheckoutForm() {
         return;
       }
 
-      if (!invoiceSentViaWhatsApp) {
+      if (!messageSentViaWhatsApp) {
         openWhatsAppOrder(
           {
             customerName: name.trim(),
@@ -279,11 +278,6 @@ export function CheckoutForm() {
             longitude: fulfillment === "delivery" ? longitude : null,
           },
           settings.whatsappPhoneE164,
-          {
-            invoicePublicUrl: buildSameOriginUrl(
-              `/api/orders/${orderId}/invoice`,
-            ),
-          },
         );
       }
 
@@ -292,7 +286,7 @@ export function CheckoutForm() {
       const q = new URLSearchParams();
       q.set("name", name.trim());
       q.set("order", orderId);
-      q.set("sent", invoiceSentViaWhatsApp ? "1" : "0");
+      q.set("sent", messageSentViaWhatsApp ? "1" : "0");
       router.push(`/success?${q.toString()}`);
     } catch {
       toast.error("Network error. Check your connection and try again.");

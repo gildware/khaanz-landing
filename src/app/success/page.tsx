@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { InvoicePdfLink } from "@/components/InvoicePdfLink";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +9,7 @@ type Props = {
 
 export default async function SuccessPage({ searchParams }: Props) {
   const { name, order, sent } = await searchParams;
-  const pdfSentToKitchen = sent === "1";
+  const notifiedOnWhatsApp = sent === "1";
 
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-gradient-to-b from-background to-muted px-6 pb-12 text-center">
@@ -34,26 +33,21 @@ export default async function SuccessPage({ searchParams }: Props) {
         <h1 className="font-heading text-3xl font-bold">Order sent</h1>
         <p className="text-muted-foreground">
           Thanks{name ? `, ${name}` : ""}!
-          {pdfSentToKitchen ? (
+          {notifiedOnWhatsApp ? (
             <>
               {" "}
-              Your invoice PDF was sent to the restaurant on WhatsApp. They will
+              Your order was sent to the restaurant on WhatsApp. They will
               confirm shortly.
             </>
           ) : (
             <>
               {" "}
               {order
-                ? "We opened WhatsApp with your order text. The kitchen may not have received a PDF automatically—download your invoice below if you need a copy."
+                ? "We opened WhatsApp with your order text so the restaurant can confirm."
                 : "WhatsApp should open with your order details. The restaurant will confirm shortly."}
             </>
           )}
         </p>
-        {order && (
-          <p className="pt-2">
-            <InvoicePdfLink orderId={order}>Download invoice (PDF)</InvoicePdfLink>
-          </p>
-        )}
       </div>
       <Link
         href="/"

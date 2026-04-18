@@ -19,11 +19,6 @@ export interface WhatsAppOrderPayload {
 
 export interface BuildWhatsAppMessageOptions {
   /**
-   * Public HTTPS URL to the invoice PDF (append to message when the app cannot
-   * send the file via WhatsApp Cloud API, e.g. wa.me fallback).
-   */
-  invoicePublicUrl?: string;
-  /**
    * Use WhatsApp-native formatting (*bold*, sections). Recommended for Cloud API
    * and wa.me on mobile.
    */
@@ -81,13 +76,6 @@ export function buildWhatsAppMessage(
       ? "Pickup (customer collects)"
       : "Delivery";
 
-  const invoiceBlock =
-    options?.invoicePublicUrl && options.invoicePublicUrl.length > 0
-      ? useFmt
-        ? `\n\n──────────────\n*Invoice PDF*\n${options.invoicePublicUrl}\n_Tap link to download._`
-        : `\n\nInvoice PDF:\n${options.invoicePublicUrl}`
-      : "";
-
   if (useFmt) {
     const itemsBlock = lines
       .map((line) => {
@@ -137,7 +125,7 @@ Phone: +91 ${phone}${addressBlock}${notesBlock}${locationBlock}
 ${itemsBlock}
 
 *Total*
-*₹${formatCurrency(grand)}*${invoiceBlock}`;
+*₹${formatCurrency(grand)}*`;
   }
 
   const itemsBlock = lines
@@ -181,7 +169,7 @@ Notes: ${notes}${locationBlock}
 Items:
 ${itemsBlock}
 
-Total: ₹${formatCurrency(grand)}${invoiceBlock}`;
+Total: ₹${formatCurrency(grand)}`;
 }
 
 export function getWhatsAppOrderUrl(
