@@ -41,6 +41,7 @@ import {
   parseDatetimeLocalValue,
   type ScheduleMode,
 } from "@/lib/order-schedule";
+import { buildSameOriginUrl } from "@/lib/public-site-url";
 import { cn } from "@/lib/utils";
 
 function isValidIndianMobile(phone: string): boolean {
@@ -217,7 +218,13 @@ export function CheckoutForm() {
           longitude: fulfillment === "delivery" ? longitude : null,
         }),
       });
-      const data: unknown = await res.json().catch(() => null);
+      const raw = await res.text();
+      let data: unknown = null;
+      try {
+        data = raw ? (JSON.parse(raw) as unknown) : null;
+      } catch {
+        data = null;
+      }
       const errMsg =
         data &&
         typeof data === "object" &&
@@ -227,7 +234,13 @@ export function CheckoutForm() {
           : null;
 
       if (!res.ok) {
-        toast.error(errMsg ?? "Could not place order. Try again.");
+        const fallback =
+          res.status === 504 || res.status === 408
+            ? "Request timed out. Try again."
+            : res.status >= 500
+              ? "Server error. Try again in a moment."
+              : null;
+        toast.error(errMsg ?? fallback ?? "Could not place order. Try again.");
         return;
       }
 
@@ -251,8 +264,6 @@ export function CheckoutForm() {
       }
 
       if (!invoiceSentViaWhatsApp) {
-        const origin =
-          typeof window !== "undefined" ? window.location.origin : "";
         openWhatsAppOrder(
           {
             customerName: name.trim(),
@@ -269,7 +280,9 @@ export function CheckoutForm() {
           },
           settings.whatsappPhoneE164,
           {
-            invoicePublicUrl: `${origin}/api/orders/${orderId}/invoice`,
+            invoicePublicUrl: buildSameOriginUrl(
+              `/api/orders/${orderId}/invoice`,
+            ),
           },
         );
       }

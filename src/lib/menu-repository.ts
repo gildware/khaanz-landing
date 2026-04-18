@@ -2,7 +2,9 @@ import { mkdir, readFile, writeFile } from "fs/promises";
 import { join } from "path";
 
 import { getDefaultMenuPayload } from "@/data/menu";
+import { normalizeMenuCombos } from "@/lib/menu-combos";
 import type { MenuPayload } from "@/types/menu-payload";
+import type { MenuCombo } from "@/types/menu";
 
 const FILE = join(process.cwd(), "data", "menu.json");
 
@@ -12,7 +14,8 @@ function isPayload(x: unknown): x is MenuPayload {
   return (
     Array.isArray(o.categories) &&
     Array.isArray(o.globalAddons) &&
-    Array.isArray(o.items)
+    Array.isArray(o.items) &&
+    (!("combos" in o) || Array.isArray(o.combos))
   );
 }
 
@@ -23,7 +26,12 @@ export async function readMenuPayload(): Promise<MenuPayload> {
     if (!isPayload(parsed)) {
       return getDefaultMenuPayload();
     }
-    return parsed;
+    const p = parsed as MenuPayload;
+    const rawCombos = Array.isArray(p.combos) ? p.combos : [];
+    return {
+      ...p,
+      combos: normalizeMenuCombos(rawCombos as MenuCombo[]),
+    };
   } catch {
     return getDefaultMenuPayload();
   }

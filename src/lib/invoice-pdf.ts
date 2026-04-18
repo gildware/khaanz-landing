@@ -1,11 +1,15 @@
-import { readFile } from "fs/promises";
+import { readFile, stat } from "fs/promises";
 import { join } from "path";
+
+/** Large PNGs make pdf-lib embed very slow; skip or compress the asset in /public/brand */
+const LOGO_MAX_BYTES = 400 * 1024;
 
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
 
-import type { CartLine } from "@/types/menu";
+import { isCartComboLine, type CartItemLine, type CartLine } from "@/types/menu";
 import type { FulfillmentMode } from "@/types/restaurant-settings";
 import { formatScheduleHuman, type ScheduleMode } from "@/lib/order-schedule";
+import { toPdfSafeText } from "@/lib/pdf-winansi-text";
 
 const PAGE_W = 595.28;
 const PAGE_H = 841.89;
@@ -106,9 +110,10 @@ export async function buildInvoicePdf(input: InvoiceOrderInput): Promise<Uint8Ar
     size: number,
     opts: { bold?: boolean; color?: ReturnType<typeof rgb> } = {},
   ) => {
+    const safe = toPdfSafeText(text);
     const f = opts.bold ? fontBold : font;
     const color = opts.color ?? ACCENT;
-    for (const line of wrapLine(text, f, size, CONTENT_W)) {
+    for (const line of wrapLine(safe, f, size, CONTENT_W)) {
       if (!line.trim()) continue;
       if (y < MARGIN + 56) {
         page = doc.addPage([PAGE_W, PAGE_H]);
@@ -125,28 +130,35 @@ export async function buildInvoicePdf(input: InvoiceOrderInput): Promise<Uint8Ar
     }
   };
 
-  /** Logo (optional) */
+  /** Logo (optional; skipped if file is huge — slows PDF generation badly) */
   try {
     const logoPath = join(process.cwd(), "public", "brand", "khaanz-logo.png");
-    const pngBytes = await readFile(logoPath);
-    const logoImage = await doc.embedPng(pngBytes);
-    const maxW = 140;
-    const scale = maxW / logoImage.width;
-    const imgW = maxW;
-    const imgH = logoImage.height * scale;
-    const imgBottom = y - imgH;
-    page.drawImage(logoImage, {
-      x: MARGIN,
-      y: imgBottom,
-      width: imgW,
-      height: imgH,
-    });
-    y = imgBottom - 14;
+    const st = await stat(logoPath);
+    if (st.size > LOGO_MAX_BYTES) {
+      console.warn(
+        `[invoice] Skipping logo: ${logoPath} is ${st.size} bytes (max ${LOGO_MAX_BYTES}). Compress the PNG or use a smaller file.`,
+      );
+    } else {
+      const pngBytes = await readFile(logoPath);
+      const logoImage = await doc.embedPng(pngBytes);
+      const maxW = 140;
+      const scale = maxW / logoImage.width;
+      const imgW = maxW;
+      const imgH = logoImage.height * scale;
+      const imgBottom = y - imgH;
+      page.drawImage(logoImage, {
+        x: MARGIN,
+        y: imgBottom,
+        width: imgW,
+        height: imgH,
+      });
+      y = imgBottom - 14;
+    }
   } catch {
     // no logo file
   }
 
-  page.drawText(input.restaurantName.toUpperCase(), {
+  page.drawText(toPdfSafeText(input.restaurantName.toUpperCase()), {
     x: MARGIN,
     y,
     size: TITLE_SIZE,
@@ -214,16 +226,28 @@ export async function buildInvoicePdf(input: InvoiceOrderInput): Promise<Uint8Ar
   for (const line of input.lines) {
     const lineTotal = line.unitPrice * line.quantity;
     subtotal += lineTotal;
-    const addonPart =
-      line.addons.length > 0
-        ? ` (${line.addons.map((a) => a.name).join(", ")})`
-        : "";
 
-    const title = `${line.name} (${line.variation.name})${addonPart}`;
+    let title: string;
+    if (isCartComboLine(line)) {
+      title = `${line.name} (Combo)`;
+    } else {
+      const il = line as CartItemLine;
+      const addonPart =
+        il.addons.length > 0
+          ? ` (${il.addons.map((a) => a.name).join(", ")})`
+          : "";
+      title = `${il.name} (${il.variation.name})${addonPart}`;
+    }
     drawParagraph(title, FONT_SIZE, { bold: true });
 
-    const qtyLine = `Qty ${line.quantity}  ×  Rs. ${formatMoney(line.unitPrice)}`;
-    const amt = `Rs. ${formatMoney(lineTotal)}`;
+    if (isCartComboLine(line)) {
+      drawParagraph(line.componentSummary, SMALL, { color: MUTED });
+    }
+
+    const qtyLine = toPdfSafeText(
+      `Qty ${line.quantity}  x  Rs. ${formatMoney(line.unitPrice)}`,
+    );
+    const amt = toPdfSafeText(`Rs. ${formatMoney(lineTotal)}`);
     if (y < MARGIN + 56) {
       page = doc.addPage([PAGE_W, PAGE_H]);
       y = PAGE_H - MARGIN;

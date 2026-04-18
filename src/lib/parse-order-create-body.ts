@@ -38,15 +38,36 @@ function isAddon(x: unknown): x is MenuAddon {
   return isVariation(x);
 }
 
-function isCartLine(x: unknown): x is CartLine {
+function isCartComboLineRow(x: unknown): boolean {
   if (!x || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
+  if (o.kind !== "combo") return false;
+  return (
+    typeof o.lineId === "string" &&
+    typeof o.comboId === "string" &&
+    typeof o.name === "string" &&
+    typeof o.image === "string" &&
+    typeof o.componentSummary === "string" &&
+    (typeof o.isVeg === "boolean" || o.isVeg === undefined) &&
+    typeof o.quantity === "number" &&
+    Number.isInteger(o.quantity) &&
+    o.quantity >= 1 &&
+    typeof o.unitPrice === "number" &&
+    Number.isFinite(o.unitPrice)
+  );
+}
+
+function isCartItemLineRow(x: unknown): boolean {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  if (o.kind === "combo") return false;
+  if (o.kind !== undefined && o.kind !== "item") return false;
   if (
     typeof o.lineId !== "string" ||
     typeof o.itemId !== "string" ||
     typeof o.name !== "string" ||
     typeof o.image !== "string" ||
-    typeof o.isVeg !== "boolean" ||
+    (typeof o.isVeg !== "boolean" && o.isVeg !== undefined) ||
     typeof o.quantity !== "number" ||
     !Number.isInteger(o.quantity) ||
     o.quantity < 1 ||
@@ -59,6 +80,10 @@ function isCartLine(x: unknown): x is CartLine {
   if (!Array.isArray(o.addons)) return false;
   if (!o.addons.every(isAddon)) return false;
   return true;
+}
+
+function isCartLine(x: unknown): x is CartLine {
+  return isCartComboLineRow(x) || isCartItemLineRow(x);
 }
 
 export function parseOrderCreateBody(
@@ -131,6 +156,35 @@ export function parseOrderCreateBody(
     return { error: "Invalid cart lines." };
   }
 
+  const lines: CartLine[] = (o.lines as unknown[]).map((row) => {
+    const l = row as Record<string, unknown>;
+    if (l.kind === "combo") {
+      return {
+        kind: "combo" as const,
+        lineId: l.lineId as string,
+        comboId: l.comboId as string,
+        name: l.name as string,
+        image: l.image as string,
+        isVeg: typeof l.isVeg === "boolean" ? l.isVeg : true,
+        quantity: l.quantity as number,
+        unitPrice: l.unitPrice as number,
+        componentSummary: l.componentSummary as string,
+      };
+    }
+    return {
+      kind: "item" as const,
+      lineId: l.lineId as string,
+      itemId: l.itemId as string,
+      name: l.name as string,
+      image: l.image as string,
+      isVeg: typeof l.isVeg === "boolean" ? l.isVeg : true,
+      variation: l.variation as MenuVariation,
+      addons: l.addons as MenuAddon[],
+      quantity: l.quantity as number,
+      unitPrice: l.unitPrice as number,
+    };
+  });
+
   return {
     customerName,
     phone,
@@ -140,7 +194,7 @@ export function parseOrderCreateBody(
     address: fulfillment === "delivery" ? address : "",
     landmark: fulfillment === "delivery" ? landmark : "",
     notes,
-    lines: o.lines as CartLine[],
+    lines,
     latitude: fulfillment === "delivery" ? latitude : null,
     longitude: fulfillment === "delivery" ? longitude : null,
   };

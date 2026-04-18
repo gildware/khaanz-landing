@@ -2,6 +2,7 @@
 
 import { useMenuExplore } from "@/contexts/menu-explore-context";
 import { useMenuData } from "@/contexts/menu-data-context";
+import { isComboAvailable, COMBOS_TAB_ID } from "@/lib/menu-combos";
 import { isMenuItemAvailable } from "@/lib/menu-availability";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
@@ -20,8 +21,15 @@ export function CategoryTabs() {
     );
   }, [data?.categories, data?.items]);
 
+  const hasCombos = useMemo(() => {
+    const combos = data?.combos ?? [];
+    const items = data?.items ?? [];
+    return combos.some((c) => isComboAvailable(c, items));
+  }, [data?.combos, data?.items]);
+
   const chips: { id: string | typeof ALL; label: string }[] = [
     { id: ALL, label: "All" },
+    ...(hasCombos ? [{ id: COMBOS_TAB_ID, label: "Combos" }] : []),
     ...categoriesWithStock.map((c) => ({ id: c, label: c })),
   ];
 

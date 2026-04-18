@@ -1,9 +1,22 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-import { buildLineId, computeUnitPrice } from "@/lib/cart-line";
+import {
+  buildComboLineId,
+  buildLineId,
+  computeUnitPrice,
+  migrateCartLine,
+} from "@/lib/cart-line";
+import { formatComboComponentSummary, isComboAvailable } from "@/lib/menu-combos";
 import { isMenuItemAvailable } from "@/lib/menu-availability";
-import type { CartLine, MenuAddon, MenuItem, MenuVariation } from "@/types/menu";
+import type {
+  CartComboLine,
+  CartLine,
+  MenuAddon,
+  MenuCombo,
+  MenuItem,
+  MenuVariation,
+} from "@/types/menu";
 
 export interface AddItemPayload {
   item: MenuItem;
@@ -14,6 +27,7 @@ export interface AddItemPayload {
 interface CartState {
   items: CartLine[];
   addItem: (payload: AddItemPayload) => void;
+  addCombo: (combo: MenuCombo, menuItems: MenuItem[]) => void;
   removeItem: (lineId: string) => void;
   increaseQty: (lineId: string) => void;
   decreaseQty: (lineId: string) => void;
@@ -42,6 +56,7 @@ export const useCartStore = create<CartState>()(
             };
           }
           const line: CartLine = {
+            kind: "item",
             lineId,
             itemId: item.id,
             name: item.name,
@@ -51,6 +66,37 @@ export const useCartStore = create<CartState>()(
             addons,
             quantity: 1,
             unitPrice,
+          };
+          return { items: [...state.items, line] };
+        });
+      },
+
+      addCombo: (combo, menuItems) => {
+        if (!isComboAvailable(combo, menuItems)) return;
+        const lineId = buildComboLineId(combo.id);
+        const componentSummary = formatComboComponentSummary(combo, menuItems);
+
+        set((state) => {
+          const existing = state.items.find((l) => l.lineId === lineId);
+          if (existing) {
+            return {
+              items: state.items.map((l) =>
+                l.lineId === lineId
+                  ? { ...l, quantity: l.quantity + 1 }
+                  : l,
+              ),
+            };
+          }
+          const line: CartComboLine = {
+            kind: "combo",
+            lineId,
+            comboId: combo.id,
+            name: combo.name,
+            image: combo.image,
+            isVeg: combo.isVeg,
+            quantity: 1,
+            unitPrice: combo.price,
+            componentSummary,
           };
           return { items: [...state.items, line] };
         });
@@ -84,6 +130,14 @@ export const useCartStore = create<CartState>()(
       name: "khaanz-cart",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ items: state.items }),
+      merge: (persistedState, currentState) => {
+        const p = persistedState as Partial<CartState> | undefined;
+        return {
+          ...currentState,
+          ...p,
+          items: (p?.items ?? currentState.items).map(migrateCartLine),
+        };
+      },
     },
   ),
 );

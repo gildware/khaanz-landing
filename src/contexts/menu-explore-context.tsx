@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { useMenuData } from "@/contexts/menu-data-context";
+import { COMBOS_TAB_ID, isComboAvailable } from "@/lib/menu-combos";
 import { isMenuItemAvailable } from "@/lib/menu-availability";
 
 type MenuExploreContextValue = {
@@ -32,8 +33,20 @@ export function MenuExploreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const categories = data?.categories ?? [];
     const items = data?.items ?? [];
-    if (category !== "all" && !categories.includes(category)) {
+    const combos = data?.combos ?? [];
+    if (
+      category !== "all" &&
+      category !== COMBOS_TAB_ID &&
+      !categories.includes(category)
+    ) {
       setCategoryState("all");
+      return;
+    }
+    if (category === COMBOS_TAB_ID) {
+      const hasAvailable = combos.some((c) => isComboAvailable(c, items));
+      if (!hasAvailable) {
+        setCategoryState("all");
+      }
       return;
     }
     if (category !== "all") {
@@ -44,7 +57,7 @@ export function MenuExploreProvider({ children }: { children: ReactNode }) {
         setCategoryState("all");
       }
     }
-  }, [data?.categories, data?.items, category]);
+  }, [data?.categories, data?.combos, data?.items, category]);
 
   const setCategory = useCallback((c: string | "all") => {
     setCategoryState(c);

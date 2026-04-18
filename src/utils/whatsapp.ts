@@ -1,4 +1,4 @@
-import type { CartLine } from "@/types/menu";
+import { isCartComboLine, type CartItemLine, type CartLine } from "@/types/menu";
 import type { FulfillmentMode } from "@/types/restaurant-settings";
 import { formatScheduleHuman, type ScheduleMode } from "@/lib/order-schedule";
 
@@ -92,12 +92,19 @@ export function buildWhatsAppMessage(
     const itemsBlock = lines
       .map((line) => {
         const subtotal = line.unitPrice * line.quantity;
-        const addonPart =
-          line.addons.length > 0
-            ? ` (${line.addons.map((a) => a.name).join(", ")})`
+        if (isCartComboLine(line)) {
+          const detail = line.componentSummary
+            ? `\n  _${line.componentSummary}_`
             : "";
-        const lineLabel = `${line.name} (${line.variation.name})${addonPart}`;
-        return `• ${lineLabel}\n  ${line.quantity} × ₹${formatCurrency(line.unitPrice)} = *₹${formatCurrency(subtotal)}*`;
+          return `• *${line.name}* (Combo)${detail}\n  ${line.quantity} × ₹${formatCurrency(line.unitPrice)} = *₹${formatCurrency(subtotal)}*`;
+        }
+        const il = line as CartItemLine;
+        const addonPart =
+          il.addons.length > 0
+            ? ` (${il.addons.map((a) => a.name).join(", ")})`
+            : "";
+        const lineLabel = `${il.name} (${il.variation.name})${addonPart}`;
+        return `• ${lineLabel}\n  ${il.quantity} × ₹${formatCurrency(il.unitPrice)} = *₹${formatCurrency(subtotal)}*`;
       })
       .join("\n\n");
 
@@ -136,11 +143,18 @@ ${itemsBlock}
   const itemsBlock = lines
     .map((line) => {
       const subtotal = line.unitPrice * line.quantity;
-      const addonPart =
-        line.addons.length > 0
-          ? ` (${line.addons.map((a) => a.name).join(", ")})`
+      if (isCartComboLine(line)) {
+        const detail = line.componentSummary
+          ? ` — ${line.componentSummary}`
           : "";
-      return `${line.name} (${line.variation.name})${addonPart} x ${line.quantity} = ₹${formatCurrency(subtotal)}`;
+        return `${line.name} (Combo)${detail} x ${line.quantity} = ₹${formatCurrency(subtotal)}`;
+      }
+      const il = line as CartItemLine;
+      const addonPart =
+        il.addons.length > 0
+          ? ` (${il.addons.map((a) => a.name).join(", ")})`
+          : "";
+      return `${il.name} (${il.variation.name})${addonPart} x ${il.quantity} = ₹${formatCurrency(subtotal)}`;
     })
     .join("\n");
 

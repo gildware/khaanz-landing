@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCartStore } from "@/store/cartStore";
-import type { MenuItem } from "@/types/menu";
+import { isCartItemLine, type MenuItem } from "@/types/menu";
 import { cn } from "@/lib/utils";
 
 export interface MenuCardProps {
@@ -24,7 +24,10 @@ export function MenuCard({ item }: MenuCardProps) {
   const decreaseQty = useCartStore((s) => s.decreaseQty);
 
   const linesForItem = useMemo(
-    () => items.filter((l) => l.itemId === item.id),
+    () =>
+      items.filter(
+        (l) => isCartItemLine(l) && l.itemId === item.id,
+      ),
     [items, item.id],
   );
 
@@ -36,7 +39,7 @@ export function MenuCard({ item }: MenuCardProps) {
   return (
     <>
       <Card
-        className="group flex cursor-pointer flex-col overflow-hidden border-border bg-card shadow-md ring-1 ring-border/40 transition-all duration-300 hover:-translate-y-0.5 hover:ring-primary/25"
+        className="group flex cursor-pointer flex-col overflow-hidden border-border bg-card pt-0 shadow-md ring-1 ring-border/40 transition-all duration-300 hover:-translate-y-0.5 hover:ring-primary/25"
         onClick={openSheet}
       >
         <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden">
@@ -140,7 +143,7 @@ export function MenuCard({ item }: MenuCardProps) {
 
 export function MenuCardSkeleton() {
   return (
-    <Card className="flex flex-col overflow-hidden border-border shadow-sm">
+    <Card className="flex flex-col overflow-hidden border-border pt-0 shadow-sm">
       <Skeleton className="aspect-[4/3] w-full shrink-0 rounded-none" />
       <div className="flex flex-col gap-0.5 px-2 pb-2 pt-1.5">
         <div className="h-16 space-y-1.5">

@@ -14,6 +14,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useCartTotals } from "@/hooks/use-cart-totals";
+import { isCartComboLine, isCartItemLine } from "@/types/menu";
 import { useCartStore } from "@/store/cartStore";
 import { useUIStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
@@ -59,9 +60,17 @@ export function CartDrawer() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium leading-tight">{line.name}</p>
                     <p className="text-muted-foreground text-xs">
-                      {line.variation.name}
-                      {line.addons.length > 0 &&
-                        ` · + ${line.addons.map((a) => a.name).join(", ")}`}
+                      {isCartComboLine(line) ? (
+                        <>
+                          Combo · {line.componentSummary}
+                        </>
+                      ) : isCartItemLine(line) ? (
+                        <>
+                          {line.variation.name}
+                          {line.addons.length > 0 &&
+                            ` · + ${line.addons.map((a) => a.name).join(", ")}`}
+                        </>
+                      ) : null}
                     </p>
                     <p className="mt-1 font-semibold text-primary text-sm tabular-nums">
                       ₹{line.unitPrice} each

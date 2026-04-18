@@ -1,5 +1,5 @@
 import type { MenuPayload } from "@/types/menu-payload";
-import type { MenuAddon, MenuItem } from "../types/menu";
+import type { MenuAddon, MenuCombo, MenuItem } from "../types/menu";
 
 export const MENU_CATEGORIES = [
   "Pizza Zone",
@@ -309,11 +309,185 @@ export const menuItems: MenuItem[] = [
   },
 ];
 
+const defaultCombos: MenuCombo[] = [
+  {
+    id: "combo-veg-feast",
+    name: "Veg Feast Combo",
+    description: "Margherita Small + Fries Half + Cold Coffee",
+    image: u("photo-1574071318508-1cdbab80d002"),
+    price: 449,
+    isVeg: true,
+    available: true,
+    components: [
+      { itemId: "margherita-classic", variationId: "mg-small", quantity: 1 },
+      { itemId: "french-fries", variationId: "ff-half", quantity: 1 },
+      { itemId: "cold-coffee", variationId: "ccf-reg", quantity: 1 },
+    ],
+  },
+  {
+    id: "combo-momo-shake",
+    name: "Momo & Shake",
+    description: "Veg Steam Momos 8pc + Oreo Biscuit Shake",
+    image: u("photo-1525755662778-bafe5cb41721"),
+    price: 229,
+    isVeg: true,
+    available: true,
+    components: [
+      { itemId: "veg-steam-momo", variationId: "vsm-8", quantity: 1 },
+      { itemId: "oreo-biscuit-shake", variationId: "obs-reg", quantity: 1 },
+    ],
+  },
+  {
+    id: "combo-nonveg-binge",
+    name: "Non-Veg Binge",
+    description: "Chicken Royale Large + Peri Peri Fries Full",
+    image: u("photo-1628840042765-356cda07504e"),
+    price: 699,
+    isVeg: false,
+    available: true,
+    components: [
+      { itemId: "chicken-royale-pizza", variationId: "cr-large", quantity: 1 },
+      { itemId: "peri-peri-fries", variationId: "ppf-full", quantity: 1 },
+    ],
+  },
+  {
+    id: "combo-cheesy-mojito",
+    name: "Cheesy & Mojito",
+    description: "Cheesy Bliss Large + Green Apple Mojito",
+    image: u("photo-1513104890138-7c749354f784"),
+    price: 479,
+    isVeg: true,
+    available: true,
+    components: [
+      { itemId: "cheesy-bliss-pizza", variationId: "cb-large", quantity: 1 },
+      { itemId: "green-mojito", variationId: "gam-reg", quantity: 1 },
+    ],
+  },
+  {
+    id: "combo-naan-biryani",
+    name: "Naan & Biryani",
+    description: "2× Butter Naan + Veg Dum Biryani Half",
+    image: u("photo-1601050690597-df0568f70950"),
+    price: 165,
+    isVeg: true,
+    available: true,
+    components: [
+      { itemId: "butter-naan", variationId: "bn-1", quantity: 2 },
+      { itemId: "veg-dum-biryani", variationId: "vdb-half", quantity: 1 },
+    ],
+  },
+  {
+    id: "combo-double-fries",
+    name: "Double Fries Deal",
+    description: "2× French Fries Full",
+    image: u("photo-1573080496219-bb080dd4f877"),
+    price: 199,
+    isVeg: true,
+    available: true,
+    components: [
+      { itemId: "french-fries", variationId: "ff-full", quantity: 2 },
+    ],
+  },
+  {
+    id: "combo-margherita-virgin",
+    name: "Pizza & Mojito Lite",
+    description: "Margherita Small + Virgin Mojito",
+    image: u("photo-1574071318508-1cdbab80d002"),
+    price: 299,
+    isVeg: true,
+    available: true,
+    components: [
+      { itemId: "margherita-classic", variationId: "mg-small", quantity: 1 },
+      { itemId: "virgin-mojito", variationId: "vm-reg", quantity: 1 },
+    ],
+  },
+  {
+    id: "combo-roll-peri",
+    name: "Roll & Peri Fries",
+    description: "Chicken Egg Roll + Peri Peri Fries Half",
+    image: u("photo-1529692236671-f1f6cf9683ba"),
+    price: 169,
+    isVeg: false,
+    available: true,
+    components: [
+      { itemId: "egg-chicken-roll", variationId: "cer-1", quantity: 1 },
+      { itemId: "peri-peri-fries", variationId: "ppf-half", quantity: 1 },
+    ],
+  },
+  {
+    id: "combo-butter-chicken-breads",
+    name: "Butter Chicken Meal",
+    description: "Butter Chicken Half + Garlic Naan + Butter Naan",
+    image: u("photo-1603894584373-5ac82b2ae398"),
+    price: 369,
+    isVeg: false,
+    available: true,
+    components: [
+      { itemId: "butter-chicken", variationId: "bc-half", quantity: 1 },
+      { itemId: "garlic-naan", variationId: "gn-1", quantity: 1 },
+      { itemId: "butter-naan", variationId: "bn-1", quantity: 1 },
+    ],
+  },
+  {
+    id: "combo-chicken-momo-coffee",
+    name: "Chicken Momos & Coffee",
+    description: "Chicken Steam Momos 12pc + Cold Coffee",
+    image: u("photo-1496116218417-1a781b1c416c"),
+    price: 299,
+    isVeg: false,
+    available: true,
+    components: [
+      { itemId: "chicken-steam-momo", variationId: "csm-12", quantity: 1 },
+      { itemId: "cold-coffee", variationId: "ccf-reg", quantity: 1 },
+    ],
+  },
+  {
+    id: "combo-indo-chinese",
+    name: "Indo-Chinese Spread",
+    description: "Chicken Chowmein Full + Chilli Chicken Half",
+    image: u("photo-1617093727343-374954b7b0d6"),
+    price: 449,
+    isVeg: false,
+    available: true,
+    components: [
+      { itemId: "chicken-chowmein", variationId: "cc-full", quantity: 1 },
+      { itemId: "chilli-chicken", variationId: "chc-half", quantity: 1 },
+    ],
+  },
+  {
+    id: "combo-paratha-coffee",
+    name: "Paratha & Coffee",
+    description: "Paneer Paratha + Cold Coffee",
+    image: u("photo-1606491956689-2eae86667875"),
+    price: 219,
+    isVeg: true,
+    available: true,
+    components: [
+      { itemId: "paneer-paratha", variationId: "pp-1", quantity: 1 },
+      { itemId: "cold-coffee", variationId: "ccf-reg", quantity: 1 },
+    ],
+  },
+  {
+    id: "combo-fried-fries",
+    name: "Fried Chicken & Fries",
+    description: "Fried Chicken Half + French Fries Full",
+    image: u("photo-1626082926499-eeaf5ee27f95"),
+    price: 329,
+    isVeg: false,
+    available: true,
+    components: [
+      { itemId: "fried-chicken", variationId: "fc-half", quantity: 1 },
+      { itemId: "french-fries", variationId: "ff-full", quantity: 1 },
+    ],
+  },
+];
+
 export function getDefaultMenuPayload(): MenuPayload {
   return {
     categories: [...MENU_CATEGORIES],
     globalAddons: structuredClone(GLOBAL_ADDONS),
     items: structuredClone(menuItems),
+    combos: structuredClone(defaultCombos),
   };
 }
 

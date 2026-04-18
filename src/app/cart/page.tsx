@@ -9,6 +9,7 @@ import { QuantitySelector } from "@/components/QuantitySelector";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useCartTotals } from "@/hooks/use-cart-totals";
+import { isCartComboLine, isCartItemLine } from "@/types/menu";
 import { useCartStore } from "@/store/cartStore";
 import { cn } from "@/lib/utils";
 
@@ -56,9 +57,15 @@ export default function CartPage() {
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{line.name}</p>
                     <p className="text-muted-foreground text-xs">
-                      {line.variation.name}
-                      {line.addons.length > 0 &&
-                        ` · ${line.addons.map((a) => a.name).join(", ")}`}
+                      {isCartComboLine(line) ? (
+                        <>Combo · {line.componentSummary}</>
+                      ) : isCartItemLine(line) ? (
+                        <>
+                          {line.variation.name}
+                          {line.addons.length > 0 &&
+                            ` · ${line.addons.map((a) => a.name).join(", ")}`}
+                        </>
+                      ) : null}
                     </p>
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <QuantitySelector

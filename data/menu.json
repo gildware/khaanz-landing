@@ -468,5 +468,120 @@
       ],
       "addons": []
     }
+  ],
+  "combos": [
+    {
+      "id": "combo-mo440nbw",
+      "name": "Chinese Combo",
+      "description": "",
+      "image": "https://images.unsplash.com/photo-1513104890138-7c749354f784?w=800&q=80",
+      "price": 200,
+      "isVeg": true,
+      "available": true,
+      "components": [
+        {
+          "itemId": "chicken-steam-momo",
+          "variationId": "csm-8",
+          "quantity": 2
+        },
+        {
+          "itemId": "veg-chowmein",
+          "variationId": "vc-half",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "combo-margherita-virgin",
+      "name": "Pizza & Mojito Lite",
+      "description": "Margherita Small + Virgin Mojito",
+      "image": "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800&q=80&auto=format&fit=crop",
+      "price": 299,
+      "isVeg": true,
+      "available": true,
+      "components": [
+        { "itemId": "margherita-classic", "variationId": "mg-small", "quantity": 1 },
+        { "itemId": "virgin-mojito", "variationId": "vm-reg", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "combo-roll-peri",
+      "name": "Roll & Peri Fries",
+      "description": "Chicken Egg Roll + Peri Peri Fries Half",
+      "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=800&q=80&auto=format&fit=crop",
+      "price": 169,
+      "isVeg": false,
+      "available": true,
+      "components": [
+        { "itemId": "egg-chicken-roll", "variationId": "cer-1", "quantity": 1 },
+        { "itemId": "peri-peri-fries", "variationId": "ppf-half", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "combo-butter-chicken-breads",
+      "name": "Butter Chicken Meal",
+      "description": "Butter Chicken Half + Garlic Naan + Butter Naan",
+      "image": "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800&q=80&auto=format&fit=crop",
+      "price": 369,
+      "isVeg": false,
+      "available": true,
+      "components": [
+        { "itemId": "butter-chicken", "variationId": "bc-half", "quantity": 1 },
+        { "itemId": "garlic-naan", "variationId": "gn-1", "quantity": 1 },
+        { "itemId": "butter-naan", "variationId": "bn-1", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "combo-chicken-momo-coffee",
+      "name": "Chicken Momos & Coffee",
+      "description": "Chicken Steam Momos 12pc + Cold Coffee",
+      "image": "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?w=800&q=80&auto=format&fit=crop",
+      "price": 299,
+      "isVeg": false,
+      "available": true,
+      "components": [
+        { "itemId": "chicken-steam-momo", "variationId": "csm-12", "quantity": 1 },
+        { "itemId": "cold-coffee", "variationId": "ccf-reg", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "combo-indo-chinese",
+      "name": "Indo-Chinese Spread",
+      "description": "Chicken Chowmein Full + Chilli Chicken Half",
+      "image": "https://images.unsplash.com/photo-1617093727343-374954b7b0d6?w=800&q=80&auto=format&fit=crop",
+      "price": 449,
+      "isVeg": false,
+      "available": true,
+      "components": [
+        { "itemId": "chicken-chowmein", "variationId": "cc-full", "quantity": 1 },
+        { "itemId": "chilli-chicken", "variationId": "chc-half", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "combo-paratha-coffee",
+      "name": "Paratha & Coffee",
+      "description": "Paneer Paratha + Cold Coffee",
+      "image": "https://images.unsplash.com/photo-1606491956689-2eae86667875?w=800&q=80&auto=format&fit=crop",
+      "price": 219,
+      "isVeg": true,
+      "available": true,
+      "components": [
+        { "itemId": "paneer-paratha", "variationId": "pp-1", "quantity": 1 },
+        { "itemId": "cold-coffee", "variationId": "ccf-reg", "quantity": 1 }
+      ]
+    },
+    {
+      "id": "combo-fried-fries",
+      "name": "Fried Chicken & Fries",
+      "description": "Fried Chicken Half + French Fries Full",
+      "image": "https://images.unsplash.com/photo-1626082926499-eeaf5ee27f95?w=800&q=80&auto=format&fit=crop",
+      "price": 329,
+      "isVeg": false,
+      "available": true,
+      "components": [
+        { "itemId": "fried-chicken", "variationId": "fc-half", "quantity": 1 },
+        { "itemId": "french-fries", "variationId": "ff-full", "quantity": 1 }
+      ]
+    }
   ]
 }

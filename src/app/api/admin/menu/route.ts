@@ -11,7 +11,8 @@ function isPayload(x: unknown): x is MenuPayload {
   return (
     Array.isArray(o.categories) &&
     Array.isArray(o.globalAddons) &&
-    Array.isArray(o.items)
+    Array.isArray(o.items) &&
+    Array.isArray(o.combos)
   );
 }
 

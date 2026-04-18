@@ -42,7 +42,7 @@ export function FeaturedDishesCarousel() {
           {featured.map((item) => (
             <CarouselItem
               key={item.id}
-              className="basis-[85%] pl-2 sm:basis-1/2 md:basis-1/3 md:pl-4 lg:basis-1/4"
+              className="basis-[calc((100%-0.75rem)/2.35)] pl-2 sm:basis-1/2 md:basis-1/3 md:pl-4 lg:basis-1/4"
             >
               <button
                 type="button"

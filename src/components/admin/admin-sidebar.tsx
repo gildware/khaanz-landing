@@ -10,6 +10,7 @@ import {
   PlusSquareIcon,
   LogOutIcon,
   SettingsIcon,
+  BoxesIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ const links = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
   { href: "/admin/categories", label: "Categories", icon: LayersIcon },
   { href: "/admin/items", label: "Menu items", icon: UtensilsCrossedIcon },
+  { href: "/admin/combos", label: "Combos", icon: BoxesIcon },
   { href: "/admin/addons", label: "Add-ons", icon: PlusSquareIcon },
   { href: "/admin/settings", label: "Restaurant", icon: SettingsIcon },
 ];
