@@ -11,4 +11,10 @@ export interface RestaurantSettingsPayload {
   delivery: TimeRange;
 }
 
+/** Public GET /api/settings — includes server-derived flags (not stored in settings.json). */
+export type PublicRestaurantSettings = RestaurantSettingsPayload & {
+  /** True when WhatsApp Cloud API env is set; wa.me fallback is not required for notify. */
+  whatsappCloudConfigured: boolean;
+};
+
 export type FulfillmentMode = "pickup" | "delivery";

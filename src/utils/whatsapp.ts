@@ -172,12 +172,87 @@ ${itemsBlock}
 Total: ₹${formatCurrency(grand)}`;
 }
 
+/**
+ * iOS Safari and Chrome (WebKit) often crash or refuse navigation when `wa.me`
+ * URLs exceed a few KB. We cap total URL length and shorten the message if needed.
+ */
+const WA_ME_MAX_URL_CHARS = 6800;
+
+const WA_TRUNCATION_SUFFIX =
+  "\n\n_(Shortened for WhatsApp — your full order was already submitted.)_";
+
+function digitsOnlyPhone(restaurantPhoneDigits: string): string {
+  return restaurantPhoneDigits.replace(/\D/g, "");
+}
+
+/**
+ * Builds a wa.me link that stays within safe length limits for mobile browsers.
+ */
+export function buildWaMeUrl(
+  message: string,
+  restaurantPhoneDigits: string,
+): { href: string; truncated: boolean } {
+  const phone = digitsOnlyPhone(restaurantPhoneDigits);
+  const base = `https://wa.me/${phone}?text=`;
+
+  const fits = (body: string) =>
+    base.length + encodeURIComponent(body).length <= WA_ME_MAX_URL_CHARS;
+
+  if (fits(message)) {
+    return { href: base + encodeURIComponent(message), truncated: false };
+  }
+
+  let body = message;
+  for (let i = 0; i < 48; i++) {
+    const candidate =
+      body.length > WA_TRUNCATION_SUFFIX.length + 40
+        ? body.slice(
+            0,
+            Math.max(40, Math.floor(body.length * 0.82) - WA_TRUNCATION_SUFFIX.length),
+          ) + WA_TRUNCATION_SUFFIX
+        : body.slice(0, Math.max(0, body.length - 120)) + WA_TRUNCATION_SUFFIX;
+
+    if (fits(candidate)) {
+      return { href: base + encodeURIComponent(candidate), truncated: true };
+    }
+    body = body.slice(0, Math.floor(body.length * 0.75));
+  }
+
+  const minimal =
+    "New order — full details were received on the website. Please check your orders or contact the customer.";
+  return {
+    href: base + encodeURIComponent(minimal),
+    truncated: true,
+  };
+}
+
 export function getWhatsAppOrderUrl(
   message: string,
   restaurantPhoneDigits: string,
 ): string {
-  const encoded = encodeURIComponent(message);
-  return `https://wa.me/${restaurantPhoneDigits}?text=${encoded}`;
+  return buildWaMeUrl(message, restaurantPhoneDigits).href;
+}
+
+/**
+ * Opens a wa.me URL after an async gap (e.g. `await fetch`).
+ * Safari/iOS blocks `window.open` when it is not synchronous with the user tap;
+ * pass a window from `window.open("about:blank", "_blank")` opened in the same
+ * synchronous click handler before any `await`.
+ */
+export function assignWhatsAppOrderUrl(
+  url: string,
+  preOpenedWindow: Window | null,
+): void {
+  if (typeof window === "undefined") return;
+  if (preOpenedWindow && !preOpenedWindow.closed) {
+    try {
+      preOpenedWindow.location.href = url;
+      return;
+    } catch {
+      /* fall through — e.g. cross-origin */
+    }
+  }
+  window.location.href = url;
 }
 
 export function openWhatsAppOrder(
@@ -185,13 +260,13 @@ export function openWhatsAppOrder(
   restaurantPhoneDigits: string,
   options?: BuildWhatsAppMessageOptions,
 ): void {
-  const url = getWhatsAppOrderUrl(
+  const url = buildWaMeUrl(
     buildWhatsAppMessage(payload, {
       ...options,
       useWhatsAppFormatting: true,
     }),
     restaurantPhoneDigits,
-  );
+  ).href;
   if (typeof window !== "undefined") {
     window.open(url, "_blank", "noopener,noreferrer");
   }

@@ -28,7 +28,11 @@ import {
 } from "@/lib/restaurant-hours";
 import { useCartTotals } from "@/hooks/use-cart-totals";
 import { useCartStore } from "@/store/cartStore";
-import { openWhatsAppOrder } from "@/utils/whatsapp";
+import {
+  assignWhatsAppOrderUrl,
+  buildWaMeUrl,
+  buildWhatsAppMessage,
+} from "@/utils/whatsapp";
 import type { FulfillmentMode } from "@/types/restaurant-settings";
 import {
   ORDER_SCHEDULE_MAX_DAYS_AHEAD,
@@ -199,6 +203,13 @@ export function CheckoutForm() {
     }
 
     setPlacingOrder(true);
+    /** iOS Safari blocks `window.open` after `await`; open a tab in the same tap if we may need wa.me. */
+    const needsWaMeFallback = settings.whatsappCloudConfigured !== true;
+    let waMeFallbackWindow: Window | null = null;
+    if (needsWaMeFallback) {
+      waMeFallbackWindow = window.open("about:blank", "_blank");
+    }
+
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -262,8 +273,10 @@ export function CheckoutForm() {
         return;
       }
 
+      clearCart();
+
       if (!messageSentViaWhatsApp) {
-        openWhatsAppOrder(
+        const waText = `*Order ref:* ${orderId}\n\n${buildWhatsAppMessage(
           {
             customerName: name.trim(),
             phone: phone.trim(),
@@ -277,11 +290,33 @@ export function CheckoutForm() {
             latitude: fulfillment === "delivery" ? latitude : null,
             longitude: fulfillment === "delivery" ? longitude : null,
           },
+          { useWhatsAppFormatting: true },
+        )}`;
+        const { href: waUrl, truncated } = buildWaMeUrl(
+          waText,
           settings.whatsappPhoneE164,
         );
+        if (truncated) {
+          toast.success(
+            "Full order was received — WhatsApp text is shortened to fit.",
+          );
+        }
+        if (waMeFallbackWindow && !waMeFallbackWindow.closed) {
+          try {
+            waMeFallbackWindow.location.href = waUrl;
+          } catch {
+            toast.success("Order placed! Opening WhatsApp…");
+            assignWhatsAppOrderUrl(waUrl, null);
+            return;
+          }
+        } else {
+          toast.success("Order placed! Opening WhatsApp…");
+          assignWhatsAppOrderUrl(waUrl, null);
+          return;
+        }
+      } else {
+        waMeFallbackWindow?.close();
       }
-
-      clearCart();
 
       const q = new URLSearchParams();
       q.set("name", name.trim());
