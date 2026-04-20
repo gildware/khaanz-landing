@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { CartAvailabilitySync } from "@/components/CartAvailabilitySync";
+import { IOSProductionDebug } from "@/components/IOSProductionDebug";
 import { ServiceWorkerUnregister } from "@/components/ServiceWorkerUnregister";
 import { SiteJsonLd } from "@/components/SiteJsonLd";
 import { MenuDataProvider } from "@/contexts/menu-data-context";
@@ -114,6 +115,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-[100dvh] antialiased`}
       >
         <SiteJsonLd />
+        <IOSProductionDebug />
         <ServiceWorkerUnregister />
         <MenuDataProvider>
           <CartAvailabilitySync />
