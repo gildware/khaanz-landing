@@ -5,489 +5,2654 @@
     "Momo Mania",
     "Rice Royale",
     "Tandoor Breads",
+    "Crispy Bites",
     "Fries & More",
     "Noodle Hub",
     "Spicy Chinese",
     "Parathas & Rolls",
     "Mojitos",
-    "Shakes"
+    "Shakes",
+    "Soft Drinks"
   ],
   "globalAddons": [
     {
       "id": "ga-mayo",
       "name": "Extra Mayonnaise",
       "price": 10
+    },
+    {
+      "id": "ga-cheese",
+      "name": "Extra Cheese",
+      "price": 30
+    },
+    {
+      "id": "ga-chicken",
+      "name": "Extra Chicken",
+      "price": 60
     }
   ],
   "items": [
     {
-      "id": "cheesy-bliss-pizza",
-      "name": "Cheesy Bliss Pizza Test ",
-      "category": "Pizza Zone",
-      "description": "Loaded mozzarella, house tomato sauce, and fresh basil.",
-      "image": "https://images.unsplash.com/photo-1513104890138-7c749354f784?w=800&q=80&auto=format&fit=crop",
-      "isVeg": true,
-      "recommended": true,
-      "variations": [
-        {
-          "id": "cb-small",
-          "name": "Small",
-          "price": 180
-        },
-        {
-          "id": "cb-large",
-          "name": "Large",
-          "price": 400
-        }
-      ],
-      "addons": [],
-      "available": false
-    },
-    {
-      "id": "chicken-royale-pizza",
-      "name": "Chicken Royale Pizza",
-      "category": "Pizza Zone",
-      "description": "Grilled chicken, peppers, onions, and signature spice blend.",
-      "image": "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=800&q=80&auto=format&fit=crop",
-      "isVeg": false,
-      "recommended": true,
-      "variations": [
-        {
-          "id": "cr-small",
-          "name": "Small",
-          "price": 350
-        },
-        {
-          "id": "cr-large",
-          "name": "Large",
-          "price": 650
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "margherita-classic",
-      "name": "Margherita Classic",
-      "category": "Pizza Zone",
-      "description": "San Marzano tomatoes, buffalo mozzarella, olive oil.",
-      "image": "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800&q=80&auto=format&fit=crop",
-      "isVeg": true,
-      "variations": [
-        {
-          "id": "mg-small",
-          "name": "Small",
-          "price": 199
-        },
-        {
-          "id": "mg-large",
-          "name": "Large",
-          "price": 379
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "butter-chicken",
-      "name": "Butter Chicken",
-      "category": "Chef Specials",
-      "description": "Creamy tomato gravy with tender tandoori chicken.",
-      "image": "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800&q=80&auto=format&fit=crop",
-      "isVeg": false,
-      "recommended": true,
-      "variations": [
-        {
-          "id": "bc-half",
-          "name": "Half",
-          "price": 300
-        },
-        {
-          "id": "bc-full",
-          "name": "Full",
-          "price": 550
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "kadai-chicken",
-      "name": "Kadai Chicken",
-      "category": "Chef Specials",
-      "description": "Wok-tossed with capsicum, onion, and kadai masala.",
-      "image": "https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=800&q=80&auto=format&fit=crop",
-      "isVeg": false,
-      "variations": [
-        {
-          "id": "kc-half",
-          "name": "Half",
-          "price": 300
-        },
-        {
-          "id": "kc-full",
-          "name": "Full",
-          "price": 550
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "fried-chicken",
-      "name": "Fried Chicken",
-      "category": "Chef Specials",
-      "description": "Crispy golden crust with secret spice rub.",
-      "image": "https://images.unsplash.com/photo-1626082926499-eeaf5ee27f95?w=800&q=80&auto=format&fit=crop",
-      "isVeg": false,
-      "variations": [
-        {
-          "id": "fc-half",
-          "name": "Half",
-          "price": 250
-        },
-        {
-          "id": "fc-full",
-          "name": "Full",
-          "price": 550
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "chicken-steam-momo",
-      "name": "Chicken Steam Momo",
-      "category": "Momo Mania",
-      "description": "Juicy minced chicken in soft steamed dumplings.",
-      "image": "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?w=800&q=80&auto=format&fit=crop",
-      "isVeg": false,
-      "variations": [
-        {
-          "id": "csm-8",
-          "name": "8 pcs",
-          "price": 120
-        },
-        {
-          "id": "csm-12",
-          "name": "12 pcs",
-          "price": 170
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "veg-steam-momo",
-      "name": "Veg Steam Momo",
-      "category": "Momo Mania",
-      "description": "Cabbage, carrot, and mild spices — steamed to perfection.",
-      "image": "https://images.unsplash.com/photo-1525755662778-bafe5cb41721?w=800&q=80&auto=format&fit=crop",
-      "isVeg": true,
-      "variations": [
-        {
-          "id": "vsm-8",
-          "name": "8 pcs",
-          "price": 90
-        },
-        {
-          "id": "vsm-12",
-          "name": "12 pcs",
-          "price": 130
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "fried-chicken-biryani",
-      "name": "Fried Chicken Biryani",
-      "category": "Rice Royale",
-      "description": "Aromatic basmati with crispy chicken and fried onions.",
-      "image": "https://images.unsplash.com/photo-1563379091339-03246963ba2b?w=800&q=80&auto=format&fit=crop",
-      "isVeg": false,
-      "variations": [
-        {
-          "id": "fcb-half",
-          "name": "Half",
-          "price": 100
-        },
-        {
-          "id": "fcb-full",
-          "name": "Full",
-          "price": 180
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "veg-dum-biryani",
-      "name": "Veg Dum Biryani",
-      "category": "Rice Royale",
-      "description": "Layered vegetables, saffron rice, and mint raita on the side.",
-      "image": "https://images.unsplash.com/photo-1596797038530-2c107229644b?w=800&q=80&auto=format&fit=crop",
-      "isVeg": true,
-      "variations": [
-        {
-          "id": "vdb-half",
-          "name": "Half",
-          "price": 90
-        },
-        {
-          "id": "vdb-full",
-          "name": "Full",
-          "price": 160
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "butter-naan",
-      "name": "Butter Naan",
-      "category": "Tandoor Breads",
-      "description": "Soft leavened bread brushed with butter.",
-      "image": "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&q=80&auto=format&fit=crop",
-      "isVeg": true,
-      "variations": [
-        {
-          "id": "bn-1",
-          "name": "Single",
-          "price": 50
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "garlic-naan",
-      "name": "Garlic Naan",
-      "category": "Tandoor Breads",
-      "description": "Naan topped with roasted garlic and coriander.",
-      "image": "https://images.unsplash.com/photo-1626074357427-bfda8a5e1f6d?w=800&q=80&auto=format&fit=crop",
-      "isVeg": true,
-      "variations": [
-        {
-          "id": "gn-1",
-          "name": "Single",
-          "price": 60
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "french-fries",
-      "name": "French Fries",
-      "category": "Fries & More",
-      "description": "Crispy potato fries with light seasoning.",
-      "image": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=800&q=80&auto=format&fit=crop",
-      "isVeg": true,
-      "variations": [
-        {
-          "id": "ff-half",
-          "name": "Half",
-          "price": 70
-        },
-        {
-          "id": "ff-full",
-          "name": "Full",
-          "price": 120
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "peri-peri-fries",
-      "name": "Peri Peri Fries",
-      "category": "Fries & More",
-      "description": "Spicy peri peri dust and lime zest.",
-      "image": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=800&q=80&auto=format&fit=crop",
-      "isVeg": true,
-      "variations": [
-        {
-          "id": "ppf-half",
-          "name": "Half",
-          "price": 80
-        },
-        {
-          "id": "ppf-full",
-          "name": "Full",
-          "price": 140
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "veg-chowmein",
-      "name": "Veg Chowmein",
-      "category": "Noodle Hub",
-      "description": "Wok-fried noodles with seasonal vegetables.",
-      "image": "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=800&q=80&auto=format&fit=crop",
-      "isVeg": true,
-      "variations": [
-        {
-          "id": "vc-half",
-          "name": "Half",
-          "price": 90
-        },
-        {
-          "id": "vc-full",
-          "name": "Full",
-          "price": 170
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "chicken-chowmein",
-      "name": "Chicken Chowmein",
-      "category": "Noodle Hub",
-      "description": "Stir-fried noodles with shredded chicken and soy glaze.",
-      "image": "https://images.unsplash.com/photo-1617093727343-374954b7b0d6?w=800&q=80&auto=format&fit=crop",
-      "isVeg": false,
-      "variations": [
-        {
-          "id": "cc-half",
-          "name": "Half",
-          "price": 120
-        },
-        {
-          "id": "cc-full",
-          "name": "Full",
-          "price": 220
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "chilli-chicken",
-      "name": "Chilli Chicken",
-      "category": "Spicy Chinese",
-      "description": "Indo-Chinese favourite with capsicum and dry red chillies.",
-      "image": "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80&auto=format&fit=crop",
-      "isVeg": false,
-      "variations": [
-        {
-          "id": "chc-half",
-          "name": "Half",
-          "price": 280
-        },
-        {
-          "id": "chc-full",
-          "name": "Full",
-          "price": 520
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "paneer-paratha",
-      "name": "Paneer Paratha",
-      "category": "Parathas & Rolls",
-      "description": "Stuffed whole wheat flatbread with spiced paneer.",
-      "image": "https://images.unsplash.com/photo-1606491956689-2eae86667875?w=800&q=80&auto=format&fit=crop",
-      "isVeg": true,
-      "variations": [
-        {
-          "id": "pp-1",
-          "name": "Single",
-          "price": 90
-        }
-      ],
-      "addons": []
-    },
-    {
-      "id": "egg-chicken-roll",
-      "name": "Chicken Egg Roll",
-      "category": "Parathas & Rolls",
-      "description": "Flaky paratha roll with egg and spiced chicken.",
-      "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=800&q=80&auto=format&fit=crop",
-      "isVeg": false,
-      "variations": [
-        {
-          "id": "cer-1",
-          "name": "Single",
-          "price": 110
-        }
-      ],
-      "addons": []
-    },
-    {
       "id": "virgin-mojito",
       "name": "Virgin Mojito",
       "category": "Mojitos",
-      "description": "Mint, lime, soda, and a touch of sweetness — refreshing.",
       "image": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800&q=80&auto=format&fit=crop",
       "isVeg": true,
       "variations": [
         {
-          "id": "vm-reg",
+          "id": "virgin-mojito",
           "name": "Regular",
           "price": 150
         }
       ],
-      "addons": []
+      "description": "Refreshing cooler with minty freshness and citrus zing—served chilled.",
+      "addons": [
+        {
+          "id": "ia-extra-mint",
+          "name": "Extra Mint",
+          "price": 10
+        },
+        {
+          "id": "ia-extra-lemon",
+          "name": "Extra Lemon",
+          "price": 10
+        },
+        {
+          "id": "ia-extra-soda",
+          "name": "Extra Soda",
+          "price": 15
+        }
+      ]
     },
     {
-      "id": "green-mojito",
-      "name": "Green Apple Mojito",
+      "id": "watermelon-cooler",
+      "name": "Watermelon Cooler",
       "category": "Mojitos",
-      "description": "Green apple syrup, mint, and crushed ice.",
+      "image": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "watermelon-cooler",
+          "name": "Regular",
+          "price": 150
+        }
+      ],
+      "description": "Refreshing cooler with minty freshness and citrus zing—served chilled.",
+      "addons": [
+        {
+          "id": "ia-extra-mint",
+          "name": "Extra Mint",
+          "price": 10
+        },
+        {
+          "id": "ia-extra-lemon",
+          "name": "Extra Lemon",
+          "price": 10
+        },
+        {
+          "id": "ia-extra-soda",
+          "name": "Extra Soda",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "blue-thunder",
+      "name": "Blue Thunder",
+      "category": "Mojitos",
+      "image": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "blue-thunder",
+          "name": "Regular",
+          "price": 150
+        }
+      ],
+      "description": "Refreshing cooler with minty freshness and citrus zing—served chilled.",
+      "addons": [
+        {
+          "id": "ia-extra-mint",
+          "name": "Extra Mint",
+          "price": 10
+        },
+        {
+          "id": "ia-extra-lemon",
+          "name": "Extra Lemon",
+          "price": 10
+        },
+        {
+          "id": "ia-extra-soda",
+          "name": "Extra Soda",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "strawberry-mojito",
+      "name": "Strawberry Mojito",
+      "category": "Mojitos",
+      "image": "https://images.unsplash.com/photo-1497534446932-c925b458314e?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "strawberry-mojito",
+          "name": "Regular",
+          "price": 150
+        }
+      ],
+      "description": "Refreshing cooler with minty freshness and citrus zing—served chilled.",
+      "addons": [
+        {
+          "id": "ia-extra-mint",
+          "name": "Extra Mint",
+          "price": 10
+        },
+        {
+          "id": "ia-extra-lemon",
+          "name": "Extra Lemon",
+          "price": 10
+        },
+        {
+          "id": "ia-extra-soda",
+          "name": "Extra Soda",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "green-apple",
+      "name": "Green Apple",
+      "category": "Mojitos",
       "image": "https://images.unsplash.com/photo-1546171753-97d7676e4602?w=800&q=80&auto=format&fit=crop",
       "isVeg": true,
       "variations": [
         {
-          "id": "gam-reg",
+          "id": "green-apple",
+          "name": "Regular",
+          "price": 150
+        }
+      ],
+      "description": "Refreshing cooler with minty freshness and citrus zing—served chilled.",
+      "addons": [
+        {
+          "id": "ia-extra-mint",
+          "name": "Extra Mint",
+          "price": 10
+        },
+        {
+          "id": "ia-extra-lemon",
+          "name": "Extra Lemon",
+          "price": 10
+        },
+        {
+          "id": "ia-extra-soda",
+          "name": "Extra Soda",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "mango-blast",
+      "name": "Mango Blast",
+      "category": "Shakes",
+      "image": "https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "mango-blast",
           "name": "Regular",
           "price": 160
         }
       ],
-      "addons": []
+      "description": "Thick, creamy shake blended ice-cold—smooth, sweet, and super refreshing.",
+      "addons": [
+        {
+          "id": "ia-whipped-cream",
+          "name": "Whipped Cream",
+          "price": 25
+        },
+        {
+          "id": "ia-choco-chips",
+          "name": "Choco Chips",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-scoop",
+          "name": "Extra Ice Cream Scoop",
+          "price": 40
+        }
+      ]
+    },
+    {
+      "id": "blackcurrent-blast",
+      "name": "Blackcurrent Blast",
+      "category": "Shakes",
+      "image": "https://images.unsplash.com/photo-1577805947697-89e18249d767?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "blackcurrent-blast",
+          "name": "Regular",
+          "price": 160
+        }
+      ],
+      "description": "Thick, creamy shake blended ice-cold—smooth, sweet, and super refreshing.",
+      "addons": [
+        {
+          "id": "ia-whipped-cream",
+          "name": "Whipped Cream",
+          "price": 25
+        },
+        {
+          "id": "ia-choco-chips",
+          "name": "Choco Chips",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-scoop",
+          "name": "Extra Ice Cream Scoop",
+          "price": 40
+        }
+      ]
+    },
+    {
+      "id": "true-vanilla",
+      "name": "True Vanilla",
+      "category": "Shakes",
+      "image": "https://images.unsplash.com/photo-1579954115545-a95591f28bfc?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "true-vanilla",
+          "name": "Regular",
+          "price": 160
+        }
+      ],
+      "description": "Thick, creamy shake blended ice-cold—smooth, sweet, and super refreshing.",
+      "addons": [
+        {
+          "id": "ia-whipped-cream",
+          "name": "Whipped Cream",
+          "price": 25
+        },
+        {
+          "id": "ia-choco-chips",
+          "name": "Choco Chips",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-scoop",
+          "name": "Extra Ice Cream Scoop",
+          "price": 40
+        }
+      ]
+    },
+    {
+      "id": "classic-chocolate",
+      "name": "Classic Chocolate",
+      "category": "Shakes",
+      "image": "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "classic-chocolate",
+          "name": "Regular",
+          "price": 160
+        }
+      ],
+      "description": "Thick, creamy shake blended ice-cold—smooth, sweet, and super refreshing.",
+      "addons": [
+        {
+          "id": "ia-whipped-cream",
+          "name": "Whipped Cream",
+          "price": 25
+        },
+        {
+          "id": "ia-choco-chips",
+          "name": "Choco Chips",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-scoop",
+          "name": "Extra Ice Cream Scoop",
+          "price": 40
+        }
+      ]
+    },
+    {
+      "id": "kit-kat-milkshake",
+      "name": "Kit Kat Milkshake",
+      "category": "Shakes",
+      "image": "https://images.unsplash.com/photo-1619158403521-254fe32f5cb0?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "kit-kat-milkshake",
+          "name": "Regular",
+          "price": 160
+        }
+      ],
+      "description": "Thick, creamy shake blended ice-cold—smooth, sweet, and super refreshing.",
+      "addons": [
+        {
+          "id": "ia-whipped-cream",
+          "name": "Whipped Cream",
+          "price": 25
+        },
+        {
+          "id": "ia-choco-chips",
+          "name": "Choco Chips",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-scoop",
+          "name": "Extra Ice Cream Scoop",
+          "price": 40
+        }
+      ]
     },
     {
       "id": "cold-coffee",
       "name": "Cold Coffee",
       "category": "Shakes",
-      "description": "Chilled coffee blended with ice cream.",
       "image": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800&q=80&auto=format&fit=crop",
       "isVeg": true,
-      "recommended": true,
       "variations": [
         {
-          "id": "ccf-reg",
+          "id": "cold-coffee",
           "name": "Regular",
           "price": 160
         }
       ],
-      "addons": []
+      "description": "Thick, creamy shake blended ice-cold—smooth, sweet, and super refreshing.",
+      "addons": [
+        {
+          "id": "ia-whipped-cream",
+          "name": "Whipped Cream",
+          "price": 25
+        },
+        {
+          "id": "ia-choco-chips",
+          "name": "Choco Chips",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-scoop",
+          "name": "Extra Ice Cream Scoop",
+          "price": 40
+        }
+      ]
     },
     {
-      "id": "oreo-biscuit-shake",
-      "name": "Oreo Biscuit Shake",
+      "id": "strawberry-sweetness",
+      "name": "Strawberry Sweetness",
       "category": "Shakes",
-      "description": "Creamy shake with Oreo crumbs and whipped cream.",
+      "image": "https://images.unsplash.com/photo-1497534446932-c925b458314e?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "strawberry-sweetness",
+          "name": "Regular",
+          "price": 160
+        }
+      ],
+      "description": "Thick, creamy shake blended ice-cold—smooth, sweet, and super refreshing.",
+      "addons": [
+        {
+          "id": "ia-whipped-cream",
+          "name": "Whipped Cream",
+          "price": 25
+        },
+        {
+          "id": "ia-choco-chips",
+          "name": "Choco Chips",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-scoop",
+          "name": "Extra Ice Cream Scoop",
+          "price": 40
+        }
+      ]
+    },
+    {
+      "id": "oreo-biscuit",
+      "name": "Oreo Biscuit",
+      "category": "Shakes",
       "image": "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=800&q=80&auto=format&fit=crop",
       "isVeg": true,
       "variations": [
         {
-          "id": "obs-reg",
+          "id": "oreo-biscuit",
           "name": "Regular",
           "price": 160
         }
       ],
-      "addons": []
+      "description": "Thick, creamy shake blended ice-cold—smooth, sweet, and super refreshing.",
+      "addons": [
+        {
+          "id": "ia-whipped-cream",
+          "name": "Whipped Cream",
+          "price": 25
+        },
+        {
+          "id": "ia-choco-chips",
+          "name": "Choco Chips",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-scoop",
+          "name": "Extra Ice Cream Scoop",
+          "price": 40
+        }
+      ]
+    },
+    {
+      "id": "coke",
+      "name": "Coca-Cola",
+      "category": "Soft Drinks",
+      "image": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "coke-250",
+          "name": "250 ml",
+          "price": 40
+        },
+        {
+          "id": "coke-500",
+          "name": "500 ml",
+          "price": 70
+        }
+      ],
+      "description": "Ice-cold, fizzy refreshment—perfect with spicy snacks and meals.",
+      "addons": [
+        {
+          "id": "ia-extra-ice",
+          "name": "Extra Ice",
+          "price": 0
+        },
+        {
+          "id": "ia-lemon-slice",
+          "name": "Lemon Slice",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "pepsi",
+      "name": "Pepsi",
+      "category": "Soft Drinks",
+      "image": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "pepsi-250",
+          "name": "250 ml",
+          "price": 40
+        },
+        {
+          "id": "pepsi-500",
+          "name": "500 ml",
+          "price": 70
+        }
+      ],
+      "description": "Ice-cold, fizzy refreshment—perfect with spicy snacks and meals.",
+      "addons": [
+        {
+          "id": "ia-extra-ice",
+          "name": "Extra Ice",
+          "price": 0
+        },
+        {
+          "id": "ia-lemon-slice",
+          "name": "Lemon Slice",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "mountain-dew",
+      "name": "Mountain Dew",
+      "category": "Soft Drinks",
+      "image": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "dew-250",
+          "name": "250 ml",
+          "price": 40
+        },
+        {
+          "id": "dew-500",
+          "name": "500 ml",
+          "price": 70
+        }
+      ],
+      "description": "Ice-cold, fizzy refreshment—perfect with spicy snacks and meals.",
+      "addons": [
+        {
+          "id": "ia-extra-ice",
+          "name": "Extra Ice",
+          "price": 0
+        },
+        {
+          "id": "ia-lemon-slice",
+          "name": "Lemon Slice",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "fried-chicken-momo",
+      "name": "Fried Chicken Momo",
+      "category": "Momo Mania",
+      "image": "https://images.unsplash.com/photo-1626776876729-bab4369a5a5e?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "fried-chicken-momo",
+          "name": "Plate",
+          "price": 120
+        }
+      ],
+      "description": "Crispy fried momos with a juicy centre—perfect with chutney.",
+      "addons": [
+        {
+          "id": "ia-spicy-chutney",
+          "name": "Extra Spicy Chutney",
+          "price": 15
+        },
+        {
+          "id": "ia-mayo-dip",
+          "name": "Mayo Dip",
+          "price": 20
+        },
+        {
+          "id": "ia-schezwan-dip",
+          "name": "Schezwan Dip",
+          "price": 20
+        }
+      ]
+    },
+    {
+      "id": "steamed-chicken-momo",
+      "name": "Steamed Chicken Momo",
+      "category": "Momo Mania",
+      "image": "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "steamed-chicken-momo",
+          "name": "Plate",
+          "price": 120
+        }
+      ],
+      "description": "Steamed momos with juicy filling and soft wrappers—served with dip.",
+      "addons": [
+        {
+          "id": "ia-spicy-chutney",
+          "name": "Extra Spicy Chutney",
+          "price": 15
+        },
+        {
+          "id": "ia-mayo-dip",
+          "name": "Mayo Dip",
+          "price": 20
+        },
+        {
+          "id": "ia-schezwan-dip",
+          "name": "Schezwan Dip",
+          "price": 20
+        }
+      ]
+    },
+    {
+      "id": "tandoori-chicken-momo",
+      "name": "Tandoori Chicken Momo",
+      "category": "Momo Mania",
+      "image": "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "tandoori-chicken-momo",
+          "name": "Plate",
+          "price": 160
+        }
+      ],
+      "description": "Tandoori-style momos—smoky, spicy, and addictive with dip.",
+      "addons": [
+        {
+          "id": "ia-spicy-chutney",
+          "name": "Extra Spicy Chutney",
+          "price": 15
+        },
+        {
+          "id": "ia-mayo-dip",
+          "name": "Mayo Dip",
+          "price": 20
+        },
+        {
+          "id": "ia-schezwan-dip",
+          "name": "Schezwan Dip",
+          "price": 20
+        }
+      ]
+    },
+    {
+      "id": "fried-chicken",
+      "name": "Fried Chicken",
+      "category": "Crispy Bites",
+      "image": "https://images.unsplash.com/photo-1626082926499-eeaf5ee27f95?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "fried-chicken-half",
+          "name": "Half",
+          "price": 250
+        },
+        {
+          "id": "fried-chicken-full",
+          "name": "Full",
+          "price": 550
+        }
+      ],
+      "description": "Crispy, golden fried goodness—best enjoyed hot.",
+      "addons": [
+        {
+          "id": "ia-lemon-wedge",
+          "name": "Lemon Wedge",
+          "price": 5
+        },
+        {
+          "id": "ia-mint-mayo-dip",
+          "name": "Mint Mayo Dip",
+          "price": 20
+        },
+        {
+          "id": "ia-spicy-dip",
+          "name": "Spicy Dip",
+          "price": 20
+        }
+      ]
+    },
+    {
+      "id": "fried-fish",
+      "name": "Fried Fish",
+      "category": "Crispy Bites",
+      "image": "https://images.unsplash.com/photo-1544943910-4c1dc44aab44?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "fried-fish",
+          "name": "1 KG",
+          "price": 500
+        }
+      ],
+      "description": "Crispy fried fish with bold seasoning—great with a squeeze of lemon.",
+      "addons": [
+        {
+          "id": "ia-lemon-wedge",
+          "name": "Lemon Wedge",
+          "price": 5
+        },
+        {
+          "id": "ia-mint-mayo-dip",
+          "name": "Mint Mayo Dip",
+          "price": 20
+        },
+        {
+          "id": "ia-spicy-dip",
+          "name": "Spicy Dip",
+          "price": 20
+        }
+      ]
+    },
+    {
+      "id": "butter-chicken",
+      "name": "Butter Chicken",
+      "category": "Chef Specials",
+      "image": "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "butter-chicken-half",
+          "name": "Half",
+          "price": 300
+        },
+        {
+          "id": "butter-chicken-full",
+          "name": "Full",
+          "price": 550
+        }
+      ],
+      "description": "Rich, creamy tomato-butter gravy with tender chicken—best with naan or roti.",
+      "addons": [
+        {
+          "id": "ia-tandoori-roti",
+          "name": "Tandoori Roti",
+          "price": 20
+        },
+        {
+          "id": "ia-butter-tandoori-roti",
+          "name": "Butter Tandoori Roti",
+          "price": 25
+        },
+        {
+          "id": "ia-tawa-roti",
+          "name": "Tawa Roti",
+          "price": 15
+        },
+        {
+          "id": "ia-butter-tawa-roti",
+          "name": "Butter Tawa Roti",
+          "price": 20
+        },
+        {
+          "id": "ia-plain-naan",
+          "name": "Plain Naan",
+          "price": 30
+        },
+        {
+          "id": "ia-butter-naan",
+          "name": "Butter Naan",
+          "price": 40
+        },
+        {
+          "id": "ia-butter-garlic-naan",
+          "name": "Butter Garlic Naan",
+          "price": 50
+        },
+        {
+          "id": "ia-salad",
+          "name": "Green Salad",
+          "price": 30
+        },
+        {
+          "id": "ia-raita",
+          "name": "Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-gravy",
+          "name": "Extra Gravy",
+          "price": 40
+        }
+      ]
+    },
+    {
+      "id": "kadai-chicken",
+      "name": "Kadai Chicken",
+      "category": "Chef Specials",
+      "image": "https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "kadai-chicken-half",
+          "name": "Half",
+          "price": 300
+        },
+        {
+          "id": "kadai-chicken-full",
+          "name": "Full",
+          "price": 550
+        }
+      ],
+      "description": "Wok-tossed chicken with capsicum, onion, and bold kadai masala—served hot.",
+      "addons": [
+        {
+          "id": "ia-tandoori-roti",
+          "name": "Tandoori Roti",
+          "price": 20
+        },
+        {
+          "id": "ia-butter-tandoori-roti",
+          "name": "Butter Tandoori Roti",
+          "price": 25
+        },
+        {
+          "id": "ia-tawa-roti",
+          "name": "Tawa Roti",
+          "price": 15
+        },
+        {
+          "id": "ia-butter-tawa-roti",
+          "name": "Butter Tawa Roti",
+          "price": 20
+        },
+        {
+          "id": "ia-plain-naan",
+          "name": "Plain Naan",
+          "price": 30
+        },
+        {
+          "id": "ia-butter-naan",
+          "name": "Butter Naan",
+          "price": 40
+        },
+        {
+          "id": "ia-butter-garlic-naan",
+          "name": "Butter Garlic Naan",
+          "price": 50
+        },
+        {
+          "id": "ia-salad",
+          "name": "Green Salad",
+          "price": 30
+        },
+        {
+          "id": "ia-raita",
+          "name": "Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-gravy",
+          "name": "Extra Gravy",
+          "price": 40
+        }
+      ]
+    },
+    {
+      "id": "masala-chicken",
+      "name": "Masala Chicken",
+      "category": "Chef Specials",
+      "image": "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "masala-chicken-half",
+          "name": "Half",
+          "price": 300
+        },
+        {
+          "id": "masala-chicken-full",
+          "name": "Full",
+          "price": 550
+        }
+      ],
+      "description": "House special made-to-order with aromatic spices and a satisfying, homestyle taste.",
+      "addons": [
+        {
+          "id": "ia-tandoori-roti",
+          "name": "Tandoori Roti",
+          "price": 20
+        },
+        {
+          "id": "ia-butter-tandoori-roti",
+          "name": "Butter Tandoori Roti",
+          "price": 25
+        },
+        {
+          "id": "ia-tawa-roti",
+          "name": "Tawa Roti",
+          "price": 15
+        },
+        {
+          "id": "ia-butter-tawa-roti",
+          "name": "Butter Tawa Roti",
+          "price": 20
+        },
+        {
+          "id": "ia-plain-naan",
+          "name": "Plain Naan",
+          "price": 30
+        },
+        {
+          "id": "ia-butter-naan",
+          "name": "Butter Naan",
+          "price": 40
+        },
+        {
+          "id": "ia-butter-garlic-naan",
+          "name": "Butter Garlic Naan",
+          "price": 50
+        },
+        {
+          "id": "ia-salad",
+          "name": "Green Salad",
+          "price": 30
+        },
+        {
+          "id": "ia-raita",
+          "name": "Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-gravy",
+          "name": "Extra Gravy",
+          "price": 40
+        }
+      ]
+    },
+    {
+      "id": "special-chicken",
+      "name": "Special Chicken",
+      "category": "Chef Specials",
+      "image": "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "special-chicken-half",
+          "name": "Half",
+          "price": 350
+        },
+        {
+          "id": "special-chicken-full",
+          "name": "Full",
+          "price": 650
+        }
+      ],
+      "description": "House special made-to-order with aromatic spices and a satisfying, homestyle taste.",
+      "addons": [
+        {
+          "id": "ia-tandoori-roti",
+          "name": "Tandoori Roti",
+          "price": 20
+        },
+        {
+          "id": "ia-butter-tandoori-roti",
+          "name": "Butter Tandoori Roti",
+          "price": 25
+        },
+        {
+          "id": "ia-tawa-roti",
+          "name": "Tawa Roti",
+          "price": 15
+        },
+        {
+          "id": "ia-butter-tawa-roti",
+          "name": "Butter Tawa Roti",
+          "price": 20
+        },
+        {
+          "id": "ia-plain-naan",
+          "name": "Plain Naan",
+          "price": 30
+        },
+        {
+          "id": "ia-butter-naan",
+          "name": "Butter Naan",
+          "price": 40
+        },
+        {
+          "id": "ia-butter-garlic-naan",
+          "name": "Butter Garlic Naan",
+          "price": 50
+        },
+        {
+          "id": "ia-salad",
+          "name": "Green Salad",
+          "price": 30
+        },
+        {
+          "id": "ia-raita",
+          "name": "Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-gravy",
+          "name": "Extra Gravy",
+          "price": 40
+        }
+      ]
+    },
+    {
+      "id": "tandoori-chicken",
+      "name": "Tandoori Chicken",
+      "category": "Chef Specials",
+      "image": "https://images.unsplash.com/photo-1610057099431-d73a1c9d2f2f?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "tandoori-chicken-half",
+          "name": "Half",
+          "price": 300
+        },
+        {
+          "id": "tandoori-chicken-full",
+          "name": "Full",
+          "price": 550
+        }
+      ],
+      "description": "Juicy, smoky tandoori chicken with a punch of spices and charred edges.",
+      "addons": [
+        {
+          "id": "ia-tandoori-roti",
+          "name": "Tandoori Roti",
+          "price": 20
+        },
+        {
+          "id": "ia-butter-tandoori-roti",
+          "name": "Butter Tandoori Roti",
+          "price": 25
+        },
+        {
+          "id": "ia-tawa-roti",
+          "name": "Tawa Roti",
+          "price": 15
+        },
+        {
+          "id": "ia-butter-tawa-roti",
+          "name": "Butter Tawa Roti",
+          "price": 20
+        },
+        {
+          "id": "ia-plain-naan",
+          "name": "Plain Naan",
+          "price": 30
+        },
+        {
+          "id": "ia-butter-naan",
+          "name": "Butter Naan",
+          "price": 40
+        },
+        {
+          "id": "ia-butter-garlic-naan",
+          "name": "Butter Garlic Naan",
+          "price": 50
+        },
+        {
+          "id": "ia-salad",
+          "name": "Green Salad",
+          "price": 30
+        },
+        {
+          "id": "ia-raita",
+          "name": "Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-gravy",
+          "name": "Extra Gravy",
+          "price": 40
+        }
+      ]
+    },
+    {
+      "id": "plain-naan",
+      "name": "Plain Naan",
+      "category": "Tandoor Breads",
+      "image": "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "plain-naan",
+          "name": "Single",
+          "price": 30
+        }
+      ],
+      "description": "Soft, fluffy naan—perfect for scooping up gravies.",
+      "addons": [
+        {
+          "id": "ia-extra-butter-bread",
+          "name": "Extra Butter",
+          "price": 10
+        }
+      ]
+    },
+    {
+      "id": "butter-naan",
+      "name": "Butter Naan",
+      "category": "Tandoor Breads",
+      "image": "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "butter-naan",
+          "name": "Single",
+          "price": 40
+        }
+      ],
+      "description": "Soft, fluffy naan—perfect for scooping up gravies.",
+      "addons": [
+        {
+          "id": "ia-extra-butter-bread",
+          "name": "Extra Butter",
+          "price": 10
+        }
+      ]
+    },
+    {
+      "id": "butter-garlic-naan",
+      "name": "Butter Garlic Naan",
+      "category": "Tandoor Breads",
+      "image": "https://images.unsplash.com/photo-1626074357427-bfda8a5e1f6d?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "butter-garlic-naan",
+          "name": "Single",
+          "price": 50
+        }
+      ],
+      "description": "Soft, fluffy naan—perfect for scooping up gravies.",
+      "addons": [
+        {
+          "id": "ia-extra-butter-bread",
+          "name": "Extra Butter",
+          "price": 10
+        }
+      ]
+    },
+    {
+      "id": "tandoori-roti",
+      "name": "Tandoori Roti",
+      "category": "Tandoor Breads",
+      "image": "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "tandoori-roti",
+          "name": "Single",
+          "price": 20
+        }
+      ],
+      "description": "Freshly cooked roti with a light, rustic bite.",
+      "addons": [
+        {
+          "id": "ia-extra-butter-bread",
+          "name": "Extra Butter",
+          "price": 10
+        }
+      ]
+    },
+    {
+      "id": "butter-tandoori-roti",
+      "name": "Butter Tandoori Roti",
+      "category": "Tandoor Breads",
+      "image": "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "butter-tandoori-roti",
+          "name": "Single",
+          "price": 25
+        }
+      ],
+      "description": "Freshly cooked roti with a light, rustic bite.",
+      "addons": [
+        {
+          "id": "ia-extra-butter-bread",
+          "name": "Extra Butter",
+          "price": 10
+        }
+      ]
+    },
+    {
+      "id": "tawa-roti",
+      "name": "Tawa Roti",
+      "category": "Tandoor Breads",
+      "image": "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "tawa-roti",
+          "name": "Single",
+          "price": 15
+        }
+      ],
+      "description": "Freshly cooked roti with a light, rustic bite.",
+      "addons": [
+        {
+          "id": "ia-extra-butter-bread",
+          "name": "Extra Butter",
+          "price": 10
+        }
+      ]
+    },
+    {
+      "id": "butter-tawa-roti",
+      "name": "Butter Tawa Roti",
+      "category": "Tandoor Breads",
+      "image": "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "butter-tawa-roti",
+          "name": "Single",
+          "price": 20
+        }
+      ],
+      "description": "Freshly cooked roti with a light, rustic bite.",
+      "addons": [
+        {
+          "id": "ia-extra-butter-bread",
+          "name": "Extra Butter",
+          "price": 10
+        }
+      ]
+    },
+    {
+      "id": "fried-chicken-biryani",
+      "name": "Fried Chicken Biryani",
+      "category": "Rice Royale",
+      "image": "https://images.unsplash.com/photo-1563379091339-03246963ba2b?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "fried-chicken-biryani-half",
+          "name": "Half",
+          "price": 100
+        },
+        {
+          "id": "fried-chicken-biryani-full",
+          "name": "Full",
+          "price": 180
+        }
+      ],
+      "description": "Aromatic basmati rice layered with spices—pair it with raita for the perfect bite.",
+      "addons": [
+        {
+          "id": "ia-boiled-egg",
+          "name": "Boiled Egg",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-raita",
+          "name": "Extra Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-onion-salad",
+          "name": "Onion Salad",
+          "price": 15
+        },
+        {
+          "id": "ia-extra-chicken-biryani",
+          "name": "Extra Chicken",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "dum-chicken-biryani",
+      "name": "Dum Chicken Biryani",
+      "category": "Rice Royale",
+      "image": "https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "dum-chicken-biryani-half",
+          "name": "Half",
+          "price": 100
+        },
+        {
+          "id": "dum-chicken-biryani-full",
+          "name": "Full",
+          "price": 180
+        }
+      ],
+      "description": "Aromatic basmati rice layered with spices—pair it with raita for the perfect bite.",
+      "addons": [
+        {
+          "id": "ia-boiled-egg",
+          "name": "Boiled Egg",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-raita",
+          "name": "Extra Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-onion-salad",
+          "name": "Onion Salad",
+          "price": 15
+        },
+        {
+          "id": "ia-extra-chicken-biryani",
+          "name": "Extra Chicken",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "veg-fried-rice",
+      "name": "Veg. Fried Rice",
+      "category": "Rice Royale",
+      "image": "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "veg-fried-rice-half",
+          "name": "Half",
+          "price": 90
+        },
+        {
+          "id": "veg-fried-rice-full",
+          "name": "Full",
+          "price": 170
+        }
+      ],
+      "description": "Wok-tossed rice with balanced seasoning and classic street-style flavour.",
+      "addons": [
+        {
+          "id": "ia-boiled-egg",
+          "name": "Boiled Egg",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-raita",
+          "name": "Extra Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-onion-salad",
+          "name": "Onion Salad",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "schezwan-fried-rice-veg",
+      "name": "Schezwan Fried Rice (V)",
+      "category": "Rice Royale",
+      "image": "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "schezwan-fried-rice-veg-half",
+          "name": "Half",
+          "price": 100
+        },
+        {
+          "id": "schezwan-fried-rice-veg-full",
+          "name": "Full",
+          "price": 180
+        }
+      ],
+      "description": "Spicy Schezwan-style rice with wok aroma and a bold chilli-garlic kick.",
+      "addons": [
+        {
+          "id": "ia-boiled-egg",
+          "name": "Boiled Egg",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-raita",
+          "name": "Extra Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-onion-salad",
+          "name": "Onion Salad",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "chicken-fried-rice",
+      "name": "Chicken Fried Rice",
+      "category": "Rice Royale",
+      "image": "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "chicken-fried-rice-half",
+          "name": "Half",
+          "price": 120
+        },
+        {
+          "id": "chicken-fried-rice-full",
+          "name": "Full",
+          "price": 220
+        }
+      ],
+      "description": "Wok-tossed rice with balanced seasoning and classic street-style flavour.",
+      "addons": [
+        {
+          "id": "ia-boiled-egg",
+          "name": "Boiled Egg",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-raita",
+          "name": "Extra Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-onion-salad",
+          "name": "Onion Salad",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "schezwan-fried-rice-nonveg",
+      "name": "Schezwan Fried Rice (N)",
+      "category": "Rice Royale",
+      "image": "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "schezwan-fried-rice-nonveg-half",
+          "name": "Half",
+          "price": 130
+        },
+        {
+          "id": "schezwan-fried-rice-nonveg-full",
+          "name": "Full",
+          "price": 240
+        }
+      ],
+      "description": "Spicy Schezwan-style rice with wok aroma and a bold chilli-garlic kick.",
+      "addons": [
+        {
+          "id": "ia-boiled-egg",
+          "name": "Boiled Egg",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-raita",
+          "name": "Extra Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-onion-salad",
+          "name": "Onion Salad",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "egg-fried-rice",
+      "name": "Egg Fried Rice",
+      "category": "Rice Royale",
+      "image": "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "egg-fried-rice-half",
+          "name": "Half",
+          "price": 110
+        },
+        {
+          "id": "egg-fried-rice-full",
+          "name": "Full",
+          "price": 200
+        }
+      ],
+      "description": "Wok-tossed rice with balanced seasoning and classic street-style flavour.",
+      "addons": [
+        {
+          "id": "ia-boiled-egg",
+          "name": "Boiled Egg",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-raita",
+          "name": "Extra Raita",
+          "price": 25
+        },
+        {
+          "id": "ia-onion-salad",
+          "name": "Onion Salad",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "cheesy-bliss-pizza",
+      "name": "Cheesy Bliss Pizza",
+      "category": "Pizza Zone",
+      "image": "https://images.unsplash.com/photo-1513104890138-7c749354f784?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "cheesy-bliss-pizza-small",
+          "name": "Small",
+          "price": 180
+        },
+        {
+          "id": "cheesy-bliss-pizza-large",
+          "name": "Large",
+          "price": 400
+        }
+      ],
+      "description": "Oven-baked pizza with melty cheese and a crisp, satisfying crust.",
+      "addons": [
+        {
+          "id": "ia-jalapenos",
+          "name": "Jalapeños",
+          "price": 25
+        },
+        {
+          "id": "ia-black-olives",
+          "name": "Black Olives",
+          "price": 30
+        },
+        {
+          "id": "ia-sweet-corn",
+          "name": "Sweet Corn",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-cheese-layer",
+          "name": "Cheese Burst Layer",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "cheesy-corn-burst",
+      "name": "Cheesy Corn Burst",
+      "category": "Pizza Zone",
+      "image": "https://images.unsplash.com/photo-1513104890138-7c749354f784?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "cheesy-corn-burst-small",
+          "name": "Small",
+          "price": 200
+        },
+        {
+          "id": "cheesy-corn-burst-large",
+          "name": "Large",
+          "price": 450
+        }
+      ],
+      "description": "Cheesy pizza topped with sweet corn—comforting and crowd-pleasing.",
+      "addons": [
+        {
+          "id": "ia-jalapenos",
+          "name": "Jalapeños",
+          "price": 25
+        },
+        {
+          "id": "ia-black-olives",
+          "name": "Black Olives",
+          "price": 30
+        },
+        {
+          "id": "ia-sweet-corn",
+          "name": "Sweet Corn",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-cheese-layer",
+          "name": "Cheese Burst Layer",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "veggie-supreme",
+      "name": "Veggie Supreme",
+      "category": "Pizza Zone",
+      "image": "https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "veggie-supreme-small",
+          "name": "Small",
+          "price": 250
+        },
+        {
+          "id": "veggie-supreme-large",
+          "name": "Large",
+          "price": 550
+        }
+      ],
+      "description": "Loaded veggie pizza with a colourful crunch and gooey cheese pull.",
+      "addons": [
+        {
+          "id": "ia-jalapenos",
+          "name": "Jalapeños",
+          "price": 25
+        },
+        {
+          "id": "ia-black-olives",
+          "name": "Black Olives",
+          "price": 30
+        },
+        {
+          "id": "ia-sweet-corn",
+          "name": "Sweet Corn",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-cheese-layer",
+          "name": "Cheese Burst Layer",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "chicken-feast-pizza",
+      "name": "Chicken Feast Pizza",
+      "category": "Pizza Zone",
+      "image": "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "chicken-feast-pizza-small",
+          "name": "Small",
+          "price": 280
+        },
+        {
+          "id": "chicken-feast-pizza-large",
+          "name": "Large",
+          "price": 600
+        }
+      ],
+      "description": "Hearty chicken pizza with bold seasoning and generous cheese.",
+      "addons": [
+        {
+          "id": "ia-jalapenos",
+          "name": "Jalapeños",
+          "price": 25
+        },
+        {
+          "id": "ia-black-olives",
+          "name": "Black Olives",
+          "price": 30
+        },
+        {
+          "id": "ia-sweet-corn",
+          "name": "Sweet Corn",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-cheese-layer",
+          "name": "Cheese Burst Layer",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "chicken-royale-pizza",
+      "name": "Chicken Royale Pizza",
+      "category": "Pizza Zone",
+      "image": "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "chicken-royale-pizza-small",
+          "name": "Small",
+          "price": 350
+        },
+        {
+          "id": "chicken-royale-pizza-large",
+          "name": "Large",
+          "price": 650
+        }
+      ],
+      "description": "Hearty chicken pizza with bold seasoning and generous cheese.",
+      "addons": [
+        {
+          "id": "ia-jalapenos",
+          "name": "Jalapeños",
+          "price": 25
+        },
+        {
+          "id": "ia-black-olives",
+          "name": "Black Olives",
+          "price": 30
+        },
+        {
+          "id": "ia-sweet-corn",
+          "name": "Sweet Corn",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-cheese-layer",
+          "name": "Cheese Burst Layer",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "veg-royale-pizza",
+      "name": "Veg Royale Pizza",
+      "category": "Pizza Zone",
+      "image": "https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "veg-royale-pizza-small",
+          "name": "Small",
+          "price": 280
+        },
+        {
+          "id": "veg-royale-pizza-large",
+          "name": "Large",
+          "price": 600
+        }
+      ],
+      "description": "Oven-baked pizza with melty cheese and a crisp, satisfying crust.",
+      "addons": [
+        {
+          "id": "ia-jalapenos",
+          "name": "Jalapeños",
+          "price": 25
+        },
+        {
+          "id": "ia-black-olives",
+          "name": "Black Olives",
+          "price": 30
+        },
+        {
+          "id": "ia-sweet-corn",
+          "name": "Sweet Corn",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-cheese-layer",
+          "name": "Cheese Burst Layer",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "chicken-paratha",
+      "name": "Chicken Paratha",
+      "category": "Parathas & Rolls",
+      "image": "https://images.unsplash.com/photo-1626132647523-66e0f9d7d5dd?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "chicken-paratha",
+          "name": "Single",
+          "price": 150
+        }
+      ],
+      "description": "Stuffed paratha made fresh—crispy edges, soft centre, and full of flavour.",
+      "addons": [
+        {
+          "id": "ia-extra-butter",
+          "name": "Extra Butter",
+          "price": 15
+        },
+        {
+          "id": "ia-pickle",
+          "name": "Pickle",
+          "price": 10
+        },
+        {
+          "id": "ia-raita-paratha",
+          "name": "Raita",
+          "price": 25
+        }
+      ]
+    },
+    {
+      "id": "cheese-paratha",
+      "name": "Cheese Paratha",
+      "category": "Parathas & Rolls",
+      "image": "https://images.unsplash.com/photo-1626132647523-66e0f9d7d5dd?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "cheese-paratha",
+          "name": "Single",
+          "price": 120
+        }
+      ],
+      "description": "Stuffed paratha made fresh—crispy edges, soft centre, and full of flavour.",
+      "addons": [
+        {
+          "id": "ia-extra-butter",
+          "name": "Extra Butter",
+          "price": 15
+        },
+        {
+          "id": "ia-pickle",
+          "name": "Pickle",
+          "price": 10
+        },
+        {
+          "id": "ia-raita-paratha",
+          "name": "Raita",
+          "price": 25
+        }
+      ]
+    },
+    {
+      "id": "aloo-paratha",
+      "name": "Aloo Paratha",
+      "category": "Parathas & Rolls",
+      "image": "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "aloo-paratha",
+          "name": "Single",
+          "price": 80
+        }
+      ],
+      "description": "Stuffed paratha made fresh—crispy edges, soft centre, and full of flavour.",
+      "addons": [
+        {
+          "id": "ia-extra-butter",
+          "name": "Extra Butter",
+          "price": 15
+        },
+        {
+          "id": "ia-pickle",
+          "name": "Pickle",
+          "price": 10
+        },
+        {
+          "id": "ia-raita-paratha",
+          "name": "Raita",
+          "price": 25
+        }
+      ]
+    },
+    {
+      "id": "egg-roll",
+      "name": "Egg Roll",
+      "category": "Parathas & Rolls",
+      "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "egg-roll",
+          "name": "Single",
+          "price": 70
+        }
+      ],
+      "description": "Wrapped and rolled for the perfect on-the-go bite—spicy, filling, satisfying.",
+      "addons": [
+        {
+          "id": "ia-extra-butter",
+          "name": "Extra Butter",
+          "price": 15
+        },
+        {
+          "id": "ia-pickle",
+          "name": "Pickle",
+          "price": 10
+        },
+        {
+          "id": "ia-raita-paratha",
+          "name": "Raita",
+          "price": 25
+        }
+      ]
+    },
+    {
+      "id": "chicken-roll",
+      "name": "Chicken Roll",
+      "category": "Parathas & Rolls",
+      "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "chicken-roll",
+          "name": "Single",
+          "price": 150
+        }
+      ],
+      "description": "Wrapped and rolled for the perfect on-the-go bite—spicy, filling, satisfying.",
+      "addons": [
+        {
+          "id": "ia-extra-butter",
+          "name": "Extra Butter",
+          "price": 15
+        },
+        {
+          "id": "ia-pickle",
+          "name": "Pickle",
+          "price": 10
+        },
+        {
+          "id": "ia-raita-paratha",
+          "name": "Raita",
+          "price": 25
+        }
+      ]
+    },
+    {
+      "id": "egg-chicken-roll",
+      "name": "Egg + Chicken Roll",
+      "category": "Parathas & Rolls",
+      "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "egg-chicken-roll",
+          "name": "Single",
+          "price": 170
+        }
+      ],
+      "description": "Wrapped and rolled for the perfect on-the-go bite—spicy, filling, satisfying.",
+      "addons": [
+        {
+          "id": "ia-extra-butter",
+          "name": "Extra Butter",
+          "price": 15
+        },
+        {
+          "id": "ia-pickle",
+          "name": "Pickle",
+          "price": 10
+        },
+        {
+          "id": "ia-raita-paratha",
+          "name": "Raita",
+          "price": 25
+        }
+      ]
+    },
+    {
+      "id": "veg-chowmein",
+      "name": "Veg. Chowmein",
+      "category": "Noodle Hub",
+      "image": "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "veg-chowmein-half",
+          "name": "Half",
+          "price": 90
+        },
+        {
+          "id": "veg-chowmein-full",
+          "name": "Full",
+          "price": 170
+        }
+      ],
+      "description": "Classic chowmein-style noodles tossed with veggies and signature sauces.",
+      "addons": [
+        {
+          "id": "ia-extra-veggies",
+          "name": "Extra Veggies",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-egg",
+          "name": "Extra Egg",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-chicken",
+          "name": "Extra Chicken",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "veg-schezwan-noodles",
+      "name": "Veg Schezwan Noodles",
+      "category": "Noodle Hub",
+      "image": "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "veg-schezwan-noodles-half",
+          "name": "Half",
+          "price": 100
+        },
+        {
+          "id": "veg-schezwan-noodles-full",
+          "name": "Full",
+          "price": 180
+        }
+      ],
+      "description": "Schezwan noodles with a spicy chilli-garlic punch and wok-tossed flavour.",
+      "addons": [
+        {
+          "id": "ia-extra-veggies",
+          "name": "Extra Veggies",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-egg",
+          "name": "Extra Egg",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-chicken",
+          "name": "Extra Chicken",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "egg-chowmein",
+      "name": "Egg Chowmein",
+      "category": "Noodle Hub",
+      "image": "https://images.unsplash.com/photo-1617093727343-374954b7b0d6?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "egg-chowmein-half",
+          "name": "Half",
+          "price": 110
+        },
+        {
+          "id": "egg-chowmein-full",
+          "name": "Full",
+          "price": 200
+        }
+      ],
+      "description": "Classic chowmein-style noodles tossed with veggies and signature sauces.",
+      "addons": [
+        {
+          "id": "ia-extra-veggies",
+          "name": "Extra Veggies",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-egg",
+          "name": "Extra Egg",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-chicken",
+          "name": "Extra Chicken",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "chicken-chowmein",
+      "name": "Chicken Chowmein",
+      "category": "Noodle Hub",
+      "image": "https://images.unsplash.com/photo-1617093727343-374954b7b0d6?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "chicken-chowmein-half",
+          "name": "Half",
+          "price": 120
+        },
+        {
+          "id": "chicken-chowmein-full",
+          "name": "Full",
+          "price": 220
+        }
+      ],
+      "description": "Classic chowmein-style noodles tossed with veggies and signature sauces.",
+      "addons": [
+        {
+          "id": "ia-extra-veggies",
+          "name": "Extra Veggies",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-egg",
+          "name": "Extra Egg",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-chicken",
+          "name": "Extra Chicken",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "chicken-schezwan-noodles",
+      "name": "Chicken Schezwan Noodles",
+      "category": "Noodle Hub",
+      "image": "https://images.unsplash.com/photo-1617093727343-374954b7b0d6?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "chicken-schezwan-noodles-half",
+          "name": "Half",
+          "price": 140
+        },
+        {
+          "id": "chicken-schezwan-noodles-full",
+          "name": "Full",
+          "price": 250
+        }
+      ],
+      "description": "Schezwan noodles with a spicy chilli-garlic punch and wok-tossed flavour.",
+      "addons": [
+        {
+          "id": "ia-extra-veggies",
+          "name": "Extra Veggies",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-egg",
+          "name": "Extra Egg",
+          "price": 30
+        },
+        {
+          "id": "ia-extra-chicken",
+          "name": "Extra Chicken",
+          "price": 60
+        }
+      ]
+    },
+    {
+      "id": "egg-chilli",
+      "name": "Egg Chilli",
+      "category": "Spicy Chinese",
+      "image": "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "egg-chilli-half",
+          "name": "Half",
+          "price": 150
+        },
+        {
+          "id": "egg-chilli-full",
+          "name": "Full",
+          "price": 280
+        }
+      ],
+      "description": "Classic chilli-style Indo-Chinese with capsicum, onion, and a spicy glaze.",
+      "addons": [
+        {
+          "id": "ia-extra-sauce",
+          "name": "Extra Sauce",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-capsicum",
+          "name": "Extra Capsicum",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-onion",
+          "name": "Extra Onion",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "egg-manchurian",
+      "name": "Egg Manchurian",
+      "category": "Spicy Chinese",
+      "image": "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "egg-manchurian-half",
+          "name": "Half",
+          "price": 180
+        },
+        {
+          "id": "egg-manchurian-full",
+          "name": "Full",
+          "price": 320
+        }
+      ],
+      "description": "Indo-Chinese Manchurian in bold sauce—sweet, spicy, and savoury.",
+      "addons": [
+        {
+          "id": "ia-extra-sauce",
+          "name": "Extra Sauce",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-capsicum",
+          "name": "Extra Capsicum",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-onion",
+          "name": "Extra Onion",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "chilli-chicken",
+      "name": "Chilli Chicken",
+      "category": "Spicy Chinese",
+      "image": "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "chilli-chicken-half",
+          "name": "Half",
+          "price": 280
+        },
+        {
+          "id": "chilli-chicken-full",
+          "name": "Full",
+          "price": 520
+        }
+      ],
+      "description": "Classic chilli-style Indo-Chinese with capsicum, onion, and a spicy glaze.",
+      "addons": [
+        {
+          "id": "ia-extra-sauce",
+          "name": "Extra Sauce",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-capsicum",
+          "name": "Extra Capsicum",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-onion",
+          "name": "Extra Onion",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "chicken-kanti",
+      "name": "Chicken Kanti",
+      "category": "Spicy Chinese",
+      "image": "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "chicken-kanti-half",
+          "name": "Half",
+          "price": 300
+        },
+        {
+          "id": "chicken-kanti-full",
+          "name": "Full",
+          "price": 550
+        }
+      ],
+      "description": "Indo-Chinese favourite made hot and fresh with our spicy sauce.",
+      "addons": [
+        {
+          "id": "ia-extra-sauce",
+          "name": "Extra Sauce",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-capsicum",
+          "name": "Extra Capsicum",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-onion",
+          "name": "Extra Onion",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "crispy-chilli-chicken",
+      "name": "Crispy Chilli Chicken",
+      "category": "Spicy Chinese",
+      "image": "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "crispy-chilli-chicken-half",
+          "name": "Half",
+          "price": 300
+        },
+        {
+          "id": "crispy-chilli-chicken-full",
+          "name": "Full",
+          "price": 550
+        }
+      ],
+      "description": "Classic chilli-style Indo-Chinese with capsicum, onion, and a spicy glaze.",
+      "addons": [
+        {
+          "id": "ia-extra-sauce",
+          "name": "Extra Sauce",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-capsicum",
+          "name": "Extra Capsicum",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-onion",
+          "name": "Extra Onion",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "chicken-manchurian",
+      "name": "Chicken Manchurian",
+      "category": "Spicy Chinese",
+      "image": "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "chicken-manchurian-half",
+          "name": "Half",
+          "price": 300
+        },
+        {
+          "id": "chicken-manchurian-full",
+          "name": "Full",
+          "price": 550
+        }
+      ],
+      "description": "Indo-Chinese Manchurian in bold sauce—sweet, spicy, and savoury.",
+      "addons": [
+        {
+          "id": "ia-extra-sauce",
+          "name": "Extra Sauce",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-capsicum",
+          "name": "Extra Capsicum",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-onion",
+          "name": "Extra Onion",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "fish-chilli",
+      "name": "Fish Chilli",
+      "category": "Spicy Chinese",
+      "image": "https://images.unsplash.com/photo-1544943910-4c1dc44aab44?w=800&q=80&auto=format&fit=crop",
+      "isVeg": false,
+      "variations": [
+        {
+          "id": "fish-chilli-half",
+          "name": "Half",
+          "price": 280
+        },
+        {
+          "id": "fish-chilli-full",
+          "name": "Full",
+          "price": 520
+        }
+      ],
+      "description": "Classic chilli-style Indo-Chinese with capsicum, onion, and a spicy glaze.",
+      "addons": [
+        {
+          "id": "ia-extra-sauce",
+          "name": "Extra Sauce",
+          "price": 25
+        },
+        {
+          "id": "ia-extra-capsicum",
+          "name": "Extra Capsicum",
+          "price": 20
+        },
+        {
+          "id": "ia-extra-onion",
+          "name": "Extra Onion",
+          "price": 15
+        }
+      ]
+    },
+    {
+      "id": "french-fries",
+      "name": "French Fries",
+      "category": "Fries & More",
+      "image": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "french-fries-half",
+          "name": "Half",
+          "price": 70
+        },
+        {
+          "id": "french-fries-full",
+          "name": "Full",
+          "price": 120
+        }
+      ],
+      "description": "Crispy, golden snack—perfect with dips.",
+      "addons": [
+        {
+          "id": "ia-cheese-sauce",
+          "name": "Cheese Sauce",
+          "price": 30
+        },
+        {
+          "id": "ia-peri-peri-dust",
+          "name": "Extra Peri Peri Dust",
+          "price": 15
+        },
+        {
+          "id": "ia-ketchup",
+          "name": "Ketchup Dip",
+          "price": 10
+        }
+      ]
+    },
+    {
+      "id": "peri-peri-fries",
+      "name": "Peri Peri Fries",
+      "category": "Fries & More",
+      "image": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "peri-peri-fries-half",
+          "name": "Half",
+          "price": 80
+        },
+        {
+          "id": "peri-peri-fries-full",
+          "name": "Full",
+          "price": 140
+        }
+      ],
+      "description": "Crispy fries dusted with peri peri masala—spicy and tangy.",
+      "addons": [
+        {
+          "id": "ia-cheese-sauce",
+          "name": "Cheese Sauce",
+          "price": 30
+        },
+        {
+          "id": "ia-peri-peri-dust",
+          "name": "Extra Peri Peri Dust",
+          "price": 15
+        },
+        {
+          "id": "ia-ketchup",
+          "name": "Ketchup Dip",
+          "price": 10
+        }
+      ]
+    },
+    {
+      "id": "chilli-potato",
+      "name": "Chilli Potato",
+      "category": "Fries & More",
+      "image": "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "chilli-potato-half",
+          "name": "Half",
+          "price": 100
+        },
+        {
+          "id": "chilli-potato-full",
+          "name": "Full",
+          "price": 180
+        }
+      ],
+      "description": "Crispy, golden snack—perfect with dips.",
+      "addons": [
+        {
+          "id": "ia-cheese-sauce",
+          "name": "Cheese Sauce",
+          "price": 30
+        },
+        {
+          "id": "ia-peri-peri-dust",
+          "name": "Extra Peri Peri Dust",
+          "price": 15
+        },
+        {
+          "id": "ia-ketchup",
+          "name": "Ketchup Dip",
+          "price": 10
+        }
+      ]
+    },
+    {
+      "id": "honey-chilli-potato",
+      "name": "Honey Chilli Potato",
+      "category": "Fries & More",
+      "image": "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=800&q=80&auto=format&fit=crop",
+      "isVeg": true,
+      "variations": [
+        {
+          "id": "honey-chilli-potato-half",
+          "name": "Half",
+          "price": 120
+        },
+        {
+          "id": "honey-chilli-potato-full",
+          "name": "Full",
+          "price": 220
+        }
+      ],
+      "description": "Crispy potatoes tossed in honey chilli sauce—sweet heat in every bite.",
+      "addons": [
+        {
+          "id": "ia-cheese-sauce",
+          "name": "Cheese Sauce",
+          "price": 30
+        },
+        {
+          "id": "ia-peri-peri-dust",
+          "name": "Extra Peri Peri Dust",
+          "price": 15
+        },
+        {
+          "id": "ia-ketchup",
+          "name": "Ketchup Dip",
+          "price": 10
+        }
+      ]
     }
   ],
   "combos": [
     {
-      "id": "combo-mo440nbw",
-      "name": "Chinese Combo",
-      "description": "",
-      "image": "https://images.unsplash.com/photo-1513104890138-7c749354f784?w=800&q=80",
-      "price": 200,
+      "id": "combo-veg-feast",
+      "name": "Veg Feast Combo",
+      "description": "Margherita Small + Fries Half + Cold Coffee",
+      "image": "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=800&q=80&auto=format&fit=crop",
+      "price": 449,
       "isVeg": true,
       "available": true,
       "components": [
         {
-          "itemId": "chicken-steam-momo",
-          "variationId": "csm-8",
+          "itemId": "margherita-classic",
+          "variationId": "mg-small",
+          "quantity": 1
+        },
+        {
+          "itemId": "french-fries",
+          "variationId": "ff-half",
+          "quantity": 1
+        },
+        {
+          "itemId": "cold-coffee",
+          "variationId": "ccf-reg",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "combo-momo-shake",
+      "name": "Momo & Shake",
+      "description": "Veg Steam Momos 8pc + Oreo Biscuit Shake",
+      "image": "https://images.unsplash.com/photo-1525755662778-bafe5cb41721?w=800&q=80&auto=format&fit=crop",
+      "price": 229,
+      "isVeg": true,
+      "available": true,
+      "components": [
+        {
+          "itemId": "veg-steam-momo",
+          "variationId": "vsm-8",
+          "quantity": 1
+        },
+        {
+          "itemId": "oreo-biscuit-shake",
+          "variationId": "obs-reg",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "combo-nonveg-binge",
+      "name": "Non-Veg Binge",
+      "description": "Chicken Royale Large + Peri Peri Fries Full",
+      "image": "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=800&q=80&auto=format&fit=crop",
+      "price": 699,
+      "isVeg": false,
+      "available": true,
+      "components": [
+        {
+          "itemId": "chicken-royale-pizza",
+          "variationId": "cr-large",
+          "quantity": 1
+        },
+        {
+          "itemId": "peri-peri-fries",
+          "variationId": "ppf-full",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "combo-cheesy-mojito",
+      "name": "Cheesy & Mojito",
+      "description": "Cheesy Bliss Large + Green Apple Mojito",
+      "image": "https://images.unsplash.com/photo-1513104890138-7c749354f784?w=800&q=80&auto=format&fit=crop",
+      "price": 479,
+      "isVeg": true,
+      "available": true,
+      "components": [
+        {
+          "itemId": "cheesy-bliss-pizza",
+          "variationId": "cb-large",
+          "quantity": 1
+        },
+        {
+          "itemId": "green-mojito",
+          "variationId": "gam-reg",
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "combo-naan-biryani",
+      "name": "Naan & Biryani",
+      "description": "2× Butter Naan + Veg Dum Biryani Half",
+      "image": "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=800&q=80&auto=format&fit=crop",
+      "price": 165,
+      "isVeg": true,
+      "available": true,
+      "components": [
+        {
+          "itemId": "butter-naan",
+          "variationId": "bn-1",
           "quantity": 2
         },
         {
-          "itemId": "veg-chowmein",
-          "variationId": "vc-half",
+          "itemId": "veg-dum-biryani",
+          "variationId": "vdb-half",
           "quantity": 1
+        }
+      ]
+    },
+    {
+      "id": "combo-double-fries",
+      "name": "Double Fries Deal",
+      "description": "2× French Fries Full",
+      "image": "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=800&q=80&auto=format&fit=crop",
+      "price": 199,
+      "isVeg": true,
+      "available": true,
+      "components": [
+        {
+          "itemId": "french-fries",
+          "variationId": "ff-full",
+          "quantity": 2
         }
       ]
     },
@@ -500,8 +2665,16 @@
       "isVeg": true,
       "available": true,
       "components": [
-        { "itemId": "margherita-classic", "variationId": "mg-small", "quantity": 1 },
-        { "itemId": "virgin-mojito", "variationId": "vm-reg", "quantity": 1 }
+        {
+          "itemId": "margherita-classic",
+          "variationId": "mg-small",
+          "quantity": 1
+        },
+        {
+          "itemId": "virgin-mojito",
+          "variationId": "vm-reg",
+          "quantity": 1
+        }
       ]
     },
     {
@@ -513,8 +2686,16 @@
       "isVeg": false,
       "available": true,
       "components": [
-        { "itemId": "egg-chicken-roll", "variationId": "cer-1", "quantity": 1 },
-        { "itemId": "peri-peri-fries", "variationId": "ppf-half", "quantity": 1 }
+        {
+          "itemId": "egg-chicken-roll",
+          "variationId": "cer-1",
+          "quantity": 1
+        },
+        {
+          "itemId": "peri-peri-fries",
+          "variationId": "ppf-half",
+          "quantity": 1
+        }
       ]
     },
     {
@@ -526,9 +2707,21 @@
       "isVeg": false,
       "available": true,
       "components": [
-        { "itemId": "butter-chicken", "variationId": "bc-half", "quantity": 1 },
-        { "itemId": "garlic-naan", "variationId": "gn-1", "quantity": 1 },
-        { "itemId": "butter-naan", "variationId": "bn-1", "quantity": 1 }
+        {
+          "itemId": "butter-chicken",
+          "variationId": "bc-half",
+          "quantity": 1
+        },
+        {
+          "itemId": "garlic-naan",
+          "variationId": "gn-1",
+          "quantity": 1
+        },
+        {
+          "itemId": "butter-naan",
+          "variationId": "bn-1",
+          "quantity": 1
+        }
       ]
     },
     {
@@ -540,8 +2733,16 @@
       "isVeg": false,
       "available": true,
       "components": [
-        { "itemId": "chicken-steam-momo", "variationId": "csm-12", "quantity": 1 },
-        { "itemId": "cold-coffee", "variationId": "ccf-reg", "quantity": 1 }
+        {
+          "itemId": "chicken-steam-momo",
+          "variationId": "csm-12",
+          "quantity": 1
+        },
+        {
+          "itemId": "cold-coffee",
+          "variationId": "ccf-reg",
+          "quantity": 1
+        }
       ]
     },
     {
@@ -553,8 +2754,16 @@
       "isVeg": false,
       "available": true,
       "components": [
-        { "itemId": "chicken-chowmein", "variationId": "cc-full", "quantity": 1 },
-        { "itemId": "chilli-chicken", "variationId": "chc-half", "quantity": 1 }
+        {
+          "itemId": "chicken-chowmein",
+          "variationId": "cc-full",
+          "quantity": 1
+        },
+        {
+          "itemId": "chilli-chicken",
+          "variationId": "chc-half",
+          "quantity": 1
+        }
       ]
     },
     {
@@ -566,8 +2775,16 @@
       "isVeg": true,
       "available": true,
       "components": [
-        { "itemId": "paneer-paratha", "variationId": "pp-1", "quantity": 1 },
-        { "itemId": "cold-coffee", "variationId": "ccf-reg", "quantity": 1 }
+        {
+          "itemId": "paneer-paratha",
+          "variationId": "pp-1",
+          "quantity": 1
+        },
+        {
+          "itemId": "cold-coffee",
+          "variationId": "ccf-reg",
+          "quantity": 1
+        }
       ]
     },
     {
@@ -579,8 +2796,16 @@
       "isVeg": false,
       "available": true,
       "components": [
-        { "itemId": "fried-chicken", "variationId": "fc-half", "quantity": 1 },
-        { "itemId": "french-fries", "variationId": "ff-full", "quantity": 1 }
+        {
+          "itemId": "fried-chicken",
+          "variationId": "fc-half",
+          "quantity": 1
+        },
+        {
+          "itemId": "french-fries",
+          "variationId": "ff-full",
+          "quantity": 1
+        }
       ]
     }
   ]

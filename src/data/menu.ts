@@ -7,12 +7,14 @@ export const MENU_CATEGORIES = [
   "Momo Mania",
   "Rice Royale",
   "Tandoor Breads",
+  "Crispy Bites",
   "Fries & More",
   "Noodle Hub",
   "Spicy Chinese",
   "Parathas & Rolls",
   "Mojitos",
   "Shakes",
+  "Soft Drinks",
 ] as const;
 
 export type MenuCategory = (typeof MENU_CATEGORIES)[number];
@@ -27,287 +29,876 @@ export const GLOBAL_ADDONS: MenuAddon[] = [
 const u = (photoId: string) =>
   `https://images.unsplash.com/${photoId}?w=800&q=80&auto=format&fit=crop`;
 
-export const menuItems: MenuItem[] = [
-  {
-    id: "cheesy-bliss-pizza",
-    name: "Cheesy Bliss Pizza",
-    category: "Pizza Zone",
-    description: "Loaded mozzarella, house tomato sauce, and fresh basil.",
-    image: u("photo-1513104890138-7c749354f784"),
-    isVeg: true,
-    recommended: true,
-    variations: [
-      { id: "cb-small", name: "Small", price: 180 },
-      { id: "cb-large", name: "Large", price: 400 },
-    ],
-    addons: [],
-  },
-  {
-    id: "chicken-royale-pizza",
-    name: "Chicken Royale Pizza",
-    category: "Pizza Zone",
-    description: "Grilled chicken, peppers, onions, and signature spice blend.",
-    image: u("photo-1628840042765-356cda07504e"),
-    isVeg: false,
-    recommended: true,
-    variations: [
-      { id: "cr-small", name: "Small", price: 350 },
-      { id: "cr-large", name: "Large", price: 650 },
-    ],
-    addons: [],
-  },
-  {
-    id: "margherita-classic",
-    name: "Margherita Classic",
-    category: "Pizza Zone",
-    description: "San Marzano tomatoes, buffalo mozzarella, olive oil.",
-    image: u("photo-1574071318508-1cdbab80d002"),
-    isVeg: true,
-    variations: [
-      { id: "mg-small", name: "Small", price: 199 },
-      { id: "mg-large", name: "Large", price: 379 },
-    ],
-    addons: [],
-  },
-  {
-    id: "butter-chicken",
-    name: "Butter Chicken",
-    category: "Chef Specials",
-    description: "Creamy tomato gravy with tender tandoori chicken.",
-    image: u("photo-1603894584373-5ac82b2ae398"),
-    isVeg: false,
-    recommended: true,
-    variations: [
-      { id: "bc-half", name: "Half", price: 300 },
-      { id: "bc-full", name: "Full", price: 550 },
-    ],
-    addons: [],
-  },
-  {
-    id: "kadai-chicken",
-    name: "Kadai Chicken",
-    category: "Chef Specials",
-    description: "Wok-tossed with capsicum, onion, and kadai masala.",
-    image: u("photo-1588166524941-3bf61a9c41db"),
-    isVeg: false,
-    variations: [
-      { id: "kc-half", name: "Half", price: 300 },
-      { id: "kc-full", name: "Full", price: 550 },
-    ],
-    addons: [],
-  },
-  {
-    id: "fried-chicken",
-    name: "Fried Chicken",
-    category: "Chef Specials",
-    description: "Crispy golden crust with secret spice rub.",
-    image: u("photo-1626082926499-eeaf5ee27f95"),
-    isVeg: false,
-    variations: [
-      { id: "fc-half", name: "Half", price: 250 },
-      { id: "fc-full", name: "Full", price: 550 },
-    ],
-    addons: [],
-  },
-  {
-    id: "chicken-steam-momo",
-    name: "Chicken Steam Momo",
-    category: "Momo Mania",
-    description: "Juicy minced chicken in soft steamed dumplings.",
-    image: u("photo-1496116218417-1a781b1c416c"),
-    isVeg: false,
-    variations: [
-      { id: "csm-8", name: "8 pcs", price: 120 },
-      { id: "csm-12", name: "12 pcs", price: 170 },
-    ],
-    addons: [],
-  },
-  {
-    id: "veg-steam-momo",
-    name: "Veg Steam Momo",
-    category: "Momo Mania",
-    description: "Cabbage, carrot, and mild spices — steamed to perfection.",
-    image: u("photo-1525755662778-bafe5cb41721"),
-    isVeg: true,
-    variations: [
-      { id: "vsm-8", name: "8 pcs", price: 90 },
-      { id: "vsm-12", name: "12 pcs", price: 130 },
-    ],
-    addons: [],
-  },
-  {
-    id: "fried-chicken-biryani",
-    name: "Fried Chicken Biryani",
-    category: "Rice Royale",
-    description: "Aromatic basmati with crispy chicken and fried onions.",
-    image: u("photo-1563379091339-03246963ba2b"),
-    isVeg: false,
-    variations: [
-      { id: "fcb-half", name: "Half", price: 100 },
-      { id: "fcb-full", name: "Full", price: 180 },
-    ],
-    addons: [],
-  },
-  {
-    id: "veg-dum-biryani",
-    name: "Veg Dum Biryani",
-    category: "Rice Royale",
-    description: "Layered vegetables, saffron rice, and mint raita on the side.",
-    image: u("photo-1596797038530-2c107229644b"),
-    isVeg: true,
-    variations: [
-      { id: "vdb-half", name: "Half", price: 90 },
-      { id: "vdb-full", name: "Full", price: 160 },
-    ],
-    addons: [],
-  },
-  {
-    id: "butter-naan",
-    name: "Butter Naan",
-    category: "Tandoor Breads",
-    description: "Soft leavened bread brushed with butter.",
-    image: u("photo-1601050690597-df0568f70950"),
-    isVeg: true,
-    variations: [{ id: "bn-1", name: "Single", price: 50 }],
-    addons: [],
-  },
-  {
-    id: "garlic-naan",
-    name: "Garlic Naan",
-    category: "Tandoor Breads",
-    description: "Naan topped with roasted garlic and coriander.",
-    image: u("photo-1626074357427-bfda8a5e1f6d"),
-    isVeg: true,
-    variations: [{ id: "gn-1", name: "Single", price: 60 }],
-    addons: [],
-  },
-  {
-    id: "french-fries",
-    name: "French Fries",
-    category: "Fries & More",
-    description: "Crispy potato fries with light seasoning.",
-    image: u("photo-1573080496219-bb080dd4f877"),
-    isVeg: true,
-    variations: [
-      { id: "ff-half", name: "Half", price: 70 },
-      { id: "ff-full", name: "Full", price: 120 },
-    ],
-    addons: [],
-  },
-  {
-    id: "peri-peri-fries",
-    name: "Peri Peri Fries",
-    category: "Fries & More",
-    description: "Spicy peri peri dust and lime zest.",
-    image: u("photo-1573080496219-bb080dd4f877"),
-    isVeg: true,
-    variations: [
-      { id: "ppf-half", name: "Half", price: 80 },
-      { id: "ppf-full", name: "Full", price: 140 },
-    ],
-    addons: [],
-  },
-  {
-    id: "veg-chowmein",
-    name: "Veg Chowmein",
-    category: "Noodle Hub",
-    description: "Wok-fried noodles with seasonal vegetables.",
-    image: u("photo-1612929633738-8fe44f7ec841"),
-    isVeg: true,
-    variations: [
-      { id: "vc-half", name: "Half", price: 90 },
-      { id: "vc-full", name: "Full", price: 170 },
-    ],
-    addons: [],
-  },
-  {
-    id: "chicken-chowmein",
-    name: "Chicken Chowmein",
-    category: "Noodle Hub",
-    description: "Stir-fried noodles with shredded chicken and soy glaze.",
-    image: u("photo-1617093727343-374954b7b0d6"),
-    isVeg: false,
-    variations: [
-      { id: "cc-half", name: "Half", price: 120 },
-      { id: "cc-full", name: "Full", price: 220 },
-    ],
-    addons: [],
-  },
-  {
-    id: "chilli-chicken",
-    name: "Chilli Chicken",
-    category: "Spicy Chinese",
-    description: "Indo-Chinese favourite with capsicum and dry red chillies.",
-    image: u("photo-1599487488170-d11ec9c172f0"),
-    isVeg: false,
-    variations: [
-      { id: "chc-half", name: "Half", price: 280 },
-      { id: "chc-full", name: "Full", price: 520 },
-    ],
-    addons: [],
-  },
-  {
-    id: "paneer-paratha",
-    name: "Paneer Paratha",
-    category: "Parathas & Rolls",
-    description: "Stuffed whole wheat flatbread with spiced paneer.",
-    image: u("photo-1606491956689-2eae86667875"),
-    isVeg: true,
-    variations: [{ id: "pp-1", name: "Single", price: 90 }],
-    addons: [],
-  },
-  {
-    id: "egg-chicken-roll",
-    name: "Chicken Egg Roll",
-    category: "Parathas & Rolls",
-    description: "Flaky paratha roll with egg and spiced chicken.",
-    image: u("photo-1529692236671-f1f6cf9683ba"),
-    isVeg: false,
-    variations: [{ id: "cer-1", name: "Single", price: 110 }],
-    addons: [],
-  },
+type MenuItemInput = Omit<MenuItem, "description" | "addons"> &
+  Partial<Pick<MenuItem, "description" | "addons">>;
+
+const ADDONS_BREADS: MenuAddon[] = [
+  { id: "ia-tandoori-roti", name: "Tandoori Roti", price: 20 },
+  { id: "ia-butter-tandoori-roti", name: "Butter Tandoori Roti", price: 25 },
+  { id: "ia-tawa-roti", name: "Tawa Roti", price: 15 },
+  { id: "ia-butter-tawa-roti", name: "Butter Tawa Roti", price: 20 },
+  { id: "ia-plain-naan", name: "Plain Naan", price: 30 },
+  { id: "ia-butter-naan", name: "Butter Naan", price: 40 },
+  { id: "ia-butter-garlic-naan", name: "Butter Garlic Naan", price: 50 },
+];
+
+const ADDONS_SIDES: MenuAddon[] = [
+  { id: "ia-salad", name: "Green Salad", price: 30 },
+  { id: "ia-raita", name: "Raita", price: 25 },
+  { id: "ia-extra-gravy", name: "Extra Gravy", price: 40 },
+];
+
+const ADDONS_PIZZA: MenuAddon[] = [
+  { id: "ia-jalapenos", name: "Jalapeños", price: 25 },
+  { id: "ia-black-olives", name: "Black Olives", price: 30 },
+  { id: "ia-sweet-corn", name: "Sweet Corn", price: 25 },
+  { id: "ia-extra-cheese-layer", name: "Cheese Burst Layer", price: 60 },
+];
+
+const ADDONS_MOMO: MenuAddon[] = [
+  { id: "ia-spicy-chutney", name: "Extra Spicy Chutney", price: 15 },
+  { id: "ia-mayo-dip", name: "Mayo Dip", price: 20 },
+  { id: "ia-schezwan-dip", name: "Schezwan Dip", price: 20 },
+];
+
+const ADDONS_RICE: MenuAddon[] = [
+  { id: "ia-boiled-egg", name: "Boiled Egg", price: 20 },
+  { id: "ia-extra-raita", name: "Extra Raita", price: 25 },
+  { id: "ia-onion-salad", name: "Onion Salad", price: 15 },
+];
+
+const ADDONS_NOODLES: MenuAddon[] = [
+  { id: "ia-extra-veggies", name: "Extra Veggies", price: 25 },
+  { id: "ia-extra-egg", name: "Extra Egg", price: 30 },
+  { id: "ia-extra-chicken", name: "Extra Chicken", price: 60 },
+];
+
+const ADDONS_FRIES: MenuAddon[] = [
+  { id: "ia-cheese-sauce", name: "Cheese Sauce", price: 30 },
+  { id: "ia-peri-peri-dust", name: "Extra Peri Peri Dust", price: 15 },
+  { id: "ia-ketchup", name: "Ketchup Dip", price: 10 },
+];
+
+const ADDONS_SHAKES: MenuAddon[] = [
+  { id: "ia-whipped-cream", name: "Whipped Cream", price: 25 },
+  { id: "ia-choco-chips", name: "Choco Chips", price: 30 },
+  { id: "ia-extra-scoop", name: "Extra Ice Cream Scoop", price: 40 },
+];
+
+const ADDONS_MOJITOS: MenuAddon[] = [
+  { id: "ia-extra-mint", name: "Extra Mint", price: 10 },
+  { id: "ia-extra-lemon", name: "Extra Lemon", price: 10 },
+  { id: "ia-extra-soda", name: "Extra Soda", price: 15 },
+];
+
+const ADDONS_SOFT_DRINKS: MenuAddon[] = [
+  { id: "ia-extra-ice", name: "Extra Ice", price: 0 },
+  { id: "ia-lemon-slice", name: "Lemon Slice", price: 5 },
+];
+
+function defaultDescriptionForItem(item: MenuItemInput): string {
+  const n = item.name;
+  switch (item.category) {
+    case "Chef Specials":
+      if (n.toLowerCase().includes("butter")) {
+        return "Rich, creamy tomato-butter gravy with tender chicken—best with naan or roti.";
+      }
+      if (n.toLowerCase().includes("kadai")) {
+        return "Wok-tossed chicken with capsicum, onion, and bold kadai masala—served hot.";
+      }
+      if (n.toLowerCase().includes("tandoori")) {
+        return "Juicy, smoky tandoori chicken with a punch of spices and charred edges.";
+      }
+      return "House special made-to-order with aromatic spices and a satisfying, homestyle taste.";
+    case "Tandoor Breads":
+      if (n.toLowerCase().includes("naan")) return "Soft, fluffy naan—perfect for scooping up gravies.";
+      if (n.toLowerCase().includes("roti")) return "Freshly cooked roti with a light, rustic bite.";
+      return "Freshly made bread, hot off the tawa/tandoor.";
+    case "Rice Royale":
+      if (n.toLowerCase().includes("biryani")) {
+        return "Aromatic basmati rice layered with spices—pair it with raita for the perfect bite.";
+      }
+      if (n.toLowerCase().includes("schezwan")) {
+        return "Spicy Schezwan-style rice with wok aroma and a bold chilli-garlic kick.";
+      }
+      return "Wok-tossed rice with balanced seasoning and classic street-style flavour.";
+    case "Pizza Zone":
+      if (n.toLowerCase().includes("corn")) return "Cheesy pizza topped with sweet corn—comforting and crowd-pleasing.";
+      if (n.toLowerCase().includes("veggie")) return "Loaded veggie pizza with a colourful crunch and gooey cheese pull.";
+      if (n.toLowerCase().includes("chicken")) return "Hearty chicken pizza with bold seasoning and generous cheese.";
+      return "Oven-baked pizza with melty cheese and a crisp, satisfying crust.";
+    case "Momo Mania":
+      if (n.toLowerCase().includes("tandoori")) return "Tandoori-style momos—smoky, spicy, and addictive with dip.";
+      if (n.toLowerCase().includes("fried")) return "Crispy fried momos with a juicy centre—perfect with chutney.";
+      return "Steamed momos with juicy filling and soft wrappers—served with dip.";
+    case "Noodle Hub":
+      if (n.toLowerCase().includes("schezwan")) return "Schezwan noodles with a spicy chilli-garlic punch and wok-tossed flavour.";
+      return "Classic chowmein-style noodles tossed with veggies and signature sauces.";
+    case "Spicy Chinese":
+      if (n.toLowerCase().includes("manchurian")) return "Indo-Chinese Manchurian in bold sauce—sweet, spicy, and savoury.";
+      if (n.toLowerCase().includes("chilli")) return "Classic chilli-style Indo-Chinese with capsicum, onion, and a spicy glaze.";
+      return "Indo-Chinese favourite made hot and fresh with our spicy sauce.";
+    case "Fries & More":
+      if (n.toLowerCase().includes("peri")) return "Crispy fries dusted with peri peri masala—spicy and tangy.";
+      if (n.toLowerCase().includes("honey")) return "Crispy potatoes tossed in honey chilli sauce—sweet heat in every bite.";
+      return "Crispy, golden snack—perfect with dips.";
+    case "Parathas & Rolls":
+      if (n.toLowerCase().includes("roll")) return "Wrapped and rolled for the perfect on-the-go bite—spicy, filling, satisfying.";
+      return "Stuffed paratha made fresh—crispy edges, soft centre, and full of flavour.";
+    case "Shakes":
+      return "Thick, creamy shake blended ice-cold—smooth, sweet, and super refreshing.";
+    case "Mojitos":
+      return "Refreshing cooler with minty freshness and citrus zing—served chilled.";
+    case "Crispy Bites":
+      if (n.toLowerCase().includes("fish")) return "Crispy fried fish with bold seasoning—great with a squeeze of lemon.";
+      return "Crispy, golden fried goodness—best enjoyed hot.";
+    case "Soft Drinks":
+      return "Ice-cold, fizzy refreshment—perfect with spicy snacks and meals.";
+    default:
+      return "";
+  }
+}
+
+function defaultAddonsForItem(item: MenuItemInput): MenuAddon[] {
+  switch (item.category) {
+    case "Chef Specials":
+      return [...ADDONS_BREADS, ...ADDONS_SIDES];
+    case "Momo Mania":
+      return [...ADDONS_MOMO];
+    case "Rice Royale":
+      if (item.name.toLowerCase().includes("biryani")) {
+        return [...ADDONS_RICE, { id: "ia-extra-chicken-biryani", name: "Extra Chicken", price: 60 }];
+      }
+      return [...ADDONS_RICE];
+    case "Pizza Zone":
+      return [...ADDONS_PIZZA];
+    case "Parathas & Rolls":
+      return [
+        { id: "ia-extra-butter", name: "Extra Butter", price: 15 },
+        { id: "ia-pickle", name: "Pickle", price: 10 },
+        { id: "ia-raita-paratha", name: "Raita", price: 25 },
+      ];
+    case "Noodle Hub":
+      return [...ADDONS_NOODLES];
+    case "Spicy Chinese":
+      return [
+        { id: "ia-extra-sauce", name: "Extra Sauce", price: 25 },
+        { id: "ia-extra-capsicum", name: "Extra Capsicum", price: 20 },
+        { id: "ia-extra-onion", name: "Extra Onion", price: 15 },
+      ];
+    case "Fries & More":
+      return [...ADDONS_FRIES];
+    case "Shakes":
+      return [...ADDONS_SHAKES];
+    case "Mojitos":
+      return [...ADDONS_MOJITOS];
+    case "Crispy Bites":
+      return [
+        { id: "ia-lemon-wedge", name: "Lemon Wedge", price: 5 },
+        { id: "ia-mint-mayo-dip", name: "Mint Mayo Dip", price: 20 },
+        { id: "ia-spicy-dip", name: "Spicy Dip", price: 20 },
+      ];
+    case "Tandoor Breads":
+      return [{ id: "ia-extra-butter-bread", name: "Extra Butter", price: 10 }];
+    case "Soft Drinks":
+      return [...ADDONS_SOFT_DRINKS];
+    default:
+      return [];
+  }
+}
+
+const menuItemsRaw: MenuItemInput[] = [
+  // Mojitos
   {
     id: "virgin-mojito",
     name: "Virgin Mojito",
     category: "Mojitos",
-    description: "Mint, lime, soda, and a touch of sweetness — refreshing.",
     image: u("photo-1513558161293-cdaf765ed2fd"),
     isVeg: true,
-    variations: [{ id: "vm-reg", name: "Regular", price: 150 }],
-    addons: [],
+    variations: [{ id: "virgin-mojito", name: "Regular", price: 150 }],
   },
   {
-    id: "green-mojito",
-    name: "Green Apple Mojito",
+    id: "watermelon-cooler",
+    name: "Watermelon Cooler",
     category: "Mojitos",
-    description: "Green apple syrup, mint, and crushed ice.",
+    image: u("photo-1514362545857-3bc16c4c7d1b"),
+    isVeg: true,
+    variations: [{ id: "watermelon-cooler", name: "Regular", price: 150 }],
+  },
+  {
+    id: "blue-thunder",
+    name: "Blue Thunder",
+    category: "Mojitos",
+    image: u("photo-1513558161293-cdaf765ed2fd"),
+    isVeg: true,
+    variations: [{ id: "blue-thunder", name: "Regular", price: 150 }],
+  },
+  {
+    id: "strawberry-mojito",
+    name: "Strawberry Mojito",
+    category: "Mojitos",
+    image: u("photo-1497534446932-c925b458314e"),
+    isVeg: true,
+    variations: [{ id: "strawberry-mojito", name: "Regular", price: 150 }],
+  },
+  {
+    id: "green-apple",
+    name: "Green Apple",
+    category: "Mojitos",
     image: u("photo-1546171753-97d7676e4602"),
     isVeg: true,
-    variations: [{ id: "gam-reg", name: "Regular", price: 160 }],
-    addons: [],
+    variations: [{ id: "green-apple", name: "Regular", price: 150 }],
+  },
+
+  // Shakes
+  {
+    id: "mango-blast",
+    name: "Mango Blast",
+    category: "Shakes",
+    image: u("photo-1623065422902-30a2d299bbe4"),
+    isVeg: true,
+    variations: [{ id: "mango-blast", name: "Regular", price: 160 }],
+  },
+  {
+    id: "blackcurrent-blast",
+    name: "Blackcurrent Blast",
+    category: "Shakes",
+    image: u("photo-1577805947697-89e18249d767"),
+    isVeg: true,
+    variations: [{ id: "blackcurrent-blast", name: "Regular", price: 160 }],
+  },
+  {
+    id: "true-vanilla",
+    name: "True Vanilla",
+    category: "Shakes",
+    image: u("photo-1579954115545-a95591f28bfc"),
+    isVeg: true,
+    variations: [{ id: "true-vanilla", name: "Regular", price: 160 }],
+  },
+  {
+    id: "classic-chocolate",
+    name: "Classic Chocolate",
+    category: "Shakes",
+    image: u("photo-1572490122747-3968b75cc699"),
+    isVeg: true,
+    variations: [{ id: "classic-chocolate", name: "Regular", price: 160 }],
+  },
+  {
+    id: "kit-kat-milkshake",
+    name: "Kit Kat Milkshake",
+    category: "Shakes",
+    image: u("photo-1619158403521-254fe32f5cb0"),
+    isVeg: true,
+    variations: [{ id: "kit-kat-milkshake", name: "Regular", price: 160 }],
   },
   {
     id: "cold-coffee",
     name: "Cold Coffee",
     category: "Shakes",
-    description: "Chilled coffee blended with ice cream.",
     image: u("photo-1461023058943-07fcbe16d735"),
     isVeg: true,
-    recommended: true,
-    variations: [{ id: "ccf-reg", name: "Regular", price: 160 }],
-    addons: [],
+    variations: [{ id: "cold-coffee", name: "Regular", price: 160 }],
   },
   {
-    id: "oreo-biscuit-shake",
-    name: "Oreo Biscuit Shake",
+    id: "strawberry-sweetness",
+    name: "Strawberry Sweetness",
     category: "Shakes",
-    description: "Creamy shake with Oreo crumbs and whipped cream.",
+    image: u("photo-1497534446932-c925b458314e"),
+    isVeg: true,
+    variations: [{ id: "strawberry-sweetness", name: "Regular", price: 160 }],
+  },
+  {
+    id: "oreo-biscuit",
+    name: "Oreo Biscuit",
+    category: "Shakes",
     image: u("photo-1572490122747-3968b75cc699"),
     isVeg: true,
-    variations: [{ id: "obs-reg", name: "Regular", price: 160 }],
-    addons: [],
+    variations: [{ id: "oreo-biscuit", name: "Regular", price: 160 }],
+  },
+
+  // Soft Drinks
+  {
+    id: "coke",
+    name: "Coca-Cola",
+    category: "Soft Drinks",
+    image: u("photo-1551024709-8f23befc6f87"),
+    isVeg: true,
+    variations: [
+      { id: "coke-250", name: "250 ml", price: 40 },
+      { id: "coke-500", name: "500 ml", price: 70 },
+    ],
+  },
+  {
+    id: "pepsi",
+    name: "Pepsi",
+    category: "Soft Drinks",
+    image: u("photo-1551024709-8f23befc6f87"),
+    isVeg: true,
+    variations: [
+      { id: "pepsi-250", name: "250 ml", price: 40 },
+      { id: "pepsi-500", name: "500 ml", price: 70 },
+    ],
+  },
+  {
+    id: "mountain-dew",
+    name: "Mountain Dew",
+    category: "Soft Drinks",
+    image: u("photo-1551024709-8f23befc6f87"),
+    isVeg: true,
+    variations: [
+      { id: "dew-250", name: "250 ml", price: 40 },
+      { id: "dew-500", name: "500 ml", price: 70 },
+    ],
+  },
+
+  // Momo Mania
+  {
+    id: "fried-chicken-momo",
+    name: "Fried Chicken Momo",
+    category: "Momo Mania",
+    image: u("photo-1626776876729-bab4369a5a5e"),
+    isVeg: false,
+    variations: [{ id: "fried-chicken-momo", name: "Plate", price: 120 }],
+  },
+  {
+    id: "steamed-chicken-momo",
+    name: "Steamed Chicken Momo",
+    category: "Momo Mania",
+    image: u("photo-1496116218417-1a781b1c416c"),
+    isVeg: false,
+    variations: [{ id: "steamed-chicken-momo", name: "Plate", price: 120 }],
+  },
+  {
+    id: "tandoori-chicken-momo",
+    name: "Tandoori Chicken Momo",
+    category: "Momo Mania",
+    image: u("photo-1601050690597-df0568f70950"),
+    isVeg: false,
+    variations: [{ id: "tandoori-chicken-momo", name: "Plate", price: 160 }],
+  },
+
+  // Crispy Bites
+  {
+    id: "fried-chicken",
+    name: "Fried Chicken",
+    category: "Crispy Bites",
+    image: u("photo-1626082926499-eeaf5ee27f95"),
+    isVeg: false,
+    variations: [
+      { id: "fried-chicken-half", name: "Half", price: 250 },
+      { id: "fried-chicken-full", name: "Full", price: 550 },
+    ],
+  },
+  {
+    id: "fried-fish",
+    name: "Fried Fish",
+    category: "Crispy Bites",
+    image: u("photo-1544943910-4c1dc44aab44"),
+    isVeg: false,
+    variations: [{ id: "fried-fish", name: "1 KG", price: 500 }],
+  },
+
+  // Chef Specials
+  {
+    id: "butter-chicken",
+    name: "Butter Chicken",
+    category: "Chef Specials",
+    image: u("photo-1603894584373-5ac82b2ae398"),
+    isVeg: false,
+    variations: [
+      { id: "butter-chicken-half", name: "Half", price: 300 },
+      { id: "butter-chicken-full", name: "Full", price: 550 },
+    ],
+  },
+  {
+    id: "kadai-chicken",
+    name: "Kadai Chicken",
+    category: "Chef Specials",
+    image: u("photo-1588166524941-3bf61a9c41db"),
+    isVeg: false,
+    variations: [
+      { id: "kadai-chicken-half", name: "Half", price: 300 },
+      { id: "kadai-chicken-full", name: "Full", price: 550 },
+    ],
+  },
+  {
+    id: "masala-chicken",
+    name: "Masala Chicken",
+    category: "Chef Specials",
+    image: u("photo-1604908176997-125f25cc6f3d"),
+    isVeg: false,
+    variations: [
+      { id: "masala-chicken-half", name: "Half", price: 300 },
+      { id: "masala-chicken-full", name: "Full", price: 550 },
+    ],
+  },
+  {
+    id: "special-chicken",
+    name: "Special Chicken",
+    category: "Chef Specials",
+    image: u("photo-1603360946369-dc9bb6258143"),
+    isVeg: false,
+    variations: [
+      { id: "special-chicken-half", name: "Half", price: 350 },
+      { id: "special-chicken-full", name: "Full", price: 650 },
+    ],
+  },
+  {
+    id: "tandoori-chicken",
+    name: "Tandoori Chicken",
+    category: "Chef Specials",
+    image: u("photo-1610057099431-d73a1c9d2f2f"),
+    isVeg: false,
+    variations: [
+      { id: "tandoori-chicken-half", name: "Half", price: 300 },
+      { id: "tandoori-chicken-full", name: "Full", price: 550 },
+    ],
+  },
+
+  // Tandoor Breads
+  {
+    id: "plain-naan",
+    name: "Plain Naan",
+    category: "Tandoor Breads",
+    image: u("photo-1601050690597-df0568f70950"),
+    isVeg: true,
+    variations: [{ id: "plain-naan", name: "Single", price: 30 }],
+  },
+  {
+    id: "butter-naan",
+    name: "Butter Naan",
+    category: "Tandoor Breads",
+    image: u("photo-1601050690597-df0568f70950"),
+    isVeg: true,
+    variations: [{ id: "butter-naan", name: "Single", price: 40 }],
+  },
+  {
+    id: "butter-garlic-naan",
+    name: "Butter Garlic Naan",
+    category: "Tandoor Breads",
+    image: u("photo-1626074357427-bfda8a5e1f6d"),
+    isVeg: true,
+    variations: [{ id: "butter-garlic-naan", name: "Single", price: 50 }],
+  },
+  {
+    id: "tandoori-roti",
+    name: "Tandoori Roti",
+    category: "Tandoor Breads",
+    image: u("photo-1512058564366-18510be2db19"),
+    isVeg: true,
+    variations: [{ id: "tandoori-roti", name: "Single", price: 20 }],
+  },
+  {
+    id: "butter-tandoori-roti",
+    name: "Butter Tandoori Roti",
+    category: "Tandoor Breads",
+    image: u("photo-1512058564366-18510be2db19"),
+    isVeg: true,
+    variations: [{ id: "butter-tandoori-roti", name: "Single", price: 25 }],
+  },
+  {
+    id: "tawa-roti",
+    name: "Tawa Roti",
+    category: "Tandoor Breads",
+    image: u("photo-1603360946369-dc9bb6258143"),
+    isVeg: true,
+    variations: [{ id: "tawa-roti", name: "Single", price: 15 }],
+  },
+  {
+    id: "butter-tawa-roti",
+    name: "Butter Tawa Roti",
+    category: "Tandoor Breads",
+    image: u("photo-1603360946369-dc9bb6258143"),
+    isVeg: true,
+    variations: [{ id: "butter-tawa-roti", name: "Single", price: 20 }],
+  },
+
+  // Rice Royale
+  {
+    id: "fried-chicken-biryani",
+    name: "Fried Chicken Biryani",
+    category: "Rice Royale",
+    image: u("photo-1563379091339-03246963ba2b"),
+    isVeg: false,
+    variations: [
+      { id: "fried-chicken-biryani-half", name: "Half", price: 100 },
+      { id: "fried-chicken-biryani-full", name: "Full", price: 180 },
+    ],
+  },
+  {
+    id: "dum-chicken-biryani",
+    name: "Dum Chicken Biryani",
+    category: "Rice Royale",
+    image: u("photo-1631515243349-e0cb75fb8d3a"),
+    isVeg: false,
+    variations: [
+      { id: "dum-chicken-biryani-half", name: "Half", price: 100 },
+      { id: "dum-chicken-biryani-full", name: "Full", price: 180 },
+    ],
+  },
+  {
+    id: "veg-fried-rice",
+    name: "Veg. Fried Rice",
+    category: "Rice Royale",
+    image: u("photo-1512058564366-18510be2db19"),
+    isVeg: true,
+    variations: [
+      { id: "veg-fried-rice-half", name: "Half", price: 90 },
+      { id: "veg-fried-rice-full", name: "Full", price: 170 },
+    ],
+  },
+  {
+    id: "schezwan-fried-rice-veg",
+    name: "Schezwan Fried Rice (V)",
+    category: "Rice Royale",
+    image: u("photo-1512058564366-18510be2db19"),
+    isVeg: true,
+    variations: [
+      { id: "schezwan-fried-rice-veg-half", name: "Half", price: 100 },
+      { id: "schezwan-fried-rice-veg-full", name: "Full", price: 180 },
+    ],
+  },
+  {
+    id: "chicken-fried-rice",
+    name: "Chicken Fried Rice",
+    category: "Rice Royale",
+    image: u("photo-1603133872878-684f208fb84b"),
+    isVeg: false,
+    variations: [
+      { id: "chicken-fried-rice-half", name: "Half", price: 120 },
+      { id: "chicken-fried-rice-full", name: "Full", price: 220 },
+    ],
+  },
+  {
+    id: "schezwan-fried-rice-nonveg",
+    name: "Schezwan Fried Rice (N)",
+    category: "Rice Royale",
+    image: u("photo-1603133872878-684f208fb84b"),
+    isVeg: false,
+    variations: [
+      { id: "schezwan-fried-rice-nonveg-half", name: "Half", price: 130 },
+      { id: "schezwan-fried-rice-nonveg-full", name: "Full", price: 240 },
+    ],
+  },
+  {
+    id: "egg-fried-rice",
+    name: "Egg Fried Rice",
+    category: "Rice Royale",
+    image: u("photo-1603133872878-684f208fb84b"),
+    isVeg: false,
+    variations: [
+      { id: "egg-fried-rice-half", name: "Half", price: 110 },
+      { id: "egg-fried-rice-full", name: "Full", price: 200 },
+    ],
+  },
+
+  // Pizza Zone
+  {
+    id: "cheesy-bliss-pizza",
+    name: "Cheesy Bliss Pizza",
+    category: "Pizza Zone",
+    image: u("photo-1513104890138-7c749354f784"),
+    isVeg: true,
+    variations: [
+      { id: "cheesy-bliss-pizza-small", name: "Small", price: 180 },
+      { id: "cheesy-bliss-pizza-large", name: "Large", price: 400 },
+    ],
+  },
+  {
+    id: "cheesy-corn-burst",
+    name: "Cheesy Corn Burst",
+    category: "Pizza Zone",
+    image: u("photo-1513104890138-7c749354f784"),
+    isVeg: true,
+    variations: [
+      { id: "cheesy-corn-burst-small", name: "Small", price: 200 },
+      { id: "cheesy-corn-burst-large", name: "Large", price: 450 },
+    ],
+  },
+  {
+    id: "veggie-supreme",
+    name: "Veggie Supreme",
+    category: "Pizza Zone",
+    image: u("photo-1571407970349-bc81e7e96d47"),
+    isVeg: true,
+    variations: [
+      { id: "veggie-supreme-small", name: "Small", price: 250 },
+      { id: "veggie-supreme-large", name: "Large", price: 550 },
+    ],
+  },
+  {
+    id: "chicken-feast-pizza",
+    name: "Chicken Feast Pizza",
+    category: "Pizza Zone",
+    image: u("photo-1628840042765-356cda07504e"),
+    isVeg: false,
+    variations: [
+      { id: "chicken-feast-pizza-small", name: "Small", price: 280 },
+      { id: "chicken-feast-pizza-large", name: "Large", price: 600 },
+    ],
+  },
+  {
+    id: "chicken-royale-pizza",
+    name: "Chicken Royale Pizza",
+    category: "Pizza Zone",
+    image: u("photo-1628840042765-356cda07504e"),
+    isVeg: false,
+    variations: [
+      { id: "chicken-royale-pizza-small", name: "Small", price: 350 },
+      { id: "chicken-royale-pizza-large", name: "Large", price: 650 },
+    ],
+  },
+  {
+    id: "veg-royale-pizza",
+    name: "Veg Royale Pizza",
+    category: "Pizza Zone",
+    image: u("photo-1571407970349-bc81e7e96d47"),
+    isVeg: true,
+    variations: [
+      { id: "veg-royale-pizza-small", name: "Small", price: 280 },
+      { id: "veg-royale-pizza-large", name: "Large", price: 600 },
+    ],
+  },
+
+  // Parathas & Rolls
+  {
+    id: "chicken-paratha",
+    name: "Chicken Paratha",
+    category: "Parathas & Rolls",
+    image: u("photo-1626132647523-66e0f9d7d5dd"),
+    isVeg: false,
+    variations: [{ id: "chicken-paratha", name: "Single", price: 150 }],
+  },
+  {
+    id: "cheese-paratha",
+    name: "Cheese Paratha",
+    category: "Parathas & Rolls",
+    image: u("photo-1626132647523-66e0f9d7d5dd"),
+    isVeg: true,
+    variations: [{ id: "cheese-paratha", name: "Single", price: 120 }],
+  },
+  {
+    id: "aloo-paratha",
+    name: "Aloo Paratha",
+    category: "Parathas & Rolls",
+    image: u("photo-1512058564366-18510be2db19"),
+    isVeg: true,
+    variations: [{ id: "aloo-paratha", name: "Single", price: 80 }],
+  },
+  {
+    id: "egg-roll",
+    name: "Egg Roll",
+    category: "Parathas & Rolls",
+    image: u("photo-1529692236671-f1f6cf9683ba"),
+    isVeg: false,
+    variations: [{ id: "egg-roll", name: "Single", price: 70 }],
+  },
+  {
+    id: "chicken-roll",
+    name: "Chicken Roll",
+    category: "Parathas & Rolls",
+    image: u("photo-1529692236671-f1f6cf9683ba"),
+    isVeg: false,
+    variations: [{ id: "chicken-roll", name: "Single", price: 150 }],
+  },
+  {
+    id: "egg-chicken-roll",
+    name: "Egg + Chicken Roll",
+    category: "Parathas & Rolls",
+    image: u("photo-1529692236671-f1f6cf9683ba"),
+    isVeg: false,
+    variations: [{ id: "egg-chicken-roll", name: "Single", price: 170 }],
+  },
+
+  // Noodle Hub
+  {
+    id: "veg-chowmein",
+    name: "Veg. Chowmein",
+    category: "Noodle Hub",
+    image: u("photo-1612929633738-8fe44f7ec841"),
+    isVeg: true,
+    variations: [
+      { id: "veg-chowmein-half", name: "Half", price: 90 },
+      { id: "veg-chowmein-full", name: "Full", price: 170 },
+    ],
+  },
+  {
+    id: "veg-schezwan-noodles",
+    name: "Veg Schezwan Noodles",
+    category: "Noodle Hub",
+    image: u("photo-1612929633738-8fe44f7ec841"),
+    isVeg: true,
+    variations: [
+      { id: "veg-schezwan-noodles-half", name: "Half", price: 100 },
+      { id: "veg-schezwan-noodles-full", name: "Full", price: 180 },
+    ],
+  },
+  {
+    id: "egg-chowmein",
+    name: "Egg Chowmein",
+    category: "Noodle Hub",
+    image: u("photo-1617093727343-374954b7b0d6"),
+    isVeg: false,
+    variations: [
+      { id: "egg-chowmein-half", name: "Half", price: 110 },
+      { id: "egg-chowmein-full", name: "Full", price: 200 },
+    ],
+  },
+  {
+    id: "chicken-chowmein",
+    name: "Chicken Chowmein",
+    category: "Noodle Hub",
+    image: u("photo-1617093727343-374954b7b0d6"),
+    isVeg: false,
+    variations: [
+      { id: "chicken-chowmein-half", name: "Half", price: 120 },
+      { id: "chicken-chowmein-full", name: "Full", price: 220 },
+    ],
+  },
+  {
+    id: "chicken-schezwan-noodles",
+    name: "Chicken Schezwan Noodles",
+    category: "Noodle Hub",
+    image: u("photo-1617093727343-374954b7b0d6"),
+    isVeg: false,
+    variations: [
+      { id: "chicken-schezwan-noodles-half", name: "Half", price: 140 },
+      { id: "chicken-schezwan-noodles-full", name: "Full", price: 250 },
+    ],
+  },
+
+  // Spicy Chinese
+  {
+    id: "egg-chilli",
+    name: "Egg Chilli",
+    category: "Spicy Chinese",
+    image: u("photo-1599487488170-d11ec9c172f0"),
+    isVeg: false,
+    variations: [
+      { id: "egg-chilli-half", name: "Half", price: 150 },
+      { id: "egg-chilli-full", name: "Full", price: 280 },
+    ],
+  },
+  {
+    id: "egg-manchurian",
+    name: "Egg Manchurian",
+    category: "Spicy Chinese",
+    image: u("photo-1599487488170-d11ec9c172f0"),
+    isVeg: false,
+    variations: [
+      { id: "egg-manchurian-half", name: "Half", price: 180 },
+      { id: "egg-manchurian-full", name: "Full", price: 320 },
+    ],
+  },
+  {
+    id: "chilli-chicken",
+    name: "Chilli Chicken",
+    category: "Spicy Chinese",
+    image: u("photo-1599487488170-d11ec9c172f0"),
+    isVeg: false,
+    variations: [
+      { id: "chilli-chicken-half", name: "Half", price: 280 },
+      { id: "chilli-chicken-full", name: "Full", price: 520 },
+    ],
+  },
+  {
+    id: "chicken-kanti",
+    name: "Chicken Kanti",
+    category: "Spicy Chinese",
+    image: u("photo-1599487488170-d11ec9c172f0"),
+    isVeg: false,
+    variations: [
+      { id: "chicken-kanti-half", name: "Half", price: 300 },
+      { id: "chicken-kanti-full", name: "Full", price: 550 },
+    ],
+  },
+  {
+    id: "crispy-chilli-chicken",
+    name: "Crispy Chilli Chicken",
+    category: "Spicy Chinese",
+    image: u("photo-1599487488170-d11ec9c172f0"),
+    isVeg: false,
+    variations: [
+      { id: "crispy-chilli-chicken-half", name: "Half", price: 300 },
+      { id: "crispy-chilli-chicken-full", name: "Full", price: 550 },
+    ],
+  },
+  {
+    id: "chicken-manchurian",
+    name: "Chicken Manchurian",
+    category: "Spicy Chinese",
+    image: u("photo-1599487488170-d11ec9c172f0"),
+    isVeg: false,
+    variations: [
+      { id: "chicken-manchurian-half", name: "Half", price: 300 },
+      { id: "chicken-manchurian-full", name: "Full", price: 550 },
+    ],
+  },
+  {
+    id: "fish-chilli",
+    name: "Fish Chilli",
+    category: "Spicy Chinese",
+    image: u("photo-1544943910-4c1dc44aab44"),
+    isVeg: false,
+    variations: [
+      { id: "fish-chilli-half", name: "Half", price: 280 },
+      { id: "fish-chilli-full", name: "Full", price: 520 },
+    ],
+  },
+
+  // Fries & More
+  {
+    id: "french-fries",
+    name: "French Fries",
+    category: "Fries & More",
+    image: u("photo-1573080496219-bb080dd4f877"),
+    isVeg: true,
+    variations: [
+      { id: "french-fries-half", name: "Half", price: 70 },
+      { id: "french-fries-full", name: "Full", price: 120 },
+    ],
+  },
+  {
+    id: "peri-peri-fries",
+    name: "Peri Peri Fries",
+    category: "Fries & More",
+    image: u("photo-1573080496219-bb080dd4f877"),
+    isVeg: true,
+    variations: [
+      { id: "peri-peri-fries-half", name: "Half", price: 80 },
+      { id: "peri-peri-fries-full", name: "Full", price: 140 },
+    ],
+  },
+  {
+    id: "chilli-potato",
+    name: "Chilli Potato",
+    category: "Fries & More",
+    image: u("photo-1606755962773-d324e0a13086"),
+    isVeg: true,
+    variations: [
+      { id: "chilli-potato-half", name: "Half", price: 100 },
+      { id: "chilli-potato-full", name: "Full", price: 180 },
+    ],
+  },
+  {
+    id: "honey-chilli-potato",
+    name: "Honey Chilli Potato",
+    category: "Fries & More",
+    image: u("photo-1606755962773-d324e0a13086"),
+    isVeg: true,
+    variations: [
+      { id: "honey-chilli-potato-half", name: "Half", price: 120 },
+      { id: "honey-chilli-potato-full", name: "Full", price: 220 },
+    ],
   },
 ];
+
+export const menuItems: MenuItem[] = menuItemsRaw.map((item) => ({
+  ...item,
+  description: item.description ?? defaultDescriptionForItem(item),
+  addons: item.addons ?? defaultAddonsForItem(item),
+}));
+
 
 const defaultCombos: MenuCombo[] = [
   {
