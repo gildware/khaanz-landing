@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 
-type ErudaGlobal = { init: () => void };
+/** Eruda ships without TypeScript types; `default` is the runtime API. */
+type ErudaModule = { default?: { init: () => void } };
 
 function isIOSDevice(): boolean {
   if (typeof window === "undefined") return false;
@@ -103,19 +104,24 @@ export function IOSProductionDebug() {
       }
     };
 
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/eruda";
-    script.async = true;
-    script.onload = () => {
-      const w = window as Window & { eruda?: ErudaGlobal };
-      w.eruda?.init();
-    };
-    document.head.appendChild(script);
+    /**
+     * Load Eruda from the app bundle (not a CDN). On Vercel/iOS, tracker blockers
+     * and CSP often block `cdn.jsdelivr.net`, while first-party chunks are allowed.
+     */
+    let cancelled = false;
+    void import("eruda")
+      .then((mod: ErudaModule) => {
+        if (cancelled) return;
+        mod.default?.init();
+      })
+      .catch(() => {
+        /* Swallow: debugging helper must not break the app if Eruda fails to load */
+      });
 
     return () => {
+      cancelled = true;
       window.onerror = prevOnError;
       window.onunhandledrejection = prevOnUnhandledRejection;
-      script.remove();
     };
   }, []);
 
