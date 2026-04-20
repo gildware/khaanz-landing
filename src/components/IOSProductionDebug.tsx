@@ -2,9 +2,6 @@
 
 import { useEffect } from "react";
 
-/** Eruda ships without TypeScript types; `default` is the runtime API. */
-type ErudaModule = { default?: { init: () => void } };
-
 function isIOSDevice(): boolean {
   if (typeof window === "undefined") return false;
   const ua = window.navigator.userAgent;
@@ -58,7 +55,8 @@ function formatPromiseRejectionAlert(reason: unknown): string {
 }
 
 /**
- * Production-only on iPhone/iPad: surfaces runtime errors via alert and loads Eruda.
+ * Production-only on iPhone/iPad: surfaces uncaught errors via `alert`.
+ * Eruda is intentionally not loaded: it is heavy and commonly crashes mobile WebKit tabs.
  */
 export function IOSProductionDebug() {
   useEffect(() => {
@@ -104,22 +102,7 @@ export function IOSProductionDebug() {
       }
     };
 
-    /**
-     * Load Eruda from the app bundle (not a CDN). On Vercel/iOS, tracker blockers
-     * and CSP often block `cdn.jsdelivr.net`, while first-party chunks are allowed.
-     */
-    let cancelled = false;
-    void import("eruda")
-      .then((mod: ErudaModule) => {
-        if (cancelled) return;
-        mod.default?.init();
-      })
-      .catch(() => {
-        /* Swallow: debugging helper must not break the app if Eruda fails to load */
-      });
-
     return () => {
-      cancelled = true;
       window.onerror = prevOnError;
       window.onunhandledrejection = prevOnUnhandledRejection;
     };
