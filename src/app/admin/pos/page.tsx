@@ -105,7 +105,7 @@ export default function AdminPosPage() {
   }, []);
 
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [fulfillment, setFulfillment] = useState<FulfillmentMode>("dine_in");
+  const [fulfillment, setFulfillment] = useState<FulfillmentMode>("pickup");
   const [address, setAddress] = useState("");
   const [landmark, setLandmark] = useState("");
   const [customerName, setCustomerName] = useState("");
