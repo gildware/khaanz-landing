@@ -1,60 +1,17 @@
-import Link from "next/link";
+import { Suspense } from "react";
 
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { SuccessContent } from "./success-content";
 
-type Props = {
-  searchParams: Promise<{ name?: string; order?: string; sent?: string }>;
-};
-
-export default async function SuccessPage({ searchParams }: Props) {
-  const { name, order, sent } = await searchParams;
-  const notifiedOnWhatsApp = sent === "1";
-
+export default function SuccessPage() {
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-gradient-to-b from-background to-muted px-6 pb-12 text-center">
-      <div className="flex size-20 items-center justify-center rounded-full bg-emerald-100 ring-2 ring-emerald-600/35">
-        <svg
-          className="size-10 text-emerald-600"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-      </div>
-      <div className="max-w-md space-y-2">
-        <h1 className="font-heading text-3xl font-bold">Order sent</h1>
-        <p className="text-muted-foreground">
-          Thanks{name ? `, ${name}` : ""}!
-          {notifiedOnWhatsApp ? (
-            <>
-              {" "}
-              Your order was sent to the restaurant on WhatsApp. They will
-              confirm shortly.
-            </>
-          ) : (
-            <>
-              {" "}
-              {order
-                ? "We opened WhatsApp with your order text so the restaurant can confirm."
-                : "WhatsApp should open with your order details. The restaurant will confirm shortly."}
-            </>
-          )}
-        </p>
-      </div>
-      <Link
-        href="/"
-        className={cn(buttonVariants({ size: "lg" }), "rounded-full px-8")}
-      >
-        Back to menu
-      </Link>
-    </div>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[100dvh] items-center justify-center px-6 text-muted-foreground">
+          Loading…
+        </div>
+      }
+    >
+      <SuccessContent />
+    </Suspense>
   );
 }

@@ -29,6 +29,12 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
         pathname: "/**",
       },
+      /** Vercel Blob (admin-uploaded menu photos, etc.) */
+      {
+        protocol: "https",
+        hostname: "**.public.blob.vercel-storage.com",
+        pathname: "/**",
+      },
     ],
   },
 };

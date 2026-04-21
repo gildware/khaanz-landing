@@ -9,7 +9,7 @@ import { QuantitySelector } from "@/components/QuantitySelector";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useCartTotals } from "@/hooks/use-cart-totals";
-import { isCartComboLine, isCartItemLine } from "@/types/menu";
+import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
 import { useCartStore } from "@/store/cartStore";
 import { cn } from "@/lib/utils";
 
@@ -46,24 +46,35 @@ export default function CartPage() {
                   className="flex gap-3 rounded-2xl border border-border bg-card/40 p-3 backdrop-blur-sm"
                 >
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
-                    <MenuItemImage
-                      src={line.image}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="80px"
-                    />
+                    {isCartOpenLine(line) ? (
+                      <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground text-xs font-medium">
+                        Open
+                      </div>
+                    ) : (
+                      <MenuItemImage
+                        src={line.image}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="80px"
+                      />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{line.name}</p>
                     <p className="text-muted-foreground text-xs">
                       {isCartComboLine(line) ? (
                         <>Combo · {line.componentSummary}</>
+                      ) : isCartOpenLine(line) ? (
+                        <>Open item</>
                       ) : isCartItemLine(line) ? (
                         <>
                           {line.variation.name}
-                          {line.addons.length > 0 &&
-                            ` · ${line.addons.map((a) => a.name).join(", ")}`}
+                          {line.addons.some((a) => a.quantity > 0) &&
+                            ` · ${line.addons
+                              .filter((a) => a.quantity > 0)
+                              .map((a) => `${a.name}×${a.quantity}`)
+                              .join(", ")}`}
                         </>
                       ) : null}
                     </p>

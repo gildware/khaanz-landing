@@ -1,0 +1,247 @@
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  displayName  String?  @map("display_name")
+  role         UserRole @default(ADMIN)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+/// Single-tenant restaurant configuration (one row, id = `default`).
+model RestaurantSettings {
+  id                String   @id @default("default")
+  displayName       String   @default("") @map("display_name")
+  logoUrl           String   @default("") @map("logo_url")
+  whatsappPhoneE164 String   @map("whatsapp_phone_e164")
+  pickupStart       String   @map("pickup_start")
+  pickupEnd         String   @map("pickup_end")
+  deliveryStart     String   @map("delivery_start")
+  deliveryEnd       String   @map("delivery_end")
+  billHeader        String   @default("") @map("bill_header")
+  billFooter        String   @default("") @map("bill_footer")
+  paymentMethodsJson Json    @default("[{\"id\":\"cash\",\"name\":\"Cash\"},{\"id\":\"upi\",\"name\":\"UPI\"},{\"id\":\"mpay\",\"name\":\"Mpay\"}]") @map("payment_methods_json")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("restaurant_settings")
+}
+
+/// Menu category; optional `parentId` for subcategories (tabs still use top-level names in API).
+model Category {
+  id        String     @id
+  name      String
+  /** Public image URL or site path for category tab / headers */
+  image     String     @default("")
+  /** Lucide icon key (see `category-icons.ts`) */
+  icon      String     @default("")
+  parentId  String?    @map("parent_id")
+  sortOrder Int        @map("sort_order")
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children  Category[] @relation("CategoryTree")
+  items     MenuItem[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+model MenuGlobalAddon {
+  id        String @id
+  name      String
+  price     Float
+  sortOrder Int    @map("sort_order")
+
+  @@map("menu_global_addons")
+}
+
+model MenuItem {
+  id          String   @id
+  categoryId  String   @map("category_id")
+  name        String
+  description String   @default("")
+  image       String   @default("")
+  isVeg       Boolean  @default(true) @map("is_veg")
+  recommended Boolean  @default(false)
+  available   Boolean  @default(true)
+  sortOrder   Int      @default(0) @map("sort_order")
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  variations  MenuItemVariation[]
+  addons      MenuItemAddon[]
+
+  @@index([categoryId])
+  @@map("menu_items")
+}
+
+model MenuItemVariation {
+  id        String   @id
+  itemId    String   @map("item_id")
+  name      String
+  price     Float
+  sortOrder Int      @map("sort_order")
+  item      MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@map("menu_item_variations")
+}
+
+/// Per-item add-on. `addonKey` is the stable id from the API (e.g. ia-extra-mint); rows may repeat the same key on different items.
+model MenuItemAddon {
+  id        String   @id @default(cuid())
+  itemId    String   @map("item_id")
+  addonKey  String   @map("addon_key")
+  name      String
+  price     Float
+  sortOrder Int      @map("sort_order")
+  item      MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, addonKey])
+  @@index([itemId])
+  @@map("menu_item_addons")
+}
+
+model MenuCombo {
+  id          String               @id
+  name        String
+  description String               @default("")
+  image       String               @default("")
+  price       Float
+  isVeg       Boolean              @default(true) @map("is_veg")
+  available   Boolean              @default(true)
+  sortOrder   Int                  @default(0) @map("sort_order")
+  components  MenuComboComponent[]
+
+  @@map("menu_combos")
+}
+
+model MenuComboComponent {
+  id          String    @id @default(cuid())
+  comboId     String    @map("combo_id")
+  itemId      String    @map("item_id")
+  variationId String    @map("variation_id")
+  quantity    Int       @default(1)
+  sortOrder   Int       @map("sort_order")
+  combo       MenuCombo @relation(fields: [comboId], references: [id], onDelete: Cascade)
+
+  @@index([comboId])
+  @@map("menu_combo_components")
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  phoneDigits  String   @unique @map("phone_digits")
+  displayName  String?  @map("display_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  orders Order[]
+
+  @@map("customers")
+}
+
+/// Short-lived phone OTP for customer login (hashed code).
+model OtpChallenge {
+  id          String   @id @default(cuid())
+  phoneDigits String   @map("phone_digits")
+  codeHash    String   @map("code_hash")
+  expiresAt   DateTime @map("expires_at")
+  attempts    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([phoneDigits, expiresAt])
+  @@map("otp_challenges")
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum FulfillmentMode {
+  pickup
+  delivery
+  dine_in
+}
+
+enum ScheduleMode {
+  asap
+  scheduled
+}
+
+enum OrderSource {
+  website
+  pos
+}
+
+/// Per-day sequence for display ids like KH-200426001 (IST calendar day).
+model OrderCounterDay {
+  dayKey  String @id @map("day_key")
+  lastSeq Int    @map("last_seq")
+
+  @@map("order_counter_day")
+}
+
+model Order {
+  id                     String          @id @default(uuid())
+  /// Human-readable id, e.g. KH-200426001 (DDMMYY + daily sequence). Unique when set.
+  orderRef               String?         @unique @map("order_ref")
+  customerId             String          @map("customer_id")
+  status                 OrderStatus     @default(PENDING)
+  fulfillment            FulfillmentMode
+  scheduleMode           ScheduleMode    @map("schedule_mode")
+  scheduledAt            DateTime?       @map("scheduled_at")
+  address                String          @default("")
+  landmark               String          @default("")
+  notes                  String          @default("")
+  latitude               Float?
+  longitude              Float?
+  totalMinor             Int             @map("total_minor")
+  currency               String          @default("INR")
+  messageSentViaWhatsApp Boolean         @default(false) @map("message_sent_via_whatsapp")
+  /// Placed from public site vs admin POS — notifications only for website.
+  source                 OrderSource     @default(website) @map("order_source")
+  /// POS payment method key (matches configured payment method id), e.g. cash, upi
+  paymentMethod          String          @default("") @map("payment_method")
+  createdAt              DateTime        @default(now()) @map("created_at")
+  updatedAt              DateTime        @updatedAt @map("updated_at")
+
+  customer Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  lines    OrderLine[]
+
+  @@index([customerId])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderLine {
+  id        String @id @default(cuid())
+  orderId   String @map("order_id")
+  sortIndex Int    @map("sort_index")
+  payload   Json
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_lines")
+}

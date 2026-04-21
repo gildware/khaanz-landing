@@ -12,9 +12,9 @@ import {
 import { formatComboComponentSummary, isComboAvailable } from "@/lib/menu-combos";
 import { isMenuItemAvailable } from "@/lib/menu-availability";
 import type {
+  CartAddonWithQty,
   CartComboLine,
   CartLine,
-  MenuAddon,
   MenuCombo,
   MenuItem,
   MenuVariation,
@@ -23,7 +23,7 @@ import type {
 export interface AddItemPayload {
   item: MenuItem;
   variation: MenuVariation;
-  addons: MenuAddon[];
+  addons: CartAddonWithQty[];
 }
 
 interface CartState {

@@ -14,7 +14,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useCartTotals } from "@/hooks/use-cart-totals";
-import { isCartComboLine, isCartItemLine } from "@/types/menu";
+import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
 import { useCartStore } from "@/store/cartStore";
 import { useUIStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
@@ -49,13 +49,19 @@ export function CartDrawer() {
                   className="flex gap-3 rounded-2xl border border-border bg-muted/20 p-3"
                 >
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl">
-                    <MenuItemImage
-                      src={line.image}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="64px"
-                    />
+                    {isCartOpenLine(line) ? (
+                      <div className="flex h-full w-full items-center justify-center bg-muted text-[10px] text-muted-foreground font-medium">
+                        Open
+                      </div>
+                    ) : (
+                      <MenuItemImage
+                        src={line.image}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="64px"
+                      />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium leading-tight">{line.name}</p>
@@ -64,11 +70,16 @@ export function CartDrawer() {
                         <>
                           Combo · {line.componentSummary}
                         </>
+                      ) : isCartOpenLine(line) ? (
+                        <>Open item</>
                       ) : isCartItemLine(line) ? (
                         <>
                           {line.variation.name}
-                          {line.addons.length > 0 &&
-                            ` · + ${line.addons.map((a) => a.name).join(", ")}`}
+                          {line.addons.some((a) => a.quantity > 0) &&
+                            ` · + ${line.addons
+                              .filter((a) => a.quantity > 0)
+                              .map((a) => `${a.name}×${a.quantity}`)
+                              .join(", ")}`}
                         </>
                       ) : null}
                     </p>

@@ -2,7 +2,10 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
-import type { RestaurantSettingsPayload } from "@/types/restaurant-settings";
+import type {
+  PaymentMethodConfig,
+  RestaurantSettingsPayload,
+} from "@/types/restaurant-settings";
 import {
   isRestaurantSettingsPayload,
   normalizeHHMM,
@@ -27,10 +30,28 @@ function isValidSameDayRange(start: string, end: string): boolean {
   return b > a;
 }
 
+function parsePaymentMethodsBody(raw: unknown): PaymentMethodConfig[] | null {
+  if (!Array.isArray(raw)) return null;
+  const out: PaymentMethodConfig[] = [];
+  for (const row of raw) {
+    if (!row || typeof row !== "object") continue;
+    const o = row as Record<string, unknown>;
+    const id =
+      typeof o.id === "string" ? o.id.trim().toLowerCase().slice(0, 48) : "";
+    const name = typeof o.name === "string" ? o.name.trim().slice(0, 80) : "";
+    if (!id || !name) continue;
+    if (!/^[a-z0-9_-]+$/.test(id)) continue;
+    if (out.some((x) => x.id === id)) continue;
+    out.push({ id, name });
+  }
+  return out.length > 0 ? out : null;
+}
+
 export async function GET() {
   const cookieStore = await cookies();
   const token = cookieStore.get(ADMIN_TOKEN_COOKIE)?.value;
-  if (!(await verifyAdminToken(token))) {
+  const session = await verifyAdminToken(token);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const payload = await readRestaurantSettings();
@@ -40,7 +61,8 @@ export async function GET() {
 export async function PUT(request: Request) {
   const cookieStore = await cookies();
   const token = cookieStore.get(ADMIN_TOKEN_COOKIE)?.value;
-  if (!(await verifyAdminToken(token))) {
+  const session = await verifyAdminToken(token);
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   let body: unknown;
@@ -53,6 +75,10 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
   const o = body as Record<string, unknown>;
+  const displayName =
+    typeof o.displayName === "string" ? o.displayName.trim().slice(0, 120) : "";
+  const logoUrl =
+    typeof o.logoUrl === "string" ? o.logoUrl.trim().slice(0, 500) : "";
   const phone = normalizeWhatsAppPhone(
     typeof o.whatsappPhoneE164 === "string" ? o.whatsappPhoneE164 : "",
   );
@@ -64,7 +90,21 @@ export async function PUT(request: Request) {
     o.delivery && typeof o.delivery === "object"
       ? (o.delivery as { start?: string; end?: string })
       : null;
+  const billHeader =
+    typeof o.billHeader === "string" ? o.billHeader : "";
+  const billFooter =
+    typeof o.billFooter === "string" ? o.billFooter : "";
+  const pmParsed = parsePaymentMethodsBody(o.paymentMethods);
+  if (!pmParsed) {
+    return NextResponse.json(
+      { error: "Add at least one payment method (id and name)." },
+      { status: 400 },
+    );
+  }
+
   const normalized: RestaurantSettingsPayload = {
+    displayName,
+    logoUrl,
     whatsappPhoneE164: phone,
     pickup: {
       start: normalizeHHMM(String(pu?.start ?? "")),
@@ -74,6 +114,9 @@ export async function PUT(request: Request) {
       start: normalizeHHMM(String(dl?.start ?? "")),
       end: normalizeHHMM(String(dl?.end ?? "")),
     },
+    billHeader,
+    billFooter,
+    paymentMethods: pmParsed,
   };
 
   if (!/^\d{10,15}$/.test(normalized.whatsappPhoneE164)) {

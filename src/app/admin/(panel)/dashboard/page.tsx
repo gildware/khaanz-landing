@@ -15,9 +15,9 @@ export default function AdminDashboardPage() {
       <div>
         <h1 className="font-semibold text-2xl">Dashboard</h1>
         <p className="text-muted-foreground text-sm">
-          Menu is stored in <code className="text-xs">data/menu.json</code> and
-          served via <code className="text-xs">/api/menu</code>. The storefront
-          refreshes every few seconds.
+          Menu is stored in the database and served via{" "}
+          <code className="text-xs">/api/menu</code>. The storefront refreshes
+          periodically.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

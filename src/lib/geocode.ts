@@ -16,3 +16,22 @@ export async function reverseGeocode(
   }
   return data.displayName;
 }
+
+export type GeocodeSearchHit = {
+  lat: number;
+  lon: number;
+  displayName: string;
+};
+
+export async function searchPlaces(query: string): Promise<GeocodeSearchHit[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const res = await fetch(
+    `/api/geocode/search?${new URLSearchParams({ q }).toString()}`,
+  );
+  if (!res.ok) {
+    return [];
+  }
+  const data = (await res.json()) as { results?: GeocodeSearchHit[] };
+  return Array.isArray(data.results) ? data.results : [];
+}

@@ -24,16 +24,17 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { MENU_ITEM_PLACEHOLDER_IMAGE } from "@/lib/menu-item-image";
+import type { MenuCategoryDef } from "@/types/menu-category";
 import type { MenuAddon, MenuItem, MenuVariation } from "@/types/menu";
 
 function newId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}`;
 }
 
-const emptyItem = (categories: string[]): MenuItem => ({
+const emptyItem = (categoryNames: string[]): MenuItem => ({
   id: newId("item"),
   name: "",
-  category: categories[0] ?? "Pizza Zone",
+  category: categoryNames[0] ?? "Pizza Zone",
   description: "",
   image: MENU_ITEM_PLACEHOLDER_IMAGE,
   isVeg: true,
@@ -45,7 +46,7 @@ const emptyItem = (categories: string[]): MenuItem => ({
 export interface ItemFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  categories: string[];
+  categories: MenuCategoryDef[];
   initial?: MenuItem | null;
   onSave: (item: MenuItem) => void;
 }
@@ -58,12 +59,18 @@ export function ItemFormDialog({
   onSave,
 }: ItemFormDialogProps) {
   const [item, setItem] = useState<MenuItem>(() =>
-    initial ? structuredClone(initial) : emptyItem(categories),
+    initial
+      ? structuredClone(initial)
+      : emptyItem(categories.map((c) => c.name)),
   );
 
   useEffect(() => {
     if (open) {
-      setItem(initial ? structuredClone(initial) : emptyItem(categories));
+      setItem(
+        initial
+          ? structuredClone(initial)
+          : emptyItem(categories.map((c) => c.name)),
+      );
     }
   }, [open, initial, categories]);
 
@@ -173,8 +180,8 @@ export function ItemFormDialog({
               </SelectTrigger>
               <SelectContent>
                 {categories.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
+                  <SelectItem key={c.name} value={c.name}>
+                    {c.name}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -61,7 +61,10 @@ export function ItemCustomizeSheet({
 
   const unitPrice =
     variation != null
-      ? computeUnitPrice(variation, selectedAddons)
+      ? computeUnitPrice(
+          variation,
+          selectedAddons.map((a) => ({ ...a, quantity: 1 })),
+        )
       : 0;
 
   const toggleAddon = (id: string) => {
@@ -79,7 +82,8 @@ export function ItemCustomizeSheet({
       toast.error("This item is not available to order right now.");
       return;
     }
-    addItem({ item, variation, addons: selectedAddons });
+    const addonsWithQty = selectedAddons.map((a) => ({ ...a, quantity: 1 }));
+    addItem({ item, variation, addons: addonsWithQty });
     toast.success(`${item.name} added to cart`, {
       description: `${variation.name} · ₹${unitPrice}`,
     });

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: khaanz
+      POSTGRES_PASSWORD: khaanz
+      POSTGRES_DB: khaanz
+    ports:
+      - "5432:5432"
+    volumes:
+      - khaanz_pgdata:/var/lib/postgresql/data
+
+volumes:
+  khaanz_pgdata:

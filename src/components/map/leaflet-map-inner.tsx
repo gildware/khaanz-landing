@@ -46,7 +46,11 @@ function FlyToWhenTriggered({
   const map = useMap();
   useEffect(() => {
     if (flyTrigger <= 0) return;
-    map.flyTo([lat, lng], 15, { duration: 0.6 });
+    map.invalidateSize();
+    map.flyTo([lat, lng], 16, {
+      duration: 0.55,
+      animate: true,
+    });
   }, [flyTrigger, lat, lng, map]);
   return null;
 }
@@ -87,8 +91,8 @@ export function LeafletMapInner({
   return (
     <MapContainer
       center={position}
-      zoom={15}
-      className={className ?? "h-56 w-full rounded-xl z-0"}
+      zoom={16}
+      className={className ?? "h-64 w-full rounded-xl z-0"}
       scrollWheelZoom
     >
       <TileLayer

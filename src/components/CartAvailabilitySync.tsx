@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { isComboAvailable } from "@/lib/menu-combos";
 import { isMenuItemAvailable } from "@/lib/menu-availability";
-import { isCartComboLine, isCartItemLine } from "@/types/menu";
+import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
 import { useCartStore } from "@/store/cartStore";
 
 /** Drops cart lines for items that are off-menu or marked unavailable when menu data loads or changes. */
@@ -23,6 +23,9 @@ export function CartAvailabilitySync() {
     const byId = new Map(data.items.map((i) => [i.id, i]));
     const combos = data.combos ?? [];
     for (const line of rawItems) {
+      if (isCartOpenLine(line)) {
+        continue;
+      }
       if (isCartItemLine(line)) {
         const item = byId.get(line.itemId);
         if (!item || !isMenuItemAvailable(item)) {

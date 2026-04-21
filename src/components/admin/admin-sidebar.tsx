@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboardIcon,
   LayersIcon,
@@ -11,19 +12,29 @@ import {
   LogOutIcon,
   SettingsIcon,
   BoxesIcon,
+  ClipboardListIcon,
+  StoreIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
-const links = [
+const links: {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  /** Open in a new tab (e.g. POS fullscreen register). */
+  openInNewTab?: boolean;
+}[] = [
+  { href: "/admin/orders", label: "Orders", icon: ClipboardListIcon },
+  { href: "/admin/pos", label: "POS", icon: StoreIcon, openInNewTab: true },
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
   { href: "/admin/categories", label: "Categories", icon: LayersIcon },
   { href: "/admin/items", label: "Menu items", icon: UtensilsCrossedIcon },
   { href: "/admin/combos", label: "Combos", icon: BoxesIcon },
   { href: "/admin/addons", label: "Add-ons", icon: PlusSquareIcon },
-  { href: "/admin/settings", label: "Restaurant", icon: SettingsIcon },
+  { href: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export function AdminSidebar() {
@@ -54,10 +65,13 @@ export function AdminSidebar() {
         <p className="text-muted-foreground text-xs">Menu & catalogue</p>
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-2">
-        {links.map(({ href, label, icon: Icon }) => (
+        {links.map(({ href, label, icon: Icon, openInNewTab }) => (
           <Link
             key={href}
             href={href}
+            prefetch={openInNewTab ? false : undefined}
+            target={openInNewTab ? "_blank" : undefined}
+            rel={openInNewTab ? "noopener noreferrer" : undefined}
             className={cn(
               "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
               pathname === href

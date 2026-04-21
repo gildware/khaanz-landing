@@ -10,7 +10,7 @@ const LeafletMapInner = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-56 w-full items-center justify-center rounded-xl border border-border/50 bg-muted/30">
+      <div className="flex h-64 w-full items-center justify-center rounded-xl border border-border/50 bg-muted/30">
         <Loader2Icon className="size-8 animate-spin text-primary" />
       </div>
     ),
@@ -31,12 +31,14 @@ export function LocationMapPicker({
   flyTrigger = 0,
 }: LocationMapPickerProps) {
   return (
-    <LeafletMapInner
-      latitude={latitude}
-      longitude={longitude}
-      onPositionChange={onPositionChange}
-      flyTrigger={flyTrigger}
-      className="h-56 w-full rounded-xl border border-border shadow-inner z-0"
-    />
+    <div className="rounded-xl border border-border bg-muted/20 p-1 shadow-inner">
+      <LeafletMapInner
+        latitude={latitude}
+        longitude={longitude}
+        onPositionChange={onPositionChange}
+        flyTrigger={flyTrigger}
+        className="h-64 w-full rounded-lg z-0 [&_.leaflet-container]:rounded-lg"
+      />
+    </div>
   );
 }

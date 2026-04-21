@@ -1,6 +1,13 @@
 import { SignJWT, jwtVerify } from "jose";
 
-const COOKIE = "admin_token";
+export const ADMIN_TOKEN_COOKIE = "admin_token";
+
+export type AdminRole = "SUPER_ADMIN" | "ADMIN";
+
+export type AdminSession = {
+  userId: string;
+  role: AdminRole;
+};
 
 function getSecret(): Uint8Array {
   const s =
@@ -8,27 +15,35 @@ function getSecret(): Uint8Array {
   return new TextEncoder().encode(s);
 }
 
-export async function createAdminToken(): Promise<string> {
-  return new SignJWT({ role: "admin" })
+export async function createAdminToken(
+  userId: string,
+  role: AdminRole,
+): Promise<string> {
+  return new SignJWT({ role })
     .setProtectedHeader({ alg: "HS256" })
+    .setSubject(userId)
     .setIssuedAt()
     .setExpirationTime("7d")
     .sign(getSecret());
 }
 
-export async function verifyAdminToken(token: string | undefined): Promise<boolean> {
-  if (!token) return false;
+export async function verifyAdminToken(
+  token: string | undefined,
+): Promise<AdminSession | null> {
+  if (!token) return null;
   try {
-    await jwtVerify(token, getSecret());
-    return true;
+    const { payload } = await jwtVerify(token, getSecret());
+    const userId = typeof payload.sub === "string" ? payload.sub : null;
+    const role = payload.role;
+    if (!userId || (role !== "SUPER_ADMIN" && role !== "ADMIN")) {
+      return null;
+    }
+    return { userId, role };
   } catch {
-    return false;
+    return null;
   }
 }
 
-export function verifyAdminPassword(password: string): boolean {
-  const expected = process.env.ADMIN_PASSWORD ?? "khaanzadmin";
-  return password === expected;
+export function isSuperAdmin(session: AdminSession | null): boolean {
+  return session?.role === "SUPER_ADMIN";
 }
-
-export { COOKIE as ADMIN_TOKEN_COOKIE };

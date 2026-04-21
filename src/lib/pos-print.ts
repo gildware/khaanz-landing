@@ -1,0 +1,340 @@
+import type { CartLine } from "@/types/menu";
+import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
+import { isPosAnonymousPhoneDigits } from "@/lib/phone-digits";
+import type { EscPosBillInput, EscPosKotInput } from "@/lib/escpos";
+import { buildEscPosBill, buildEscPosKot } from "@/lib/escpos";
+import type { ThermalSerialPort } from "@/lib/thermal-serial";
+import { writeEscPosToPort } from "@/lib/thermal-serial";
+
+export type PosReceiptAddonRow = {
+  name: string;
+  /** Total add-on units (per-item add-on qty × line qty). */
+  qty: number;
+  unit: number;
+  subtotal: number;
+};
+
+export type PosReceiptLine = {
+  label: string;
+  qty: number;
+  unit: number;
+  subtotal: number;
+  /** One table row each: same Qty / ₹ / ₹ columns as the main line. */
+  addonRows?: PosReceiptAddonRow[];
+};
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export function cartLinesToReceiptRows(lines: CartLine[]): PosReceiptLine[] {
+  return lines.map((line) => {
+    const subtotal = line.unitPrice * line.quantity;
+    if (isCartComboLine(line)) {
+      const detail = line.componentSummary
+        ? ` — ${line.componentSummary}`
+        : "";
+      return {
+        label: `${line.name} (Combo)${detail}`,
+        qty: line.quantity,
+        unit: line.unitPrice,
+        subtotal,
+      };
+    }
+    if (isCartOpenLine(line)) {
+      return {
+        label: `${line.name} (Open)`,
+        qty: line.quantity,
+        unit: line.unitPrice,
+        subtotal,
+      };
+    }
+    if (isCartItemLine(line)) {
+      const L = line.quantity;
+      const addonRows =
+        line.addons.length > 0
+          ? line.addons
+              .filter((a) => a.quantity > 0)
+              .map((a) => {
+                const totalUnits = a.quantity * L;
+                return {
+                  name: a.name,
+                  qty: totalUnits,
+                  unit: a.price,
+                  subtotal: a.price * a.quantity * L,
+                };
+              })
+          : undefined;
+      return {
+        label: `${line.name} (${line.variation.name})`,
+        qty: line.quantity,
+        unit: line.unitPrice,
+        subtotal,
+        addonRows: addonRows && addonRows.length > 0 ? addonRows : undefined,
+      };
+    }
+    throw new Error("Invalid cart line");
+  });
+}
+
+export function kotLinesFromCart(
+  lines: CartLine[],
+): {
+  label: string;
+  qty: number;
+  addonRows?: PosReceiptAddonRow[];
+}[] {
+  return cartLinesToReceiptRows(lines).map((r) => ({
+    label: r.label,
+    qty: r.qty,
+    addonRows: r.addonRows,
+  }));
+}
+
+/** Opens print dialog with 80mm thermal-friendly HTML (browser → OS printer queue). */
+export function printThermalHtml(html: string, title = "Receipt"): void {
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument;
+  if (!doc) {
+    document.body.removeChild(iframe);
+    return;
+  }
+  doc.open();
+  doc.write(
+    `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${escapeHtml(title)}</title></head><body>${html}</body></html>`,
+  );
+  doc.close();
+  const w = iframe.contentWindow;
+  if (w) {
+    w.focus();
+    w.print();
+  }
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+  }, 500);
+}
+
+const THERMAL_STYLE = `
+  @page { size: 80mm auto; margin: 4mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+    font-size: 11px;
+    line-height: 1.35;
+    color: #000;
+    margin: 0;
+    padding: 8px;
+    max-width: 80mm;
+  }
+  h1 { font-size: 14px; margin: 0 0 6px; font-weight: 700; text-align: center; }
+  .pre { white-space: pre-wrap; font-size: 10px; margin: 4px 0; color: #222; }
+  .muted { color: #333; font-size: 10px; margin: 2px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+  th, td { padding: 2px 0; text-align: left; vertical-align: top; font-size: 10px; }
+  th { border-bottom: 1px solid #000; }
+  .right { text-align: right; white-space: nowrap; }
+  .sep { border-top: 1px dashed #000; margin: 8px 0; padding-top: 6px; }
+  .total { font-weight: 700; font-size: 12px; }
+  tr.addon-line td { font-size: 9px; line-height: 1.2; color: #333; }
+  tr.addon-line .iname { padding-left: 6px; }
+`;
+
+export type PosBillPrintOptions = {
+  restaurantName: string;
+  billHeader: string;
+  billFooter: string;
+  orderRef: string | null;
+  proforma: boolean;
+  fulfillmentLabel: string;
+  customerName: string;
+  phoneDigits: string;
+  notes: string;
+  footerNote?: string;
+  paymentLabel: string;
+  lines: PosReceiptLine[];
+  total: number;
+};
+
+function splitLines(text: string): string[] {
+  return text.replace(/\r\n/g, "\n").split("\n").filter((l) => l.length > 0);
+}
+
+export function buildBillHtmlBody(o: PosBillPrintOptions): string {
+  const headerLines = splitLines(o.billHeader);
+  const footerLines = splitLines(o.billFooter);
+  const rows = o.lines
+    .flatMap((r) => {
+      const main = `<tr><td>${escapeHtml(r.label)}</td><td class="right">${r.qty}</td><td class="right">₹${Math.round(
+        r.unit,
+      )}</td><td class="right">₹${Math.round(r.subtotal)}</td></tr>`;
+      const subs = (r.addonRows ?? []).map(
+        (a) =>
+          `<tr class="addon-line"><td class="iname">+ ${escapeHtml(a.name)}</td><td class="right">${a.qty}</td><td class="right">₹${Math.round(
+            a.unit,
+          )}</td><td class="right">₹${Math.round(a.subtotal)}</td></tr>`,
+      );
+      return [main, ...subs];
+    })
+    .join("");
+
+  const headerLine = o.proforma
+    ? `PROFORMA · ${o.fulfillmentLabel}`
+    : `${o.orderRef ?? "Order"} · ${o.fulfillmentLabel}`;
+
+  const customerLine = isPosAnonymousPhoneDigits(o.phoneDigits)
+    ? escapeHtml(o.customerName)
+    : `${escapeHtml(o.customerName)} · +91 ${escapeHtml(o.phoneDigits)}`;
+
+  const headerHtml = headerLines.map((l) => `<div class="pre">${escapeHtml(l)}</div>`).join("");
+  const footerHtml = footerLines.map((l) => `<div class="pre">${escapeHtml(l)}</div>`).join("");
+
+  return `
+<style>${THERMAL_STYLE}</style>
+<h1>${escapeHtml(o.restaurantName)}</h1>
+${headerHtml}
+<div class="muted">${escapeHtml(headerLine)}</div>
+<div class="muted">${escapeHtml(new Date().toLocaleString("en-IN"))}</div>
+<div class="muted">${customerLine}</div>
+${o.footerNote?.trim() ? `<div class="muted">${escapeHtml(o.footerNote.trim())}</div>` : ""}
+${o.notes.trim() ? `<div class="muted">Note: ${escapeHtml(o.notes.trim())}</div>` : ""}
+<table>
+<thead><tr><th>Item</th><th class="right">Qty</th><th class="right">₹</th><th class="right">₹</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+<div class="sep total">Total: ₹${Math.round(o.total)}</div>
+${o.paymentLabel ? `<div class="muted">Payment: ${escapeHtml(o.paymentLabel)}</div>` : ""}
+${footerHtml}
+<div class="muted" style="margin-top:8px;text-align:center">Thank you</div>
+`;
+}
+
+export function printPosBill(options: PosBillPrintOptions): void {
+  printThermalHtml(buildBillHtmlBody(options), "Bill");
+}
+
+export type PosKotPrintOptions = {
+  restaurantName: string;
+  billHeader: string;
+  orderRef: string;
+  fulfillmentLabel: string;
+  notes: string;
+  lines: { label: string; qty: number; addonRows?: PosReceiptAddonRow[] }[];
+};
+
+export function buildKotHtmlBody(o: PosKotPrintOptions): string {
+  const headerLines = splitLines(o.billHeader);
+  const headerHtml = headerLines.map((l) => `<div class="pre">${escapeHtml(l)}</div>`).join("");
+  const rows = o.lines
+    .flatMap((r) => {
+      const main = `<tr><td>${escapeHtml(r.label)}</td><td class="right">${r.qty}</td></tr>`;
+      const subs = (r.addonRows ?? []).map(
+        (a) =>
+          `<tr class="addon-line"><td class="iname">+ ${escapeHtml(
+            a.name,
+          )}</td><td class="right">${a.qty}</td></tr>`,
+      );
+      return [main, ...subs];
+    })
+    .join("");
+  return `
+<style>${THERMAL_STYLE}</style>
+<h1>KITCHEN ORDER</h1>
+<div class="muted">${escapeHtml(o.restaurantName)}</div>
+${headerHtml}
+<div class="sep"></div>
+<div class="total">${escapeHtml(o.orderRef)}</div>
+<div class="muted">${escapeHtml(o.fulfillmentLabel)}</div>
+<div class="muted">${escapeHtml(new Date().toLocaleString("en-IN"))}</div>
+${o.notes.trim() ? `<div class="muted">Note: ${escapeHtml(o.notes.trim())}</div>` : ""}
+<table>
+<thead><tr><th>Item</th><th class="right">Qty</th></tr></thead>
+<tbody>${rows}</tbody>
+</table>
+`;
+}
+
+export function printPosKot(options: PosKotPrintOptions): void {
+  printThermalHtml(buildKotHtmlBody(options), "KOT");
+}
+
+function toEscPosBillInput(o: PosBillPrintOptions): EscPosBillInput {
+  return {
+    restaurantName: o.restaurantName,
+    billHeaderLines: splitLines(o.billHeader),
+    billFooterLines: splitLines(o.billFooter),
+    orderRef: o.orderRef ?? "",
+    proforma: o.proforma,
+    fulfillmentLabel: o.fulfillmentLabel,
+    customerLine: isPosAnonymousPhoneDigits(o.phoneDigits)
+      ? o.customerName
+      : `${o.customerName} · +91 ${o.phoneDigits}`,
+    addressBlock: o.footerNote?.trim() ?? "",
+    notes: o.notes,
+    lines: o.lines.map((r) => ({
+      label: r.label,
+      qty: r.qty,
+      unit: r.unit,
+      subtotal: r.subtotal,
+      addonRows: r.addonRows,
+    })),
+    total: o.total,
+    paymentLabel: o.paymentLabel,
+  };
+}
+
+function toEscPosKotInput(
+  o: PosKotPrintOptions,
+): EscPosKotInput {
+  return {
+    restaurantName: o.restaurantName,
+    headerLines: splitLines(o.billHeader),
+    orderRef: o.orderRef,
+    fulfillmentLabel: o.fulfillmentLabel,
+    notes: o.notes,
+    lines: o.lines,
+  };
+}
+
+/** Try raw ESC/POS over Web Serial; falls back to HTML print dialog. */
+export async function printPosBillThermal(
+  options: PosBillPrintOptions,
+  port: ThermalSerialPort | null,
+): Promise<void> {
+  if (port) {
+    try {
+      const bytes = buildEscPosBill(toEscPosBillInput(options));
+      await writeEscPosToPort(port, bytes);
+      return;
+    } catch (e) {
+      console.error("ESC/POS bill failed, falling back to print dialog:", e);
+    }
+  }
+  printPosBill(options);
+}
+
+export async function printPosKotThermal(
+  options: PosKotPrintOptions,
+  port: ThermalSerialPort | null,
+): Promise<void> {
+  if (port) {
+    try {
+      const bytes = buildEscPosKot(toEscPosKotInput(options));
+      await writeEscPosToPort(port, bytes);
+      return;
+    } catch (e) {
+      console.error("ESC/POS KOT failed, falling back to print dialog:", e);
+    }
+  }
+  printPosKot(options);
+}

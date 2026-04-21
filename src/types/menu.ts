@@ -8,6 +8,8 @@ export interface MenuAddon {
   id: string;
   name: string;
   price: number;
+  /** Optional; shown in POS add-on picker when set */
+  image?: string;
 }
 
 export interface MenuItem {
@@ -44,7 +46,11 @@ export interface MenuCombo {
   available?: boolean;
 }
 
-export type CartAddonSelection = MenuAddon;
+/** Add-on on a cart line: unit `price` × `quantity` (per main item) is included in line `unitPrice`. */
+export type CartAddonWithQty = MenuAddon & {
+  /** Units of this add-on per main item (e.g. 2 = double cheese on each). */
+  quantity: number;
+};
 
 export interface CartItemLine {
   kind: "item";
@@ -54,7 +60,7 @@ export interface CartItemLine {
   image: string;
   isVeg: boolean;
   variation: MenuVariation;
-  addons: CartAddonSelection[];
+  addons: CartAddonWithQty[];
   quantity: number;
   unitPrice: number;
 }
@@ -72,7 +78,16 @@ export interface CartComboLine {
   componentSummary: string;
 }
 
-export type CartLine = CartItemLine | CartComboLine;
+/** POS-only: ad-hoc line with manual name and price (not on menu). */
+export interface CartOpenLine {
+  kind: "open";
+  lineId: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export type CartLine = CartItemLine | CartComboLine | CartOpenLine;
 
 export function isCartItemLine(line: CartLine): line is CartItemLine {
   return line.kind === "item";
@@ -80,6 +95,10 @@ export function isCartItemLine(line: CartLine): line is CartItemLine {
 
 export function isCartComboLine(line: CartLine): line is CartComboLine {
   return line.kind === "combo";
+}
+
+export function isCartOpenLine(line: CartLine): line is CartOpenLine {
+  return line.kind === "open";
 }
 
 export interface CheckoutDetails {

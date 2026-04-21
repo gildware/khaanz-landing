@@ -3,94 +3,98 @@
 One Next.js 15 app:
 
 - **Customer:** `/` — menu (from API), cart, checkout with map, WhatsApp order.
-- **Admin:** `/admin/*` — manage categories, items, variations, add-ons; saves to **`data/menu.json`** on disk.
+- **Admin:** `/admin/*` — manage categories, items, variations, add-ons; **all data is stored in PostgreSQL** (menu, settings, users, orders).
 
-Menu is served at **`GET /api/menu`** (no cache). The storefront uses **SWR** with a **~3s refresh** so changes from admin show up on the customer UI without a full reload.
+Menu is served at **`GET /api/menu`** (no cache). The storefront uses **SWR** with a **~60s refresh** so changes from admin show up on the customer UI without a full reload.
 
 ## Requirements
 
 - Node.js 20+
 - npm 10+
+- PostgreSQL 16+ (local Docker or hosted, e.g. Neon)
 
 ## Install
 
 ```bash
 npm install
-cp .env.example .env.local   # optional: set secrets
-npm run seed:menu            # creates data/menu.json from defaults if missing
+cp .env.example .env          # set DATABASE_URL and secrets (see below)
+npx prisma migrate deploy     # apply migrations
+npm run db:seed               # super admin + default menu + settings row (first time)
 ```
 
 ## Environment variables
 
-Copy `.env.example` to `.env.local`.
-
 | Variable | Purpose |
 |----------|---------|
-| `ADMIN_PASSWORD` | Password for `/admin/login` (default in code: `khaanzadmin` if unset) |
-| `ADMIN_SESSION_SECRET` | Signing key for the admin JWT cookie (must match everywhere; change in production) |
+| `DATABASE_URL` | PostgreSQL connection string (**required**) |
+| `ADMIN_SESSION_SECRET` | Signing key for the admin JWT cookie (change in production) |
+| `SEED_SUPER_ADMIN_EMAIL` | Used by `npm run db:seed` to upsert the super admin user |
+| `SEED_SUPER_ADMIN_PASSWORD` | Plain password for that user (hashed with bcrypt in the DB) |
+| `CUSTOMER_SESSION_SECRET` | Optional JWT signing for customer cookie (defaults to `ADMIN_SESSION_SECRET`) |
+| `WHATSAPP_CLOUD_*` | When set, OTP is sent by WhatsApp to `91` + mobile; customer order updates use the same API |
 
-WhatsApp number is in `src/utils/whatsapp.ts`.
+Customer sign-in: **`/auth/phone`** (OTP). Checkout requires a signed-in customer. **`CUSTOMER_WHATSAPP_COUNTRY_CODE`** defaults to `91` (see `.env.example`).
+
+WhatsApp Cloud / order formatting env vars are unchanged (see `src/lib/whatsapp-cloud.ts` and related).
 
 ## Scripts
 
 | Command | Description |
 |--------|-------------|
-| `npm run dev` | Dev server — [http://localhost:3000](http://localhost:3000) (webpack; stable) |
-| `npm run dev:turbo` | Same with Turbopack (faster; if you see ENOENT / manifest errors, use `npm run dev` and `rm -rf .next`) |
-| `npm run build` | Production build |
+| `npm run dev` | Dev server — [http://localhost:3000](http://localhost:3000) |
+| `npm run build` | Production build (`prisma generate` + `next build`) |
 | `npm start` | Production server |
 | `npm run lint` | ESLint |
-| `npm run seed:menu` | Write `data/menu.json` from `src/data/menu.ts` defaults (if file missing, repository helper does this too) |
+| `npm run db:migrate` | Interactive migrations (dev) |
+| `npm run db:push` | Push schema (prototyping only) |
+| `npm run db:seed` / `npm run seed:menu` | Seed super admin, settings row, and menu from `src/data/menu.ts` if empty |
 
 **URLs**
 
 | Area | Path |
 |------|------|
-| Menu & order | `/`, `/cart`, `/checkout`, `/success` |
-| Admin | `/admin/login`, `/admin/dashboard`, `/admin/categories`, `/admin/items`, `/admin/addons` |
+| Menu & order | `/`, `/cart`, `/checkout`, `/success`, `/auth/phone`, `/my-orders`, `/track/[orderId]` |
+| Admin | `/admin/login`, `/admin/orders`, `/admin/dashboard`, `/admin/categories`, `/admin/items`, `/admin/addons` |
 
 ## How menu sync works
 
-1. **Source of truth on disk:** `data/menu.json` (categories, globalAddons, items).
-2. **`GET /api/menu`** reads that file (falls back to defaults from `getDefaultMenuPayload()` if missing).
-3. **`PUT /api/admin/menu`** (requires admin cookie) overwrites the file.
-4. **Customer UI** polls `/api/menu` every few seconds (SWR `refreshInterval`), so edits in admin appear on the shop quickly.
+1. **Source of truth:** PostgreSQL tables (`categories`, `menu_items`, variations, add-ons, combos, etc.).
+2. **`GET /api/menu`** reads from the DB. If nothing is seeded yet, the API returns an empty menu until you run `npm run db:seed`.
+3. **`PUT /api/admin/menu`** (requires admin cookie) replaces menu rows in a transaction.
+4. **Bundled defaults** in `src/data/menu.ts` are only used by **`prisma/seed.ts`** to populate an empty database — not read at runtime from disk.
 
-### Hosting note (important)
+## Admin auth
 
-Writing to `data/menu.json` works on a **long‑running Node server** (Docker, VPS, `next start` on a VM). On **serverless** platforms (e.g. Vercel), the filesystem is often **read-only** or **ephemeral**, so persisting menu changes to a repo file may not work. For production serverless, use a database or object storage and point `readMenuPayload` / `writeMenuPayload` at that instead.
+- Admin login is **email + password** against the **`users`** table (bcrypt hashes).
+- Roles: **`SUPER_ADMIN`** (full system; seed creates this) and **`ADMIN`** (same admin UI for now; you can add more `ADMIN` rows via Prisma Studio or a future API).
 
-## PWA
-
-- Service worker is disabled in development (`@ducanh2912/next-pwa`).
-- Use production build + `npm start` to test install / offline.
-- Offline fallback: `/offline`.
-
-## API routes
+## API routes (selected)
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/api/menu` | No | Current menu JSON |
-| POST | `/api/admin/login` | No | Sets httpOnly `admin_token` cookie |
+| POST | `/api/admin/login` | No | Body: `{ email, password }` — sets httpOnly `admin_token` |
 | POST | `/api/admin/logout` | No | Clears cookie |
-| PUT | `/api/admin/menu` | Yes | Writes `data/menu.json` |
+| PUT | `/api/admin/menu` | Yes | Replaces menu in DB |
+| GET/PUT | `/api/admin/settings` | Yes | Restaurant settings in DB |
 
 ## Project layout
 
 ```
+prisma/
+  schema.prisma
+  migrations/
+  seed.ts                 # Super admin, settings, menu from src/data/menu.ts
 data/
-  menu.json              # Live menu (git-tracked; updated by admin)
+  .gitkeep                # Reserved for optional non-DB assets (e.g. invoices)
 src/
-  app/
-    admin/               # Admin UI + login
-    api/menu/            # Public menu API
-    api/admin/           # Login, logout, menu PUT
-  components/
-  contexts/
-    menu-data-context.tsx   # SWR → /api/menu
-  data/menu.ts           # Default seed only (getDefaultMenuPayload)
-  lib/menu-repository.ts # fs read/write
-  middleware.ts          # Protects /admin/* (except /admin/login)
+  app/admin/              # Admin UI + login
+  app/api/menu/           # Public menu API
+  app/api/admin/          # Login, logout, menu, settings
+  data/menu.ts            # Default menu used only by prisma seed
+  lib/menu-repository.ts  # Prisma read/write of full MenuPayload
+  lib/settings-repository.ts
+  middleware.ts           # Protects /admin/* (except /admin/login)
 ```
 
 ## Licence

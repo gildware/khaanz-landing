@@ -94,3 +94,25 @@ export function isWhatsAppCloudConfigured(): boolean {
     !!process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID?.trim()
   );
 }
+
+/**
+ * Sends a plain text WhatsApp message to any E.164-style digit string (no +).
+ * Uses the same Cloud API app as restaurant order alerts.
+ */
+export async function sendWhatsAppCloudText(options: {
+  toDigits: string;
+  body: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isWhatsAppCloudConfigured()) {
+    return { ok: false, error: "WhatsApp Cloud is not configured." };
+  }
+  const accessToken = process.env.WHATSAPP_CLOUD_ACCESS_TOKEN!.trim();
+  const phoneNumberId = process.env.WHATSAPP_CLOUD_PHONE_NUMBER_ID!.trim();
+  const r = await sendTextMessage({
+    accessToken,
+    phoneNumberId,
+    toDigits: options.toDigits.replace(/\D/g, ""),
+    body: options.body,
+  });
+  return r.ok ? { ok: true } : { ok: false, error: r.error };
+}

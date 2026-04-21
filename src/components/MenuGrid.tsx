@@ -9,6 +9,8 @@ import { useMenuExplore } from "@/contexts/menu-explore-context";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { COMBOS_TAB_ID, isComboAvailable } from "@/lib/menu-combos";
 import { isMenuItemAvailable } from "@/lib/menu-availability";
+import { CategoryIcon } from "@/lib/category-icons";
+import type { MenuCategoryDef } from "@/types/menu-category";
 import type { MenuCombo, MenuItem } from "@/types/menu";
 
 function matchesSearch(item: MenuItem, q: string): boolean {
@@ -52,7 +54,17 @@ export function MenuGrid() {
     [data?.items],
   );
   const combos = useMemo(() => data?.combos ?? [], [data?.combos]);
-  const categories = useMemo(() => data?.categories ?? [], [data?.categories]);
+  const categories = useMemo(
+    () => data?.categories ?? [],
+    [data?.categories],
+  );
+  const categoryByName = useMemo(() => {
+    const m = new Map<string, MenuCategoryDef>();
+    for (const c of categories) {
+      m.set(c.name, c);
+    }
+    return m;
+  }, [categories]);
 
   const q = searchQuery.trim().toLowerCase();
 
@@ -68,7 +80,8 @@ export function MenuGrid() {
 
     const rows: { name: string; items: MenuItem[] }[] = [];
 
-    for (const catName of categories) {
+    for (const cat of categories) {
+      const catName = cat.name;
       const itemsInCat = menuItems.filter(
         (item) => item.category === catName && matchesSearch(item, q),
       );
@@ -117,9 +130,9 @@ export function MenuGrid() {
   }
 
   if (category === "all" && groupedByCategory) {
-    const hasAnyRows =
-      groupedByCategory.length > 0 || visibleCombos.length > 0;
-    if (!hasAnyRows) {
+    const hasCategoryRows = groupedByCategory.length > 0;
+    const hasCombosOnly = !hasCategoryRows && visibleCombos.length > 0;
+    if (!hasCategoryRows && !visibleCombos.length) {
       return (
         <>
           <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
@@ -135,35 +148,27 @@ export function MenuGrid() {
       );
     }
 
+    if (hasCombosOnly) {
+      return <>{customizeSheet}</>;
+    }
+
     return (
       <>
       <div className="space-y-10">
-        {visibleCombos.length > 0 && (
-          <section aria-labelledby="menu-combos-heading">
-            <h3
-              id="menu-combos-heading"
-              className="mb-3 px-1 font-heading text-lg font-semibold tracking-tight"
-            >
-              Combos
-            </h3>
-            <div className="no-scrollbar -mx-4 flex items-start gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
-              {visibleCombos.map((c) => (
-                <div
-                  key={c.id}
-                  className="w-[min(calc((100vw-2.5rem)/2.35),200px)] shrink-0 sm:w-[200px]"
-                >
-                  <ComboCard combo={c} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-        {groupedByCategory.map((row, idx) => (
+        {groupedByCategory.map((row, idx) => {
+          const meta = categoryByName.get(row.name);
+          return (
           <section key={row.name} aria-labelledby={`menu-cat-${idx}`}>
             <h3
               id={`menu-cat-${idx}`}
-              className="mb-3 px-1 font-heading text-lg font-semibold tracking-tight"
+              className="mb-3 flex items-center gap-2 px-1 font-heading text-lg font-semibold tracking-tight"
             >
+              {meta?.icon ? (
+                <CategoryIcon
+                  iconKey={meta.icon}
+                  className="size-5 shrink-0 text-primary"
+                />
+              ) : null}
               {row.name}
             </h3>
             <div className="no-scrollbar -mx-4 flex items-start gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
@@ -183,7 +188,8 @@ export function MenuGrid() {
               ))}
             </div>
           </section>
-        ))}
+        );
+        })}
       </div>
       {customizeSheet}
       </>

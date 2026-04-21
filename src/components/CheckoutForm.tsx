@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CalendarClockIcon,
   CheckIcon,
   Loader2Icon,
-  MapPinIcon,
   NavigationIcon,
   PackageIcon,
   TruckIcon,
@@ -15,24 +15,23 @@ import {
 import { toast } from "sonner";
 
 import { LocationMapPicker } from "@/components/map/location-map-picker";
+import { LocationSearch } from "@/components/map/location-search";
 import { DEFAULT_CENTER } from "@/lib/map-constants";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { reverseGeocode } from "@/lib/geocode";
+import { reverseGeocode, type GeocodeSearchHit } from "@/lib/geocode";
 import { useRestaurantSettings } from "@/contexts/restaurant-settings-context";
 import {
+  formatRangeLabel,
+  isChannelOpenAt,
   isDeliveryOpen,
   isPickupOpen,
 } from "@/lib/restaurant-hours";
 import { useCartTotals } from "@/hooks/use-cart-totals";
 import { useCartStore } from "@/store/cartStore";
-import {
-  assignWhatsAppOrderUrl,
-  buildWaMeUrl,
-  buildWhatsAppMessage,
-} from "@/utils/whatsapp";
+import { buildWaMeUrl, buildWhatsAppMessage } from "@/utils/whatsapp";
 import type { FulfillmentMode } from "@/types/restaurant-settings";
 import {
   ORDER_SCHEDULE_MAX_DAYS_AHEAD,
@@ -45,11 +44,11 @@ import {
   parseDatetimeLocalValue,
   type ScheduleMode,
 } from "@/lib/order-schedule";
+import {
+  isIndianMobile10,
+  normalizeIndianMobileDigits,
+} from "@/lib/phone-digits";
 import { cn } from "@/lib/utils";
-
-function isValidIndianMobile(phone: string): boolean {
-  return /^[6-9]\d{9}$/.test(phone.replace(/\s/g, ""));
-}
 
 export function CheckoutForm() {
   const router = useRouter();
@@ -65,17 +64,28 @@ export function CheckoutForm() {
   const [address, setAddress] = useState("");
   const [landmark, setLandmark] = useState("");
   const [notes, setNotes] = useState("");
-  const [latitude, setLatitude] = useState<number | null>(DEFAULT_CENTER[0]);
-  const [longitude, setLongitude] = useState<number | null>(DEFAULT_CENTER[1]);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [addressLoading, setAddressLoading] = useState(false);
   const [mapFlyTrigger, setMapFlyTrigger] = useState(0);
+  const didAutoLocateOnLocationStepRef = useRef(false);
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("asap");
   const [placingOrder, setPlacingOrder] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   /** `datetime-local` min/max must not SSR with Node's TZ — iPhone TZ differs → hydration mismatch. */
   const [clientScheduleReady, setClientScheduleReady] = useState(false);
+  const [customerMe, setCustomerMe] = useState<
+    | null
+    | { loggedIn: false }
+    | { loggedIn: true; phoneDigits: string; displayName: string | null }
+  >(null);
+
+  const phoneDigits = useMemo(
+    () => normalizeIndianMobileDigits(phone),
+    [phone],
+  );
 
   const steps = useMemo(
     () =>
@@ -116,7 +126,7 @@ export function CheckoutForm() {
     }
   }, [latitude, longitude, currentStepLabel, fetchAddress]);
 
-  const handleUseCurrentLocation = () => {
+  const locateFromGps = useCallback(() => {
     if (!navigator.geolocation) {
       setGeoError("Geolocation is not supported in this browser.");
       return;
@@ -131,16 +141,39 @@ export function CheckoutForm() {
         setGeoLoading(false);
       },
       () => {
-        setGeoError("Location permission denied. Move the pin or enter address manually.");
+        setGeoError(
+          "Could not use device location. Search below, or tap the map to set the pin.",
+        );
         setGeoLoading(false);
       },
       { enableHighAccuracy: true, timeout: 12000 },
     );
-  };
+  }, []);
+
+  useEffect(() => {
+    if (fulfillment === "pickup") {
+      didAutoLocateOnLocationStepRef.current = false;
+    }
+  }, [fulfillment]);
+
+  useEffect(() => {
+    if (currentStepLabel !== "Location") return;
+    if (didAutoLocateOnLocationStepRef.current) return;
+    didAutoLocateOnLocationStepRef.current = true;
+    locateFromGps();
+  }, [currentStepLabel, locateFromGps]);
 
   const handlePositionChange = (lat: number, lng: number) => {
     setLatitude(lat);
     setLongitude(lng);
+  };
+
+  const handleSearchPick = (hit: GeocodeSearchHit) => {
+    setLatitude(hit.lat);
+    setLongitude(hit.lon);
+    setAddress(hit.displayName);
+    setMapFlyTrigger((n) => n + 1);
+    setGeoError(null);
   };
 
   const bothClosed =
@@ -164,11 +197,39 @@ export function CheckoutForm() {
     return d !== null && isScheduledTimeAllowed(d);
   }, [scheduleMode, scheduledAtLocal]);
 
-  const canNextFromWhenHow =
-    !settingsLoading && !!settings && channelOpen && scheduleOk;
+  const scheduleChannel: "pickup" | "delivery" =
+    fulfillment === "pickup" ? "pickup" : "delivery";
 
+  const scheduledSlotOutsideChannelHours = useMemo(() => {
+    if (scheduleMode !== "scheduled" || !settings || !scheduleOk) return false;
+    const d = parseDatetimeLocalValue(scheduledAtLocal);
+    if (!d) return false;
+    return !isChannelOpenAt(settings, scheduleChannel, d);
+  }, [scheduleMode, settings, scheduleOk, scheduledAtLocal, scheduleChannel]);
+
+  const canNextFromWhenHow = useMemo(() => {
+    if (settingsLoading || !settings || !scheduleOk) return false;
+    if (scheduleMode === "asap") return channelOpen;
+    const d = parseDatetimeLocalValue(scheduledAtLocal);
+    if (!d) return false;
+    return isChannelOpenAt(settings, scheduleChannel, d);
+  }, [
+    settingsLoading,
+    settings,
+    scheduleOk,
+    scheduleMode,
+    scheduledAtLocal,
+    channelOpen,
+    scheduleChannel,
+  ]);
+
+  const phoneOk = isIndianMobile10(phoneDigits);
+  const accountReady =
+    customerMe !== null &&
+    customerMe.loggedIn &&
+    customerMe.phoneDigits === phoneDigits;
   const canNextFromContact =
-    name.trim().length > 0 && isValidIndianMobile(phone);
+    name.trim().length > 0 && phoneOk && accountReady;
 
   const canNextFromLocation =
     latitude != null &&
@@ -194,8 +255,30 @@ export function CheckoutForm() {
     setClientScheduleReady(true);
   }, []);
 
+  useEffect(() => {
+    void fetch("/api/customer/me", { credentials: "include" })
+      .then((r) => r.json() as Promise<{ loggedIn: boolean; phoneDigits?: string; displayName?: string | null }>)
+      .then((d) => {
+        if (d.loggedIn && d.phoneDigits) {
+          setCustomerMe({
+            loggedIn: true,
+            phoneDigits: d.phoneDigits,
+            displayName: d.displayName ?? null,
+          });
+          setPhone((p) => (p.length === 0 ? d.phoneDigits! : p));
+        } else {
+          setCustomerMe({ loggedIn: false });
+        }
+      })
+      .catch(() => setCustomerMe({ loggedIn: false }));
+  }, []);
+
   const placeOrder = async () => {
     if (!settings) return;
+    if (!customerMe?.loggedIn) {
+      toast.error("Please sign in with your phone before placing an order.");
+      return;
+    }
     let scheduledIso: string | null = null;
     if (scheduleMode === "scheduled") {
       const d = parseDatetimeLocalValue(scheduledAtLocal);
@@ -209,17 +292,12 @@ export function CheckoutForm() {
     }
 
     setPlacingOrder(true);
-    /** iOS Safari blocks `window.open` after `await`; open a tab in the same tap if we may need wa.me. */
-    const needsWaMeFallback = settings.whatsappCloudConfigured !== true;
-    let waMeFallbackWindow: Window | null = null;
-    if (needsWaMeFallback) {
-      waMeFallbackWindow = window.open("about:blank", "_blank");
-    }
 
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           customerName: name.trim(),
           phone: phone.trim(),
@@ -250,6 +328,17 @@ export function CheckoutForm() {
           : null;
 
       if (!res.ok) {
+        if (res.status === 401) {
+          toast.error("Please sign in again to place your order.");
+          return;
+        }
+        if (res.status === 403) {
+          toast.error(
+            errMsg ??
+              "Phone number must match your signed-in account.",
+          );
+          return;
+        }
         const fallback =
           res.status === 504 || res.status === 408
             ? "Request timed out. Try again."
@@ -274,6 +363,14 @@ export function CheckoutForm() {
         (data as { messageSentViaWhatsApp: unknown }).messageSentViaWhatsApp ===
           true;
 
+      const orderRef =
+        data &&
+        typeof data === "object" &&
+        "orderRef" in data &&
+        typeof (data as { orderRef: unknown }).orderRef === "string"
+          ? (data as { orderRef: string }).orderRef
+          : null;
+
       if (!orderId) {
         toast.error("Invalid response from server.");
         return;
@@ -281,9 +378,10 @@ export function CheckoutForm() {
 
       clearCart();
 
-      if (!messageSentViaWhatsApp) {
-        const waText = `*Order ref:* ${orderId}\n\n${buildWhatsAppMessage(
+      if (!messageSentViaWhatsApp && orderRef) {
+        const waText = buildWhatsAppMessage(
           {
+            orderRef,
             customerName: name.trim(),
             phone: phone.trim(),
             fulfillment,
@@ -297,8 +395,8 @@ export function CheckoutForm() {
             longitude: fulfillment === "delivery" ? longitude : null,
           },
           { useWhatsAppFormatting: true },
-        )}`;
-        const { href: waUrl, truncated } = buildWaMeUrl(
+        );
+        const { href, truncated } = buildWaMeUrl(
           waText,
           settings.whatsappPhoneE164,
         );
@@ -307,27 +405,17 @@ export function CheckoutForm() {
             "Full order was received — WhatsApp text is shortened to fit.",
           );
         }
-        if (waMeFallbackWindow && !waMeFallbackWindow.closed) {
-          try {
-            waMeFallbackWindow.location.href = waUrl;
-          } catch {
-            toast.success("Order placed! Opening WhatsApp…");
-            assignWhatsAppOrderUrl(waUrl, null);
-            return;
-          }
-        } else {
-          toast.success("Order placed! Opening WhatsApp…");
-          assignWhatsAppOrderUrl(waUrl, null);
-          return;
-        }
+        sessionStorage.setItem("khaanz_wa_order_href", href);
       } else {
-        waMeFallbackWindow?.close();
+        sessionStorage.removeItem("khaanz_wa_order_href");
       }
 
       const q = new URLSearchParams();
       q.set("name", name.trim());
+      if (orderRef) q.set("ref", orderRef);
       q.set("order", orderId);
       q.set("sent", messageSentViaWhatsApp ? "1" : "0");
+      toast.success("Order placed!");
       router.push(`/success?${q.toString()}`);
     } catch {
       toast.error("Network error. Check your connection and try again.");
@@ -467,17 +555,29 @@ export function CheckoutForm() {
                     Choose a valid time within the allowed window.
                   </p>
                 )}
+                {scheduledSlotOutsideChannelHours && settings && (
+                  <p className="text-destructive text-xs">
+                    Choose a time inside{" "}
+                    {scheduleChannel === "delivery" ? "delivery" : "pickup"}{" "}
+                    hours ({formatRangeLabel(scheduleChannel === "delivery" ? settings.delivery : settings.pickup)}{" "}
+                    IST).
+                  </p>
+                )}
               </div>
             )}
           </div>
 
-          {!settingsLoading && settings && bothClosed && (
+          {!settingsLoading && settings && bothClosed && scheduleMode === "asap" && (
             <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100 text-sm">
               We are not accepting pickup or delivery orders right now (outside
               hours). Please try again when we are open.
             </p>
           )}
-          {!settingsLoading && settings && !bothClosed && !channelOpen && (
+          {!settingsLoading &&
+            settings &&
+            !bothClosed &&
+            !channelOpen &&
+            scheduleMode === "asap" && (
             <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100 text-sm">
               {fulfillment === "delivery"
                 ? "Delivery is outside hours right now. Switch to pickup if it is available, or try again later."
@@ -494,6 +594,37 @@ export function CheckoutForm() {
 
       {currentStepLabel === "Contact" && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {customerMe === null && (
+            <p className="text-muted-foreground text-sm">Checking your account…</p>
+          )}
+          {customerMe !== null && !customerMe.loggedIn && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+              <p className="font-medium text-amber-950 dark:text-amber-100">
+                Sign in with your phone to place an order
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                We send a one-time code to your mobile. No password.
+              </p>
+              <Link
+                href="/auth/phone?next=/checkout"
+                className={cn(
+                  buttonVariants({ variant: "secondary" }),
+                  "mt-3 inline-flex rounded-full",
+                )}
+              >
+                Sign in with OTP
+              </Link>
+            </div>
+          )}
+          {customerMe?.loggedIn && (
+            <p className="text-muted-foreground text-sm">
+              Signed in as{" "}
+              <span className="font-mono font-medium text-foreground">
+                {customerMe.phoneDigits}
+              </span>
+              . Phone on this order must match.
+            </p>
+          )}
           <div className="space-y-2">
             <Label htmlFor="name">Full name</Label>
             <Input
@@ -512,16 +643,22 @@ export function CheckoutForm() {
               inputMode="numeric"
               maxLength={10}
               value={phone}
+              readOnly={!!customerMe?.loggedIn}
               onChange={(e) =>
                 setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
               }
               placeholder="10-digit mobile"
-              className="h-12 rounded-xl border-border bg-muted/30"
+              className="h-12 rounded-xl border-border bg-muted/30 read-only:opacity-80"
               autoComplete="tel"
             />
-            {phone.length > 0 && !isValidIndianMobile(phone) && (
+            {phone.length > 0 && !phoneOk && (
               <p className="text-destructive text-xs">
                 Enter a valid 10-digit Indian mobile number
+              </p>
+            )}
+            {customerMe?.loggedIn && phoneOk && customerMe.phoneDigits !== phoneDigits && (
+              <p className="text-destructive text-xs">
+                Phone must match your signed-in number ({customerMe.phoneDigits}).
               </p>
             )}
           </div>
@@ -554,7 +691,7 @@ export function CheckoutForm() {
               type="button"
               variant="secondary"
               className="rounded-full"
-              onClick={handleUseCurrentLocation}
+              onClick={() => locateFromGps()}
               disabled={geoLoading}
             >
               {geoLoading ? (
@@ -564,23 +701,11 @@ export function CheckoutForm() {
               )}
               Use current location
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-full border-border"
-              onClick={() => {
-                setLatitude(DEFAULT_CENTER[0]);
-                setLongitude(DEFAULT_CENTER[1]);
-                setMapFlyTrigger((n) => n + 1);
-              }}
-            >
-              <MapPinIcon className="size-4" />
-              Reset map
-            </Button>
           </div>
           {geoError && (
             <p className="text-destructive text-sm">{geoError}</p>
           )}
+          <LocationSearch onPick={handleSearchPick} disabled={geoLoading} />
           <LocationMapPicker
             latitude={position.lat}
             longitude={position.lng}
@@ -588,7 +713,8 @@ export function CheckoutForm() {
             flyTrigger={mapFlyTrigger}
           />
           <p className="text-muted-foreground text-xs">
-            Tap the map or drag the pin to fine-tune. Address updates automatically.
+            Search above, or tap the map and drag the pin to fine-tune. Address updates
+            automatically.
           </p>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -627,6 +753,20 @@ export function CheckoutForm() {
 
       {currentStepLabel === "Review" && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {!customerMe?.loggedIn && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
+              <p className="font-medium">Sign in required</p>
+              <Link
+                href="/auth/phone?next=/checkout"
+                className={cn(
+                  buttonVariants({ variant: "default", size: "sm" }),
+                  "mt-2 inline-flex rounded-full",
+                )}
+              >
+                Sign in with OTP
+              </Link>
+            </div>
+          )}
           <div className="rounded-2xl border border-border bg-muted/20 p-4">
             <p className="text-muted-foreground text-xs uppercase tracking-wide">
               Order type
@@ -725,7 +865,7 @@ export function CheckoutForm() {
             type="button"
             className="bg-cta-gradient min-h-12 flex-[2] rounded-full font-semibold text-primary-foreground shadow-md shadow-cta"
             onClick={() => void placeOrder()}
-            disabled={!settings || placingOrder}
+            disabled={!settings || placingOrder || !customerMe?.loggedIn}
           >
             {placingOrder ? (
               <>

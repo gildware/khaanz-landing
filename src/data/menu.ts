@@ -1,23 +1,29 @@
 import type { MenuPayload } from "@/types/menu-payload";
+import type { MenuCategoryDef } from "@/types/menu-category";
 import type { MenuAddon, MenuCombo, MenuItem } from "../types/menu";
 
-export const MENU_CATEGORIES = [
-  "Pizza Zone",
-  "Chef Specials",
-  "Momo Mania",
-  "Rice Royale",
-  "Tandoor Breads",
-  "Crispy Bites",
-  "Fries & More",
-  "Noodle Hub",
-  "Spicy Chinese",
-  "Parathas & Rolls",
-  "Mojitos",
-  "Shakes",
-  "Soft Drinks",
-] as const;
+const u = (photoId: string) =>
+  `https://images.unsplash.com/${photoId}?w=800&q=80&auto=format&fit=crop`;
 
-export type MenuCategory = (typeof MENU_CATEGORIES)[number];
+/** Top-level categories with default hero imagery and tab icons (see `category-icons.tsx`). */
+export const MENU_CATEGORY_DEFAULTS: MenuCategoryDef[] = [
+  { name: "Pizza Zone", image: u("photo-1513104890138-7c749659a591"), icon: "pizza" },
+  { name: "Chef Specials", image: u("photo-1546069901-ba9599a7e63c"), icon: "sparkles" },
+  { name: "Momo Mania", image: u("photo-1496116218417-1a781b1c416c"), icon: "soup" },
+  { name: "Rice Royale", image: u("photo-1588168333986-5078d3ae3976"), icon: "wheat" },
+  { name: "Tandoor Breads", image: u("photo-1601050690597-df0568f70950"), icon: "flame" },
+  { name: "Crispy Bites", image: u("photo-1561758033-d89a9ad46330"), icon: "cookie" },
+  { name: "Fries & More", image: u("photo-1573080496219-bb080dd4f877"), icon: "sandwich" },
+  { name: "Noodle Hub", image: u("photo-1569718212162-84a2218e0a53"), icon: "soup" },
+  { name: "Spicy Chinese", image: u("photo-1582878826629-29b7ad1cdc43"), icon: "flame" },
+  { name: "Parathas & Rolls", image: u("photo-1606491956689-2ea866880c84"), icon: "croissant" },
+  { name: "Mojitos", image: u("photo-1514362541407-c7d109c5a4de"), icon: "martini" },
+  { name: "Shakes", image: u("photo-1572490122747-3968b75cc699"), icon: "ice-cream" },
+  { name: "Soft Drinks", image: u("photo-1622483767028-0f05fb13751d"), icon: "cup-soda" },
+];
+
+/** Category display names only (matches `MENU_CATEGORY_DEFAULTS` order). */
+export const MENU_CATEGORY_NAMES = MENU_CATEGORY_DEFAULTS.map((c) => c.name);
 
 /** Global add-ons available for every item at customization time */
 export const GLOBAL_ADDONS: MenuAddon[] = [
@@ -25,9 +31,6 @@ export const GLOBAL_ADDONS: MenuAddon[] = [
   { id: "ga-cheese", name: "Extra Cheese", price: 30 },
   { id: "ga-chicken", name: "Extra Chicken", price: 60 },
 ];
-
-const u = (photoId: string) =>
-  `https://images.unsplash.com/${photoId}?w=800&q=80&auto=format&fit=crop`;
 
 type MenuItemInput = Omit<MenuItem, "description" | "addons"> &
   Partial<Pick<MenuItem, "description" | "addons">>;
@@ -1075,7 +1078,7 @@ const defaultCombos: MenuCombo[] = [
 
 export function getDefaultMenuPayload(): MenuPayload {
   return {
-    categories: [...MENU_CATEGORIES],
+    categories: structuredClone(MENU_CATEGORY_DEFAULTS),
     globalAddons: structuredClone(GLOBAL_ADDONS),
     items: structuredClone(menuItems),
     combos: structuredClone(defaultCombos),

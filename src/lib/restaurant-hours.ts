@@ -1,5 +1,11 @@
 import type { RestaurantSettingsPayload, TimeRange } from "@/types/restaurant-settings";
 
+/** Any settings shape that includes pickup/delivery windows (public API or full admin payload). */
+export type RestaurantHoursSettings = Pick<
+  RestaurantSettingsPayload,
+  "pickup" | "delivery"
+>;
+
 /** Opening hours in settings are wall-clock times in this zone (India). */
 const RESTAURANT_TZ = "Asia/Kolkata";
 
@@ -48,22 +54,32 @@ export function isOpenDuringRange(now: Date, range: TimeRange): boolean {
 }
 
 export function isPickupOpen(
-  settings: RestaurantSettingsPayload,
+  settings: RestaurantHoursSettings,
   now: Date = new Date(),
 ): boolean {
   return isOpenDuringRange(now, settings.pickup);
 }
 
 export function isDeliveryOpen(
-  settings: RestaurantSettingsPayload,
+  settings: RestaurantHoursSettings,
   now: Date = new Date(),
 ): boolean {
   return isOpenDuringRange(now, settings.delivery);
 }
 
+/** Whether `when` falls in the pickup or delivery window (wall clock in restaurant TZ). */
+export function isChannelOpenAt(
+  settings: RestaurantHoursSettings,
+  channel: "pickup" | "delivery",
+  when: Date,
+): boolean {
+  const range = channel === "pickup" ? settings.pickup : settings.delivery;
+  return isOpenDuringRange(when, range);
+}
+
 /** True if either channel can accept orders (for legacy callers). */
 export function isAnyOrderingOpen(
-  settings: RestaurantSettingsPayload,
+  settings: RestaurantHoursSettings,
   now: Date = new Date(),
 ): boolean {
   return isPickupOpen(settings, now) || isDeliveryOpen(settings, now);

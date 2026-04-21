@@ -1,8 +1,15 @@
-import { isCartComboLine, type CartItemLine, type CartLine } from "@/types/menu";
+import {
+  isCartComboLine,
+  isCartOpenLine,
+  type CartItemLine,
+  type CartLine,
+} from "@/types/menu";
 import type { FulfillmentMode } from "@/types/restaurant-settings";
 import { formatScheduleHuman, type ScheduleMode } from "@/lib/order-schedule";
 
 export interface WhatsAppOrderPayload {
+  /** Display id shown to customer and restaurant, e.g. KH-200426001 */
+  orderRef?: string;
   customerName: string;
   phone: string;
   fulfillment: FulfillmentMode;
@@ -38,6 +45,7 @@ export function buildWhatsAppMessage(
 ): string {
   const useFmt = options?.useWhatsAppFormatting === true;
   const {
+    orderRef,
     customerName,
     phone,
     fulfillment,
@@ -61,7 +69,9 @@ export function buildWhatsAppMessage(
     scheduleMode === "asap"
       ? fulfillment === "pickup"
         ? "ASAP (pick up when ready)"
-        : "ASAP (deliver when ready)"
+        : fulfillment === "dine_in"
+          ? "ASAP (dine-in)"
+          : "ASAP (deliver when ready)"
       : scheduledValid
         ? formatScheduleHuman(scheduleMode, scheduledDate)
         : "Scheduled (time not set)";
@@ -72,9 +82,11 @@ export function buildWhatsAppMessage(
   );
 
   const orderType =
-    fulfillment === "pickup"
-      ? "Pickup (customer collects)"
-      : "Delivery";
+    fulfillment === "dine_in"
+      ? "Dine-in (at restaurant)"
+      : fulfillment === "pickup"
+        ? "Pickup (customer collects)"
+        : "Delivery";
 
   if (useFmt) {
     const itemsBlock = lines
@@ -86,13 +98,22 @@ export function buildWhatsAppMessage(
             : "";
           return `• *${line.name}* (Combo)${detail}\n  ${line.quantity} × ₹${formatCurrency(line.unitPrice)} = *₹${formatCurrency(subtotal)}*`;
         }
+        if (isCartOpenLine(line)) {
+          return `• *${line.name}* (Open)\n  ${line.quantity} × ₹${formatCurrency(line.unitPrice)} = *₹${formatCurrency(subtotal)}*`;
+        }
         const il = line as CartItemLine;
-        const addonPart =
-          il.addons.length > 0
-            ? ` (${il.addons.map((a) => a.name).join(", ")})`
+        const addWithQty = il.addons.filter((a) => a.quantity > 0);
+        const addonBlock =
+          addWithQty.length > 0
+            ? addWithQty
+                .map(
+                  (a) =>
+                    `  _+ ${a.name} ×${a.quantity} @ ₹${formatCurrency(a.price)}_`,
+                )
+                .join("\n")
             : "";
-        const lineLabel = `${il.name} (${il.variation.name})${addonPart}`;
-        return `• ${lineLabel}\n  ${il.quantity} × ₹${formatCurrency(il.unitPrice)} = *₹${formatCurrency(subtotal)}*`;
+        const lineLabel = `${il.name} (${il.variation.name})`;
+        return `• *${lineLabel}*${addonBlock ? `\n${addonBlock}` : ""}\n  ${il.quantity} × ₹${formatCurrency(il.unitPrice)} = *₹${formatCurrency(subtotal)}*`;
       })
       .join("\n\n");
 
@@ -102,16 +123,21 @@ export function buildWhatsAppMessage(
     }
 
     const addressBlock =
-      fulfillment === "pickup"
+      fulfillment === "pickup" || fulfillment === "dine_in"
         ? ""
         : `\n\n*Address*\n${address}${landmark ? `\nLandmark: ${landmark}` : ""}`;
 
     const notesBlock =
       notes.trim().length > 0 ? `\n\n*Notes*\n${notes.trim()}` : "";
 
+    const orderIdBlock =
+      orderRef && orderRef.trim().length > 0
+        ? `*Order ID:* ${orderRef.trim()}\n\n`
+        : "";
+
     return `*🍽 NEW ORDER*
 
-*Order type*
+${orderIdBlock}*Order type*
 ${orderType}
 
 *When*
@@ -137,10 +163,16 @@ ${itemsBlock}
           : "";
         return `${line.name} (Combo)${detail} x ${line.quantity} = ₹${formatCurrency(subtotal)}`;
       }
+      if (isCartOpenLine(line)) {
+        return `${line.name} (Open) x ${line.quantity} = ₹${formatCurrency(subtotal)}`;
+      }
       const il = line as CartItemLine;
       const addonPart =
         il.addons.length > 0
-          ? ` (${il.addons.map((a) => a.name).join(", ")})`
+          ? il.addons
+              .filter((a) => a.quantity > 0)
+              .map((a) => ` + ${a.name}×${a.quantity}`)
+              .join("")
           : "";
       return `${il.name} (${il.variation.name})${addonPart} x ${il.quantity} = ₹${formatCurrency(subtotal)}`;
     })
@@ -152,13 +184,18 @@ ${itemsBlock}
   }
 
   const addressBlock =
-    fulfillment === "pickup"
+    fulfillment === "pickup" || fulfillment === "dine_in"
       ? ""
       : `\nDelivery address: ${address}\nLandmark: ${landmark}`;
 
+  const plainOrderId =
+    orderRef && orderRef.trim().length > 0
+      ? `Order ID: ${orderRef.trim()}\n\n`
+      : "";
+
   return `New Order
 
-Order type: ${orderType}
+${plainOrderId}Order type: ${orderType}
 When: ${whenLine}
 
 Customer Details:

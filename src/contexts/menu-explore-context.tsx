@@ -37,7 +37,7 @@ export function MenuExploreProvider({ children }: { children: ReactNode }) {
     if (
       category !== "all" &&
       category !== COMBOS_TAB_ID &&
-      !categories.includes(category)
+      !categories.some((c) => c.name === category)
     ) {
       setCategoryState("all");
       return;

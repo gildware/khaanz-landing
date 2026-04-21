@@ -1,12 +1,14 @@
 "use client";
 
-import { SearchIcon, ShoppingBagIcon, XIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { SearchIcon, ShoppingBagIcon, UserRoundIcon, XIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 import { SITE } from "@/lib/site";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMenuExplore } from "@/contexts/menu-explore-context";
 import { useCartTotals } from "@/hooks/use-cart-totals";
@@ -14,6 +16,15 @@ import { useUIStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
 
 export function Header() {
+  const pathname = usePathname();
+  const [customerIn, setCustomerIn] = useState(false);
+  useEffect(() => {
+    void fetch("/api/customer/me", { credentials: "include" })
+      .then((r) => r.json() as Promise<{ loggedIn?: boolean }>)
+      .then((d) => setCustomerIn(d.loggedIn === true))
+      .catch(() => setCustomerIn(false));
+  }, [pathname]);
+
   const { searchQuery, setSearchQuery, setCategory } = useMenuExplore();
   const searchOpen = useUIStore((s) => s.searchOpen);
   const setSearchOpen = useUIStore((s) => s.setSearchOpen);
@@ -41,6 +52,29 @@ export function Header() {
         </Link>
 
         <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
+          {customerIn ? (
+            <Link
+              href="/my-orders"
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "inline-flex gap-1.5 rounded-full text-muted-foreground",
+              )}
+            >
+              <UserRoundIcon className="size-4" />
+              <span className="hidden sm:inline">My orders</span>
+            </Link>
+          ) : (
+            <Link
+              href="/auth/phone?next=/"
+              className={cn(
+                buttonVariants({ variant: "ghost", size: "sm" }),
+                "inline-flex gap-1.5 rounded-full text-muted-foreground",
+              )}
+            >
+              <UserRoundIcon className="size-4" />
+              <span className="hidden sm:inline">Sign in</span>
+            </Link>
+          )}
           <Button
             type="button"
             variant={searchOpen ? "secondary" : "ghost"}

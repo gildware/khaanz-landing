@@ -2,19 +2,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
-import type { MenuPayload } from "@/types/menu-payload";
+import { normalizeMenuPayloadFromApi } from "@/lib/menu-payload-normalize";
 import { writeMenuPayload } from "@/lib/menu-repository";
-
-function isPayload(x: unknown): x is MenuPayload {
-  if (!x || typeof x !== "object") return false;
-  const o = x as Record<string, unknown>;
-  return (
-    Array.isArray(o.categories) &&
-    Array.isArray(o.globalAddons) &&
-    Array.isArray(o.items) &&
-    Array.isArray(o.combos)
-  );
-}
 
 export async function PUT(request: Request) {
   const cookieStore = await cookies();
@@ -28,9 +17,15 @@ export async function PUT(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  if (!isPayload(body)) {
+  const normalized = normalizeMenuPayloadFromApi(body);
+  if (!normalized) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
-  await writeMenuPayload(body);
-  return NextResponse.json({ ok: true });
+  try {
+    await writeMenuPayload(normalized);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Unknown error";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

@@ -4,6 +4,7 @@ import { useMenuExplore } from "@/contexts/menu-explore-context";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { isComboAvailable, COMBOS_TAB_ID } from "@/lib/menu-combos";
 import { isMenuItemAvailable } from "@/lib/menu-availability";
+import { CategoryIcon } from "@/lib/category-icons";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
 
@@ -17,7 +18,7 @@ export function CategoryTabs() {
     const list = data?.categories ?? [];
     const items = data?.items ?? [];
     return list.filter((cat) =>
-      items.some((i) => i.category === cat && isMenuItemAvailable(i)),
+      items.some((i) => i.category === cat.name && isMenuItemAvailable(i)),
     );
   }, [data?.categories, data?.items]);
 
@@ -27,10 +28,18 @@ export function CategoryTabs() {
     return combos.some((c) => isComboAvailable(c, items));
   }, [data?.combos, data?.items]);
 
-  const chips: { id: string | typeof ALL; label: string }[] = [
+  const chips: {
+    id: string | typeof ALL;
+    label: string;
+    iconKey?: string;
+  }[] = [
     { id: ALL, label: "All" },
     ...(hasCombos ? [{ id: COMBOS_TAB_ID, label: "Combos" }] : []),
-    ...categoriesWithStock.map((c) => ({ id: c, label: c })),
+    ...categoriesWithStock.map((c) => ({
+      id: c.name,
+      label: c.name,
+      iconKey: c.icon,
+    })),
   ];
 
   return (
@@ -47,6 +56,12 @@ export function CategoryTabs() {
               : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground",
           )}
         >
+          {c.iconKey ? (
+            <CategoryIcon
+              iconKey={c.iconKey}
+              className="mr-1.5 inline size-4 shrink-0 opacity-80"
+            />
+          ) : null}
           {c.label}
         </button>
       ))}

@@ -13,6 +13,7 @@ import { SITE } from "@/lib/site";
 function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const submit = async (e: React.FormEvent) => {
@@ -20,11 +21,18 @@ function AdminLoginForm() {
     const res = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ email, password }),
       credentials: "include",
     });
     if (!res.ok) {
-      toast.error("Invalid password");
+      let msg = "Sign in failed";
+      try {
+        const j = (await res.json()) as { error?: string };
+        if (j.error) msg = j.error;
+      } catch {
+        /* ignore */
+      }
+      toast.error(msg);
       return;
     }
     toast.success("Welcome back");
@@ -51,11 +59,24 @@ function AdminLoginForm() {
             />
           </div>
           <div>
-          <h1 className="font-semibold text-2xl">Admin login</h1>
-          <p className="text-muted-foreground text-sm">
-            Password is set with ADMIN_PASSWORD (see README).
-          </p>
+            <h1 className="font-semibold text-2xl">Admin login</h1>
+            <p className="text-muted-foreground text-sm">
+              Sign in with a user from the database. Create the first super admin
+              with <code className="text-xs">npm run db:seed</code> (see{" "}
+              <code className="text-xs">.env.example</code>).
+            </p>
           </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="h-11"
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="pw">Password</Label>
@@ -71,9 +92,6 @@ function AdminLoginForm() {
         <Button type="submit" className="w-full">
           Sign in
         </Button>
-        <p className="text-muted-foreground text-center text-xs">
-          Default: <code>khaanzadmin</code>
-        </p>
       </form>
     </div>
   );

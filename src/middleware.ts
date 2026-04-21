@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
 
-const secret = new TextEncoder().encode(
-  process.env.ADMIN_SESSION_SECRET ?? "khaanz-dev-admin-secret-change-me",
-);
+import { verifyAdminToken } from "@/lib/admin-auth";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,34 +15,24 @@ export async function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get("admin_token")?.value;
+  const session = await verifyAdminToken(token);
 
-  /** `/admin` has no page — redirect here so dev never hits a missing app-build-manifest */
   if (pathname === "/admin") {
-    if (!token) {
+    if (!session) {
       const login = new URL("/admin/login", request.url);
       login.searchParams.set("from", "/admin");
       return NextResponse.redirect(login);
     }
-    try {
-      await jwtVerify(token, secret);
-      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
-    } catch {
-      return NextResponse.redirect(new URL("/admin/login", request.url));
-    }
+    return NextResponse.redirect(new URL("/admin/dashboard", request.url));
   }
 
-  if (!token) {
+  if (!session) {
     const login = new URL("/admin/login", request.url);
     login.searchParams.set("from", pathname);
     return NextResponse.redirect(login);
   }
 
-  try {
-    await jwtVerify(token, secret);
-    return NextResponse.next();
-  } catch {
-    return NextResponse.redirect(new URL("/admin/login", request.url));
-  }
+  return NextResponse.next();
 }
 
 export const config = {
