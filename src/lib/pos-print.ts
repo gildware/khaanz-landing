@@ -323,3 +323,41 @@ export async function printPosKotThermalStrict(
   const bytes = buildEscPosKot(toEscPosKotInput(options));
   await writeEscPosToPort(port, bytes);
 }
+
+/**
+ * Prefer raw ESC/POS on the USB serial port; if there is no port or writing fails,
+ * fall back to the browser print dialog so something always prints.
+ */
+export async function printPosBillThermal(
+  options: PosBillPrintOptions,
+  port: ThermalSerialPort | null,
+): Promise<void> {
+  if (port) {
+    try {
+      await printPosBillThermalStrict(options, port);
+      return;
+    } catch (e) {
+      console.error("ESC/POS bill failed, falling back to print dialog:", e);
+    }
+  }
+  printPosBill(options);
+}
+
+/**
+ * Prefer raw ESC/POS on the USB serial port; if there is no port or writing fails,
+ * fall back to the browser print dialog so something always prints.
+ */
+export async function printPosKotThermal(
+  options: PosKotPrintOptions,
+  port: ThermalSerialPort | null,
+): Promise<void> {
+  if (port) {
+    try {
+      await printPosKotThermalStrict(options, port);
+      return;
+    } catch (e) {
+      console.error("ESC/POS KOT failed, falling back to print dialog:", e);
+    }
+  }
+  printPosKot(options);
+}

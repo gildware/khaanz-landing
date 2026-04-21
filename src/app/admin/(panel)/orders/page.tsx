@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Loader2Icon } from "lucide-react";
 import type { OrderStatus } from "@prisma/client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -16,15 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
+import { cn } from "@/lib/utils";
 
 const AUTO_REFRESH_MS = 30_000;
 
@@ -51,6 +45,7 @@ type OrderRow = {
   createdAt: string;
   customerPhone: string;
   customerName: string | null;
+  lines: { sortIndex: number; payload: unknown }[];
 };
 
 type AdminOrderDetail = {
@@ -74,6 +69,26 @@ type AdminOrderDetail = {
   customerName: string | null;
   lines: { sortIndex: number; payload: unknown }[];
 };
+
+/** Distinct colors per workflow status (incl. delivered = served for dine-in). */
+function orderStatusBadgeClassName(status: string): string {
+  switch (status as OrderStatus) {
+    case "PENDING":
+      return "border-amber-500/40 bg-amber-500/15 text-amber-950 dark:border-amber-400/35 dark:bg-amber-400/12 dark:text-amber-50";
+    case "ACCEPTED":
+      return "border-sky-600/40 bg-sky-500/14 text-sky-950 dark:border-sky-400/35 dark:bg-sky-400/12 dark:text-sky-50";
+    case "PREPARING":
+      return "border-violet-600/40 bg-violet-500/14 text-violet-950 dark:border-violet-400/35 dark:bg-violet-400/12 dark:text-violet-50";
+    case "OUT_FOR_DELIVERY":
+      return "border-cyan-600/40 bg-cyan-500/14 text-cyan-950 dark:border-cyan-400/35 dark:bg-cyan-400/12 dark:text-cyan-50";
+    case "DELIVERED":
+      return "border-emerald-600/40 bg-emerald-500/14 text-emerald-950 dark:border-emerald-400/35 dark:bg-emerald-400/12 dark:text-emerald-50";
+    case "CANCELLED":
+      return "border-red-600/45 bg-red-500/12 text-red-950 dark:border-red-400/40 dark:bg-red-500/18 dark:text-red-50";
+    default:
+      return "border-border bg-muted text-muted-foreground";
+  }
+}
 
 function nextStep(
   status: string,
@@ -292,63 +307,64 @@ export default function AdminOrdersPage() {
         })}
       </div>
 
-      <div className="rounded-xl border bg-card overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>When</TableHead>
-              <TableHead>Order ID</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Mode</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="min-w-[280px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-muted-foreground">
-                  No orders yet.
-                </TableCell>
-              </TableRow>
-            ) : filteredOrders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-muted-foreground">
-                  No orders in this status.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredOrders.map((o) => {
-                const step = nextStep(o.status, o.fulfillment);
-                const busy = updatingId === o.id;
-                const rupee = (o.totalMinor / 100).toFixed(2);
-                const canCancel =
-                  o.status !== "CANCELLED" && o.status !== "DELIVERED";
-                return (
-                  <TableRow key={o.id}>
-                    <TableCell className="whitespace-nowrap text-xs">
-                      {new Date(o.createdAt).toLocaleString()}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {o.orderRef ?? "—"}
-                    </TableCell>
-                    <TableCell>{o.customerName ?? "—"}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {o.customerPhone}
-                    </TableCell>
-                    <TableCell className="capitalize">{o.fulfillment}</TableCell>
-                    <TableCell>
-                      ₹{rupee} {o.currency}
-                    </TableCell>
-                    <TableCell>{o.statusLabel}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
+      <div className="space-y-4">
+        {orders.length === 0 ? (
+          <div className="rounded-2xl border border-dashed bg-muted/20 px-4 py-12 text-center text-muted-foreground text-sm">
+            No orders yet.
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="rounded-2xl border border-dashed bg-muted/20 px-4 py-12 text-center text-muted-foreground text-sm">
+            No orders in this status.
+          </div>
+        ) : (
+          <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredOrders.map((o) => {
+              const step = nextStep(o.status, o.fulfillment);
+              const busy = updatingId === o.id;
+              const rupee = (o.totalMinor / 100).toFixed(2);
+              const canCancel =
+                o.status !== "CANCELLED" && o.status !== "DELIVERED";
+              const lines = o.lines ?? [];
+              return (
+                <article
+                  key={o.id}
+                  className="flex max-h-[600px] min-h-[480px] w-full flex-col overflow-hidden rounded-2xl border bg-card p-4 shadow-sm ring-1 ring-border/50"
+                >
+                  <div className="flex shrink-0 gap-3 border-b border-border/70 pb-3">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-sm font-semibold tracking-tight">
+                          {o.orderRef ?? "—"}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "font-medium",
+                            orderStatusBadgeClassName(o.status),
+                          )}
+                        >
+                          {o.statusLabel}
+                        </Badge>
+                      </div>
+                      <p className="text-muted-foreground text-xs tabular-nums">
+                        {new Date(o.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <div className="text-right">
+                        <p className="font-semibold text-lg tabular-nums">
+                          ₹{rupee}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          {o.currency}
+                        </p>
+                      </div>
+                      <div className="flex max-w-[14rem] flex-wrap justify-end gap-1.5 sm:max-w-[18rem]">
                         <Button
                           type="button"
                           size="sm"
                           variant="secondary"
+                          className="h-8 shrink-0 px-2 text-xs"
                           disabled={busy}
                           onClick={() => openDetails(o.id)}
                         >
@@ -359,6 +375,7 @@ export default function AdminOrdersPage() {
                             type="button"
                             size="sm"
                             variant="default"
+                            className="h-8 shrink-0 px-2 text-center text-xs leading-tight"
                             disabled={busy}
                             onClick={() =>
                               void setStatus(o.id, step.nextStatus)
@@ -372,20 +389,61 @@ export default function AdminOrdersPage() {
                             type="button"
                             size="sm"
                             variant="outline"
+                            className="h-8 shrink-0 px-2 text-xs"
                             disabled={busy}
                             onClick={() => void setStatus(o.id, "CANCELLED")}
                           >
-                            Cancel order
+                            Cancel
                           </Button>
                         )}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                    </div>
+                  </div>
+
+                  <div className="grid shrink-0 gap-3 border-b border-border/70 py-3 sm:grid-cols-2">
+                    <div className="text-sm">
+                      <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                        Customer
+                      </p>
+                      <p className="mt-0.5 font-medium">
+                        {o.customerName ?? "—"}
+                      </p>
+                      <p className="font-mono text-muted-foreground text-xs">
+                        {o.customerPhone}
+                      </p>
+                    </div>
+                    <div className="text-sm capitalize">
+                      <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                        Fulfillment
+                      </p>
+                      <p className="mt-0.5 font-medium">{o.fulfillment}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex min-h-0 flex-1 flex-col gap-2 py-3">
+                    <h2 className="shrink-0 text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+                      Items ({lines.length})
+                    </h2>
+                    {lines.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">
+                        No line items on this order.
+                      </p>
+                    ) : (
+                      <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-0.5">
+                        {lines.map((line) => (
+                          <li key={line.sortIndex}>
+                            <OrderLineView payload={line.payload} />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <Dialog
@@ -434,9 +492,17 @@ export default function AdminOrdersPage() {
                   <div className="font-mono text-xs break-all text-muted-foreground">
                     {detail.id}
                   </div>
-                  <div>
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-muted-foreground">Status: </span>
-                    <span className="font-medium">{detail.statusLabel}</span>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "font-medium",
+                        orderStatusBadgeClassName(detail.status),
+                      )}
+                    >
+                      {detail.statusLabel}
+                    </Badge>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Placed: </span>
@@ -497,14 +563,13 @@ export default function AdminOrdersPage() {
 
                 <div className="space-y-2">
                   <div className="font-medium text-sm">Items</div>
-                  <div className="rounded-lg border bg-muted/30 px-3">
+                  <ul className="space-y-2">
                     {detail.lines.map((line) => (
-                      <OrderLineView
-                        key={line.sortIndex}
-                        payload={line.payload}
-                      />
+                      <li key={line.sortIndex}>
+                        <OrderLineView payload={line.payload} />
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
 
                 <div className="flex flex-wrap gap-2 pt-2">
@@ -554,11 +619,14 @@ export default function AdminOrdersPage() {
   );
 }
 
+const orderLineBoxClass =
+  "rounded-xl border border-border/70 bg-muted/20 p-3 text-sm shadow-sm";
+
 function OrderLineView({ payload }: { payload: unknown }) {
   if (!payload || typeof payload !== "object") {
     return (
-      <div className="border-b py-2 last:border-0">
-        <pre className="text-xs overflow-x-auto">
+      <div className={orderLineBoxClass}>
+        <pre className="max-h-40 overflow-auto text-xs">
           {JSON.stringify(payload, null, 2)}
         </pre>
       </div>
@@ -577,16 +645,14 @@ function OrderLineView({ payload }: { payload: unknown }) {
 
   if (p.kind === "combo") {
     return (
-      <div className="border-b border-border/80 py-3 last:border-0">
+      <div className={orderLineBoxClass}>
         <div className="flex justify-between gap-2">
           <span className="font-medium">{String(p.name)}</span>
-          <span className="tabular-nums shrink-0">₹{lineTotal}</span>
+          <span className="shrink-0 tabular-nums">₹{lineTotal}</span>
         </div>
-        <div className="text-muted-foreground text-xs">
-          Combo × {qty}
-        </div>
+        <div className="text-muted-foreground text-xs">Combo × {qty}</div>
         {typeof p.componentSummary === "string" && p.componentSummary ? (
-          <div className="text-xs mt-1 text-muted-foreground">
+          <div className="mt-1.5 text-muted-foreground text-xs leading-snug">
             {p.componentSummary}
           </div>
         ) : null}
@@ -596,10 +662,10 @@ function OrderLineView({ payload }: { payload: unknown }) {
 
   if (p.kind === "open") {
     return (
-      <div className="border-b border-border/80 py-3 last:border-0">
+      <div className={orderLineBoxClass}>
         <div className="flex justify-between gap-2">
           <span className="font-medium">{String(p.name)}</span>
-          <span className="tabular-nums shrink-0">₹{lineTotal}</span>
+          <span className="shrink-0 tabular-nums">₹{lineTotal}</span>
         </div>
         <div className="text-muted-foreground text-xs">Open item × {qty}</div>
       </div>
@@ -609,17 +675,17 @@ function OrderLineView({ payload }: { payload: unknown }) {
   const v = p.variation as Record<string, unknown> | undefined;
   const addons = Array.isArray(p.addons) ? p.addons : [];
   return (
-    <div className="border-b border-border/80 py-3 last:border-0">
+    <div className={orderLineBoxClass}>
       <div className="flex justify-between gap-2">
         <span className="font-medium">{String(p.name)}</span>
-        <span className="tabular-nums shrink-0">₹{lineTotal}</span>
+        <span className="shrink-0 tabular-nums">₹{lineTotal}</span>
       </div>
       <div className="text-muted-foreground text-xs">
         × {qty}
         {v && typeof v.name === "string" ? ` · ${v.name}` : ""}
       </div>
       {addons.length > 0 && (
-        <ul className="mt-1.5 space-y-0.5 text-xs list-disc pl-4 text-muted-foreground">
+        <ul className="mt-2 list-disc space-y-0.5 pl-4 text-muted-foreground text-xs">
           {(addons as Record<string, unknown>[]).map((a, i) => (
             <li key={i}>
               {String(a.name)}

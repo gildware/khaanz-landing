@@ -24,6 +24,7 @@ export async function GET() {
       customer: {
         select: { phoneDigits: true, displayName: true },
       },
+      lines: { orderBy: { sortIndex: "asc" } },
     },
   });
 
@@ -42,6 +43,10 @@ export async function GET() {
       customerPhone: o.customer.phoneDigits,
       customerName: o.customer.displayName,
       source: o.source,
+      lines: o.lines.map((l) => ({
+        sortIndex: l.sortIndex,
+        payload: l.payload,
+      })),
     })),
   });
 }

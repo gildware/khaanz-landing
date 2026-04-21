@@ -38,8 +38,8 @@ import { formatComboComponentSummary, isComboAvailable } from "@/lib/menu-combos
 import {
   cartLinesToReceiptRows,
   kotLinesFromCart,
-  printPosBillThermalStrict,
-  printPosKotThermalStrict,
+  printPosBillThermal,
+  printPosKotThermal,
   type PosBillPrintOptions,
 } from "@/lib/pos-print";
 import {
@@ -544,57 +544,37 @@ export default function AdminPosPage() {
         setLandmark("");
 
         const port = thermalPortRef.current;
-        const needsKot = printMode === "kot" || printMode === "both";
-        const needsBill = printMode === "bill" || printMode === "both";
-        if (needsKot || needsBill) {
-          if (!port) {
-            toast.error(
-              "Connect the USB thermal printer first — KOT and bill print only to the thermal device.",
-            );
-          } else {
-            if (needsKot) {
-              try {
-                await printPosKotThermalStrict(
-                  {
-                    restaurantName: SITE.name,
-                    billHeader: header,
-                    orderRef,
-                    fulfillmentLabel: fulfillLabel,
-                    notes: notesSnap,
-                    lines: snapshotKot,
-                  },
-                  port,
-                );
-              } catch (e) {
-                console.error(e);
-                toast.error("Could not print KOT to thermal printer.");
-              }
-            }
-            if (needsBill) {
-              try {
-                await printPosBillThermalStrict(
-                  buildBillOptions({
-                    lines: snapshotLines,
-                    printTotal: snapTotal,
-                    orderRef,
-                    proforma: false,
-                    fulfillmentPrint: fulfillLabel,
-                    namePrint: nameSnap,
-                    phonePrint: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
-                    notesPrint: notesSnap,
-                    footerPrint: footerNote,
-                    paymentLabel: paymentDisplayName(payKey),
-                    header,
-                    footer,
-                  }),
-                  port,
-                );
-              } catch (e) {
-                console.error(e);
-                toast.error("Could not print bill to thermal printer.");
-              }
-            }
-          }
+        if (printMode === "kot" || printMode === "both") {
+          await printPosKotThermal(
+            {
+              restaurantName: SITE.name,
+              billHeader: header,
+              orderRef,
+              fulfillmentLabel: fulfillLabel,
+              notes: notesSnap,
+              lines: snapshotKot,
+            },
+            port,
+          );
+        }
+        if (printMode === "bill" || printMode === "both") {
+          await printPosBillThermal(
+            buildBillOptions({
+              lines: snapshotLines,
+              printTotal: snapTotal,
+              orderRef,
+              proforma: false,
+              fulfillmentPrint: fulfillLabel,
+              namePrint: nameSnap,
+              phonePrint: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
+              notesPrint: notesSnap,
+              footerPrint: footerNote,
+              paymentLabel: paymentDisplayName(payKey),
+              header,
+              footer,
+            }),
+            port,
+          );
         }
       } catch {
         toast.error("Network error.");
@@ -655,7 +635,7 @@ export default function AdminPosPage() {
             </h1>
             <p className="text-muted-foreground text-sm">
               {
-                "Dine-in, pickup, or delivery. Save & KOT / Bill / Print send to the USB thermal only (no browser print dialog)."
+                "Dine-in, pickup, or delivery. Save & KOT / Bill / Print use USB thermal when connected; otherwise a print dialog opens so you always get a copy."
               }
             </p>
           </div>

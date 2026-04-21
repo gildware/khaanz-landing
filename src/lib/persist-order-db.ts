@@ -121,7 +121,7 @@ export async function persistPosOrderToDatabase(
         id: orderId,
         orderRef,
         customerId: customer.id,
-        status: "PENDING",
+        status: "ACCEPTED",
         fulfillment: parsed.fulfillment,
         scheduleMode: parsed.scheduleMode,
         scheduledAt,
