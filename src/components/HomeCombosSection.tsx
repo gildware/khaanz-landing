@@ -23,20 +23,18 @@ function matchesComboSearch(combo: MenuCombo, q: string): boolean {
 export function HomeCombosSection() {
   const { searchQuery } = useMenuExplore();
   const { data, isLoading } = useMenuData();
-  const items = data?.items ?? [];
-  const combos = data?.combos ?? [];
   const q = searchQuery;
 
-  const visible = useMemo(
-    () =>
-      combos.filter(
-        (c) =>
-          c.available !== false &&
-          isComboAvailable(c, items) &&
-          matchesComboSearch(c, q),
-      ),
-    [combos, items, q],
-  );
+  const visible = useMemo(() => {
+    const items = data?.items ?? [];
+    const combos = data?.combos ?? [];
+    return combos.filter(
+      (c) =>
+        c.available !== false &&
+        isComboAvailable(c, items) &&
+        matchesComboSearch(c, q),
+    );
+  }, [data?.items, data?.combos, q]);
 
   if (isLoading && !data) return null;
   if (visible.length === 0) return null;

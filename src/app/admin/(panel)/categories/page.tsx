@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -64,23 +64,29 @@ export default function AdminCategoriesPage() {
     return m;
   }, []);
 
-  const applyDefaults = (cat: MenuCategoryDef): MenuCategoryDef => {
-    const key = cat.name.trim().toLowerCase();
-    const preset = key ? presetByName.get(key) : undefined;
-    const icon = (cat.icon || preset?.icon || FALLBACK_ICON).trim() || FALLBACK_ICON;
-    const image =
-      (cat.image || preset?.image || fallbackImage).trim() ||
-      preset?.image ||
-      "";
-    return { ...cat, name: cat.name.trim(), icon, image };
-  };
+  const applyDefaults = useCallback(
+    (cat: MenuCategoryDef): MenuCategoryDef => {
+      const key = cat.name.trim().toLowerCase();
+      const preset = key ? presetByName.get(key) : undefined;
+      const icon =
+        (cat.icon || preset?.icon || FALLBACK_ICON).trim() || FALLBACK_ICON;
+      const image =
+        (cat.image || preset?.image || fallbackImage).trim() ||
+        preset?.image ||
+        "";
+      return { ...cat, name: cat.name.trim(), icon, image };
+    },
+    [fallbackImage, presetByName],
+  );
 
-  const normalizeList = (list: MenuCategoryDef[]): MenuCategoryDef[] =>
-    list.map(applyDefaults);
+  const normalizeList = useCallback(
+    (list: MenuCategoryDef[]): MenuCategoryDef[] => list.map(applyDefaults),
+    [applyDefaults],
+  );
 
   useEffect(() => {
     setRows(data?.categories?.length ? normalizeList([...data.categories]) : []);
-  }, [data?.categories]);
+  }, [data?.categories, normalizeList]);
 
   const save = async () => {
     if (!data) return;
