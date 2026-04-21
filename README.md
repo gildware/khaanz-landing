@@ -22,6 +22,15 @@ npx prisma migrate deploy     # apply migrations
 npm run db:seed               # super admin + default menu + settings row (first time)
 ```
 
+### Production Docker / slim runtime
+
+The production image includes `prisma/`, `src/`, and `tsconfig.json` so you can run migrations and seed **inside the container** (after setting `DATABASE_URL` and optional `SEED_*` vars):
+
+```bash
+npx prisma migrate deploy
+SEED_SUPER_ADMIN_EMAIL="you@example.com" SEED_SUPER_ADMIN_PASSWORD="…" npm run db:seed
+```
+
 ## Environment variables
 
 | Variable | Purpose |
