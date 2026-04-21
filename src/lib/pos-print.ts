@@ -306,7 +306,7 @@ function toEscPosKotInput(
   };
 }
 
-/** Raw ESC/POS bill only — no browser print dialog (use when user expects silent thermal). */
+/** Raw ESC/POS bill only — no browser print dialog. */
 export async function printPosBillThermalStrict(
   options: PosBillPrintOptions,
   port: ThermalSerialPort,
@@ -315,34 +315,11 @@ export async function printPosBillThermalStrict(
   await writeEscPosToPort(port, bytes);
 }
 
-/** Try raw ESC/POS over Web Serial; falls back to HTML print dialog. */
-export async function printPosBillThermal(
-  options: PosBillPrintOptions,
-  port: ThermalSerialPort | null,
-): Promise<void> {
-  if (port) {
-    try {
-      await printPosBillThermalStrict(options, port);
-      return;
-    } catch (e) {
-      console.error("ESC/POS bill failed, falling back to print dialog:", e);
-    }
-  }
-  printPosBill(options);
-}
-
-export async function printPosKotThermal(
+/** Raw ESC/POS KOT only — no browser print dialog. */
+export async function printPosKotThermalStrict(
   options: PosKotPrintOptions,
-  port: ThermalSerialPort | null,
+  port: ThermalSerialPort,
 ): Promise<void> {
-  if (port) {
-    try {
-      const bytes = buildEscPosKot(toEscPosKotInput(options));
-      await writeEscPosToPort(port, bytes);
-      return;
-    } catch (e) {
-      console.error("ESC/POS KOT failed, falling back to print dialog:", e);
-    }
-  }
-  printPosKot(options);
+  const bytes = buildEscPosKot(toEscPosKotInput(options));
+  await writeEscPosToPort(port, bytes);
 }

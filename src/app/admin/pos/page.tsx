@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  CheckCircle2Icon,
   ChevronDownIcon,
   ExternalLinkIcon,
   ImageIcon,
@@ -37,9 +38,8 @@ import { formatComboComponentSummary, isComboAvailable } from "@/lib/menu-combos
 import {
   cartLinesToReceiptRows,
   kotLinesFromCart,
-  printPosBillThermal,
   printPosBillThermalStrict,
-  printPosKotThermal,
+  printPosKotThermalStrict,
   type PosBillPrintOptions,
 } from "@/lib/pos-print";
 import {
@@ -126,6 +126,7 @@ export default function AdminPosPage() {
   const [paymentMethodKey, setPaymentMethodKey] = useState("");
   const thermalPortRef = useRef<ThermalSerialPort | null>(null);
   const [thermalConnecting, setThermalConnecting] = useState(false);
+  const [thermalConnected, setThermalConnected] = useState(false);
 
   /** After checkout, cart is cleared — keep a snapshot so reprint works. */
   const [lastBill, setLastBill] = useState<{
@@ -435,6 +436,7 @@ export default function AdminPosPage() {
       return;
     }
     setThermalConnecting(true);
+    setThermalConnected(false);
     try {
       if (thermalPortRef.current) {
         await closeThermalPort(thermalPortRef.current);
@@ -443,9 +445,11 @@ export default function AdminPosPage() {
       const port = await requestThermalSerialPort();
       await openThermalPort(port, 9600);
       thermalPortRef.current = port;
+      setThermalConnected(true);
       toast.success("Thermal printer connected");
     } catch (e) {
       console.error(e);
+      setThermalConnected(false);
       toast.error("Could not connect printer.");
     } finally {
       setThermalConnecting(false);
@@ -540,37 +544,57 @@ export default function AdminPosPage() {
         setLandmark("");
 
         const port = thermalPortRef.current;
-        if (printMode === "kot" || printMode === "both") {
-          await printPosKotThermal(
-            {
-              restaurantName: SITE.name,
-              billHeader: header,
-              orderRef,
-              fulfillmentLabel: fulfillLabel,
-              notes: notesSnap,
-              lines: snapshotKot,
-            },
-            port,
-          );
-        }
-        if (printMode === "bill" || printMode === "both") {
-          await printPosBillThermal(
-            buildBillOptions({
-              lines: snapshotLines,
-              printTotal: snapTotal,
-              orderRef,
-              proforma: false,
-              fulfillmentPrint: fulfillLabel,
-              namePrint: nameSnap,
-              phonePrint: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
-              notesPrint: notesSnap,
-              footerPrint: footerNote,
-              paymentLabel: paymentDisplayName(payKey),
-              header,
-              footer,
-            }),
-            port,
-          );
+        const needsKot = printMode === "kot" || printMode === "both";
+        const needsBill = printMode === "bill" || printMode === "both";
+        if (needsKot || needsBill) {
+          if (!port) {
+            toast.error(
+              "Connect the USB thermal printer first — KOT and bill print only to the thermal device.",
+            );
+          } else {
+            if (needsKot) {
+              try {
+                await printPosKotThermalStrict(
+                  {
+                    restaurantName: SITE.name,
+                    billHeader: header,
+                    orderRef,
+                    fulfillmentLabel: fulfillLabel,
+                    notes: notesSnap,
+                    lines: snapshotKot,
+                  },
+                  port,
+                );
+              } catch (e) {
+                console.error(e);
+                toast.error("Could not print KOT to thermal printer.");
+              }
+            }
+            if (needsBill) {
+              try {
+                await printPosBillThermalStrict(
+                  buildBillOptions({
+                    lines: snapshotLines,
+                    printTotal: snapTotal,
+                    orderRef,
+                    proforma: false,
+                    fulfillmentPrint: fulfillLabel,
+                    namePrint: nameSnap,
+                    phonePrint: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
+                    notesPrint: notesSnap,
+                    footerPrint: footerNote,
+                    paymentLabel: paymentDisplayName(payKey),
+                    header,
+                    footer,
+                  }),
+                  port,
+                );
+              } catch (e) {
+                console.error(e);
+                toast.error("Could not print bill to thermal printer.");
+              }
+            }
+          }
         }
       } catch {
         toast.error("Network error.");
@@ -593,98 +617,6 @@ export default function AdminPosPage() {
       paymentDisplayName,
     ],
   );
-
-  const handlePrintBillThermal = useCallback(async () => {
-    const rows = cart.length > 0 ? receiptRows : lastBill?.lines ?? [];
-    const printTotal = cart.length > 0 ? total : lastBill?.total ?? 0;
-    const orderRef = cart.length > 0 ? null : lastBill?.orderRef ?? null;
-    if (rows.length === 0) {
-      toast.error("Nothing to print.");
-      return;
-    }
-
-    if (!isWebSerialSupported()) {
-      toast.error("USB thermal needs Chrome or Edge (HTTPS or localhost).");
-      return;
-    }
-
-    const port = thermalPortRef.current;
-    if (!port) {
-      toast.error("Connect the USB thermal printer first.");
-      return;
-    }
-
-    const namePrint =
-      cart.length > 0
-        ? customerName.trim() || "Guest"
-        : lastBill?.customerName ?? "Guest";
-    const phonePrint =
-      cart.length > 0
-        ? phone.trim()
-          ? normalizeIndianMobileDigits(phone)
-          : POS_ANONYMOUS_PHONE_DIGITS
-        : lastBill?.phoneDigits ?? POS_ANONYMOUS_PHONE_DIGITS;
-    const notesPrint = cart.length > 0 ? notes : lastBill?.notes ?? "";
-    const fulfillmentPrint =
-      cart.length > 0
-        ? posFulfillmentLabel(fulfillment)
-        : lastBill?.fulfillmentLabel ?? "Dine-in";
-    const footerPrint =
-      cart.length > 0
-        ? fulfillment === "delivery"
-          ? buildDeliveryFooterNote(address, landmark)
-          : ""
-        : lastBill?.footerNote ?? "";
-    const header = cart.length > 0
-      ? posSettings?.billHeader ?? ""
-      : lastBill?.billHeader ?? "";
-    const foot = cart.length > 0
-      ? posSettings?.billFooter ?? ""
-      : lastBill?.billFooter ?? "";
-    const payLabel =
-      cart.length > 0
-        ? paymentDisplayName(paymentMethodKey)
-        : lastBill?.paymentLabel ?? "";
-
-    try {
-      await printPosBillThermalStrict(
-        buildBillOptions({
-          lines: rows,
-          printTotal,
-          orderRef,
-          proforma: orderRef === null,
-          fulfillmentPrint,
-          namePrint,
-          phonePrint,
-          notesPrint,
-          footerPrint,
-          paymentLabel: payLabel,
-          header,
-          footer: foot,
-        }),
-        port,
-      );
-      toast.success("Bill sent to printer");
-    } catch (e) {
-      console.error(e);
-      toast.error("Could not print to thermal printer.");
-    }
-  }, [
-    cart.length,
-    customerName,
-    phone,
-    notes,
-    receiptRows,
-    total,
-    fulfillment,
-    lastBill,
-    address,
-    landmark,
-    posSettings,
-    paymentMethodKey,
-    buildBillOptions,
-    paymentDisplayName,
-  ]);
 
   if (isLoading) {
     return (
@@ -722,8 +654,9 @@ export default function AdminPosPage() {
               {SITE.name} POS
             </h1>
             <p className="text-muted-foreground text-sm">
-              Dine-in, pickup, or delivery. Bill prints silently over USB thermal when
-              connected.
+              {
+                "Dine-in, pickup, or delivery. Save & KOT / Bill / Print send to the USB thermal only (no browser print dialog)."
+              }
             </p>
           </div>
         </div>
@@ -1112,8 +1045,7 @@ export default function AdminPosPage() {
             {lastBill ? (
               <p className="text-muted-foreground text-xs">
                 Last placed:{" "}
-                <strong className="text-foreground">{lastBill.orderRef}</strong>{" "}
-                — use Print bill for a thermal copy.
+                <strong className="text-foreground">{lastBill.orderRef}</strong>
               </p>
             ) : null}
           </div>
@@ -1149,53 +1081,59 @@ export default function AdminPosPage() {
               )}
             </div>
             {isWebSerialSupported() ? (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="w-full"
-                disabled={thermalConnecting}
-                onClick={() => void connectThermalPrinter()}
-              >
-                {thermalConnecting ? (
-                  <Loader2Icon className="size-4 animate-spin" />
-                ) : (
-                  <>
-                    <PrinterIcon className="mr-2 size-4" />
-                    Connect USB thermal printer
-                  </>
-                )}
-              </Button>
+              <div className="space-y-2">
+                {thermalConnected ? (
+                  <div
+                    className="flex items-center gap-2 rounded-lg border border-emerald-500/35 bg-emerald-500/10 px-3 py-2.5 text-sm text-emerald-950 dark:text-emerald-50"
+                    role="status"
+                  >
+                    <CheckCircle2Icon
+                      className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      aria-hidden
+                    />
+                    <span className="font-medium">Thermal printer connected</span>
+                  </div>
+                ) : null}
+                <Button
+                  type="button"
+                  variant={thermalConnected ? "outline" : "secondary"}
+                  size="sm"
+                  className="w-full"
+                  disabled={thermalConnecting}
+                  onClick={() => void connectThermalPrinter()}
+                >
+                  {thermalConnecting ? (
+                    <Loader2Icon className="size-4 animate-spin" />
+                  ) : (
+                    <>
+                      <PrinterIcon className="mr-2 size-4" />
+                      {thermalConnected
+                        ? "Reconnect USB thermal printer"
+                        : "Connect USB thermal printer"}
+                    </>
+                  )}
+                </Button>
+              </div>
             ) : (
               <p className="text-muted-foreground text-xs">
-                Connect a USB thermal printer, then use Print bill to send the receipt
-                directly (no browser print dialog).
+                USB thermal printing needs Chrome or Edge over HTTPS or localhost.
               </p>
             )}
             <div className="flex flex-col gap-2">
               <Button
                 type="button"
-                variant="outline"
-                className="w-full gap-2"
-                disabled={cart.length === 0 && !lastBill}
-                onClick={() => void handlePrintBillThermal()}
+                variant="default"
+                className="w-full"
+                disabled={placing || cart.length === 0}
+                onClick={() => void submitPosOrder("none")}
               >
-                <PrinterIcon className="size-4" />
-                Print bill (thermal)
+                {placing ? (
+                  <Loader2Icon className="size-4 animate-spin" />
+                ) : (
+                  "Save"
+                )}
               </Button>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={placing || cart.length === 0}
-                  onClick={() => void submitPosOrder("none")}
-                >
-                  {placing ? (
-                    <Loader2Icon className="size-4 animate-spin" />
-                  ) : (
-                    "Save"
-                  )}
-                </Button>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <Button
                   type="button"
                   variant="outline"
@@ -1222,6 +1160,7 @@ export default function AdminPosPage() {
                 </Button>
                 <Button
                   type="button"
+                  variant="outline"
                   disabled={placing || cart.length === 0}
                   onClick={() => void submitPosOrder("both")}
                 >
