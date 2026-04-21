@@ -37,8 +37,8 @@ import { formatComboComponentSummary, isComboAvailable } from "@/lib/menu-combos
 import {
   cartLinesToReceiptRows,
   kotLinesFromCart,
-  printPosBill,
   printPosBillThermal,
+  printPosBillThermalStrict,
   printPosKotThermal,
   type PosBillPrintOptions,
 } from "@/lib/pos-print";
@@ -594,12 +594,23 @@ export default function AdminPosPage() {
     ],
   );
 
-  const handlePrintPreview = useCallback(() => {
+  const handlePrintBillThermal = useCallback(async () => {
     const rows = cart.length > 0 ? receiptRows : lastBill?.lines ?? [];
     const printTotal = cart.length > 0 ? total : lastBill?.total ?? 0;
     const orderRef = cart.length > 0 ? null : lastBill?.orderRef ?? null;
     if (rows.length === 0) {
       toast.error("Nothing to print.");
+      return;
+    }
+
+    if (!isWebSerialSupported()) {
+      toast.error("USB thermal needs Chrome or Edge (HTTPS or localhost).");
+      return;
+    }
+
+    const port = thermalPortRef.current;
+    if (!port) {
+      toast.error("Connect the USB thermal printer first.");
       return;
     }
 
@@ -635,22 +646,29 @@ export default function AdminPosPage() {
         ? paymentDisplayName(paymentMethodKey)
         : lastBill?.paymentLabel ?? "";
 
-    printPosBill(
-      buildBillOptions({
-        lines: rows,
-        printTotal,
-        orderRef,
-        proforma: orderRef === null,
-        fulfillmentPrint,
-        namePrint,
-        phonePrint,
-        notesPrint,
-        footerPrint,
-        paymentLabel: payLabel,
-        header,
-        footer: foot,
-      }),
-    );
+    try {
+      await printPosBillThermalStrict(
+        buildBillOptions({
+          lines: rows,
+          printTotal,
+          orderRef,
+          proforma: orderRef === null,
+          fulfillmentPrint,
+          namePrint,
+          phonePrint,
+          notesPrint,
+          footerPrint,
+          paymentLabel: payLabel,
+          header,
+          footer: foot,
+        }),
+        port,
+      );
+      toast.success("Bill sent to printer");
+    } catch (e) {
+      console.error(e);
+      toast.error("Could not print to thermal printer.");
+    }
   }, [
     cart.length,
     customerName,
@@ -704,7 +722,8 @@ export default function AdminPosPage() {
               {SITE.name} POS
             </h1>
             <p className="text-muted-foreground text-sm">
-              Dine-in, pickup, or delivery. Preview and print on the right.
+              Dine-in, pickup, or delivery. Bill prints silently over USB thermal when
+              connected.
             </p>
           </div>
         </div>
@@ -1094,7 +1113,7 @@ export default function AdminPosPage() {
               <p className="text-muted-foreground text-xs">
                 Last placed:{" "}
                 <strong className="text-foreground">{lastBill.orderRef}</strong>{" "}
-                — use Print preview for a copy.
+                — use Print bill for a thermal copy.
               </p>
             ) : null}
           </div>
@@ -1149,9 +1168,8 @@ export default function AdminPosPage() {
               </Button>
             ) : (
               <p className="text-muted-foreground text-xs">
-                Use Chrome/Edge over HTTPS to connect a USB thermal printer for
-                silent ESC/POS printing; otherwise the system print dialog opens
-                (choose your thermal printer there).
+                Connect a USB thermal printer, then use Print bill to send the receipt
+                directly (no browser print dialog).
               </p>
             )}
             <div className="flex flex-col gap-2">
@@ -1160,10 +1178,10 @@ export default function AdminPosPage() {
                 variant="outline"
                 className="w-full gap-2"
                 disabled={cart.length === 0 && !lastBill}
-                onClick={() => handlePrintPreview()}
+                onClick={() => void handlePrintBillThermal()}
               >
                 <PrinterIcon className="size-4" />
-                Print preview (bill)
+                Print bill (thermal)
               </Button>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button

@@ -306,6 +306,15 @@ function toEscPosKotInput(
   };
 }
 
+/** Raw ESC/POS bill only — no browser print dialog (use when user expects silent thermal). */
+export async function printPosBillThermalStrict(
+  options: PosBillPrintOptions,
+  port: ThermalSerialPort,
+): Promise<void> {
+  const bytes = buildEscPosBill(toEscPosBillInput(options));
+  await writeEscPosToPort(port, bytes);
+}
+
 /** Try raw ESC/POS over Web Serial; falls back to HTML print dialog. */
 export async function printPosBillThermal(
   options: PosBillPrintOptions,
@@ -313,8 +322,7 @@ export async function printPosBillThermal(
 ): Promise<void> {
   if (port) {
     try {
-      const bytes = buildEscPosBill(toEscPosBillInput(options));
-      await writeEscPosToPort(port, bytes);
+      await printPosBillThermalStrict(options, port);
       return;
     } catch (e) {
       console.error("ESC/POS bill failed, falling back to print dialog:", e);
