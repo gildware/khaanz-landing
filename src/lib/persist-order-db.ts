@@ -73,6 +73,7 @@ export async function persistOrderToDatabase(
         messageSentViaWhatsApp,
         source: "website" satisfies OrderSource,
         paymentMethod: "",
+        dineInTable: "",
         lines: {
           create: parsed.lines.map((line, sortIndex) => ({
             sortIndex,
@@ -90,7 +91,7 @@ export async function persistOrderToDatabase(
 export async function persistPosOrderToDatabase(
   orderId: string,
   parsed: OrderCreateParsed,
-  options?: { paymentMethodKey?: string },
+  options?: { paymentMethodKey?: string; dineInTable?: string },
 ): Promise<{ orderRef: string }> {
   const prisma = getPrisma();
   const digits = phoneDigits(parsed.phone);
@@ -101,6 +102,7 @@ export async function persistPosOrderToDatabase(
       : null;
 
   const paymentKey = (options?.paymentMethodKey ?? "").trim().slice(0, 64);
+  const dineInTable = (options?.dineInTable ?? "").trim().slice(0, 80);
 
   return prisma.$transaction(async (tx) => {
     const customer = await tx.customer.upsert({
@@ -134,6 +136,7 @@ export async function persistPosOrderToDatabase(
         messageSentViaWhatsApp: false,
         source: "pos" satisfies OrderSource,
         paymentMethod: paymentKey,
+        dineInTable,
         lines: {
           create: parsed.lines.map((line, sortIndex) => ({
             sortIndex,

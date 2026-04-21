@@ -88,7 +88,9 @@ export function AdminNewOrderNotifier() {
 
   const poll = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/orders", { credentials: "include" });
+      const res = await fetch("/api/admin/orders?limit=100&offset=0", {
+        credentials: "include",
+      });
       if (res.status === 401) return;
       if (!res.ok) return;
 

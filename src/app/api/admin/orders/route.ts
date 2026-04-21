@@ -7,7 +7,10 @@ import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+const DEFAULT_LIMIT = 100;
+const MAX_LIMIT = 100;
+
+export async function GET(request: Request) {
   const cookieStore = await cookies();
   const session = await verifyAdminToken(
     cookieStore.get(ADMIN_TOKEN_COOKIE)?.value,
@@ -16,10 +19,23 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const url = new URL(request.url);
+  const limitRaw = url.searchParams.get("limit");
+  const offsetRaw = url.searchParams.get("offset");
+  const pageSize = Math.min(
+    Math.max(
+      parseInt(limitRaw ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT,
+      1,
+    ),
+    MAX_LIMIT,
+  );
+  const skip = Math.max(parseInt(offsetRaw ?? "0", 10) || 0, 0);
+
   const prisma = getPrisma();
-  const orders = await prisma.order.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 100,
+  const rows = await prisma.order.findMany({
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    skip,
+    take: pageSize + 1,
     include: {
       customer: {
         select: { phoneDigits: true, displayName: true },
@@ -28,7 +44,11 @@ export async function GET() {
     },
   });
 
+  const hasMore = rows.length > pageSize;
+  const orders = rows.slice(0, pageSize);
+
   return NextResponse.json({
+    hasMore,
     orders: orders.map((o) => ({
       id: o.id,
       orderRef: o.orderRef,
@@ -43,6 +63,7 @@ export async function GET() {
       customerPhone: o.customer.phoneDigits,
       customerName: o.customer.displayName,
       source: o.source,
+      dineInTable: o.dineInTable,
       lines: o.lines.map((l) => ({
         sortIndex: l.sortIndex,
         payload: l.payload,

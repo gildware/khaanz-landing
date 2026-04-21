@@ -6,6 +6,7 @@ import type {
   PaymentMethodConfig,
   RestaurantSettingsPayload,
 } from "@/types/restaurant-settings";
+import { readFloorPlan } from "@/lib/floor-plan";
 import {
   isRestaurantSettingsPayload,
   normalizeHHMM,
@@ -54,8 +55,11 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const payload = await readRestaurantSettings();
-  return NextResponse.json(payload);
+  const [payload, floorPlan] = await Promise.all([
+    readRestaurantSettings(),
+    readFloorPlan(),
+  ]);
+  return NextResponse.json({ ...payload, floorPlan });
 }
 
 export async function PUT(request: Request) {

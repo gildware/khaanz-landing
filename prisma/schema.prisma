@@ -40,6 +40,8 @@ model RestaurantSettings {
   billHeader        String   @default("") @map("bill_header")
   billFooter        String   @default("") @map("bill_footer")
   paymentMethodsJson Json    @default("[{\"id\":\"cash\",\"name\":\"Cash\"},{\"id\":\"upi\",\"name\":\"UPI\"},{\"id\":\"mpay\",\"name\":\"Mpay\"}]") @map("payment_methods_json")
+  /// POS dine-in floor plan: `{ "tables": [{ "id", "label", "xPct", "yPct", "wPct", "hPct" }] }` (percent of layout box).
+  floorPlanJson      Json     @default("{\"tables\":[]}") @map("floor_plan_json")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
   @@map("restaurant_settings")
@@ -223,6 +225,8 @@ model Order {
   source                 OrderSource     @default(website) @map("order_source")
   /// POS payment method key (matches configured payment method id), e.g. cash, upi
   paymentMethod          String          @default("") @map("payment_method")
+  /// Dine-in table label at order time (POS); empty for pickup/delivery or legacy dine-in.
+  dineInTable            String          @default("") @map("dine_in_table") @db.VarChar(80)
   createdAt              DateTime        @default(now()) @map("created_at")
   updatedAt              DateTime        @updatedAt @map("updated_at")
 

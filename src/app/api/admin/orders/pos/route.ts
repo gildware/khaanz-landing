@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { cookies } from "next/headers";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
+import { readFloorPlan } from "@/lib/floor-plan";
 import { persistPosOrderToDatabase } from "@/lib/persist-order-db";
 import { parseOrderCreateBody } from "@/lib/parse-order-create-body";
 import { readRestaurantSettings } from "@/lib/settings-repository";
@@ -34,6 +35,7 @@ export async function POST(req: Request) {
   const rawPm =
     typeof body.paymentMethodKey === "string" ? body.paymentMethodKey.trim().slice(0, 64) : "";
   const settings = await readRestaurantSettings();
+  const floorPlan = await readFloorPlan();
   const allowed = new Set(settings.paymentMethods.map((p) => p.id));
   let paymentMethodKey = "";
   if (rawPm) {
@@ -46,12 +48,27 @@ export async function POST(req: Request) {
     paymentMethodKey = rawPm;
   }
 
+  let dineInTable = "";
+  if (parsed.fulfillment === "dine_in" && floorPlan.tables.length > 0) {
+    const tableId =
+      typeof body.tableId === "string" ? body.tableId.trim().slice(0, 64) : "";
+    const t = floorPlan.tables.find((x) => x.id === tableId);
+    if (!t) {
+      return Response.json(
+        { error: "Choose a table for dine-in (floor plan is configured)." },
+        { status: 400 },
+      );
+    }
+    dineInTable = t.label.trim().slice(0, 80);
+  }
+
   const orderId = randomUUID();
 
   let orderRef: string;
   try {
     const out = await persistPosOrderToDatabase(orderId, parsed, {
       paymentMethodKey,
+      dineInTable,
     });
     orderRef = out.orderRef;
   } catch (e) {

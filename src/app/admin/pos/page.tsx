@@ -2,16 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  CheckCircle2Icon,
   ChevronDownIcon,
   ExternalLinkIcon,
   ImageIcon,
   Loader2Icon,
   MinusIcon,
   PlusIcon,
-  PrinterIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,6 +17,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -42,13 +41,6 @@ import {
   printPosKotThermal,
   type PosBillPrintOptions,
 } from "@/lib/pos-print";
-import {
-  closeThermalPort,
-  isWebSerialSupported,
-  openThermalPort,
-  requestThermalSerialPort,
-} from "@/lib/thermal-serial";
-import type { ThermalSerialPort } from "@/lib/thermal-serial";
 import { SITE } from "@/lib/site";
 import {
   isIndianMobile10,
@@ -69,6 +61,7 @@ import type {
 import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
 import type { FulfillmentMode } from "@/types/restaurant-settings";
 import type { RestaurantSettingsPayload } from "@/types/restaurant-settings";
+import type { FloorPlanPayload } from "@/types/floor-plan";
 
 function formatMoney(n: number): string {
   return `₹${n.toFixed(0)}`;
@@ -123,10 +116,9 @@ export default function AdminPosPage() {
   const [posSettings, setPosSettings] = useState<RestaurantSettingsPayload | null>(
     null,
   );
+  const [floorPlan, setFloorPlan] = useState<FloorPlanPayload>({ tables: [] });
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [paymentMethodKey, setPaymentMethodKey] = useState("");
-  const thermalPortRef = useRef<ThermalSerialPort | null>(null);
-  const [thermalConnecting, setThermalConnecting] = useState(false);
-  const [thermalConnected, setThermalConnected] = useState(false);
 
   /** After checkout, cart is cleared — keep a snapshot so reprint works. */
   const [lastBill, setLastBill] = useState<{
@@ -134,6 +126,7 @@ export default function AdminPosPage() {
     lines: ReturnType<typeof cartLinesToReceiptRows>;
     total: number;
     fulfillmentLabel: string;
+    dineInTable?: string;
     footerNote?: string;
     customerName: string;
     phoneDigits: string;
@@ -178,8 +171,12 @@ export default function AdminPosPage() {
       try {
         const res = await fetch("/api/admin/settings", { credentials: "include" });
         if (!res.ok) return;
-        const data = (await res.json()) as RestaurantSettingsPayload;
-        setPosSettings(data);
+        const data = (await res.json()) as RestaurantSettingsPayload & {
+          floorPlan?: FloorPlanPayload;
+        };
+        const { floorPlan: plan, ...settings } = data;
+        setPosSettings(settings);
+        setFloorPlan(plan ?? { tables: [] });
       } catch {
         /* ignore */
       }
@@ -198,6 +195,28 @@ export default function AdminPosPage() {
   useEffect(() => {
     setCustomerDetailsOpen(fulfillment === "delivery");
   }, [fulfillment]);
+
+  useEffect(() => {
+    if (fulfillment !== "dine_in") setSelectedTableId(null);
+  }, [fulfillment]);
+
+  const needsTablePick =
+    fulfillment === "dine_in" && floorPlan.tables.length > 0;
+  const canAddItems = !needsTablePick || selectedTableId != null;
+  const tablePickModalOpen = needsTablePick && !selectedTableId;
+
+  useEffect(() => {
+    if (!tablePickModalOpen) return;
+    setOpenItemModalOpen(false);
+    setDialogItem(null);
+  }, [tablePickModalOpen]);
+
+  const dineInTableLabel = useMemo(() => {
+    if (!selectedTableId) return "";
+    return (
+      floorPlan.tables.find((t) => t.id === selectedTableId)?.label.trim() ?? ""
+    );
+  }, [floorPlan.tables, selectedTableId]);
 
   const [dialogItem, setDialogItem] = useState<MenuItem | null>(null);
   const [variationId, setVariationId] = useState<string>("");
@@ -230,6 +249,10 @@ export default function AdminPosPage() {
 
   const addItemLine = useCallback(
     (item: MenuItem, variation: MenuVariation, addons: CartAddonWithQty[]) => {
+      if (!canAddItems) {
+        toast.error("Select a table for dine-in before adding items.");
+        return;
+      }
       if (!isMenuItemAvailable(item)) return;
       const unitPrice = computeUnitPrice(variation, addons);
       const lineId = buildLineId(item.id, variation, addons);
@@ -258,10 +281,14 @@ export default function AdminPosPage() {
       });
       toast.success(`Added ${item.name}`);
     },
-    [],
+    [canAddItems],
   );
 
   const addOpenLine = useCallback(() => {
+    if (!canAddItems) {
+      toast.error("Select a table for dine-in before adding items.");
+      return;
+    }
     const name = openItemName.trim();
     const raw = openItemPrice.trim().replace(/,/g, "");
     const price = Number.parseFloat(raw);
@@ -284,9 +311,13 @@ export default function AdminPosPage() {
     setCart((prev) => [...prev, line]);
     toast.success(`Added ${name}`);
     closeOpenItemModal();
-  }, [openItemName, openItemPrice, closeOpenItemModal]);
+  }, [canAddItems, openItemName, openItemPrice, closeOpenItemModal]);
 
   const addComboLine = useCallback((combo: MenuCombo) => {
+    if (!canAddItems) {
+      toast.error("Select a table for dine-in before adding items.");
+      return;
+    }
     if (!isComboAvailable(combo, items)) return;
     const lineId = buildComboLineId(combo.id);
     const componentSummary = formatComboComponentSummary(combo, items);
@@ -313,7 +344,7 @@ export default function AdminPosPage() {
       return [...prev, line];
     });
     toast.success(`Added ${combo.name}`);
-  }, [items]);
+  }, [canAddItems, items]);
 
   const bumpQty = useCallback((lineId: string, delta: number) => {
     setCart((prev) => {
@@ -333,6 +364,10 @@ export default function AdminPosPage() {
   }, []);
 
   const openConfigure = useCallback((item: MenuItem) => {
+    if (!canAddItems) {
+      toast.error("Select a table for dine-in before adding items.");
+      return;
+    }
     if (!isMenuItemAvailable(item)) {
       toast.error("This item is unavailable.");
       return;
@@ -349,7 +384,7 @@ export default function AdminPosPage() {
     setDialogItem(item);
     setVariationId(v0.id);
     setAddonQty(Object.fromEntries(item.addons.map((a) => [a.id, 0])));
-  }, [addItemLine]);
+  }, [addItemLine, canAddItems]);
 
   const confirmConfigure = useCallback(() => {
     if (!dialogItem) return;
@@ -405,6 +440,7 @@ export default function AdminPosPage() {
       orderRef: string | null;
       proforma: boolean;
       fulfillmentPrint: string;
+      dineInTable?: string;
       namePrint: string;
       phonePrint: string;
       notesPrint: string;
@@ -419,6 +455,7 @@ export default function AdminPosPage() {
       orderRef: args.orderRef,
       proforma: args.proforma,
       fulfillmentLabel: args.fulfillmentPrint,
+      dineInTable: args.dineInTable?.trim() || undefined,
       customerName: args.namePrint,
       phoneDigits: args.phonePrint,
       notes: args.notesPrint,
@@ -430,36 +467,18 @@ export default function AdminPosPage() {
     [],
   );
 
-  const connectThermalPrinter = useCallback(async () => {
-    if (!isWebSerialSupported()) {
-      toast.error("USB thermal needs Chrome or Edge (HTTPS or localhost).");
-      return;
-    }
-    setThermalConnecting(true);
-    setThermalConnected(false);
-    try {
-      if (thermalPortRef.current) {
-        await closeThermalPort(thermalPortRef.current);
-        thermalPortRef.current = null;
-      }
-      const port = await requestThermalSerialPort();
-      await openThermalPort(port, 9600);
-      thermalPortRef.current = port;
-      setThermalConnected(true);
-      toast.success("Thermal printer connected");
-    } catch (e) {
-      console.error(e);
-      setThermalConnected(false);
-      toast.error("Could not connect printer.");
-    } finally {
-      setThermalConnecting(false);
-    }
-  }, []);
-
   const submitPosOrder = useCallback(
     async (printMode: "none" | "kot" | "bill" | "both") => {
       if (cart.length === 0) {
         toast.error("Add at least one item.");
+        return;
+      }
+      if (
+        fulfillment === "dine_in" &&
+        floorPlan.tables.length > 0 &&
+        !selectedTableId
+      ) {
+        toast.error("Select a table for dine-in.");
         return;
       }
       if (fulfillment === "delivery" && !address.trim()) {
@@ -491,6 +510,8 @@ export default function AdminPosPage() {
       const nameSnap = customerName.trim() || "Guest";
       const notesSnap = notes.trim();
       const fulfillLabel = posFulfillmentLabel(fulfillment);
+      const tablePrintLabel =
+        fulfillment === "dine_in" && dineInTableLabel ? dineInTableLabel : "";
 
       setPlacing(true);
       try {
@@ -511,6 +532,7 @@ export default function AdminPosPage() {
             latitude: null,
             longitude: null,
             paymentMethodKey: payKey,
+            tableId: selectedTableId ?? "",
           }),
         });
         const j = (await res.json()) as { orderRef?: string; error?: string };
@@ -529,6 +551,7 @@ export default function AdminPosPage() {
           lines: snapshotLines,
           total: snapTotal,
           fulfillmentLabel: fulfillLabel,
+          dineInTable: tablePrintLabel || undefined,
           footerNote: footerNote || undefined,
           customerName: nameSnap,
           phoneDigits: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
@@ -543,19 +566,16 @@ export default function AdminPosPage() {
         setAddress("");
         setLandmark("");
 
-        const port = thermalPortRef.current;
         if (printMode === "kot" || printMode === "both") {
-          await printPosKotThermal(
-            {
-              restaurantName: SITE.name,
-              billHeader: header,
-              orderRef,
-              fulfillmentLabel: fulfillLabel,
-              notes: notesSnap,
-              lines: snapshotKot,
-            },
-            port,
-          );
+          await printPosKotThermal({
+            restaurantName: SITE.name,
+            billHeader: header,
+            orderRef,
+            fulfillmentLabel: fulfillLabel,
+            dineInTable: tablePrintLabel || undefined,
+            notes: notesSnap,
+            lines: snapshotKot,
+          });
         }
         if (printMode === "bill" || printMode === "both") {
           await printPosBillThermal(
@@ -565,6 +585,7 @@ export default function AdminPosPage() {
               orderRef,
               proforma: false,
               fulfillmentPrint: fulfillLabel,
+              dineInTable: tablePrintLabel || undefined,
               namePrint: nameSnap,
               phonePrint: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
               notesPrint: notesSnap,
@@ -573,7 +594,6 @@ export default function AdminPosPage() {
               header,
               footer,
             }),
-            port,
           );
         }
       } catch {
@@ -595,6 +615,9 @@ export default function AdminPosPage() {
       paymentMethodKey,
       buildBillOptions,
       paymentDisplayName,
+      floorPlan.tables.length,
+      selectedTableId,
+      dineInTableLabel,
     ],
   );
 
@@ -634,9 +657,9 @@ export default function AdminPosPage() {
               {SITE.name} POS
             </h1>
             <p className="text-muted-foreground text-sm">
-              {
-                "Dine-in, pickup, or delivery. Save & KOT / Bill / Print use USB thermal when connected; otherwise a print dialog opens so you always get a copy."
-              }
+              Dine-in, pickup, or delivery. Save &amp; KOT / Bill / Print opens your
+              browser&apos;s print dialog (choose your receipt printer or &quot;Save as
+              PDF&quot;).
             </p>
           </div>
         </div>
@@ -667,7 +690,7 @@ export default function AdminPosPage() {
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="flex min-h-0 flex-1">
+            <div className="relative flex min-h-0 flex-1">
               <aside
                 className="flex w-[min(11rem,30vw)] shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-border/50 bg-muted/25 py-2 pl-2 pr-1"
                 aria-label="Categories"
@@ -699,6 +722,7 @@ export default function AdminPosPage() {
                       type="button"
                       size="lg"
                       className="gap-2 rounded-full px-8"
+                      disabled={!canAddItems}
                       onClick={() => setOpenItemModalOpen(true)}
                     >
                       <PlusIcon className="size-4" />
@@ -831,6 +855,24 @@ export default function AdminPosPage() {
                 Delivery
               </Button>
             </div>
+            {fulfillment === "dine_in" && floorPlan.tables.length > 0 && selectedTableId ? (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2 text-sm">
+                <p className="text-muted-foreground">
+                  Table:{" "}
+                  <span className="font-medium text-foreground">
+                    {dineInTableLabel || "—"}
+                  </span>
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedTableId(null)}
+                >
+                  Change table
+                </Button>
+              </div>
+            ) : null}
           </div>
 
           <div className="min-h-0 flex-1 space-y-3 overflow-auto p-3">
@@ -1060,45 +1102,6 @@ export default function AdminPosPage() {
                 </div>
               )}
             </div>
-            {isWebSerialSupported() ? (
-              <div className="space-y-2">
-                {thermalConnected ? (
-                  <div
-                    className="flex items-center gap-2 rounded-lg border border-emerald-500/35 bg-emerald-500/10 px-3 py-2.5 text-sm text-emerald-950 dark:text-emerald-50"
-                    role="status"
-                  >
-                    <CheckCircle2Icon
-                      className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400"
-                      aria-hidden
-                    />
-                    <span className="font-medium">Thermal printer connected</span>
-                  </div>
-                ) : null}
-                <Button
-                  type="button"
-                  variant={thermalConnected ? "outline" : "secondary"}
-                  size="sm"
-                  className="w-full"
-                  disabled={thermalConnecting}
-                  onClick={() => void connectThermalPrinter()}
-                >
-                  {thermalConnecting ? (
-                    <Loader2Icon className="size-4 animate-spin" />
-                  ) : (
-                    <>
-                      <PrinterIcon className="mr-2 size-4" />
-                      {thermalConnected
-                        ? "Reconnect USB thermal printer"
-                        : "Connect USB thermal printer"}
-                    </>
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-xs">
-                USB thermal printing needs Chrome or Edge over HTTPS or localhost.
-              </p>
-            )}
             <div className="flex flex-col gap-2">
               <Button
                 type="button"
@@ -1155,6 +1158,73 @@ export default function AdminPosPage() {
           </div>
         </div>
       </div>
+
+      <Dialog
+        open={tablePickModalOpen}
+        onOpenChange={() => {
+          /* Block dismiss until a table is chosen; use footer actions to leave dine-in. */
+        }}
+      >
+        <DialogContent
+          className="max-w-lg sm:max-w-xl"
+          showCloseButton={false}
+        >
+          <DialogHeader>
+            <DialogTitle>Choose a table</DialogTitle>
+            <DialogDescription>
+              Tap the table for this order. The menu stays locked until you pick
+              one.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-md border bg-muted/50">
+            {floorPlan.tables.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={cn(
+                  "absolute flex items-center justify-center rounded border px-0.5 text-[10px] font-semibold leading-tight shadow-sm transition-colors",
+                  selectedTableId === t.id
+                    ? "border-primary bg-primary text-primary-foreground ring-2 ring-primary/25"
+                    : "border-border bg-card text-foreground hover:bg-muted/80",
+                )}
+                style={{
+                  left: `${t.xPct}%`,
+                  top: `${t.yPct}%`,
+                  width: `${t.widthPct}%`,
+                  height: `${t.heightPct}%`,
+                }}
+                onClick={() => setSelectedTableId(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <DialogFooter className="flex-col items-stretch gap-3 border-t pt-2 sm:flex-col">
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Not dining in? Switch order type — the menu unlocks without a
+              table.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFulfillment("pickup")}
+              >
+                Pickup
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFulfillment("delivery")}
+              >
+                Delivery
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={openItemModalOpen}

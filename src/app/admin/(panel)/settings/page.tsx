@@ -276,7 +276,7 @@ export default function AdminSettingsPage() {
 
         <TabsContent value="bill" className="space-y-6">
           <div className="space-y-3 rounded-xl border bg-card p-4">
-            <p className="font-medium">POS bill &amp; thermal print</p>
+            <p className="font-medium">POS bill &amp; KOT header/footer</p>
             <p className="text-muted-foreground text-xs">
               Shown on customer bills and KOT headers. One line per line break.
             </p>

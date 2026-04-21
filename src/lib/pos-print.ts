@@ -1,10 +1,6 @@
 import type { CartLine } from "@/types/menu";
 import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
 import { isPosAnonymousPhoneDigits } from "@/lib/phone-digits";
-import type { EscPosBillInput, EscPosKotInput } from "@/lib/escpos";
-import { buildEscPosBill, buildEscPosKot } from "@/lib/escpos";
-import type { ThermalSerialPort } from "@/lib/thermal-serial";
-import { writeEscPosToPort } from "@/lib/thermal-serial";
 
 export type PosReceiptAddonRow = {
   name: string;
@@ -95,7 +91,111 @@ export function kotLinesFromCart(
   }));
 }
 
-/** Opens print dialog with 80mm thermal-friendly HTML (browser → OS printer queue). */
+/** Fulfillment enum value as stored on `Order` (e.g. Prisma). */
+export function fulfillmentLabelFromKey(fulfillment: string): string {
+  if (fulfillment === "dine_in") return "Dine-in";
+  if (fulfillment === "pickup") return "Pickup";
+  if (fulfillment === "delivery") return "Delivery";
+  return fulfillment;
+}
+
+/**
+ * Parse a persisted order line `payload` JSON into a POS receipt row
+ * (website checkout and POS saved orders use the same shape).
+ */
+export function orderLinePayloadToPosReceiptLine(
+  payload: unknown,
+): PosReceiptLine | null {
+  if (!payload || typeof payload !== "object") return null;
+  const p = payload as Record<string, unknown>;
+  const qty =
+    typeof p.quantity === "number" && Number.isFinite(p.quantity)
+      ? p.quantity
+      : 1;
+  const unit =
+    typeof p.unitPrice === "number" && Number.isFinite(p.unitPrice)
+      ? p.unitPrice
+      : 0;
+  const subtotal = unit * qty;
+
+  if (p.kind === "combo") {
+    const detail =
+      typeof p.componentSummary === "string" && p.componentSummary.trim()
+        ? ` — ${p.componentSummary}`
+        : "";
+    return {
+      label: `${String(p.name)} (Combo)${detail}`,
+      qty,
+      unit,
+      subtotal,
+    };
+  }
+
+  if (p.kind === "open") {
+    return {
+      label: `${String(p.name)} (Open)`,
+      qty,
+      unit,
+      subtotal,
+    };
+  }
+
+  const v = p.variation as Record<string, unknown> | undefined;
+  const name = String(p.name);
+  const variationName =
+    v && typeof v.name === "string" && v.name.trim() ? v.name : "Default";
+  const addons = Array.isArray(p.addons) ? p.addons : [];
+  const L = qty;
+  const addonRows =
+    addons.length > 0
+      ? (addons as Record<string, unknown>[])
+          .filter(
+            (a) => typeof a.quantity === "number" && (a.quantity as number) > 0,
+          )
+          .map((a) => {
+            const aq = a.quantity as number;
+            const price = typeof a.price === "number" ? a.price : 0;
+            const totalUnits = aq * L;
+            return {
+              name: String(a.name),
+              qty: totalUnits,
+              unit: price,
+              subtotal: price * aq * L,
+            };
+          })
+      : undefined;
+
+  return {
+    label: `${name} (${variationName})`,
+    qty,
+    unit,
+    subtotal,
+    addonRows: addonRows && addonRows.length > 0 ? addonRows : undefined,
+  };
+}
+
+export function receiptLineToKotLine(
+  r: PosReceiptLine,
+): { label: string; qty: number; addonRows?: PosReceiptAddonRow[] } {
+  return {
+    label: r.label,
+    qty: r.qty,
+    addonRows: r.addonRows,
+  };
+}
+
+export function orderLinePayloadsToReceiptLines(
+  lines: { payload: unknown }[],
+): PosReceiptLine[] {
+  const out: PosReceiptLine[] = [];
+  for (const l of lines) {
+    const r = orderLinePayloadToPosReceiptLine(l.payload);
+    if (r) out.push(r);
+  }
+  return out;
+}
+
+/** Opens the system print dialog with 80mm thermal-friendly HTML. */
 export function printThermalHtml(html: string, title = "Receipt"): void {
   const iframe = document.createElement("iframe");
   iframe.style.position = "fixed";
@@ -104,25 +204,58 @@ export function printThermalHtml(html: string, title = "Receipt"): void {
   iframe.style.width = "0";
   iframe.style.height = "0";
   iframe.style.border = "0";
+  iframe.setAttribute("aria-hidden", "true");
   document.body.appendChild(iframe);
   const doc = iframe.contentDocument;
   if (!doc) {
-    document.body.removeChild(iframe);
+    iframe.remove();
     return;
   }
+
+  const w = iframe.contentWindow;
+  const remove = () => {
+    iframe.remove();
+  };
+
+  let printed = false;
+  const runPrint = () => {
+    if (printed) return;
+    printed = true;
+    if (!w) {
+      remove();
+      return;
+    }
+    const onAfterPrint = () => {
+      w.removeEventListener("afterprint", onAfterPrint);
+      remove();
+    };
+    w.addEventListener("afterprint", onAfterPrint);
+    try {
+      w.focus();
+      w.print();
+    } catch {
+      remove();
+      return;
+    }
+    window.setTimeout(() => {
+      w.removeEventListener("afterprint", onAfterPrint);
+      remove();
+    }, 120_000);
+  };
+
+  iframe.onload = () => {
+    window.requestAnimationFrame(runPrint);
+  };
+
   doc.open();
   doc.write(
     `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${escapeHtml(title)}</title></head><body>${html}</body></html>`,
   );
   doc.close();
-  const w = iframe.contentWindow;
-  if (w) {
-    w.focus();
-    w.print();
+
+  if (doc.readyState === "complete") {
+    window.requestAnimationFrame(runPrint);
   }
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-  }, 500);
 }
 
 const THERMAL_STYLE = `
@@ -157,6 +290,8 @@ export type PosBillPrintOptions = {
   orderRef: string | null;
   proforma: boolean;
   fulfillmentLabel: string;
+  /** Printed on bill / KOT when set (dine-in). */
+  dineInTable?: string;
   customerName: string;
   phoneDigits: string;
   notes: string;
@@ -192,6 +327,9 @@ export function buildBillHtmlBody(o: PosBillPrintOptions): string {
     ? `PROFORMA · ${o.fulfillmentLabel}`
     : `${o.orderRef ?? "Order"} · ${o.fulfillmentLabel}`;
 
+  const tableLine =
+    o.dineInTable?.trim() ? `<div class="muted">Table: ${escapeHtml(o.dineInTable.trim())}</div>` : "";
+
   const customerLine = isPosAnonymousPhoneDigits(o.phoneDigits)
     ? escapeHtml(o.customerName)
     : `${escapeHtml(o.customerName)} · +91 ${escapeHtml(o.phoneDigits)}`;
@@ -205,6 +343,7 @@ export function buildBillHtmlBody(o: PosBillPrintOptions): string {
 ${headerHtml}
 <div class="muted">${escapeHtml(headerLine)}</div>
 <div class="muted">${escapeHtml(new Date().toLocaleString("en-IN"))}</div>
+${tableLine}
 <div class="muted">${customerLine}</div>
 ${o.footerNote?.trim() ? `<div class="muted">${escapeHtml(o.footerNote.trim())}</div>` : ""}
 ${o.notes.trim() ? `<div class="muted">Note: ${escapeHtml(o.notes.trim())}</div>` : ""}
@@ -228,6 +367,7 @@ export type PosKotPrintOptions = {
   billHeader: string;
   orderRef: string;
   fulfillmentLabel: string;
+  dineInTable?: string;
   notes: string;
   lines: { label: string; qty: number; addonRows?: PosReceiptAddonRow[] }[];
 };
@@ -255,6 +395,7 @@ ${headerHtml}
 <div class="sep"></div>
 <div class="total">${escapeHtml(o.orderRef)}</div>
 <div class="muted">${escapeHtml(o.fulfillmentLabel)}</div>
+${o.dineInTable?.trim() ? `<div class="muted">Table: ${escapeHtml(o.dineInTable.trim())}</div>` : ""}
 <div class="muted">${escapeHtml(new Date().toLocaleString("en-IN"))}</div>
 ${o.notes.trim() ? `<div class="muted">Note: ${escapeHtml(o.notes.trim())}</div>` : ""}
 <table>
@@ -268,96 +409,16 @@ export function printPosKot(options: PosKotPrintOptions): void {
   printThermalHtml(buildKotHtmlBody(options), "KOT");
 }
 
-function toEscPosBillInput(o: PosBillPrintOptions): EscPosBillInput {
-  return {
-    restaurantName: o.restaurantName,
-    billHeaderLines: splitLines(o.billHeader),
-    billFooterLines: splitLines(o.billFooter),
-    orderRef: o.orderRef ?? "",
-    proforma: o.proforma,
-    fulfillmentLabel: o.fulfillmentLabel,
-    customerLine: isPosAnonymousPhoneDigits(o.phoneDigits)
-      ? o.customerName
-      : `${o.customerName} · +91 ${o.phoneDigits}`,
-    addressBlock: o.footerNote?.trim() ?? "",
-    notes: o.notes,
-    lines: o.lines.map((r) => ({
-      label: r.label,
-      qty: r.qty,
-      unit: r.unit,
-      subtotal: r.subtotal,
-      addonRows: r.addonRows,
-    })),
-    total: o.total,
-    paymentLabel: o.paymentLabel,
-  };
-}
-
-function toEscPosKotInput(
-  o: PosKotPrintOptions,
-): EscPosKotInput {
-  return {
-    restaurantName: o.restaurantName,
-    headerLines: splitLines(o.billHeader),
-    orderRef: o.orderRef,
-    fulfillmentLabel: o.fulfillmentLabel,
-    notes: o.notes,
-    lines: o.lines,
-  };
-}
-
-/** Raw ESC/POS bill only — no browser print dialog. */
-export async function printPosBillThermalStrict(
-  options: PosBillPrintOptions,
-  port: ThermalSerialPort,
-): Promise<void> {
-  const bytes = buildEscPosBill(toEscPosBillInput(options));
-  await writeEscPosToPort(port, bytes);
-}
-
-/** Raw ESC/POS KOT only — no browser print dialog. */
-export async function printPosKotThermalStrict(
-  options: PosKotPrintOptions,
-  port: ThermalSerialPort,
-): Promise<void> {
-  const bytes = buildEscPosKot(toEscPosKotInput(options));
-  await writeEscPosToPort(port, bytes);
-}
-
-/**
- * Prefer raw ESC/POS on the USB serial port; if there is no port or writing fails,
- * fall back to the browser print dialog so something always prints.
- */
+/** Bill via the browser print dialog (thermal-sized HTML). */
 export async function printPosBillThermal(
   options: PosBillPrintOptions,
-  port: ThermalSerialPort | null,
 ): Promise<void> {
-  if (port) {
-    try {
-      await printPosBillThermalStrict(options, port);
-      return;
-    } catch (e) {
-      console.error("ESC/POS bill failed, falling back to print dialog:", e);
-    }
-  }
   printPosBill(options);
 }
 
-/**
- * Prefer raw ESC/POS on the USB serial port; if there is no port or writing fails,
- * fall back to the browser print dialog so something always prints.
- */
+/** KOT via the browser print dialog (thermal-sized HTML). */
 export async function printPosKotThermal(
   options: PosKotPrintOptions,
-  port: ThermalSerialPort | null,
 ): Promise<void> {
-  if (port) {
-    try {
-      await printPosKotThermalStrict(options, port);
-      return;
-    } catch (e) {
-      console.error("ESC/POS KOT failed, falling back to print dialog:", e);
-    }
-  }
   printPosKot(options);
 }

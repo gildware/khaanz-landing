@@ -75,6 +75,7 @@ export async function GET(_request: Request, context: RouteContext) {
     messageSentViaWhatsApp: order.messageSentViaWhatsApp,
     source: order.source,
     paymentMethod: order.paymentMethod,
+    dineInTable: order.dineInTable,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     customerPhone: order.customer.phoneDigits,
