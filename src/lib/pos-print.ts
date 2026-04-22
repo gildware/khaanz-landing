@@ -1,6 +1,7 @@
+import { getKhaanzDesktop } from "@/lib/khaanz-desktop-client";
+import { isPosAnonymousPhoneDigits } from "@/lib/phone-digits";
 import type { CartLine } from "@/types/menu";
 import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
-import { isPosAnonymousPhoneDigits } from "@/lib/phone-digits";
 
 export type PosReceiptAddonRow = {
   name: string;
@@ -409,16 +410,27 @@ export function printPosKot(options: PosKotPrintOptions): void {
   printThermalHtml(buildKotHtmlBody(options), "KOT");
 }
 
-/** Bill via the browser print dialog (thermal-sized HTML). */
+async function tryDesktopSilentPrint(html: string, title: string): Promise<boolean> {
+  const d = getKhaanzDesktop();
+  if (!d?.printSilentHtml) return false;
+  const r = await d.printSilentHtml(html, title);
+  return r.ok;
+}
+
+/** Bill: silent print in Khaanz Desktop, otherwise browser print dialog. */
 export async function printPosBillThermal(
   options: PosBillPrintOptions,
 ): Promise<void> {
-  printPosBill(options);
+  const html = buildBillHtmlBody(options);
+  if (await tryDesktopSilentPrint(html, "Bill")) return;
+  printThermalHtml(html, "Bill");
 }
 
-/** KOT via the browser print dialog (thermal-sized HTML). */
+/** KOT: silent print in Khaanz Desktop, otherwise browser print dialog. */
 export async function printPosKotThermal(
   options: PosKotPrintOptions,
 ): Promise<void> {
-  printPosKot(options);
+  const html = buildKotHtmlBody(options);
+  if (await tryDesktopSilentPrint(html, "KOT")) return;
+  printThermalHtml(html, "KOT");
 }

@@ -3,8 +3,12 @@ import { after } from "next/server";
 import { NextResponse } from "next/server";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
+import { migrateCartLine } from "@/lib/cart-line";
 import { notifyCustomerOrderStatusChange } from "@/lib/customer-notify";
+import { applyOrderInventoryRestore } from "@/lib/inventory/apply-order-inventory";
+import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 import { getPrisma } from "@/lib/prisma";
+import type { CartLine } from "@/types/menu";
 import {
   canAdminSetOrderStatus,
   ORDER_STATUS_LABEL,
@@ -116,7 +120,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   const prisma = getPrisma();
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { customer: true },
+    include: {
+      customer: true,
+      lines: { orderBy: { sortIndex: "asc" } },
+    },
   });
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -140,9 +147,33 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
   }
 
-  const updated = await prisma.order.update({
-    where: { id: orderId },
-    data: { status: nextStatus },
+  const updated = await prisma.$transaction(async (tx) => {
+    const u = await tx.order.update({
+      where: { id: orderId },
+      data: { status: nextStatus },
+    });
+
+    if (
+      nextStatus === "CANCELLED" &&
+      order.inventoryDeductedAt &&
+      !order.inventoryRestoredAt
+    ) {
+      const inv = await ensureInventorySettings(tx);
+      if (inv.restoreStockOnCancel) {
+        const lines = order.lines.map((l) =>
+          migrateCartLine(l.payload as unknown as CartLine),
+        );
+        await applyOrderInventoryRestore(
+          tx,
+          orderId,
+          { lines },
+          admin.userId,
+          new Date(),
+        );
+      }
+    }
+
+    return u;
   });
 
   if (order.status !== nextStatus) {

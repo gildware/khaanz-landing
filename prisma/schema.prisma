@@ -29,20 +29,20 @@ model User {
 
 /// Single-tenant restaurant configuration (one row, id = `default`).
 model RestaurantSettings {
-  id                String   @id @default("default")
-  displayName       String   @default("") @map("display_name")
-  logoUrl           String   @default("") @map("logo_url")
-  whatsappPhoneE164 String   @map("whatsapp_phone_e164")
-  pickupStart       String   @map("pickup_start")
-  pickupEnd         String   @map("pickup_end")
-  deliveryStart     String   @map("delivery_start")
-  deliveryEnd       String   @map("delivery_end")
-  billHeader        String   @default("") @map("bill_header")
-  billFooter        String   @default("") @map("bill_footer")
-  paymentMethodsJson Json    @default("[{\"id\":\"cash\",\"name\":\"Cash\"},{\"id\":\"upi\",\"name\":\"UPI\"},{\"id\":\"mpay\",\"name\":\"Mpay\"}]") @map("payment_methods_json")
+  id                 String   @id @default("default")
+  displayName        String   @default("") @map("display_name")
+  logoUrl            String   @default("") @map("logo_url")
+  whatsappPhoneE164  String   @map("whatsapp_phone_e164")
+  pickupStart        String   @map("pickup_start")
+  pickupEnd          String   @map("pickup_end")
+  deliveryStart      String   @map("delivery_start")
+  deliveryEnd        String   @map("delivery_end")
+  billHeader         String   @default("") @map("bill_header")
+  billFooter         String   @default("") @map("bill_footer")
+  paymentMethodsJson Json     @default("[{\"id\":\"cash\",\"name\":\"Cash\"},{\"id\":\"upi\",\"name\":\"UPI\"},{\"id\":\"mpay\",\"name\":\"Mpay\"}]") @map("payment_methods_json")
   /// POS dine-in floor plan: `{ "tables": [{ "id", "label", "xPct", "yPct", "wPct", "hPct" }] }` (percent of layout box).
   floorPlanJson      Json     @default("{\"tables\":[]}") @map("floor_plan_json")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@map("restaurant_settings")
 }
@@ -51,9 +51,13 @@ model RestaurantSettings {
 model Category {
   id        String     @id
   name      String
-  /** Public image URL or site path for category tab / headers */
+  /**
+   * Public image URL or site path for category tab / headers
+   */
   image     String     @default("")
-  /** Lucide icon key (see `category-icons.ts`) */
+  /**
+   * Lucide icon key (see `category-icons.ts`)
+   */
   icon      String     @default("")
   parentId  String?    @map("parent_id")
   sortOrder Int        @map("sort_order")
@@ -75,18 +79,19 @@ model MenuGlobalAddon {
 }
 
 model MenuItem {
-  id          String   @id
-  categoryId  String   @map("category_id")
-  name        String
-  description String   @default("")
-  image       String   @default("")
-  isVeg       Boolean  @default(true) @map("is_veg")
-  recommended Boolean  @default(false)
-  available   Boolean  @default(true)
-  sortOrder   Int      @default(0) @map("sort_order")
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  variations  MenuItemVariation[]
-  addons      MenuItemAddon[]
+  id             String              @id
+  categoryId     String              @map("category_id")
+  name           String
+  description    String              @default("")
+  image          String              @default("")
+  isVeg          Boolean             @default(true) @map("is_veg")
+  recommended    Boolean             @default(false)
+  available      Boolean             @default(true)
+  sortOrder      Int                 @default(0) @map("sort_order")
+  category       Category            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  variations     MenuItemVariation[]
+  addons         MenuItemAddon[]
+  recipeVersions RecipeVersion[]
 
   @@index([categoryId])
   @@map("menu_items")
@@ -147,11 +152,11 @@ model MenuComboComponent {
 }
 
 model Customer {
-  id           String   @id @default(cuid())
-  phoneDigits  String   @unique @map("phone_digits")
-  displayName  String?  @map("display_name")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  phoneDigits String   @unique @map("phone_digits")
+  displayName String?  @map("display_name")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   orders Order[]
 
@@ -230,8 +235,14 @@ model Order {
   createdAt              DateTime        @default(now()) @map("created_at")
   updatedAt              DateTime        @updatedAt @map("updated_at")
 
-  customer Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  lines    OrderLine[]
+  customer            Customer                    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  lines               OrderLine[]
+  inventoryMovements  InventoryMovement[]
+  batchConsumptions   InventoryBatchConsumption[]
+  /// Set when POS / web sale stock deduction succeeded for this order.
+  inventoryDeductedAt DateTime?                   @map("inventory_deducted_at")
+  /// Set when cancelled-order stock restoration ran (if enabled).
+  inventoryRestoredAt DateTime?                   @map("inventory_restored_at")
 
   @@index([customerId])
   @@index([createdAt])
@@ -248,4 +259,395 @@ model OrderLine {
 
   @@index([orderId])
   @@map("order_lines")
+}
+
+// ---------------------------------------------------------------------------
+// Inventory, procurement, recipes (base-unit stock; amounts in paise)
+// ---------------------------------------------------------------------------
+
+enum InventoryCostingMethod {
+  WEIGHTED_AVERAGE
+  LATEST_PURCHASE
+}
+
+enum PurchasePaymentType {
+  CASH
+  CHEQUE
+  CREDIT
+}
+
+enum SupplierLedgerKind {
+  PURCHASE_DEBIT
+  PAYMENT_CREDIT
+  RETURN_CREDIT
+}
+
+enum InventoryMovementType {
+  OPENING_STOCK
+  PURCHASE_RECEIPT
+  PURCHASE_RETURN
+  POS_OR_WEB_SALE
+  ORDER_CANCEL_RESTORE
+  ADJUSTMENT_UP
+  ADJUSTMENT_DOWN
+  AUDIT_SURPLUS
+  AUDIT_SHORTAGE
+  WASTAGE
+}
+
+enum InventoryBatchSourceType {
+  OPENING_STOCK
+  PURCHASE_LINE
+  ADJUSTMENT_UP
+  AUDIT_SURPLUS
+}
+
+enum AdjustmentReason {
+  DAMAGE
+  CORRECTION
+  THEFT
+  AUDIT_MISMATCH
+  OTHER
+}
+
+enum WastageType {
+  SPOILAGE
+  PREPARATION
+  OVERPRODUCTION
+  OTHER
+}
+
+/// Single-tenant row id = `default`.
+model InventorySettings {
+  id                   String                 @id @default("default")
+  costingMethod        InventoryCostingMethod @default(WEIGHTED_AVERAGE) @map("costing_method")
+  restoreStockOnCancel Boolean                @default(true) @map("restore_stock_on_cancel")
+  allowNegativeStock   Boolean                @default(true) @map("allow_negative_stock")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+
+  @@map("inventory_settings")
+}
+
+model InventoryItem {
+  id                       String   @id @default(cuid())
+  name                     String
+  category                 String   @default("")
+  baseUnit                 String   @map("base_unit") @db.VarChar(32)
+  purchaseUnit             String   @map("purchase_unit") @db.VarChar(32)
+  /// Multiply purchase qty by this to get base units (e.g. kg → g: 1000).
+  baseUnitsPerPurchaseUnit Decimal  @map("base_units_per_purchase_unit") @db.Decimal(24, 8)
+  stockOnHandBase          Decimal  @default(0) @map("stock_on_hand_base") @db.Decimal(24, 8)
+  minStockBase             Decimal  @default(0) @map("min_stock_base") @db.Decimal(24, 8)
+  /// Moving average ingredient cost: paise per 1 base unit (decimal for sub-paise precision).
+  avgCostPaisePerBase      Decimal  @default(0) @map("avg_cost_paise_per_base") @db.Decimal(24, 6)
+  lastPurchasePaisePerBase Decimal  @default(0) @map("last_purchase_paise_per_base") @db.Decimal(24, 6)
+  active                   Boolean  @default(true)
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  purchaseLines     PurchaseLine[]
+  returnLines       PurchaseReturnLine[]
+  batches           InventoryBatch[]
+  movements         InventoryMovement[]
+  batchConsumptions InventoryBatchConsumption[]
+  recipeIngredients RecipeIngredient[]
+  wastageRows       WastageEntry[]
+  stockAdjustments  StockAdjustment[]
+  stockAuditLines   StockAuditLine[]
+
+  @@index([name])
+  @@map("inventory_items")
+}
+
+model Supplier {
+  id                String   @id @default(cuid())
+  name              String
+  phone             String   @default("") @db.VarChar(32)
+  email             String   @default("") @db.VarChar(120)
+  address           String   @default("") @db.Text
+  defaultCreditDays Int?     @map("default_credit_days")
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  purchases       Purchase[]
+  ledgerEntries   SupplierLedgerEntry[]
+  payments        SupplierPayment[]
+  purchaseReturns PurchaseReturn[]
+
+  @@map("suppliers")
+}
+
+model SupplierLedgerEntry {
+  id            String             @id @default(cuid())
+  supplierId    String             @map("supplier_id")
+  occurredAt    DateTime           @default(now()) @map("occurred_at")
+  kind          SupplierLedgerKind @map("kind")
+  debitPaise    Int                @default(0) @map("debit_paise")
+  creditPaise   Int                @default(0) @map("credit_paise")
+  referenceType String             @map("reference_type") @db.VarChar(32)
+  referenceId   String             @map("reference_id")
+  note          String             @default("")
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+
+  @@index([supplierId, occurredAt])
+  @@map("supplier_ledger_entries")
+}
+
+model Purchase {
+  id              String              @id @default(cuid())
+  batchRef        String              @unique @map("batch_ref") @db.VarChar(40)
+  supplierId      String              @map("supplier_id")
+  purchasedAt     DateTime            @map("purchased_at")
+  paymentType     PurchasePaymentType @map("payment_type")
+  creditDays      Int?                @map("credit_days")
+  dueAt           DateTime?           @map("due_at")
+  totalPaise      Int                 @map("total_paise")
+  notes           String              @default("")
+  createdByUserId String?             @map("created_by_user_id")
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  supplier Supplier         @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  lines    PurchaseLine[]
+  returns  PurchaseReturn[]
+
+  @@index([supplierId, purchasedAt])
+  @@map("purchases")
+}
+
+model PurchaseLine {
+  id                       String    @id @default(cuid())
+  purchaseId               String    @map("purchase_id")
+  inventoryItemId          String    @map("inventory_item_id")
+  qtyPurchase              Decimal   @map("qty_purchase") @db.Decimal(24, 8)
+  ratePaisePerPurchaseUnit Int       @map("rate_paise_per_purchase_unit")
+  lineTotalPaise           Int       @map("line_total_paise")
+  qtyBaseReceived          Decimal   @map("qty_base_received") @db.Decimal(24, 8)
+  expiryDate               DateTime? @map("expiry_date")
+  lotCode                  String    @default("") @map("lot_code") @db.VarChar(64)
+
+  purchase Purchase        @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  item     InventoryItem   @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  batch    InventoryBatch?
+
+  @@index([purchaseId])
+  @@index([inventoryItemId])
+  @@map("purchase_lines")
+}
+
+model InventoryBatch {
+  id               String                   @id @default(cuid())
+  inventoryItemId  String                   @map("inventory_item_id")
+  receivedAt       DateTime                 @map("received_at")
+  sourceType       InventoryBatchSourceType @map("source_type")
+  sourceId         String                   @map("source_id") @db.VarChar(64)
+  /// Nullable: some batches (opening/adjustment) may not have an expiry.
+  expiryDate       DateTime?                @map("expiry_date")
+  lotCode          String                   @default("") @map("lot_code") @db.VarChar(64)
+  qtyReceivedBase  Decimal                  @map("qty_received_base") @db.Decimal(24, 8)
+  remainingQtyBase Decimal                  @map("remaining_qty_base") @db.Decimal(24, 8)
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  purchaseLineId   String?                  @unique @map("purchase_line_id")
+
+  item                InventoryItem               @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  purchaseLine        PurchaseLine?               @relation(fields: [purchaseLineId], references: [id], onDelete: SetNull)
+  consumptions        InventoryBatchConsumption[]
+  purchaseReturnLines PurchaseReturnLine[]
+
+  @@index([inventoryItemId, receivedAt])
+  @@index([expiryDate])
+  @@map("inventory_batches")
+}
+
+model InventoryBatchConsumption {
+  id              String   @id @default(cuid())
+  batchId         String   @map("batch_id")
+  inventoryItemId String   @map("inventory_item_id")
+  orderId         String?  @map("order_id")
+  referenceType   String   @map("reference_type") @db.VarChar(32)
+  referenceId     String   @map("reference_id") @db.VarChar(64)
+  occurredAt      DateTime @map("occurred_at")
+  qtyBase         Decimal  @map("qty_base") @db.Decimal(24, 8)
+  createdByUserId String?  @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  batch InventoryBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  item  InventoryItem  @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  order Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([inventoryItemId, occurredAt])
+  @@index([orderId])
+  @@index([referenceType, referenceId])
+  @@map("inventory_batch_consumptions")
+}
+
+model PurchaseReturn {
+  id               String   @id @default(cuid())
+  supplierId       String   @map("supplier_id")
+  purchaseId       String?  @map("purchase_id")
+  returnedAt       DateTime @map("returned_at")
+  totalCreditPaise Int      @map("total_credit_paise")
+  notes            String   @default("")
+  createdByUserId  String?  @map("created_by_user_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  supplier Supplier             @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  purchase Purchase?            @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  lines    PurchaseReturnLine[]
+
+  @@index([supplierId])
+  @@map("purchase_returns")
+}
+
+model PurchaseReturnLine {
+  id               String  @id @default(cuid())
+  returnId         String  @map("return_id")
+  inventoryItemId  String  @map("inventory_item_id")
+  inventoryBatchId String? @map("inventory_batch_id")
+  qtyPurchase      Decimal @map("qty_purchase") @db.Decimal(24, 8)
+  qtyBase          Decimal @map("qty_base") @db.Decimal(24, 8)
+  creditPaise      Int     @map("credit_paise")
+
+  purchaseReturn PurchaseReturn  @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  item           InventoryItem   @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  batch          InventoryBatch? @relation(fields: [inventoryBatchId], references: [id], onDelete: SetNull)
+
+  @@index([returnId])
+  @@index([inventoryBatchId])
+  @@map("purchase_return_lines")
+}
+
+model SupplierPayment {
+  id              String   @id @default(cuid())
+  supplierId      String   @map("supplier_id")
+  paidAt          DateTime @map("paid_at")
+  amountPaise     Int      @map("amount_paise")
+  method          String   @db.VarChar(32)
+  reference       String   @default("") @map("reference") @db.VarChar(120)
+  note            String   @default("")
+  createdByUserId String?  @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+
+  @@index([supplierId, paidAt])
+  @@map("supplier_payments")
+}
+
+model RecipeVersion {
+  id            String   @id @default(cuid())
+  menuItemId    String   @map("menu_item_id")
+  /// When null, applies to every variation unless a variation-specific version exists.
+  variationId   String?  @map("variation_id") @db.VarChar(64)
+  effectiveFrom DateTime @map("effective_from")
+  label         String   @default("") @db.VarChar(120)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  menuItem    MenuItem           @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  ingredients RecipeIngredient[]
+
+  @@index([menuItemId, effectiveFrom])
+  @@map("recipe_versions")
+}
+
+model RecipeIngredient {
+  id              String  @id @default(cuid())
+  recipeVersionId String  @map("recipe_version_id")
+  inventoryItemId String  @map("inventory_item_id")
+  qtyBase         Decimal @map("qty_base") @db.Decimal(24, 8)
+
+  recipe RecipeVersion @relation(fields: [recipeVersionId], references: [id], onDelete: Cascade)
+  item   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@unique([recipeVersionId, inventoryItemId])
+  @@map("recipe_ingredients")
+}
+
+model InventoryMovement {
+  id              String                @id @default(cuid())
+  inventoryItemId String                @map("inventory_item_id")
+  occurredAt      DateTime              @default(now()) @map("occurred_at")
+  type            InventoryMovementType
+  qtyDeltaBase    Decimal               @map("qty_delta_base") @db.Decimal(24, 8)
+  referenceType   String                @default("") @map("reference_type") @db.VarChar(32)
+  referenceId     String                @default("") @map("reference_id")
+  orderId         String?               @map("order_id")
+  note            String                @default("")
+  createdByUserId String?               @map("created_by_user_id")
+
+  item  InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  order Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([inventoryItemId, occurredAt])
+  @@index([orderId])
+  @@map("inventory_movements")
+}
+
+model StockAdjustment {
+  id              String           @id @default(cuid())
+  inventoryItemId String           @map("inventory_item_id")
+  occurredAt      DateTime         @map("occurred_at")
+  direction       String           @db.VarChar(8) // "IN" | "OUT" (enforced in app logic)
+  qtyBase         Decimal          @map("qty_base") @db.Decimal(24, 8)
+  reason          AdjustmentReason @map("reason")
+  note            String           @default("") @db.Text
+  createdByUserId String?          @map("created_by_user_id")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  item InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@index([inventoryItemId, occurredAt])
+  @@map("stock_adjustments")
+}
+
+model WastageEntry {
+  id              String      @id @default(cuid())
+  inventoryItemId String      @map("inventory_item_id")
+  wastedAt        DateTime    @map("wasted_at")
+  qtyBase         Decimal     @map("qty_base") @db.Decimal(24, 8)
+  wastageType     WastageType @map("wastage_type")
+  note            String      @default("")
+  createdByUserId String?     @map("created_by_user_id")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  item InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@index([inventoryItemId, wastedAt])
+  @@map("wastage_entries")
+}
+
+model StockAudit {
+  id              String   @id @default(cuid())
+  auditedAt       DateTime @map("audited_at")
+  note            String   @default("")
+  createdByUserId String?  @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  lines StockAuditLine[]
+
+  @@map("stock_audits")
+}
+
+model StockAuditLine {
+  id                 String  @id @default(cuid())
+  stockAuditId       String  @map("stock_audit_id")
+  inventoryItemId    String  @map("inventory_item_id")
+  countedBase        Decimal @map("counted_base") @db.Decimal(24, 8)
+  systemBaseSnapshot Decimal @map("system_base_snapshot") @db.Decimal(24, 8)
+  varianceBase       Decimal @map("variance_base") @db.Decimal(24, 8)
+
+  audit StockAudit    @relation(fields: [stockAuditId], references: [id], onDelete: Cascade)
+  item  InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@index([stockAuditId])
+  @@map("stock_audit_lines")
+}
+
+/// IST calendar day sequence for purchase `batch_ref` (INV-DDMMYY###).
+model PurchaseCounterDay {
+  dayKey  String @id @map("day_key")
+  lastSeq Int    @map("last_seq")
+
+  @@map("purchase_counter_day")
 }

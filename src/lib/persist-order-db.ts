@@ -1,6 +1,7 @@
 import type { OrderSource, Prisma } from "@prisma/client";
 
 import type { CustomerSession } from "@/lib/customer-auth";
+import { applyOrderInventoryDeduction } from "@/lib/inventory/apply-order-inventory";
 import type { OrderCreateParsed } from "@/lib/parse-order-create-body";
 import {
   allocateNextOrderSequence,
@@ -83,6 +84,8 @@ export async function persistOrderToDatabase(
       },
     });
 
+    await applyOrderInventoryDeduction(tx, orderId, parsed, null, now);
+
     return { orderRef };
   });
 }
@@ -91,7 +94,11 @@ export async function persistOrderToDatabase(
 export async function persistPosOrderToDatabase(
   orderId: string,
   parsed: OrderCreateParsed,
-  options?: { paymentMethodKey?: string; dineInTable?: string },
+  options?: {
+    paymentMethodKey?: string;
+    dineInTable?: string;
+    adminUserId?: string | null;
+  },
 ): Promise<{ orderRef: string }> {
   const prisma = getPrisma();
   const digits = phoneDigits(parsed.phone);
@@ -145,6 +152,14 @@ export async function persistPosOrderToDatabase(
         },
       },
     });
+
+    await applyOrderInventoryDeduction(
+      tx,
+      orderId,
+      parsed,
+      options?.adminUserId ?? null,
+      now,
+    );
 
     return { orderRef };
   });

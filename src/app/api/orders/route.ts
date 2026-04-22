@@ -9,6 +9,7 @@ import {
 } from "@/lib/customer-auth";
 import { notifyCustomerOrderPlaced } from "@/lib/customer-notify";
 import { normalizeIndianMobileDigits } from "@/lib/phone-digits";
+import { httpResponseForOrderPersistError } from "@/lib/order-persist-errors";
 import { persistOrderToDatabase } from "@/lib/persist-order-db";
 import { parseOrderCreateBody } from "@/lib/parse-order-create-body";
 import { isChannelOpenAt } from "@/lib/restaurant-hours";
@@ -97,19 +98,8 @@ export async function POST(req: Request) {
       orderRef = out.orderRef;
     } catch (e) {
       console.error("Order DB persist failed:", e);
-      const msg =
-        e instanceof Error &&
-        (e.message === "SESSION_PHONE_MISMATCH" ||
-          e.message === "SESSION_CUSTOMER_INVALID")
-          ? "Session invalid. Please sign in again."
-          : "Could not save order. Check database configuration.";
-      const status =
-        e instanceof Error &&
-        (e.message === "SESSION_PHONE_MISMATCH" ||
-          e.message === "SESSION_CUSTOMER_INVALID")
-          ? 403
-          : 503;
-      return Response.json({ error: msg }, { status });
+      const { status, error } = httpResponseForOrderPersistError(e);
+      return Response.json({ error }, { status });
     }
 
     const waPayload: WhatsAppOrderPayload = {

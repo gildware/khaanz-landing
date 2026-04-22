@@ -15,6 +15,7 @@ import {
   ClipboardListIcon,
   StoreIcon,
   LayoutGridIcon,
+  WarehouseIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ const links: {
   openInNewTab?: boolean;
 }[] = [
   { href: "/admin/orders", label: "Orders", icon: ClipboardListIcon },
+  { href: "/admin/inventory", label: "Inventory", icon: WarehouseIcon },
   { href: "/admin/floor-plan", label: "Table layout", icon: LayoutGridIcon },
   { href: "/admin/pos", label: "POS", icon: StoreIcon, openInNewTab: true },
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },

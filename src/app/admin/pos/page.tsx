@@ -35,6 +35,11 @@ import {
 import { isMenuItemAvailable } from "@/lib/menu-availability";
 import { formatComboComponentSummary, isComboAvailable } from "@/lib/menu-combos";
 import {
+  flushOfflinePosQueue,
+  getKhaanzDesktop,
+  shouldQueuePosOrderOffline,
+} from "@/lib/khaanz-desktop-client";
+import {
   cartLinesToReceiptRows,
   kotLinesFromCart,
   printPosBillThermal,
@@ -210,6 +215,46 @@ export default function AdminPosPage() {
     setOpenItemModalOpen(false);
     setDialogItem(null);
   }, [tablePickModalOpen]);
+
+  const [offlineQueueCount, setOfflineQueueCount] = useState(0);
+
+  const refreshOfflineCount = useCallback(async () => {
+    const d = getKhaanzDesktop();
+    if (!d) {
+      setOfflineQueueCount(0);
+      return;
+    }
+    const q = await d.getOfflineQueue();
+    setOfflineQueueCount(q.length);
+  }, []);
+
+  useEffect(() => {
+    void refreshOfflineCount();
+  }, [refreshOfflineCount]);
+
+  useEffect(() => {
+    const d = getKhaanzDesktop();
+    if (!d) return;
+    const sync = async () => {
+      const n = await flushOfflinePosQueue(d);
+      if (n > 0) {
+        toast.success(`Synced ${n} offline order(s).`);
+        await refreshOfflineCount();
+      }
+    };
+    const onOnline = () => {
+      void sync();
+    };
+    window.addEventListener("online", onOnline);
+    const interval = window.setInterval(() => {
+      void sync();
+    }, 60_000);
+    void sync();
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.clearInterval(interval);
+    };
+  }, [refreshOfflineCount]);
 
   const dineInTableLabel = useMemo(() => {
     if (!selectedTableId) return "";
@@ -513,27 +558,31 @@ export default function AdminPosPage() {
       const tablePrintLabel =
         fulfillment === "dine_in" && dineInTableLabel ? dineInTableLabel : "";
 
+      const clientOrderId = crypto.randomUUID();
+      const orderPayload = {
+        clientOrderId,
+        customerName: nameSnap,
+        phone: phonePayload,
+        fulfillment,
+        scheduleMode: "asap" as const,
+        scheduledAt: null,
+        address: fulfillment === "delivery" ? address.trim() : "",
+        landmark: fulfillment === "delivery" ? landmark.trim() : "",
+        notes: notesSnap,
+        lines: cart,
+        latitude: null,
+        longitude: null,
+        paymentMethodKey: payKey,
+        tableId: selectedTableId ?? "",
+      };
+
       setPlacing(true);
       try {
         const res = await fetch("/api/admin/orders/pos", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({
-            customerName: nameSnap,
-            phone: phonePayload,
-            fulfillment,
-            scheduleMode: "asap",
-            scheduledAt: null,
-            address: fulfillment === "delivery" ? address.trim() : "",
-            landmark: fulfillment === "delivery" ? landmark.trim() : "",
-            notes: notesSnap,
-            lines: cart,
-            latitude: null,
-            longitude: null,
-            paymentMethodKey: payKey,
-            tableId: selectedTableId ?? "",
-          }),
+          body: JSON.stringify(orderPayload),
         });
         const j = (await res.json()) as { orderRef?: string; error?: string };
         if (!res.ok) {
@@ -596,8 +645,77 @@ export default function AdminPosPage() {
             }),
           );
         }
-      } catch {
-        toast.error("Network error.");
+      } catch (err) {
+        const desktop = getKhaanzDesktop();
+        if (
+          desktop?.enqueueOfflineOrder &&
+          shouldQueuePosOrderOffline(err)
+        ) {
+          const out = await desktop.enqueueOfflineOrder({
+            clientOrderId,
+            body: orderPayload as Record<string, unknown>,
+          });
+          if (!out.ok) {
+            toast.error(out.error ?? "Could not save offline.");
+            return;
+          }
+          const offlineRef = `OFF-${clientOrderId.replace(/-/g, "").slice(0, 10).toUpperCase()}`;
+          setLastBill({
+            orderRef: offlineRef,
+            lines: snapshotLines,
+            total: snapTotal,
+            fulfillmentLabel: fulfillLabel,
+            dineInTable: tablePrintLabel || undefined,
+            footerNote: footerNote || undefined,
+            customerName: nameSnap,
+            phoneDigits: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
+            notes: notesSnap,
+            billHeader: header,
+            billFooter: footer,
+            paymentLabel: paymentDisplayName(payKey),
+          });
+          toast.success(
+            `Saved offline as ${offlineRef}. Will sync when you are online.`,
+          );
+          setCart([]);
+          setNotes("");
+          setAddress("");
+          setLandmark("");
+          void refreshOfflineCount();
+
+          if (printMode === "kot" || printMode === "both") {
+            await printPosKotThermal({
+              restaurantName: SITE.name,
+              billHeader: header,
+              orderRef: offlineRef,
+              fulfillmentLabel: fulfillLabel,
+              dineInTable: tablePrintLabel || undefined,
+              notes: notesSnap,
+              lines: snapshotKot,
+            });
+          }
+          if (printMode === "bill" || printMode === "both") {
+            await printPosBillThermal(
+              buildBillOptions({
+                lines: snapshotLines,
+                printTotal: snapTotal,
+                orderRef: offlineRef,
+                proforma: true,
+                fulfillmentPrint: fulfillLabel,
+                dineInTable: tablePrintLabel || undefined,
+                namePrint: nameSnap,
+                phonePrint: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
+                notesPrint: notesSnap,
+                footerPrint: footerNote,
+                paymentLabel: paymentDisplayName(payKey),
+                header,
+                footer,
+              }),
+            );
+          }
+        } else {
+          toast.error("Network error.");
+        }
       } finally {
         setPlacing(false);
       }
@@ -618,6 +736,7 @@ export default function AdminPosPage() {
       floorPlan.tables.length,
       selectedTableId,
       dineInTableLabel,
+      refreshOfflineCount,
     ],
   );
 
@@ -653,13 +772,19 @@ export default function AdminPosPage() {
             />
           </div>
           <div>
-            <h1 className="font-semibold text-2xl tracking-tight">
+            <h1 className="flex flex-wrap items-center gap-2 font-semibold text-2xl tracking-tight">
               {SITE.name} POS
+              {offlineQueueCount > 0 ? (
+                <span className="rounded-md bg-amber-500/15 px-2 py-0.5 font-medium text-amber-800 text-xs dark:text-amber-200">
+                  Offline queue: {offlineQueueCount}
+                </span>
+              ) : null}
             </h1>
             <p className="text-muted-foreground text-sm">
-              Dine-in, pickup, or delivery. Save &amp; KOT / Bill / Print opens your
-              browser&apos;s print dialog (choose your receipt printer or &quot;Save as
-              PDF&quot;).
+              Dine-in, pickup, or delivery. In the{" "}
+              <strong className="font-medium text-foreground">Khaanz Desktop POS</strong>{" "}
+              app, KOT/Bill can print silently to your default receipt printer; in a
+              browser, print uses the system dialog.
             </p>
           </div>
         </div>
