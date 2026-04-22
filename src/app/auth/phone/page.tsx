@@ -107,7 +107,8 @@ function PhoneAuthForm() {
               : null;
           console.error("Firebase signInWithPhoneNumber failed:", e);
           try {
-            recaptchaRef.current.reset();
+            // RecaptchaVerifier doesn't expose reset(); clear() removes the widget so it can be re-rendered.
+            recaptchaRef.current.clear();
           } catch {
             // ignore reset failures
           }

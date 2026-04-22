@@ -272,8 +272,6 @@ export default function AdminPosPage() {
     [cart],
   );
 
-  const receiptRows = useMemo(() => cartLinesToReceiptRows(cart), [cart]);
-
   const dialogConfigureUnit = useMemo(() => {
     if (!dialogItem) return 0;
     const v = dialogItem.variations.find((x) => x.id === variationId);
