@@ -1,7 +1,20 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
 import { Header } from "@/components/Header";
 import { CheckoutForm } from "@/components/CheckoutForm";
+import { CUSTOMER_TOKEN_COOKIE, verifyCustomerToken } from "@/lib/customer-auth";
 
-export default function CheckoutPage() {
+export const runtime = "nodejs";
+
+export default async function CheckoutPage() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(CUSTOMER_TOKEN_COOKIE)?.value;
+  const session = await verifyCustomerToken(token);
+  if (!session) {
+    redirect("/auth/phone?next=/checkout");
+  }
+
   return (
     <div className="min-h-[100dvh] pb-12">
       <Header />

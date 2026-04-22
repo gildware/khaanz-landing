@@ -1,8 +1,12 @@
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 
 import { getDefaultMenuPayload } from "../src/data/menu";
 import { getPrisma } from "../src/lib/prisma";
 import { writeMenuPayload } from "../src/lib/menu-repository";
+import { recordOpeningStock } from "../src/lib/inventory/stock-ops";
+import { createPurchaseInTransaction } from "../src/lib/inventory/purchase-flow";
+import { d } from "../src/lib/inventory/decimal-utils";
 
 async function main() {
   const prisma = getPrisma();
@@ -64,6 +68,185 @@ async function main() {
     console.log("Menu seeded from bundled defaults (src/data/menu.ts).");
   } else {
     console.log("Menu already present — skipping menu seed.");
+  }
+
+  // -----------------------------------------------------------------------
+  // Inventory dummy data (items, suppliers, opening stock, purchases, recipes)
+  // -----------------------------------------------------------------------
+  const hasInventory =
+    (await prisma.inventoryItem.count()) > 0 || (await prisma.supplier.count()) > 0;
+
+  if (!hasInventory) {
+    await prisma.$transaction(async (tx) => {
+      // Suppliers
+      const s1 = await tx.supplier.create({
+        data: {
+          name: "Fresh Farm Supplies",
+          phone: "9999900001",
+          email: "freshfarm@example.com",
+          address: "Local Market Road",
+          defaultCreditDays: 15,
+          active: true,
+        },
+      });
+      const s2 = await tx.supplier.create({
+        data: {
+          name: "Spice Traders Co.",
+          phone: "9999900002",
+          email: "spice@example.com",
+          address: "Wholesale Street",
+          defaultCreditDays: 10,
+          active: true,
+        },
+      });
+
+      // Items (base-unit only; purchase unit with conversion)
+      const items = await Promise.all([
+        tx.inventoryItem.create({
+          data: {
+            name: "Chicken (raw)",
+            category: "Meat",
+            baseUnit: "g",
+            purchaseUnit: "kg",
+            baseUnitsPerPurchaseUnit: new Prisma.Decimal("1000"),
+            minStockBase: new Prisma.Decimal("5000"),
+          },
+        }),
+        tx.inventoryItem.create({
+          data: {
+            name: "Rice",
+            category: "Dry",
+            baseUnit: "g",
+            purchaseUnit: "kg",
+            baseUnitsPerPurchaseUnit: new Prisma.Decimal("1000"),
+            minStockBase: new Prisma.Decimal("3000"),
+          },
+        }),
+        tx.inventoryItem.create({
+          data: {
+            name: "Onion",
+            category: "Veg",
+            baseUnit: "g",
+            purchaseUnit: "kg",
+            baseUnitsPerPurchaseUnit: new Prisma.Decimal("1000"),
+            minStockBase: new Prisma.Decimal("2000"),
+          },
+        }),
+        tx.inventoryItem.create({
+          data: {
+            name: "Cooking Oil",
+            category: "Oil",
+            baseUnit: "ml",
+            purchaseUnit: "l",
+            baseUnitsPerPurchaseUnit: new Prisma.Decimal("1000"),
+            minStockBase: new Prisma.Decimal("2000"),
+          },
+        }),
+        tx.inventoryItem.create({
+          data: {
+            name: "Garam Masala",
+            category: "Spices",
+            baseUnit: "g",
+            purchaseUnit: "kg",
+            baseUnitsPerPurchaseUnit: new Prisma.Decimal("1000"),
+            minStockBase: new Prisma.Decimal("300"),
+          },
+        }),
+      ]);
+
+      const now = new Date();
+
+      // Opening stock for each item (creates movement + batch)
+      for (const it of items) {
+        await recordOpeningStock(tx, {
+          inventoryItemId: it.id,
+          qtyBase: new Prisma.Decimal("10000"),
+          occurredAt: now,
+          note: "Seed opening stock",
+          createdByUserId: null,
+        });
+      }
+
+      // Purchases (creates stock + movement + batches + supplier ledger)
+      await createPurchaseInTransaction(tx, {
+        supplierId: s1.id,
+        purchasedAt: now,
+        paymentType: "CREDIT",
+        creditDays: 15,
+        notes: "Seed purchase",
+        createdByUserId: null,
+        lines: [
+          {
+            inventoryItemId: items[0]!.id,
+            qtyPurchase: d("5"),
+            ratePaisePerPurchaseUnit: 22000,
+            expiryDate: null,
+            lotCode: "FF-CHKN-01",
+          },
+          {
+            inventoryItemId: items[2]!.id,
+            qtyPurchase: d("10"),
+            ratePaisePerPurchaseUnit: 3000,
+            expiryDate: null,
+            lotCode: "FF-ONION-01",
+          },
+        ],
+      });
+
+      await createPurchaseInTransaction(tx, {
+        supplierId: s2.id,
+        purchasedAt: now,
+        paymentType: "CASH",
+        creditDays: null,
+        notes: "Seed spice purchase",
+        createdByUserId: null,
+        lines: [
+          {
+            inventoryItemId: items[4]!.id,
+            qtyPurchase: d("1"),
+            ratePaisePerPurchaseUnit: 180000,
+            expiryDate: new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000),
+            lotCode: "ST-GM-01",
+          },
+        ],
+      });
+    });
+
+    // Seed a couple of recipes for existing menu items (if present).
+    await prisma.$transaction(async (tx) => {
+      const menuItems = await tx.menuItem.findMany({
+        take: 2,
+        orderBy: { sortOrder: "asc" },
+        include: { variations: { orderBy: { sortOrder: "asc" } } },
+      });
+      const inv = await tx.inventoryItem.findMany({ where: { active: true } });
+      if (menuItems.length === 0 || inv.length < 3) return;
+
+      const at = new Date();
+      for (const mi of menuItems) {
+        const v = mi.variations[0];
+        if (!v) continue;
+        await tx.recipeVersion.create({
+          data: {
+            menuItemId: mi.id,
+            variationId: v.id,
+            effectiveFrom: at,
+            label: "Seed v1",
+            ingredients: {
+              create: [
+                { inventoryItemId: inv[0]!.id, qtyBase: new Prisma.Decimal("150") },
+                { inventoryItemId: inv[2]!.id, qtyBase: new Prisma.Decimal("80") },
+                { inventoryItemId: inv[4]!.id, qtyBase: new Prisma.Decimal("5") },
+              ],
+            },
+          },
+        });
+      }
+    });
+
+    console.log("Inventory seeded (items, suppliers, opening stock, purchases, recipes).");
+  } else {
+    console.log("Inventory already present — skipping inventory seed.");
   }
 }
 

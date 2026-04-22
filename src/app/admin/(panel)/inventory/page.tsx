@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+
+function cx(...x: Array<string | false | null | undefined>): string {
+  return x.filter(Boolean).join(" ");
+}
+
+function formatPaise(paise: number): string {
+  const rupees = paise / 100;
+  return rupees.toLocaleString("en-IN", { style: "currency", currency: "INR" });
+}
 
 type Summary = {
   lowStock: {
@@ -64,6 +72,30 @@ type MenuPayload = {
   items: { id: string; name: string; variations: { id: string; name: string }[] }[];
 };
 
+type ExpiryReport = {
+  days: number;
+  expired: {
+    batchId: string;
+    inventoryItemId: string;
+    itemName: string;
+    baseUnit: string;
+    expiryDate: string;
+    receivedAt: string;
+    lotCode: string;
+    remainingQtyBase: string;
+  }[];
+  nearExpiry: {
+    batchId: string;
+    inventoryItemId: string;
+    itemName: string;
+    baseUnit: string;
+    expiryDate: string;
+    receivedAt: string;
+    lotCode: string;
+    remainingQtyBase: string;
+  }[];
+};
+
 async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
@@ -89,6 +121,7 @@ export default function AdminInventoryPage() {
   const [items, setItems] = useState<InvItem[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [menu, setMenu] = useState<MenuPayload | null>(null);
+  const [expiry, setExpiry] = useState<ExpiryReport | null>(null);
   const [settings, setSettings] = useState<{
     costingMethod: string;
     restoreStockOnCancel: boolean;
@@ -126,6 +159,11 @@ export default function AdminInventoryPage() {
     setSettings(r);
   }, []);
 
+  const loadExpiry = useCallback(async () => {
+    const r = await adminFetch<ExpiryReport>("/api/admin/inventory/reports/expiry?days=7");
+    setExpiry(r);
+  }, []);
+
   useEffect(() => {
     void (async () => {
       try {
@@ -135,12 +173,13 @@ export default function AdminInventoryPage() {
           loadSuppliers(),
           loadMenu(),
           loadSettings(),
+          loadExpiry(),
         ]);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Failed to load inventory");
       }
     })();
-  }, [loadItems, loadMenu, loadSettings, loadSummary, loadSuppliers]);
+  }, [loadExpiry, loadItems, loadMenu, loadSettings, loadSummary, loadSuppliers]);
 
   const [newItem, setNewItem] = useState({
     name: "",
@@ -190,20 +229,60 @@ export default function AdminInventoryPage() {
   const [purchase, setPurchase] = useState({
     supplierId: "",
     paymentType: "CREDIT",
-    linesJson: `[
-  { "inventoryItemId": "", "qtyPurchase": "1", "ratePaisePerPurchaseUnit": 10000 }
-]`,
+    purchasedAt: new Date().toISOString().slice(0, 16),
+    creditDays: "",
   });
+
+  type PurchaseLineDraft = {
+    id: string;
+    inventoryItemId: string;
+    qtyPurchase: string;
+    ratePaisePerPurchaseUnit: string;
+    expiryDate: string;
+    lotCode: string;
+  };
+  const [purchaseLines, setPurchaseLines] = useState<PurchaseLineDraft[]>([
+    {
+      id: crypto.randomUUID(),
+      inventoryItemId: "",
+      qtyPurchase: "1",
+      ratePaisePerPurchaseUnit: "0",
+      expiryDate: "",
+      lotCode: "",
+    },
+  ]);
+
+  const purchaseTotalPaise = useMemo(() => {
+    let sum = 0;
+    for (const ln of purchaseLines) {
+      const qty = Number(ln.qtyPurchase);
+      const rate = Math.floor(Number(ln.ratePaisePerPurchaseUnit));
+      if (!Number.isFinite(qty) || qty <= 0) continue;
+      if (!Number.isFinite(rate) || rate < 0) continue;
+      sum += Math.round(qty * rate);
+    }
+    return sum;
+  }, [purchaseLines]);
 
   const submitPurchase = async () => {
     try {
-      const lines = JSON.parse(purchase.linesJson) as unknown;
       await adminFetch("/api/admin/inventory/purchases", {
         method: "POST",
         body: JSON.stringify({
           supplierId: purchase.supplierId,
           paymentType: purchase.paymentType,
-          lines,
+          purchasedAt: new Date(purchase.purchasedAt).toISOString(),
+          creditDays:
+            purchase.paymentType === "CREDIT" && purchase.creditDays.trim()
+              ? Number(purchase.creditDays)
+              : undefined,
+          lines: purchaseLines.map((l) => ({
+            inventoryItemId: l.inventoryItemId,
+            qtyPurchase: l.qtyPurchase,
+            ratePaisePerPurchaseUnit: Number(l.ratePaisePerPurchaseUnit),
+            expiryDate: l.expiryDate ? new Date(l.expiryDate).toISOString() : undefined,
+            lotCode: l.lotCode || undefined,
+          })),
         }),
       });
       toast.success("Purchase recorded");
@@ -217,21 +296,31 @@ export default function AdminInventoryPage() {
     menuItemId: "",
     variationId: "",
     effectiveFrom: new Date().toISOString().slice(0, 16),
-    ingredientsJson: `[
-  { "inventoryItemId": "", "qtyBase": "150" }
-]`,
   });
+
+  type RecipeIngredientDraft = {
+    id: string;
+    inventoryItemId: string;
+    qtyBase: string;
+  };
+  const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredientDraft[]>([
+    { id: crypto.randomUUID(), inventoryItemId: "", qtyBase: "" },
+  ]);
 
   const submitRecipe = async () => {
     try {
-      const ingredients = JSON.parse(recipe.ingredientsJson) as unknown;
       await adminFetch("/api/admin/inventory/recipes", {
         method: "POST",
         body: JSON.stringify({
           menuItemId: recipe.menuItemId,
           variationId: recipe.variationId || null,
           effectiveFrom: new Date(recipe.effectiveFrom).toISOString(),
-          ingredients,
+          ingredients: recipeIngredients
+            .filter((x) => x.inventoryItemId && x.qtyBase)
+            .map((x) => ({
+              inventoryItemId: x.inventoryItemId,
+              qtyBase: x.qtyBase,
+            })),
         }),
       });
       toast.success("Recipe version saved");
@@ -351,18 +440,51 @@ export default function AdminInventoryPage() {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList className="flex flex-wrap">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="items">Items</TabsTrigger>
-          <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
-          <TabsTrigger value="purchase">Purchase</TabsTrigger>
-          <TabsTrigger value="recipes">Recipes</TabsTrigger>
-          <TabsTrigger value="ops">Stock ops</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
+          <TabsTrigger value="overview" className="data-[state=active]:font-semibold">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="items" className="data-[state=active]:font-semibold">
+            Items
+          </TabsTrigger>
+          <TabsTrigger value="suppliers" className="data-[state=active]:font-semibold">
+            Suppliers
+          </TabsTrigger>
+          <TabsTrigger value="purchase" className="data-[state=active]:font-semibold">
+            Purchases
+          </TabsTrigger>
+          <TabsTrigger value="recipes" className="data-[state=active]:font-semibold">
+            Recipes
+          </TabsTrigger>
+          <TabsTrigger value="ops" className="data-[state=active]:font-semibold">
+            Stock Ops
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 pt-4">
+          <div className="grid gap-3 md:grid-cols-4">
+            <div className="rounded-lg border border-border p-4">
+              <p className="text-muted-foreground text-xs">Active items</p>
+              <p className="mt-1 font-semibold text-2xl">{items.filter((x) => x.active).length}</p>
+            </div>
+            <div className="rounded-lg border border-border p-4">
+              <p className="text-muted-foreground text-xs">Suppliers</p>
+              <p className="mt-1 font-semibold text-2xl">
+                {suppliers.filter((x) => x.active).length}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border p-4">
+              <p className="text-muted-foreground text-xs">Low stock items</p>
+              <p className="mt-1 font-semibold text-2xl">{summary?.lowStock.length ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-border p-4">
+              <p className="text-muted-foreground text-xs">Near-expiry batches (7d)</p>
+              <p className="mt-1 font-semibold text-2xl">{expiry?.nearExpiry.length ?? 0}</p>
+            </div>
+          </div>
+
           {settings && (
-            <div className="flex flex-wrap gap-4 rounded-lg border border-border p-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border p-4">
               <div className="space-y-1">
                 <p className="font-medium text-sm">Costing</p>
                 <p className="text-muted-foreground text-xs">{settings.costingMethod}</p>
@@ -464,6 +586,48 @@ export default function AdminInventoryPage() {
                       <TableCell>{p.supplierName}</TableCell>
                       <TableCell>{p.dueAt ? p.dueAt.slice(0, 10) : "—"}</TableCell>
                       <TableCell className="text-right">{p.totalPaise}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
+              <h2 className="mb-2 font-medium">Expiry alerts</h2>
+              <Button type="button" variant="secondary" onClick={() => void loadExpiry()}>
+                Refresh
+              </Button>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Batch</TableHead>
+                  <TableHead>Expiry</TableHead>
+                  <TableHead className="text-right">Remaining</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(expiry?.nearExpiry ?? []).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-muted-foreground">
+                      No near-expiry batches.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  expiry!.nearExpiry.slice(0, 20).map((b) => (
+                    <TableRow key={b.batchId}>
+                      <TableCell>
+                        {b.itemName}{" "}
+                        <span className="text-muted-foreground text-xs">({b.baseUnit})</span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {b.lotCode || b.batchId}
+                      </TableCell>
+                      <TableCell>{b.expiryDate.slice(0, 10)}</TableCell>
+                      <TableCell className="text-right">{b.remainingQtyBase}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -613,50 +777,216 @@ export default function AdminInventoryPage() {
         </TabsContent>
 
         <TabsContent value="purchase" className="space-y-3 pt-4">
-          <div className="space-y-2">
-            <Label>Supplier</Label>
-            <select
-              className="border-input bg-background h-9 w-full max-w-md rounded-md border px-2 text-sm"
-              value={purchase.supplierId}
-              onChange={(e) =>
-                setPurchase({ ...purchase, supplierId: e.target.value })
-              }
-            >
-              <option value="">Select…</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+          <div className="rounded-lg border border-border p-4">
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label>Supplier</Label>
+                <select
+                  className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+                  value={purchase.supplierId}
+                  onChange={(e) =>
+                    setPurchase({ ...purchase, supplierId: e.target.value })
+                  }
+                >
+                  <option value="">Select…</option>
+                  {suppliers.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Purchased at</Label>
+                <Input
+                  type="datetime-local"
+                  value={purchase.purchasedAt}
+                  onChange={(e) => setPurchase({ ...purchase, purchasedAt: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Payment type</Label>
+                <select
+                  className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+                  value={purchase.paymentType}
+                  onChange={(e) => setPurchase({ ...purchase, paymentType: e.target.value })}
+                >
+                  <option value="CASH">CASH</option>
+                  <option value="CHEQUE">CHEQUE</option>
+                  <option value="CREDIT">CREDIT</option>
+                </select>
+              </div>
+
+              <div
+                className={cx(
+                  "space-y-2 md:col-span-3",
+                  purchase.paymentType !== "CREDIT" && "hidden",
+                )}
+              >
+                <Label>Credit days (optional)</Label>
+                <Input
+                  inputMode="numeric"
+                  value={purchase.creditDays}
+                  onChange={(e) => setPurchase({ ...purchase, creditDays: e.target.value })}
+                  placeholder="e.g. 15"
+                />
+              </div>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>Payment type</Label>
-            <select
-              className="border-input bg-background h-9 w-full max-w-md rounded-md border px-2 text-sm"
-              value={purchase.paymentType}
-              onChange={(e) =>
-                setPurchase({ ...purchase, paymentType: e.target.value })
-              }
-            >
-              <option value="CASH">CASH</option>
-              <option value="CHEQUE">CHEQUE</option>
-              <option value="CREDIT">CREDIT</option>
-            </select>
+
+          <div className="rounded-lg border border-border p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="font-medium">Line items</p>
+                <p className="text-muted-foreground text-xs">
+                  Quantity in purchase unit; system stores stock in base unit only.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  setPurchaseLines((x) => [
+                    ...x,
+                    {
+                      id: crypto.randomUUID(),
+                      inventoryItemId: "",
+                      qtyPurchase: "1",
+                      ratePaisePerPurchaseUnit: "0",
+                      expiryDate: "",
+                      lotCode: "",
+                    },
+                  ])
+                }
+              >
+                Add line
+              </Button>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead style={{ width: "35%" }}>Item</TableHead>
+                  <TableHead>Qty (purchase)</TableHead>
+                  <TableHead>Rate (paise / purchase unit)</TableHead>
+                  <TableHead>Expiry</TableHead>
+                  <TableHead>Lot</TableHead>
+                  <TableHead className="text-right">Line total</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {purchaseLines.map((ln) => {
+                  const qty = Number(ln.qtyPurchase);
+                  const rate = Math.floor(Number(ln.ratePaisePerPurchaseUnit));
+                  const ok = Number.isFinite(qty) && qty > 0 && Number.isFinite(rate) && rate >= 0;
+                  const lineTotal = ok ? Math.round(qty * rate) : 0;
+                  return (
+                    <TableRow key={ln.id}>
+                      <TableCell>
+                        <select
+                          className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+                          value={ln.inventoryItemId}
+                          onChange={(e) =>
+                            setPurchaseLines((x) =>
+                              x.map((r) =>
+                                r.id === ln.id ? { ...r, inventoryItemId: e.target.value } : r,
+                              ),
+                            )
+                          }
+                        >
+                          <option value="">Select…</option>
+                          {items
+                            .filter((x) => x.active)
+                            .map((it) => (
+                              <option key={it.id} value={it.id}>
+                                {it.name} ({it.purchaseUnit}→{it.baseUnit})
+                              </option>
+                            ))}
+                        </select>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          inputMode="decimal"
+                          value={ln.qtyPurchase}
+                          onChange={(e) =>
+                            setPurchaseLines((x) =>
+                              x.map((r) => (r.id === ln.id ? { ...r, qtyPurchase: e.target.value } : r)),
+                            )
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          inputMode="numeric"
+                          value={ln.ratePaisePerPurchaseUnit}
+                          onChange={(e) =>
+                            setPurchaseLines((x) =>
+                              x.map((r) =>
+                                r.id === ln.id
+                                  ? { ...r, ratePaisePerPurchaseUnit: e.target.value }
+                                  : r,
+                              ),
+                            )
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="date"
+                          value={ln.expiryDate}
+                          onChange={(e) =>
+                            setPurchaseLines((x) =>
+                              x.map((r) => (r.id === ln.id ? { ...r, expiryDate: e.target.value } : r)),
+                            )
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={ln.lotCode}
+                          onChange={(e) =>
+                            setPurchaseLines((x) =>
+                              x.map((r) => (r.id === ln.id ? { ...r, lotCode: e.target.value } : r)),
+                            )
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className={cx(!ok && "text-muted-foreground")}>
+                          {formatPaise(lineTotal)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() =>
+                            setPurchaseLines((x) =>
+                              x.length <= 1 ? x : x.filter((r) => r.id !== ln.id),
+                            )
+                          }
+                        >
+                          Remove
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+
+            <div className="mt-3 flex items-center justify-between">
+              <p className="text-muted-foreground text-sm">
+                Total: <span className="font-medium text-foreground">{formatPaise(purchaseTotalPaise)}</span>
+              </p>
+              <Button type="button" onClick={() => void submitPurchase()}>
+                Post purchase
+              </Button>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>Lines (JSON)</Label>
-            <Textarea
-              rows={8}
-              value={purchase.linesJson}
-              onChange={(e) =>
-                setPurchase({ ...purchase, linesJson: e.target.value })
-              }
-            />
-          </div>
-          <Button type="button" onClick={() => void submitPurchase()}>
-            Post purchase
-          </Button>
         </TabsContent>
 
         <TabsContent value="recipes" className="space-y-3 pt-4">
@@ -704,19 +1034,95 @@ export default function AdminInventoryPage() {
               }
             />
           </div>
-          <div className="space-y-2">
-            <Label>Ingredients JSON</Label>
-            <Textarea
-              rows={6}
-              value={recipe.ingredientsJson}
-              onChange={(e) =>
-                setRecipe({ ...recipe, ingredientsJson: e.target.value })
-              }
-            />
+
+          <div className="rounded-lg border border-border p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <p className="font-medium">Ingredients</p>
+                <p className="text-muted-foreground text-xs">Quantities must be in base unit.</p>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() =>
+                  setRecipeIngredients((x) => [
+                    ...x,
+                    { id: crypto.randomUUID(), inventoryItemId: "", qtyBase: "" },
+                  ])
+                }
+              >
+                Add ingredient
+              </Button>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead style={{ width: "55%" }}>Item</TableHead>
+                  <TableHead>Qty (base)</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recipeIngredients.map((ln) => (
+                  <TableRow key={ln.id}>
+                    <TableCell>
+                      <select
+                        className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+                        value={ln.inventoryItemId}
+                        onChange={(e) =>
+                          setRecipeIngredients((x) =>
+                            x.map((r) =>
+                              r.id === ln.id ? { ...r, inventoryItemId: e.target.value } : r,
+                            ),
+                          )
+                        }
+                      >
+                        <option value="">Select…</option>
+                        {items
+                          .filter((x) => x.active)
+                          .map((it) => (
+                            <option key={it.id} value={it.id}>
+                              {it.name} ({it.baseUnit})
+                            </option>
+                          ))}
+                      </select>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        inputMode="decimal"
+                        value={ln.qtyBase}
+                        onChange={(e) =>
+                          setRecipeIngredients((x) =>
+                            x.map((r) => (r.id === ln.id ? { ...r, qtyBase: e.target.value } : r)),
+                          )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() =>
+                          setRecipeIngredients((x) =>
+                            x.length <= 1 ? x : x.filter((r) => r.id !== ln.id),
+                          )
+                        }
+                      >
+                        Remove
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <div className="mt-3 flex justify-end">
+              <Button type="button" onClick={() => void submitRecipe()}>
+                Save recipe version
+              </Button>
+            </div>
           </div>
-          <Button type="button" onClick={() => void submitRecipe()}>
-            Save recipe version
-          </Button>
         </TabsContent>
 
         <TabsContent value="ops" className="grid gap-6 pt-4 md:grid-cols-2">

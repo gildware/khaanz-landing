@@ -18,11 +18,24 @@ import { cn } from "@/lib/utils";
 export function Header() {
   const pathname = usePathname();
   const [customerIn, setCustomerIn] = useState(false);
+  const [customerName, setCustomerName] = useState<string | null>(null);
   useEffect(() => {
     void fetch("/api/customer/me", { credentials: "include" })
-      .then((r) => r.json() as Promise<{ loggedIn?: boolean }>)
-      .then((d) => setCustomerIn(d.loggedIn === true))
-      .catch(() => setCustomerIn(false));
+      .then(
+        (r) =>
+          r.json() as Promise<{ loggedIn?: boolean; displayName?: string | null }>,
+      )
+      .then((d) => {
+        const loggedIn = d.loggedIn === true;
+        setCustomerIn(loggedIn);
+        setCustomerName(
+          loggedIn ? ((d.displayName ?? "").trim() || null) : null,
+        );
+      })
+      .catch(() => {
+        setCustomerIn(false);
+        setCustomerName(null);
+      });
   }, [pathname]);
 
   const { searchQuery, setSearchQuery, setCategory } = useMenuExplore();
@@ -61,7 +74,9 @@ export function Header() {
               )}
             >
               <UserRoundIcon className="size-4" />
-              <span className="hidden sm:inline">My orders</span>
+              <span className="hidden sm:inline">
+                {customerName ? `Hi, ${customerName}` : "My orders"}
+              </span>
             </Link>
           ) : (
             <Link

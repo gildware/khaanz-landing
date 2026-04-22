@@ -16,6 +16,9 @@ import {
   StoreIcon,
   LayoutGridIcon,
   WarehouseIcon,
+  UsersIcon,
+  IndianRupeeIcon,
+  HandshakeIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,15 +32,18 @@ const links: {
   /** Open in a new tab (e.g. POS fullscreen register). */
   openInNewTab?: boolean;
 }[] = [
+  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
   { href: "/admin/orders", label: "Orders", icon: ClipboardListIcon },
   { href: "/admin/inventory", label: "Inventory", icon: WarehouseIcon },
+  { href: "/admin/vendors", label: "Vendors", icon: HandshakeIcon },
+  { href: "/admin/expenses", label: "Expenses", icon: IndianRupeeIcon },
   { href: "/admin/floor-plan", label: "Table layout", icon: LayoutGridIcon },
   { href: "/admin/pos", label: "POS", icon: StoreIcon, openInNewTab: true },
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
   { href: "/admin/categories", label: "Categories", icon: LayersIcon },
   { href: "/admin/items", label: "Menu items", icon: UtensilsCrossedIcon },
   { href: "/admin/combos", label: "Combos", icon: BoxesIcon },
   { href: "/admin/addons", label: "Add-ons", icon: PlusSquareIcon },
+  { href: "/admin/payroll", label: "Payroll", icon: UsersIcon },
   { href: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];
 

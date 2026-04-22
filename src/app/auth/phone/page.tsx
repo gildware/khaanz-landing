@@ -3,13 +3,16 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2Icon } from "lucide-react";
+import type { ConfirmationResult, RecaptchaVerifier } from "firebase/auth";
+import { signInWithPhoneNumber } from "firebase/auth";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getFirebaseAuth, isFirebasePhoneAuthEnabled } from "@/lib/firebase-client";
 import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +27,45 @@ function PhoneAuthForm() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const firebaseEnabled = useMemo(() => isFirebasePhoneAuthEnabled(), []);
+  const auth = useMemo(() => (firebaseEnabled ? getFirebaseAuth() : null), [firebaseEnabled]);
+  const recaptchaContainerId = "firebase-recaptcha-container";
+  const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
+  const confirmRef = useRef<ConfirmationResult | null>(null);
+
+  useEffect(() => {
+    if (!firebaseEnabled || !auth) return;
+    if (typeof window === "undefined") return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const mod = await import("firebase/auth");
+        if (cancelled) return;
+        if (recaptchaRef.current) return;
+        recaptchaRef.current = new mod.RecaptchaVerifier(auth, recaptchaContainerId, {
+          size: "invisible",
+        });
+        // Prime it so the first send is fast.
+        await recaptchaRef.current.render();
+      } catch (e) {
+        // Firebase throws helpful messages here (e.g. CSP blocked script, domain not authorized, etc.)
+        const msg =
+          e instanceof Error
+            ? e.message
+            : typeof e === "string"
+              ? e
+              : "Unknown error";
+        console.error("Firebase reCAPTCHA init failed:", e);
+        toast.error(`Could not initialize reCAPTCHA: ${msg}`);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [firebaseEnabled, auth]);
+
   const sendOtp = async () => {
     const digits = phone.replace(/\D/g, "").slice(0, 10);
     if (!/^[6-9]\d{9}$/.test(digits)) {
@@ -32,24 +74,66 @@ function PhoneAuthForm() {
     }
     setBusy(true);
     try {
+      if (firebaseEnabled && auth) {
+        if (!recaptchaRef.current) {
+          toast.error("reCAPTCHA is not ready. Please try again.");
+          return;
+        }
+        const e164 = `+91${digits}`;
+        try {
+          // Force reCAPTCHA to run now so we can fail fast with a clearer signal
+          // if the verifier is blocked/misconfigured.
+          const token = await recaptchaRef.current.verify();
+          console.info("reCAPTCHA token acquired:", token ? `${token.length} chars` : "empty");
+
+          confirmRef.current = await signInWithPhoneNumber(
+            auth,
+            e164,
+            recaptchaRef.current,
+          );
+          toast.success("SMS code sent.");
+          setPhone(digits);
+          setStep("code");
+          return;
+        } catch (e) {
+          const anyErr = e as unknown as { code?: unknown; message?: unknown };
+          const code =
+            anyErr && typeof anyErr === "object" && typeof anyErr.code === "string"
+              ? anyErr.code
+              : null;
+          const msg =
+            anyErr && typeof anyErr === "object" && typeof anyErr.message === "string"
+              ? anyErr.message
+              : null;
+          console.error("Firebase signInWithPhoneNumber failed:", e);
+          try {
+            recaptchaRef.current.reset();
+          } catch {
+            // ignore reset failures
+          }
+          toast.error(
+            code
+              ? `Could not send SMS (${code}).`
+              : msg
+                ? `Could not send SMS: ${msg}`
+                : "Could not send SMS.",
+          );
+          return;
+        }
+      }
+
       const res = await fetch("/api/auth/otp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: digits }),
       });
-      const j = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        devOtp?: string;
-      };
+      const j = (await res.json().catch(() => ({}))) as { error?: string; devOtp?: string };
       if (!res.ok) {
         toast.error(j.error ?? "Could not send code.");
         return;
       }
-      if (j.devOtp) {
-        toast.success(`Development OTP: ${j.devOtp}`, { duration: 20_000 });
-      } else {
-        toast.success("Check WhatsApp for your code.");
-      }
+      if (j.devOtp) toast.success(`Development OTP: ${j.devOtp}`, { duration: 20_000 });
+      else toast.success("Check WhatsApp for your code.");
       setPhone(digits);
       setStep("code");
     } finally {
@@ -65,6 +149,37 @@ function PhoneAuthForm() {
     }
     setBusy(true);
     try {
+      if (firebaseEnabled && auth) {
+        const c = confirmRef.current;
+        if (!c) {
+          toast.error("Please request a code again.");
+          setStep("phone");
+          return;
+        }
+        const cred = await c.confirm(code.trim());
+        const idToken = await cred.user.getIdToken();
+
+        const res = await fetch("/api/auth/firebase/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ idToken }),
+        });
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          toast.error(j.error ?? "Could not verify.");
+          return;
+        }
+        toast.success("You are signed in.");
+        const me = await fetch("/api/customer/me", { credentials: "include" })
+          .then((r) => r.json() as Promise<{ loggedIn?: boolean; displayName?: string | null }>)
+          .catch(() => null);
+        const dn = (me && me.loggedIn ? (me.displayName ?? "") : "").trim();
+        router.push(dn.length > 0 ? safeNext : `/auth/name?next=${encodeURIComponent(safeNext)}`);
+        router.refresh();
+        return;
+      }
+
       const res = await fetch("/api/auth/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,7 +192,11 @@ function PhoneAuthForm() {
         return;
       }
       toast.success("You are signed in.");
-      router.push(safeNext);
+      const me = await fetch("/api/customer/me", { credentials: "include" })
+        .then((r) => r.json() as Promise<{ loggedIn?: boolean; displayName?: string | null }>)
+        .catch(() => null);
+      const dn = (me && me.loggedIn ? (me.displayName ?? "") : "").trim();
+      router.push(dn.length > 0 ? safeNext : `/auth/name?next=${encodeURIComponent(safeNext)}`);
       router.refresh();
     } finally {
       setBusy(false);
@@ -100,10 +219,14 @@ function PhoneAuthForm() {
         <div>
           <h1 className="font-semibold text-2xl">Sign in</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Use your mobile number. We send a one-time code on WhatsApp when
-            configured, or show a dev code locally.
+            Use your mobile number. We will send a one-time code via{" "}
+            {firebaseEnabled
+              ? "SMS (Firebase)."
+              : "WhatsApp when configured, or show a dev code locally."}
           </p>
         </div>
+
+        <div id={recaptchaContainerId} />
 
         {step === "phone" ? (
           <div className="space-y-4">
@@ -181,6 +304,7 @@ function PhoneAuthForm() {
               onClick={() => {
                 setStep("phone");
                 setCode("");
+                confirmRef.current = null;
               }}
             >
               Use a different number

@@ -79,19 +79,21 @@ model MenuGlobalAddon {
 }
 
 model MenuItem {
-  id             String              @id
-  categoryId     String              @map("category_id")
-  name           String
-  description    String              @default("")
-  image          String              @default("")
-  isVeg          Boolean             @default(true) @map("is_veg")
-  recommended    Boolean             @default(false)
-  available      Boolean             @default(true)
-  sortOrder      Int                 @default(0) @map("sort_order")
-  category       Category            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  variations     MenuItemVariation[]
-  addons         MenuItemAddon[]
-  recipeVersions RecipeVersion[]
+  id                String                  @id
+  categoryId        String                  @map("category_id")
+  name              String
+  description       String                  @default("")
+  image             String                  @default("")
+  isVeg             Boolean                 @default(true) @map("is_veg")
+  recommended       Boolean                 @default(false)
+  available         Boolean                 @default(true)
+  sortOrder         Int                     @default(0) @map("sort_order")
+  category          Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  variations        MenuItemVariation[]
+  addons            MenuItemAddon[]
+  recipeVersions    RecipeVersion[]
+  vendorSaleLines   VendorSaleLine[]
+  sellableToVendors VendorSellableMenuItem?
 
   @@index([categoryId])
   @@map("menu_items")
@@ -239,6 +241,7 @@ model Order {
   lines               OrderLine[]
   inventoryMovements  InventoryMovement[]
   batchConsumptions   InventoryBatchConsumption[]
+  personalUseEntries  PersonalUseEntry[]
   /// Set when POS / web sale stock deduction succeeded for this order.
   inventoryDeductedAt DateTime?                   @map("inventory_deducted_at")
   /// Set when cancelled-order stock restoration ran (if enabled).
@@ -282,11 +285,22 @@ enum SupplierLedgerKind {
   RETURN_CREDIT
 }
 
+enum VendorSalePaymentType {
+  CASH
+  CREDIT
+}
+
+enum VendorLedgerKind {
+  SALE_DEBIT
+  PAYMENT_CREDIT
+}
+
 enum InventoryMovementType {
   OPENING_STOCK
   PURCHASE_RECEIPT
   PURCHASE_RETURN
   POS_OR_WEB_SALE
+  VENDOR_SALE
   ORDER_CANCEL_RESTORE
   ADJUSTMENT_UP
   ADJUSTMENT_DOWN
@@ -345,15 +359,16 @@ model InventoryItem {
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @updatedAt @map("updated_at")
 
-  purchaseLines     PurchaseLine[]
-  returnLines       PurchaseReturnLine[]
-  batches           InventoryBatch[]
-  movements         InventoryMovement[]
-  batchConsumptions InventoryBatchConsumption[]
-  recipeIngredients RecipeIngredient[]
-  wastageRows       WastageEntry[]
-  stockAdjustments  StockAdjustment[]
-  stockAuditLines   StockAuditLine[]
+  purchaseLines      PurchaseLine[]
+  returnLines        PurchaseReturnLine[]
+  batches            InventoryBatch[]
+  movements          InventoryMovement[]
+  batchConsumptions  InventoryBatchConsumption[]
+  recipeIngredients  RecipeIngredient[]
+  wastageRows        WastageEntry[]
+  stockAdjustments   StockAdjustment[]
+  stockAuditLines    StockAuditLine[]
+  personalUseEntries PersonalUseEntry[]
 
   @@index([name])
   @@map("inventory_items")
@@ -535,6 +550,107 @@ model SupplierPayment {
   @@map("supplier_payments")
 }
 
+model Vendor {
+  id                String   @id @default(cuid())
+  name              String
+  phone             String   @default("") @db.VarChar(32)
+  email             String   @default("") @db.VarChar(120)
+  address           String   @default("") @db.Text
+  defaultCreditDays Int?     @map("default_credit_days")
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  sales         VendorSale[]
+  ledgerEntries VendorLedgerEntry[]
+  payments      VendorPayment[]
+
+  @@map("vendors")
+}
+
+model VendorSale {
+  id              String                @id @default(cuid())
+  vendorId        String                @map("vendor_id")
+  soldAt          DateTime              @map("sold_at")
+  paymentType     VendorSalePaymentType @map("payment_type")
+  creditDays      Int?                  @map("credit_days")
+  dueAt           DateTime?             @map("due_at")
+  totalPaise      Int                   @map("total_paise")
+  notes           String                @default("")
+  createdByUserId String?               @map("created_by_user_id")
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  vendor Vendor           @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  lines  VendorSaleLine[]
+
+  @@index([vendorId, soldAt])
+  @@map("vendor_sales")
+}
+
+model VendorSaleLine {
+  id               String  @id @default(cuid())
+  vendorSaleId     String  @map("vendor_sale_id")
+  menuItemId       String  @map("menu_item_id")
+  variationId      String  @map("variation_id") @db.VarChar(64)
+  quantity         Decimal @map("quantity") @db.Decimal(24, 8)
+  ratePaisePerUnit Int     @map("rate_paise_per_unit")
+  lineTotalPaise   Int     @map("line_total_paise")
+
+  sale     VendorSale @relation(fields: [vendorSaleId], references: [id], onDelete: Cascade)
+  menuItem MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+
+  @@index([vendorSaleId])
+  @@index([menuItemId])
+  @@map("vendor_sale_lines")
+}
+
+model VendorSellableMenuItem {
+  id         String   @id @default(cuid())
+  menuItemId String   @unique @map("menu_item_id")
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+
+  @@index([active])
+  @@map("vendor_sellable_menu_items")
+}
+
+model VendorPayment {
+  id              String   @id @default(cuid())
+  vendorId        String   @map("vendor_id")
+  paidAt          DateTime @map("paid_at")
+  amountPaise     Int      @map("amount_paise")
+  method          String   @db.VarChar(32)
+  reference       String   @default("") @map("reference") @db.VarChar(120)
+  note            String   @default("")
+  createdByUserId String?  @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+
+  @@index([vendorId, paidAt])
+  @@map("vendor_payments")
+}
+
+model VendorLedgerEntry {
+  id            String           @id @default(cuid())
+  vendorId      String           @map("vendor_id")
+  occurredAt    DateTime         @default(now()) @map("occurred_at")
+  kind          VendorLedgerKind @map("kind")
+  debitPaise    Int              @default(0) @map("debit_paise")
+  creditPaise   Int              @default(0) @map("credit_paise")
+  referenceType String           @map("reference_type") @db.VarChar(32)
+  referenceId   String           @map("reference_id") @db.VarChar(64)
+  note          String           @default("")
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+
+  @@index([vendorId, occurredAt])
+  @@map("vendor_ledger_entries")
+}
+
 model RecipeVersion {
   id            String   @id @default(cuid())
   menuItemId    String   @map("menu_item_id")
@@ -650,4 +766,206 @@ model PurchaseCounterDay {
   lastSeq Int    @map("last_seq")
 
   @@map("purchase_counter_day")
+}
+
+// ---------------------------------------------------------------------------
+// Payroll / staff management (monthly salary + attendance + advances)
+// ---------------------------------------------------------------------------
+
+enum EmployeeDocumentKind {
+  ID_PROOF
+  ADDRESS_PROOF
+  CONTRACT
+  OTHER
+}
+
+enum AttendanceKind {
+  WORKED
+  LEAVE
+  ABSENT
+  WORKED_ON_LEAVE
+}
+
+enum AdvanceMethod {
+  CASH
+  RECHARGE
+  OTHER
+}
+
+// ---------------------------------------------------------------------------
+// Expenses (business) + personal use (cash/stock/order)
+// ---------------------------------------------------------------------------
+
+enum ExpenseCategoryGroup {
+  RAW_MATERIAL
+  BILLS
+  OTHER
+}
+
+enum PersonalUseKind {
+  CASH
+  STOCK
+  ORDER
+  OTHER
+}
+
+model ExpenseCategory {
+  id        String               @id @default(cuid())
+  name      String               @unique @db.VarChar(80)
+  group     ExpenseCategoryGroup @default(OTHER)
+  active    Boolean              @default(true)
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @updatedAt @map("updated_at")
+
+  expenses ExpenseEntry[]
+
+  @@index([active, name])
+  @@map("expense_categories")
+}
+
+model ExpenseEntry {
+  id          String   @id @default(cuid())
+  categoryId  String   @map("category_id")
+  occurredAt  DateTime @map("occurred_at")
+  amountPaise Int      @map("amount_paise")
+  note        String   @default("") @db.VarChar(500)
+  createdById String?  @map("created_by_user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  category ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([occurredAt])
+  @@index([categoryId, occurredAt])
+  @@map("expense_entries")
+}
+
+model PersonalUseEntry {
+  id              String          @id @default(cuid())
+  kind            PersonalUseKind
+  occurredAt      DateTime        @map("occurred_at")
+  cashAmountPaise Int             @default(0) @map("cash_amount_paise")
+  inventoryItemId String?         @map("inventory_item_id")
+  qtyBase         Decimal?        @map("qty_base") @db.Decimal(24, 8)
+  orderId         String?         @map("order_id")
+  note            String          @default("") @db.VarChar(500)
+  createdById     String?         @map("created_by_user_id")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  item  InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  order Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([occurredAt])
+  @@index([kind, occurredAt])
+  @@index([inventoryItemId, occurredAt])
+  @@index([orderId])
+  @@map("personal_use_entries")
+}
+
+model Employee {
+  id                 String    @id @default(cuid())
+  code               String    @default("") @db.VarChar(32)
+  name               String    @db.VarChar(120)
+  phone              String    @default("") @db.VarChar(32)
+  address            String    @default("") @db.Text
+  joinedAt           DateTime? @map("joined_at")
+  active             Boolean   @default(true)
+  monthlySalaryPaise Int       @map("monthly_salary_paise")
+  dailyRatePaise     Int       @map("daily_rate_paise")
+  paidLeavesPerMonth Int       @default(4) @map("paid_leaves_per_month")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  documents  EmployeeDocument[]
+  attendance AttendanceDay[]
+  advances   EmployeeAdvance[]
+  payroll    PayrollEmployeeLine[]
+
+  @@index([active, name])
+  @@index([code])
+  @@map("employees")
+}
+
+model EmployeeDocument {
+  id         String               @id @default(cuid())
+  employeeId String               @map("employee_id")
+  kind       EmployeeDocumentKind @map("kind")
+  title      String               @default("") @db.VarChar(120)
+  fileUrl    String               @default("") @map("file_url") @db.VarChar(500)
+  note       String               @default("")
+  createdAt  DateTime             @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, kind])
+  @@map("employee_documents")
+}
+
+model AttendanceDay {
+  id          String         @id @default(cuid())
+  employeeId  String         @map("employee_id")
+  dayKey      String         @map("day_key") @db.VarChar(10) // YYYY-MM-DD (local)
+  kind        AttendanceKind @map("kind")
+  note        String         @default("")
+  createdById String?        @map("created_by_user_id")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, dayKey])
+  @@index([dayKey])
+  @@map("attendance_days")
+}
+
+model EmployeeAdvance {
+  id          String        @id @default(cuid())
+  employeeId  String        @map("employee_id")
+  occurredAt  DateTime      @map("occurred_at")
+  amountPaise Int           @map("amount_paise")
+  method      AdvanceMethod @map("method")
+  reference   String        @default("") @db.VarChar(120)
+  note        String        @default("")
+  createdById String?       @map("created_by_user_id")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, occurredAt])
+  @@map("employee_advances")
+}
+
+model PayrollRun {
+  id          String   @id @default(cuid())
+  monthKey    String   @unique @map("month_key") @db.VarChar(7) // YYYY-MM
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdById String?  @map("created_by_user_id")
+
+  lines PayrollEmployeeLine[]
+
+  @@map("payroll_runs")
+}
+
+model PayrollEmployeeLine {
+  id                 String   @id @default(cuid())
+  payrollRunId       String   @map("payroll_run_id")
+  employeeId         String   @map("employee_id")
+  monthlySalaryPaise Int      @map("monthly_salary_paise")
+  dailyRatePaise     Int      @map("daily_rate_paise")
+  paidLeavesAllowed  Int      @map("paid_leaves_allowed")
+  workedDays         Int      @map("worked_days")
+  leaveDays          Int      @map("leave_days")
+  absentDays         Int      @map("absent_days")
+  workedOnLeaveDays  Int      @map("worked_on_leave_days")
+  extrasPaise        Int      @map("extras_paise")
+  deductionsPaise    Int      @map("deductions_paise")
+  advancesPaise      Int      @map("advances_paise")
+  netPayPaise        Int      @map("net_pay_paise")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@unique([payrollRunId, employeeId])
+  @@index([employeeId])
+  @@map("payroll_employee_lines")
 }

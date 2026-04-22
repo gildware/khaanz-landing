@@ -73,6 +73,7 @@ export function CheckoutForm() {
   const didAutoLocateOnLocationStepRef = useRef(false);
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("asap");
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   /** `datetime-local` min/max must not SSR with Node's TZ — iPhone TZ differs → hydration mismatch. */
   const [clientScheduleReady, setClientScheduleReady] = useState(false);
@@ -228,8 +229,11 @@ export function CheckoutForm() {
     customerMe !== null &&
     customerMe.loggedIn &&
     customerMe.phoneDigits === phoneDigits;
+  const profileReady = customerMe !== null && customerMe.loggedIn
+    ? (customerMe.displayName ?? "").trim().length > 0
+    : false;
   const canNextFromContact =
-    name.trim().length > 0 && phoneOk && accountReady;
+    name.trim().length > 0 && phoneOk && accountReady && profileReady;
 
   const canNextFromLocation =
     latitude != null &&
@@ -266,6 +270,7 @@ export function CheckoutForm() {
             displayName: d.displayName ?? null,
           });
           setPhone((p) => (p.length === 0 ? d.phoneDigits! : p));
+          setName((n) => (n.length === 0 && d.displayName ? d.displayName : n));
         } else {
           setCustomerMe({ loggedIn: false });
         }
@@ -273,10 +278,63 @@ export function CheckoutForm() {
       .catch(() => setCustomerMe({ loggedIn: false }));
   }, []);
 
+  useEffect(() => {
+    // If user is signed in but has no saved name yet, force the Contact step.
+    if (!customerMe?.loggedIn) return;
+    const dn = (customerMe.displayName ?? "").trim();
+    if (dn.length === 0) {
+      setStep((s) => Math.min(Math.max(s, 1), maxStepIndex));
+    }
+  }, [customerMe, maxStepIndex]);
+
+  const saveProfileName = async () => {
+    if (!customerMe?.loggedIn) return;
+    const displayName = name.trim();
+    if (displayName.length < 2) {
+      toast.error("Please enter your full name.");
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      const res = await fetch("/api/customer/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ displayName }),
+      });
+      const j = (await res.json().catch(() => ({}))) as
+        | { ok?: boolean; displayName?: string | null; error?: string }
+        | undefined;
+      if (!res.ok) {
+        toast.error(j && typeof j === "object" && typeof j.error === "string" ? j.error : "Could not save name.");
+        return;
+      }
+      const savedName =
+        j && typeof j === "object" && typeof j.displayName === "string"
+          ? j.displayName
+          : displayName;
+      setCustomerMe((prev) =>
+        prev && prev.loggedIn
+          ? { ...prev, displayName: savedName }
+          : prev,
+      );
+      toast.success("Saved your name.");
+    } catch {
+      toast.error("Network error. Try again.");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const placeOrder = async () => {
     if (!settings) return;
     if (!customerMe?.loggedIn) {
       toast.error("Please sign in with your phone before placing an order.");
+      return;
+    }
+    if (!profileReady) {
+      toast.error("Please save your name before placing an order.");
+      setStep((s) => Math.min(Math.max(s, 1), maxStepIndex));
       return;
     }
     let scheduledIso: string | null = null;
@@ -625,6 +683,16 @@ export function CheckoutForm() {
               . Phone on this order must match.
             </p>
           )}
+          {customerMe?.loggedIn && !profileReady && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+              <p className="font-medium text-amber-950 dark:text-amber-100">
+                One more step: save your name
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                We’ll use this for your orders so you don’t need to retype it next time.
+              </p>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="name">Full name</Label>
             <Input
@@ -636,6 +704,23 @@ export function CheckoutForm() {
               autoComplete="name"
             />
           </div>
+          {customerMe?.loggedIn && !profileReady && (
+            <Button
+              type="button"
+              className="w-full rounded-full"
+              onClick={() => void saveProfileName()}
+              disabled={savingProfile || name.trim().length < 2}
+            >
+              {savingProfile ? (
+                <>
+                  <Loader2Icon className="mr-2 size-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Save name"
+              )}
+            </Button>
+          )}
           <div className="space-y-2">
             <Label htmlFor="phone">Phone number</Label>
             <Input
