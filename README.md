@@ -41,8 +41,29 @@ SEED_SUPER_ADMIN_EMAIL="you@example.com" SEED_SUPER_ADMIN_PASSWORD="…" npm run
 | `SEED_SUPER_ADMIN_PASSWORD` | Plain password for that user (hashed with bcrypt in the DB) |
 | `CUSTOMER_SESSION_SECRET` | Optional JWT signing for customer cookie (defaults to `ADMIN_SESSION_SECRET`) |
 | `WHATSAPP_CLOUD_*` | When set, OTP is sent by WhatsApp to `91` + mobile; customer order updates use the same API |
+| `NEXT_PUBLIC_FIREBASE_*` | Firebase Phone Auth (client). Baked in at **`docker build`** / **`next build`**. |
+| `FIREBASE_ADMIN_*` | Firebase Admin SDK (server). **Runtime only** — required for `/api/auth/firebase/verify`. |
 
 Customer sign-in: **`/auth/phone`** (OTP). Checkout requires a signed-in customer. **`CUSTOMER_WHATSAPP_COUNTRY_CODE`** defaults to `91` (see `.env.example`).
+
+### Firebase Phone Auth on production (Docker)
+
+SMS **send** uses the browser + `NEXT_PUBLIC_FIREBASE_*` (build-time). **Verify** calls your server, which needs **`FIREBASE_ADMIN_PROJECT_ID`**, **`FIREBASE_ADMIN_CLIENT_EMAIL`**, and **`FIREBASE_ADMIN_PRIVATE_KEY`** on the **running container** — copying `.env` locally is not enough; the production image does not include it.
+
+If verify returns *Invalid Firebase token* on live but SMS arrives, add these runtime env vars on the host and restart:
+
+```bash
+docker run -d \
+  -e DATABASE_URL="…" \
+  -e FIREBASE_ADMIN_PROJECT_ID="khaanz" \
+  -e FIREBASE_ADMIN_CLIENT_EMAIL="firebase-adminsdk-…@khaanz.iam.gserviceaccount.com" \
+  -e FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n…\n-----END PRIVATE KEY-----\n" \
+  … your-image:latest
+```
+
+Use the same service account as in Firebase Console → Project settings → Service accounts. Keep `\n` escapes inside the quoted private key. Do **not** set `FIREBASE_ADMIN_CREDENTIALS_PATH` in production unless you mount the JSON file into the container.
+
+For CI builds, add GitHub Actions secrets: `NEXT_PUBLIC_FIREBASE_PHONE_AUTH_ENABLED`, `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`.
 
 WhatsApp Cloud / order formatting env vars are unchanged (see `src/lib/whatsapp-cloud.ts` and related).
 

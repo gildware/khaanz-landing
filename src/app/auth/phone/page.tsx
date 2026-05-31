@@ -172,9 +172,8 @@ function PhoneAuthForm() {
           return;
         }
         const cred = await c.confirm(code.trim());
-        await cred.user.reload();
-        const idToken = await cred.user.getIdToken(true);
-        if (!idToken.trim()) {
+        const idToken = await cred.user.getIdToken();
+        if (!/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(idToken)) {
           toast.error("Could not get sign-in token. Please try again.");
           return;
         }

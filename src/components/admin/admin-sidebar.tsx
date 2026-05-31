@@ -16,6 +16,8 @@ import {
   UsersIcon,
   IndianRupeeIcon,
   HandshakeIcon,
+  Trash2Icon,
+  BarChart3Icon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,8 +32,10 @@ const links: {
   openInNewTab?: boolean;
 }[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
+  { href: "/admin/reports", label: "Reports", icon: BarChart3Icon },
   { href: "/admin/orders", label: "Orders", icon: ClipboardListIcon },
   { href: "/admin/inventory", label: "Inventory", icon: WarehouseIcon },
+  { href: "/admin/wastage", label: "Wastage", icon: Trash2Icon },
   { href: "/admin/vendors", label: "Vendors", icon: HandshakeIcon },
   { href: "/admin/expenses", label: "Expenses", icon: IndianRupeeIcon },
   { href: "/admin/floor-plan", label: "Table layout", icon: LayoutGridIcon },

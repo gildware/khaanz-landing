@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +25,29 @@ function newAddonId() {
 export function MenuCatalogAddonsPanel() {
   const { data, mutate } = useMenuData();
   const [rows, setRows] = useState<MenuAddon[]>([]);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("name-asc");
+
+  const displayRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = rows;
+    if (q) {
+      list = list.filter((r) => r.name.toLowerCase().includes(q));
+    }
+    list = [...list].sort((a, b) => {
+      switch (sort) {
+        case "name-desc":
+          return b.name.localeCompare(a.name);
+        case "price-desc":
+          return b.price - a.price || a.name.localeCompare(b.name);
+        case "price-asc":
+          return a.price - b.price || a.name.localeCompare(b.name);
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+    return list;
+  }, [rows, search, sort]);
 
   useEffect(() => {
     setRows(data?.globalAddons ?? []);
@@ -71,6 +95,23 @@ export function MenuCatalogAddonsPanel() {
         </p>
       </div>
       <div className="space-y-4">
+        <DataTableToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search add-on name…"
+          sort={sort}
+          onSortChange={setSort}
+          sortOptions={[
+            { value: "name-asc", label: "Name (A–Z)" },
+            { value: "name-desc", label: "Name (Z–A)" },
+            { value: "price-desc", label: "Price (high–low)" },
+            { value: "price-asc", label: "Price (low–high)" },
+          ]}
+          filteredCount={displayRows.length}
+          totalCount={rows.length}
+          showStatusFilter={false}
+        />
+        <div className="overflow-x-auto rounded-xl border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -80,7 +121,18 @@ export function MenuCatalogAddonsPanel() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((r, idx) => (
+            {displayRows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={3} className="py-10 text-center text-muted-foreground">
+                  {rows.length === 0
+                    ? "No add-ons yet. Add a row below."
+                    : "No add-ons match your search."}
+                </TableCell>
+              </TableRow>
+            ) : null}
+            {displayRows.map((r) => {
+              const idx = rows.findIndex((x) => x.id === r.id);
+              return (
               <TableRow key={r.id}>
                 <TableCell>
                   <Input
@@ -112,9 +164,11 @@ export function MenuCatalogAddonsPanel() {
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+            );
+            })}
           </TableBody>
         </Table>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" onClick={addRow}>
             Add row

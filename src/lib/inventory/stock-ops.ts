@@ -149,6 +149,7 @@ export async function recordWastage(
     note?: string;
     createdByUserId?: string | null;
     allowNegativeStock: boolean;
+    menuWastageEntryId?: string | null;
   },
 ): Promise<{ id: string }> {
   const item = await tx.inventoryItem.findFirst({
@@ -167,6 +168,7 @@ export async function recordWastage(
   const row = await tx.wastageEntry.create({
     data: {
       inventoryItemId: item.id,
+      menuWastageEntryId: input.menuWastageEntryId ?? null,
       wastedAt: input.wastedAt,
       qtyBase: qty,
       wastageType: input.wastageType,

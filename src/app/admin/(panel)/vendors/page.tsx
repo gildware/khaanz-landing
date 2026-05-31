@@ -6,7 +6,6 @@ import {
   HandshakeIcon,
   IndianRupeeIcon,
   PlusIcon,
-  SearchIcon,
   Trash2Icon,
 } from "lucide-react";
 import {
@@ -44,6 +43,11 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  DataTableToolbar,
+  type ActiveFilter,
+  selectControlClassName,
+} from "@/components/admin/data-table-toolbar";
+import {
   chartTooltipRupeePair,
   chartYAxisRupeeTick,
   formatRupees,
@@ -54,16 +58,6 @@ import {
 function cx(...x: Array<string | false | null | undefined>): string {
   return x.filter(Boolean).join(" ");
 }
-
-type ActiveFilter = "all" | "active" | "inactive";
-
-const selectControlClassName = "min-w-[8.5rem]";
-
-const STATUS_FILTER_OPTIONS: SearchableSelectOption[] = [
-  { value: "all", label: "All" },
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-];
 
 const PAYMENT_TYPE_OPTIONS: SearchableSelectOption[] = [
   { value: "CASH", label: "CASH" },
@@ -105,81 +99,6 @@ function KpiCard(props: {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function VendorTableToolbar(props: {
-  search: string;
-  onSearchChange: (value: string) => void;
-  searchPlaceholder: string;
-  sort: string;
-  onSortChange: (value: string) => void;
-  sortOptions: { value: string; label: string }[];
-  filteredCount: number;
-  totalCount: number;
-  children?: React.ReactNode;
-  showStatusFilter?: boolean;
-  statusFilter?: ActiveFilter;
-  onStatusFilterChange?: (value: ActiveFilter) => void;
-}) {
-  const {
-    search,
-    onSearchChange,
-    searchPlaceholder,
-    statusFilter = "all",
-    onStatusFilterChange,
-    sort,
-    onSortChange,
-    sortOptions,
-    filteredCount,
-    totalCount,
-    children,
-    showStatusFilter = true,
-  } = props;
-
-  return (
-    <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-3 shadow-sm">
-      <div className="relative min-w-[12rem] flex-1">
-        <SearchIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          className="pl-8"
-          placeholder={searchPlaceholder}
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-      </div>
-      {children}
-      {showStatusFilter && onStatusFilterChange ? (
-        <div className="space-y-1">
-          <Label className="text-muted-foreground text-xs">Status</Label>
-          <SearchableSelect
-            triggerClassName={selectControlClassName}
-            options={STATUS_FILTER_OPTIONS}
-            value={statusFilter}
-            onValueChange={(v) => onStatusFilterChange(v as ActiveFilter)}
-            placeholder="Status"
-            searchPlaceholder="Search status…"
-          />
-        </div>
-      ) : null}
-      <div className="space-y-1">
-        <Label className="text-muted-foreground text-xs">Sort</Label>
-        <SearchableSelect
-          triggerClassName={selectControlClassName}
-          options={sortOptions}
-          value={sort}
-          onValueChange={onSortChange}
-          placeholder="Sort"
-          searchPlaceholder="Search sort…"
-        />
-      </div>
-      <p className="pb-1 text-muted-foreground text-xs tabular-nums">
-        {filteredCount} of {totalCount}
-      </p>
     </div>
   );
 }
@@ -794,7 +713,7 @@ export default function AdminVendorsPage() {
             </Button>
           </div>
 
-          <VendorTableToolbar
+          <DataTableToolbar
             search={vendorSearch}
             onSearchChange={setVendorSearch}
             searchPlaceholder="Search name, phone, email…"
@@ -939,7 +858,7 @@ export default function AdminVendorsPage() {
             </Button>
           </div>
 
-          <VendorTableToolbar
+          <DataTableToolbar
             search={sellableSearch}
             onSearchChange={setSellableSearch}
             searchPlaceholder="Search menu items…"
@@ -968,7 +887,7 @@ export default function AdminVendorsPage() {
                 searchPlaceholder="Search…"
               />
             </div>
-          </VendorTableToolbar>
+          </DataTableToolbar>
 
           <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
             <Table>
@@ -1035,7 +954,7 @@ export default function AdminVendorsPage() {
             </Button>
           </div>
 
-          <VendorTableToolbar
+          <DataTableToolbar
             search={saleSearch}
             onSearchChange={setSaleSearch}
             searchPlaceholder="Search vendor, payment, notes…"
@@ -1081,7 +1000,7 @@ export default function AdminVendorsPage() {
                 searchPlaceholder="Search vendors…"
               />
             </div>
-          </VendorTableToolbar>
+          </DataTableToolbar>
 
           <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
             <Table>

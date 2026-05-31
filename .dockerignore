@@ -1,0 +1,10 @@
+# Never bake local secrets into the image — set runtime env on the host instead.
+.env
+.env.*
+*firebase-adminsdk*.json
+
+node_modules
+.next
+.git
+coverage
+data/invoices

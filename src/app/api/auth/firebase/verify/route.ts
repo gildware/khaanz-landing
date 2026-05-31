@@ -26,9 +26,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing idToken." }, { status: 400 });
   }
 
+  if (!/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(idToken)) {
+    return NextResponse.json(
+      { error: "Invalid sign-in token format. Request a new code and try again." },
+      { status: 400 },
+    );
+  }
+
+  let adminAuth;
+  try {
+    adminAuth = getFirebaseAdminAuth();
+  } catch (err) {
+    console.error("Firebase admin init failed:", err);
+    return NextResponse.json(
+      {
+        error:
+          "Phone sign-in is not configured on the server. Set FIREBASE_ADMIN_* environment variables.",
+      },
+      { status: 503 },
+    );
+  }
+
   let decoded: { phone_number?: string; uid?: string };
   try {
-    const r = await getFirebaseAdminAuth().verifyIdToken(idToken);
+    const r = await adminAuth.verifyIdToken(idToken);
     decoded = { phone_number: r.phone_number, uid: r.uid };
   } catch (err) {
     const code =

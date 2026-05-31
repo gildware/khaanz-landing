@@ -4,7 +4,12 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { AdvanceMethod, AttendanceKind } from "@prisma/client";
 import { toast } from "sonner";
-import { Loader2Icon, PlusIcon, RefreshCcwIcon, SearchIcon } from "lucide-react";
+import { Loader2Icon, PlusIcon, RefreshCcwIcon } from "lucide-react";
+
+import {
+  DataTableToolbar,
+  type ActiveFilter,
+} from "@/components/admin/data-table-toolbar";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -167,6 +172,8 @@ function EmployeesTab({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ActiveFilter>("all");
+  const [sort, setSort] = useState("name-asc");
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<EmployeeRow | null>(null);
 
@@ -223,12 +230,27 @@ function EmployeesTab({
 
   const filteredEmployees = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return employees;
-    return employees.filter((e) => {
+    let list = employees.filter((e) => {
+      if (statusFilter === "active" && !e.active) return false;
+      if (statusFilter === "inactive" && e.active) return false;
+      if (!q) return true;
       const hay = `${e.name} ${e.code} ${e.phone}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [employees, search]);
+    list = [...list].sort((a, b) => {
+      switch (sort) {
+        case "name-desc":
+          return b.name.localeCompare(a.name);
+        case "salary-desc":
+          return b.monthlySalaryPaise - a.monthlySalaryPaise;
+        case "salary-asc":
+          return a.monthlySalaryPaise - b.monthlySalaryPaise;
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+    return list;
+  }, [employees, search, statusFilter, sort]);
 
   const save = async () => {
     setSaving(true);
@@ -297,18 +319,23 @@ function EmployeesTab({
         </Button>
       </div>
 
-      <div className="relative max-w-md">
-        <SearchIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          className="pl-8"
-          placeholder="Search name, code, phone…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+      <DataTableToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search name, code, phone…"
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        sort={sort}
+        onSortChange={setSort}
+        sortOptions={[
+          { value: "name-asc", label: "Name (A–Z)" },
+          { value: "name-desc", label: "Name (Z–A)" },
+          { value: "salary-desc", label: "Salary (high–low)" },
+          { value: "salary-asc", label: "Salary (low–high)" },
+        ]}
+        filteredCount={filteredEmployees.length}
+        totalCount={employees.length}
+      />
 
       <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
         <Table>
@@ -489,6 +516,8 @@ function AttendanceTab({
 }) {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [rows, setRows] = useState<Record<string, AttendanceKind>>({});
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("name-asc");
   const monthKey = useMemo(() => monthKeyFromDate(month), [month]);
   const y = month.getFullYear();
   const m0 = month.getMonth();
@@ -535,6 +564,22 @@ function AttendanceTab({
     }
   };
 
+  const filteredEmployees = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = employees;
+    if (q) {
+      list = list.filter((e) => {
+        const hay = `${e.name} ${e.code}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    list = [...list].sort((a, b) => {
+      if (sort === "name-desc") return b.name.localeCompare(a.name);
+      return a.name.localeCompare(b.name);
+    });
+    return list;
+  }, [employees, search, sort]);
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -557,6 +602,21 @@ function AttendanceTab({
         </p>
       </div>
 
+      <DataTableToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search employee…"
+        sort={sort}
+        onSortChange={setSort}
+        sortOptions={[
+          { value: "name-asc", label: "Name (A–Z)" },
+          { value: "name-desc", label: "Name (Z–A)" },
+        ]}
+        filteredCount={filteredEmployees.length}
+        totalCount={employees.length}
+        showStatusFilter={false}
+      />
+
       <div className="overflow-auto rounded-xl border">
         <Table>
           <TableHeader>
@@ -570,7 +630,17 @@ function AttendanceTab({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {employees.map((e) => (
+            {filteredEmployees.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={days + 1}
+                  className="py-10 text-center text-muted-foreground"
+                >
+                  No employees match your search.
+                </TableCell>
+              </TableRow>
+            ) : null}
+            {filteredEmployees.map((e) => (
               <TableRow key={e.id}>
                 <TableCell className="min-w-44">
                   <p className="font-medium">{e.name}</p>
@@ -615,6 +685,9 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+  const [methodFilter, setMethodFilter] = useState("all");
+  const [sort, setSort] = useState("date-desc");
 
   const [employeeId, setEmployeeId] = useState<string>(employees[0]?.id ?? "");
   const [occurredAt, setOccurredAt] = useState<string>(() => new Date().toISOString().slice(0, 10));
@@ -640,6 +713,31 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
   useEffect(() => {
     void load().catch((e) => toast.error(e instanceof Error ? e.message : "Load failed"));
   }, [load]);
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = rows.filter((r) => {
+      if (methodFilter !== "all" && r.method !== methodFilter) return false;
+      if (!q) return true;
+      const hay = `${r.employee.name} ${r.employee.code} ${r.reference} ${r.note} ${r.method}`.toLowerCase();
+      return hay.includes(q);
+    });
+    list = [...list].sort((a, b) => {
+      switch (sort) {
+        case "date-asc":
+          return a.occurredAt.localeCompare(b.occurredAt);
+        case "amount-asc":
+          return a.amountPaise - b.amountPaise;
+        case "amount-desc":
+          return b.amountPaise - a.amountPaise;
+        case "employee-asc":
+          return a.employee.name.localeCompare(b.employee.name);
+        default:
+          return b.occurredAt.localeCompare(a.occurredAt);
+      }
+    });
+    return list;
+  }, [rows, search, methodFilter, sort]);
 
   const add = async () => {
     setSaving(true);
@@ -689,7 +787,42 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
           Loading…
         </div>
       ) : (
-        <Table>
+        <>
+          <DataTableToolbar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search employee, reference, note…"
+            sort={sort}
+            onSortChange={setSort}
+            sortOptions={[
+              { value: "date-desc", label: "Newest first" },
+              { value: "date-asc", label: "Oldest first" },
+              { value: "amount-desc", label: "Amount (high–low)" },
+              { value: "amount-asc", label: "Amount (low–high)" },
+              { value: "employee-asc", label: "Employee (A–Z)" },
+            ]}
+            filteredCount={filteredRows.length}
+            totalCount={rows.length}
+            showStatusFilter={false}
+          >
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Method</Label>
+              <SearchableSelect
+                options={[
+                  { value: "all", label: "All methods" },
+                  { value: "CASH", label: "Cash" },
+                  { value: "UPI", label: "UPI" },
+                  { value: "BANK", label: "Bank" },
+                  { value: "CHEQUE", label: "Cheque" },
+                ]}
+                value={methodFilter}
+                onValueChange={setMethodFilter}
+                placeholder="Method"
+                searchPlaceholder="Search…"
+              />
+            </div>
+          </DataTableToolbar>
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
@@ -701,7 +834,20 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((r) => (
+            {rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                  No advances for this month yet.
+                </TableCell>
+              </TableRow>
+            ) : filteredRows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                  No advances match your search or filters.
+                </TableCell>
+              </TableRow>
+            ) : null}
+            {filteredRows.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="font-mono text-xs">{String(r.occurredAt).slice(0, 10)}</TableCell>
                 <TableCell className="font-medium">{r.employee.name}</TableCell>
@@ -713,6 +859,7 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
             ))}
           </TableBody>
         </Table>
+        </>
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -808,6 +955,8 @@ function PayrunTab({ monthKey }: { monthKey: string }) {
     lines: PayrollLine[];
   };
   const [run, setRun] = useState<PayrollRun | null>(null);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("net-desc");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -826,6 +975,31 @@ function PayrunTab({ monthKey }: { monthKey: string }) {
   useEffect(() => {
     void load().catch((e) => toast.error(e instanceof Error ? e.message : "Load failed"));
   }, [load]);
+
+  const filteredLines = useMemo(() => {
+    const lines = run?.lines ?? [];
+    const q = search.trim().toLowerCase();
+    let list = lines;
+    if (q) {
+      list = list.filter((l) => {
+        const name = l.employee?.name ?? l.employeeId;
+        return name.toLowerCase().includes(q);
+      });
+    }
+    list = [...list].sort((a, b) => {
+      switch (sort) {
+        case "name-asc":
+          return (a.employee?.name ?? "").localeCompare(b.employee?.name ?? "");
+        case "net-asc":
+          return a.netPayPaise - b.netPayPaise;
+        case "salary-desc":
+          return b.monthlySalaryPaise - a.monthlySalaryPaise;
+        default:
+          return b.netPayPaise - a.netPayPaise;
+      }
+    });
+    return list;
+  }, [run?.lines, search, sort]);
 
   const create = async () => {
     setCreating(true);
@@ -889,6 +1063,22 @@ function PayrunTab({ monthKey }: { monthKey: string }) {
               {String(run.createdAt).replace("T", " ").slice(0, 19)}
             </p>
           </div>
+          <DataTableToolbar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search employee…"
+            sort={sort}
+            onSortChange={setSort}
+            sortOptions={[
+              { value: "net-desc", label: "Net pay (high–low)" },
+              { value: "net-asc", label: "Net pay (low–high)" },
+              { value: "salary-desc", label: "Salary (high–low)" },
+              { value: "name-asc", label: "Employee (A–Z)" },
+            ]}
+            filteredCount={filteredLines.length}
+            totalCount={run.lines?.length ?? 0}
+            showStatusFilter={false}
+          />
           <Table>
             <TableHeader>
               <TableRow>
@@ -901,7 +1091,14 @@ function PayrunTab({ monthKey }: { monthKey: string }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(run.lines ?? []).map((l) => (
+              {filteredLines.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    No lines match your search or filters.
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              {filteredLines.map((l) => (
                 <TableRow key={l.id}>
                   <TableCell className="font-medium">{l.employee?.name ?? l.employeeId}</TableCell>
                   <TableCell className="text-right">{formatRupees(l.monthlySalaryPaise)}</TableCell>

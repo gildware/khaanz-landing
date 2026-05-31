@@ -16,6 +16,10 @@ import {
   WalletIcon,
 } from "lucide-react";
 
+import {
+  DataTableToolbar,
+  selectControlClassName,
+} from "@/components/admin/data-table-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -193,6 +197,14 @@ export function EmployeeProfileView(props: {
   const [docUrl, setDocUrl] = useState("");
   const [docNote, setDocNote] = useState("");
   const [docSaving, setDocSaving] = useState(false);
+  const [salarySearch, setSalarySearch] = useState("");
+  const [salarySort, setSalarySort] = useState("month-desc");
+  const [advancesSearch, setAdvancesSearch] = useState("");
+  const [advancesSort, setAdvancesSort] = useState("date-desc");
+  const [leavesSearch, setLeavesSearch] = useState("");
+  const [leavesSort, setLeavesSort] = useState("date-desc");
+  const [docsSearch, setDocsSearch] = useState("");
+  const [docsSort, setDocsSort] = useState("kind-asc");
 
   const load = useCallback(async (id: string) => {
     setLoading(true);
@@ -264,6 +276,89 @@ export function EmployeeProfileView(props: {
       toast.error(e instanceof Error ? e.message : "Delete failed");
     }
   };
+
+  const filteredPayrollHistory = useMemo(() => {
+    const q = salarySearch.trim().toLowerCase();
+    let list = profile?.payrollHistory ?? [];
+    if (q) {
+      list = list.filter((row) => formatMonthKey(row.monthKey).toLowerCase().includes(q));
+    }
+    list = [...list].sort((a, b) => {
+      switch (salarySort) {
+        case "month-asc":
+          return a.monthKey.localeCompare(b.monthKey);
+        case "net-asc":
+          return a.netPayPaise - b.netPayPaise;
+        case "net-desc":
+          return b.netPayPaise - a.netPayPaise;
+        default:
+          return b.monthKey.localeCompare(a.monthKey);
+      }
+    });
+    return list;
+  }, [profile?.payrollHistory, salarySearch, salarySort]);
+
+  const filteredAdvances = useMemo(() => {
+    const q = advancesSearch.trim().toLowerCase();
+    let list = profile?.advances ?? [];
+    if (q) {
+      list = list.filter((a) => {
+        const hay = `${a.method} ${a.reference} ${a.note} ${a.occurredAt}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    list = [...list].sort((a, b) => {
+      switch (advancesSort) {
+        case "date-asc":
+          return a.occurredAt.localeCompare(b.occurredAt);
+        case "amount-asc":
+          return a.amountPaise - b.amountPaise;
+        case "amount-desc":
+          return b.amountPaise - a.amountPaise;
+        default:
+          return b.occurredAt.localeCompare(a.occurredAt);
+      }
+    });
+    return list;
+  }, [profile?.advances, advancesSearch, advancesSort]);
+
+  const filteredLeaveHistory = useMemo(() => {
+    const q = leavesSearch.trim().toLowerCase();
+    let list = profile?.leaveHistory ?? [];
+    if (q) {
+      list = list.filter((d) => {
+        const hay = `${d.dayKey} ${attendanceKindLabel(d.kind)}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    list = [...list].sort((a, b) => {
+      if (leavesSort === "date-asc") return a.dayKey.localeCompare(b.dayKey);
+      return b.dayKey.localeCompare(a.dayKey);
+    });
+    return list;
+  }, [profile?.leaveHistory, leavesSearch, leavesSort]);
+
+  const filteredDocuments = useMemo(() => {
+    const q = docsSearch.trim().toLowerCase();
+    let list = profile?.documents ?? [];
+    if (q) {
+      list = list.filter((d) => {
+        const hay = `${d.kind} ${d.title} ${d.note} ${d.fileUrl}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    list = [...list].sort((a, b) => {
+      switch (docsSort) {
+        case "title-asc":
+          return (a.title || "").localeCompare(b.title || "");
+        case "kind-desc":
+          return b.kind.localeCompare(a.kind);
+        default:
+          return a.kind.localeCompare(b.kind);
+      }
+    });
+    return list;
+  }, [profile?.documents, docsSearch, docsSort]);
 
   if (loading) {
     return (
@@ -426,6 +521,22 @@ export function EmployeeProfileView(props: {
           <p className="text-muted-foreground text-sm">
             Monthly payroll runs — net pay after extras, deductions, and advances.
           </p>
+          <DataTableToolbar
+            search={salarySearch}
+            onSearchChange={setSalarySearch}
+            searchPlaceholder="Search month…"
+            sort={salarySort}
+            onSortChange={setSalarySort}
+            sortOptions={[
+              { value: "month-desc", label: "Newest month" },
+              { value: "month-asc", label: "Oldest month" },
+              { value: "net-desc", label: "Net pay (high–low)" },
+              { value: "net-asc", label: "Net pay (low–high)" },
+            ]}
+            filteredCount={filteredPayrollHistory.length}
+            totalCount={profile.payrollHistory.length}
+            showStatusFilter={false}
+          />
           <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
             <Table>
               <TableHeader>
@@ -445,8 +556,14 @@ export function EmployeeProfileView(props: {
                       No payroll runs yet for this employee.
                     </TableCell>
                   </TableRow>
+                ) : filteredPayrollHistory.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                      No rows match your search or filters.
+                    </TableCell>
+                  </TableRow>
                 ) : (
-                  profile.payrollHistory.map((row) => (
+                  filteredPayrollHistory.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell>
                         <p className="font-medium text-sm">{formatMonthKey(row.monthKey)}</p>
@@ -481,6 +598,22 @@ export function EmployeeProfileView(props: {
           <p className="text-muted-foreground text-sm">
             Advance salary, recharge, and cash — deducted in payroll runs.
           </p>
+          <DataTableToolbar
+            search={advancesSearch}
+            onSearchChange={setAdvancesSearch}
+            searchPlaceholder="Search method, reference, note…"
+            sort={advancesSort}
+            onSortChange={setAdvancesSort}
+            sortOptions={[
+              { value: "date-desc", label: "Newest first" },
+              { value: "date-asc", label: "Oldest first" },
+              { value: "amount-desc", label: "Amount (high–low)" },
+              { value: "amount-asc", label: "Amount (low–high)" },
+            ]}
+            filteredCount={filteredAdvances.length}
+            totalCount={profile.advances.length}
+            showStatusFilter={false}
+          />
           <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
             <Table>
               <TableHeader>
@@ -499,8 +632,14 @@ export function EmployeeProfileView(props: {
                       No advances recorded.
                     </TableCell>
                   </TableRow>
+                ) : filteredAdvances.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                      No advances match your search or filters.
+                    </TableCell>
+                  </TableRow>
                 ) : (
-                  profile.advances.map((a) => (
+                  filteredAdvances.map((a) => (
                     <TableRow key={a.id}>
                       <TableCell className="text-sm tabular-nums">
                         {a.occurredAt.slice(0, 10)}
@@ -530,6 +669,20 @@ export function EmployeeProfileView(props: {
             <div>
               <p className="font-medium text-sm">Recent leave & absence days</p>
               <p className="text-muted-foreground text-xs">Last 60 recorded non-work days</p>
+              <DataTableToolbar
+                search={leavesSearch}
+                onSearchChange={setLeavesSearch}
+                searchPlaceholder="Search date, status…"
+                sort={leavesSort}
+                onSortChange={setLeavesSort}
+                sortOptions={[
+                  { value: "date-desc", label: "Newest first" },
+                  { value: "date-asc", label: "Oldest first" },
+                ]}
+                filteredCount={filteredLeaveHistory.length}
+                totalCount={profile.leaveHistory.length}
+                showStatusFilter={false}
+              />
               <div className="mt-3 overflow-hidden rounded-2xl border bg-card shadow-sm">
                 <Table>
                   <TableHeader>
@@ -545,8 +698,14 @@ export function EmployeeProfileView(props: {
                           No leave or absence days recorded.
                         </TableCell>
                       </TableRow>
+                    ) : filteredLeaveHistory.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={2} className="py-10 text-center text-muted-foreground">
+                          No days match your search.
+                        </TableCell>
+                      </TableRow>
                     ) : (
-                      profile.leaveHistory.map((d) => (
+                      filteredLeaveHistory.map((d) => (
                         <TableRow key={d.dayKey}>
                           <TableCell className="font-mono text-sm tabular-nums">{d.dayKey}</TableCell>
                           <TableCell>
@@ -662,6 +821,21 @@ export function EmployeeProfileView(props: {
             </div>
           </div>
 
+          <DataTableToolbar
+            search={docsSearch}
+            onSearchChange={setDocsSearch}
+            searchPlaceholder="Search kind, title, note…"
+            sort={docsSort}
+            onSortChange={setDocsSort}
+            sortOptions={[
+              { value: "kind-asc", label: "Kind (A–Z)" },
+              { value: "kind-desc", label: "Kind (Z–A)" },
+              { value: "title-asc", label: "Title (A–Z)" },
+            ]}
+            filteredCount={filteredDocuments.length}
+            totalCount={profile.documents.length}
+            showStatusFilter={false}
+          />
           <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
             <Table>
               <TableHeader>
@@ -680,8 +854,14 @@ export function EmployeeProfileView(props: {
                       No documents on file.
                     </TableCell>
                   </TableRow>
+                ) : filteredDocuments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                      No documents match your search or filters.
+                    </TableCell>
+                  </TableRow>
                 ) : (
-                  profile.documents.map((d) => (
+                  filteredDocuments.map((d) => (
                     <TableRow key={d.id}>
                       <TableCell className="font-mono text-xs">{d.kind}</TableCell>
                       <TableCell className="font-medium text-sm">{d.title || "—"}</TableCell>

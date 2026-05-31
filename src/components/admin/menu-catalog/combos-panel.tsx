@@ -1,12 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  DataTableToolbar,
+  selectControlClassName,
+} from "@/components/admin/data-table-toolbar";
 import { ComboFormDialog } from "@/components/admin/combo-form-dialog";
 import { MenuItemImage } from "@/components/MenuItemImage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -31,6 +37,38 @@ export function MenuCatalogCombosPanel() {
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<MenuCombo | null>(null);
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState<"all" | "veg" | "nonveg">("all");
+  const [filterAvailability, setFilterAvailability] = useState<
+    "all" | "available" | "unavailable"
+  >("all");
+  const [sort, setSort] = useState("name-asc");
+
+  const filteredCombos = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = combos.filter((c) => {
+      if (filterType === "veg" && !c.isVeg) return false;
+      if (filterType === "nonveg" && c.isVeg) return false;
+      if (filterAvailability === "available" && c.available === false) return false;
+      if (filterAvailability === "unavailable" && c.available !== false) return false;
+      if (!q) return true;
+      const hay = `${c.name} ${formatComboComponentSummary(c, items)}`.toLowerCase();
+      return hay.includes(q);
+    });
+    list = [...list].sort((a, b) => {
+      switch (sort) {
+        case "name-desc":
+          return b.name.localeCompare(a.name);
+        case "price-desc":
+          return b.price - a.price || a.name.localeCompare(b.name);
+        case "price-asc":
+          return a.price - b.price || a.name.localeCompare(b.name);
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+    return list;
+  }, [combos, items, search, filterType, filterAvailability, sort]);
 
   const savePayload = async (next: NonNullable<typeof data>) => {
     await persistMenuPayload(next);
@@ -57,6 +95,61 @@ export function MenuCatalogCombosPanel() {
         </Button>
       </div>
 
+      <DataTableToolbar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search combo name, items…"
+        sort={sort}
+        onSortChange={setSort}
+        sortOptions={[
+          { value: "name-asc", label: "Name (A–Z)" },
+          { value: "name-desc", label: "Name (Z–A)" },
+          { value: "price-desc", label: "Offer price (high–low)" },
+          { value: "price-asc", label: "Offer price (low–high)" },
+        ]}
+        filteredCount={filteredCombos.length}
+        totalCount={combos.length}
+        showStatusFilter={false}
+      >
+        <div className="space-y-1">
+          <Label className="text-muted-foreground text-xs">Type</Label>
+          <SearchableSelect
+            triggerClassName={selectControlClassName}
+            options={[
+              { value: "all", label: "All types" },
+              { value: "veg", label: "Veg" },
+              { value: "nonveg", label: "Non-veg" },
+            ]}
+            value={filterType}
+            onValueChange={(v) =>
+              setFilterType((v as "all" | "veg" | "nonveg") ?? "all")
+            }
+            placeholder="Type"
+            searchPlaceholder="Search…"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-muted-foreground text-xs">Availability</Label>
+          <SearchableSelect
+            triggerClassName={selectControlClassName}
+            options={[
+              { value: "all", label: "All" },
+              { value: "available", label: "Available" },
+              { value: "unavailable", label: "Unavailable" },
+            ]}
+            value={filterAvailability}
+            onValueChange={(v) =>
+              setFilterAvailability(
+                (v as "all" | "available" | "unavailable") ?? "all",
+              )
+            }
+            placeholder="Availability"
+            searchPlaceholder="Search…"
+          />
+        </div>
+      </DataTableToolbar>
+
+      <div className="overflow-x-auto rounded-xl border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -71,7 +164,20 @@ export function MenuCatalogCombosPanel() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {combos.map((combo) => (
+          {combos.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                No combos yet.
+              </TableCell>
+            </TableRow>
+          ) : filteredCombos.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                No combos match your search or filters.
+              </TableCell>
+            </TableRow>
+          ) : (
+          filteredCombos.map((combo) => (
             <TableRow key={combo.id}>
               <TableCell>
                 <div className="relative h-12 w-12 overflow-hidden rounded-md bg-muted">
@@ -158,9 +264,10 @@ export function MenuCatalogCombosPanel() {
                 </Button>
               </TableCell>
             </TableRow>
-          ))}
+          )))}
         </TableBody>
       </Table>
+      </div>
 
       <ComboFormDialog
         open={open}

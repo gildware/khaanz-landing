@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Loader2Icon } from "lucide-react";
 
+import {
+  DataTableToolbar,
+  selectControlClassName,
+} from "@/components/admin/data-table-toolbar";
 import { Header } from "@/components/Header";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -32,6 +38,9 @@ export default function MyOrdersPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sort, setSort] = useState("date-desc");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,6 +64,40 @@ export default function MyOrdersPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const statusOptions = useMemo(() => {
+    const labels = new Set(orders.map((o) => o.statusLabel));
+    return [
+      { value: "all", label: "All statuses" },
+      ...[...labels].sort((a, b) => a.localeCompare(b)).map((l) => ({
+        value: l,
+        label: l,
+      })),
+    ];
+  }, [orders]);
+
+  const filteredOrders = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = orders.filter((o) => {
+      if (statusFilter !== "all" && o.statusLabel !== statusFilter) return false;
+      if (!q) return true;
+      const hay = `${o.orderRef ?? ""} ${o.statusLabel} ${o.fulfillment}`.toLowerCase();
+      return hay.includes(q);
+    });
+    list = [...list].sort((a, b) => {
+      switch (sort) {
+        case "date-asc":
+          return a.createdAt.localeCompare(b.createdAt);
+        case "total-desc":
+          return b.totalMinor - a.totalMinor;
+        case "total-asc":
+          return a.totalMinor - b.totalMinor;
+        default:
+          return b.createdAt.localeCompare(a.createdAt);
+      }
+    });
+    return list;
+  }, [orders, search, statusFilter, sort]);
 
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
@@ -91,6 +134,35 @@ export default function MyOrdersPage() {
             </Link>
           </p>
         ) : (
+          <div className="space-y-3">
+            <DataTableToolbar
+              search={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Search order ID, status…"
+              sort={sort}
+              onSortChange={setSort}
+              sortOptions={[
+                { value: "date-desc", label: "Newest first" },
+                { value: "date-asc", label: "Oldest first" },
+                { value: "total-desc", label: "Total (high–low)" },
+                { value: "total-asc", label: "Total (low–high)" },
+              ]}
+              filteredCount={filteredOrders.length}
+              totalCount={orders.length}
+              showStatusFilter={false}
+            >
+              <div className="space-y-1">
+                <Label className="text-muted-foreground text-xs">Status</Label>
+                <SearchableSelect
+                  triggerClassName={selectControlClassName}
+                  options={statusOptions}
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                  placeholder="Status"
+                  searchPlaceholder="Search…"
+                />
+              </div>
+            </DataTableToolbar>
           <div className="rounded-xl border bg-card overflow-x-auto">
             <Table>
               <TableHeader>
@@ -104,7 +176,14 @@ export default function MyOrdersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orders.map((o) => (
+                {filteredOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                      No orders match your search or filters.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                filteredOrders.map((o) => (
                   <TableRow key={o.id}>
                     <TableCell className="whitespace-nowrap text-sm">
                       {new Date(o.createdAt).toLocaleString()}
@@ -129,9 +208,10 @@ export default function MyOrdersPage() {
                       </Link>
                     </TableCell>
                   </TableRow>
-                ))}
+                )))}
               </TableBody>
             </Table>
+          </div>
           </div>
         )}
       </main>

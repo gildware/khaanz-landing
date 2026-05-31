@@ -3,19 +3,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import {
+  DataTableToolbar,
+  selectControlClassName,
+} from "@/components/admin/data-table-toolbar";
 import { ItemFormDialog } from "@/components/admin/item-form-dialog";
 import { MenuItemImage } from "@/components/MenuItemImage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -63,6 +60,7 @@ export function MenuCatalogItemsPanel() {
   const [filterAvailability, setFilterAvailability] = useState<
     "all" | "available" | "unavailable"
   >("all");
+  const [sort, setSort] = useState("name-asc");
 
   const savePayload = async (next: NonNullable<typeof data>) => {
     await persistMenuPayload(next);
@@ -130,6 +128,29 @@ export function MenuCatalogItemsPanel() {
       list = list.filter((i) => i.available === false);
     }
 
+    list = [...list].sort((a, b) => {
+      switch (sort) {
+        case "name-desc":
+          return b.name.localeCompare(a.name);
+        case "category-asc":
+          return (
+            a.category.localeCompare(b.category) || a.name.localeCompare(b.name)
+          );
+        case "price-desc": {
+          const pa = variationPriceBounds(a).max;
+          const pb = variationPriceBounds(b).max;
+          return pb - pa || a.name.localeCompare(b.name);
+        }
+        case "price-asc": {
+          const pa = variationPriceBounds(a).min;
+          const pb = variationPriceBounds(b).min;
+          return pa - pb || a.name.localeCompare(b.name);
+        }
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
+
     return list;
   }, [
     items,
@@ -137,24 +158,8 @@ export function MenuCatalogItemsPanel() {
     filterCategory,
     filterType,
     filterAvailability,
+    sort,
   ]);
-
-  const hasActiveFilters =
-    searchQuery.trim() !== "" ||
-    filterCategory !== "all" ||
-    filterType !== "all" ||
-    filterAvailability !== "all";
-
-  const clearFilters = useCallback(() => {
-    setSearchQuery("");
-    setFilterType("all");
-    setFilterAvailability("all");
-    setFilterCategory("all");
-    const p = new URLSearchParams(searchParams.toString());
-    p.delete("category");
-    const q = p.toString();
-    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
-  }, [router, pathname, searchParams]);
 
   return (
     <div className="space-y-6">
@@ -171,93 +176,74 @@ export function MenuCatalogItemsPanel() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl border bg-card/40 p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-          <div className="space-y-1.5 sm:col-span-2 lg:col-span-2 xl:col-span-2">
-            <Label htmlFor="menu-items-search">Search</Label>
-            <Input
-              id="menu-items-search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Name, category, description…"
-              className="h-9"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Category</Label>
-            <Select
-              value={filterCategory}
-              onValueChange={(v) => setCategoryFilter(v ?? "all")}
-            >
-              <SelectTrigger className="h-9 w-full">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {categories.map((c) => (
-                  <SelectItem key={c.name} value={c.name}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Type</Label>
-            <Select
-              value={filterType}
-              onValueChange={(v) =>
-                setFilterType((v as "all" | "veg" | "nonveg") ?? "all")
-              }
-            >
-              <SelectTrigger className="h-9 w-full">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="veg">Veg</SelectItem>
-                <SelectItem value="nonveg">Non-veg</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Availability</Label>
-            <Select
-              value={filterAvailability}
-              onValueChange={(v) =>
-                setFilterAvailability(
-                  (v as "all" | "available" | "unavailable") ?? "all",
-                )
-              }
-            >
-              <SelectTrigger className="h-9 w-full">
-                <SelectValue placeholder="Availability" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="unavailable">Unavailable</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <DataTableToolbar
+        search={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Name, category, description…"
+        sort={sort}
+        onSortChange={setSort}
+        sortOptions={[
+          { value: "name-asc", label: "Name (A–Z)" },
+          { value: "name-desc", label: "Name (Z–A)" },
+          { value: "category-asc", label: "Category" },
+          { value: "price-desc", label: "Price (high–low)" },
+          { value: "price-asc", label: "Price (low–high)" },
+        ]}
+        filteredCount={filteredItems.length}
+        totalCount={items.length}
+        showStatusFilter={false}
+      >
+        <div className="space-y-1">
+          <Label className="text-muted-foreground text-xs">Category</Label>
+          <SearchableSelect
+            triggerClassName={selectControlClassName}
+            options={[
+              { value: "all", label: "All categories" },
+              ...categories.map((c) => ({ value: c.name, label: c.name })),
+            ]}
+            value={filterCategory}
+            onValueChange={setCategoryFilter}
+            placeholder="Category"
+            searchPlaceholder="Search categories…"
+          />
         </div>
-        {hasActiveFilters ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/80 pt-3">
-            <p className="text-muted-foreground text-xs">
-              Showing {filteredItems.length} of {items.length}
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs"
-              onClick={clearFilters}
-            >
-              Clear filters
-            </Button>
-          </div>
-        ) : null}
-      </div>
+        <div className="space-y-1">
+          <Label className="text-muted-foreground text-xs">Type</Label>
+          <SearchableSelect
+            triggerClassName={selectControlClassName}
+            options={[
+              { value: "all", label: "All types" },
+              { value: "veg", label: "Veg" },
+              { value: "nonveg", label: "Non-veg" },
+            ]}
+            value={filterType}
+            onValueChange={(v) =>
+              setFilterType((v as "all" | "veg" | "nonveg") ?? "all")
+            }
+            placeholder="Type"
+            searchPlaceholder="Search…"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-muted-foreground text-xs">Availability</Label>
+          <SearchableSelect
+            triggerClassName={selectControlClassName}
+            options={[
+              { value: "all", label: "All" },
+              { value: "available", label: "Available" },
+              { value: "unavailable", label: "Unavailable" },
+            ]}
+            value={filterAvailability}
+            onValueChange={(v) =>
+              setFilterAvailability(
+                (v as "all" | "available" | "unavailable") ?? "all",
+              )
+            }
+            placeholder="Availability"
+            searchPlaceholder="Search…"
+          />
+        </div>
+      </DataTableToolbar>
 
       <div className="overflow-x-auto rounded-xl border">
         <Table>

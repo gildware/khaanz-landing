@@ -37,6 +37,7 @@ export async function resetAllTenantData(
   await tx.customer.deleteMany({});
 
   await tx.stockAudit.deleteMany({});
+  await tx.menuWastageEntry.deleteMany({});
   await tx.wastageEntry.deleteMany({});
   await tx.stockAdjustment.deleteMany({});
   await tx.inventoryBatchConsumption.deleteMany({});

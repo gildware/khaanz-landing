@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +54,10 @@ export function SearchableSelect({
   disabled,
   className,
   triggerClassName,
+  creatable,
+  onCreateOption,
+  createOptionLabel,
+  isCreating,
 }: {
   id?: string;
   options: SearchableSelectOption[];
@@ -65,6 +69,11 @@ export function SearchableSelect({
   disabled?: boolean;
   className?: string;
   triggerClassName?: string;
+  /** When true, show a create action when search has no exact label match. */
+  creatable?: boolean;
+  onCreateOption?: (search: string) => void | Promise<void>;
+  createOptionLabel?: (search: string) => string;
+  isCreating?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -86,6 +95,24 @@ export function SearchableSelect({
       return hay.includes(q);
     });
   }, [options, search]);
+
+  const createLabel = useMemo(() => {
+    const q = search.trim();
+    if (!q) return null;
+    if (createOptionLabel) return createOptionLabel(q);
+    return `Create "${q}"`;
+  }, [createOptionLabel, search]);
+
+  const showCreateOption = useMemo(() => {
+    if (!creatable || !onCreateOption || isCreating) return false;
+    const q = search.trim();
+    if (!q) return false;
+    const qLower = q.toLowerCase();
+    const exactMatch = options.some(
+      (o) => o.label.toLowerCase() === qLower || o.value.toLowerCase() === qLower,
+    );
+    return !exactMatch;
+  }, [creatable, isCreating, onCreateOption, options, search]);
 
   const updateMenuPosition = useCallback(() => {
     const trigger = triggerRef.current;
@@ -153,9 +180,9 @@ export function SearchableSelect({
             />
             <ul
               className="overflow-y-auto py-1 text-sm"
-              style={{ maxHeight: Math.max(80, menuPosition.maxHeight - 52) }}
+              style={{ maxHeight: Math.max(80, menuPosition.maxHeight - (showCreateOption ? 92 : 52)) }}
             >
-              {filtered.length === 0 ? (
+              {filtered.length === 0 && !showCreateOption ? (
                 <li className="px-2 py-2 text-muted-foreground">{emptyMessage}</li>
               ) : (
                 filtered.map((o) => (
@@ -184,6 +211,25 @@ export function SearchableSelect({
                 ))
               )}
             </ul>
+            {showCreateOption && createLabel ? (
+              <button
+                type="button"
+                className="mt-1 flex w-full items-center gap-2 rounded-sm border border-dashed px-2 py-1.5 text-left text-sm hover:bg-accent"
+                disabled={isCreating}
+                onClick={() => {
+                  void (async () => {
+                    const q = search.trim();
+                    if (!q) return;
+                    await onCreateOption?.(q);
+                    setOpen(false);
+                    setSearch("");
+                  })();
+                }}
+              >
+                <Plus className="size-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1 truncate">{createLabel}</span>
+              </button>
+            ) : null}
           </div>,
           document.body,
         )

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
+import { formatIstDateInput, parseIstDateInput } from "@/lib/ist-dates";
 import { getPrisma } from "@/lib/prisma";
 import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
 
@@ -31,8 +32,20 @@ export async function GET(request: Request) {
   );
   const skip = Math.max(parseInt(offsetRaw ?? "0", 10) || 0, 0);
 
+  const dateRaw = url.searchParams.get("date");
+  const dayStart = dateRaw
+    ? parseIstDateInput(dateRaw)
+    : parseIstDateInput(formatIstDateInput(new Date()));
+  if (!dayStart) {
+    return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+  }
+  const dayEndExclusive = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+
   const prisma = getPrisma();
   const rows = await prisma.order.findMany({
+    where: {
+      createdAt: { gte: dayStart, lt: dayEndExclusive },
+    },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     skip,
     take: pageSize + 1,
@@ -48,6 +61,7 @@ export async function GET(request: Request) {
   const orders = rows.slice(0, pageSize);
 
   return NextResponse.json({
+    date: formatIstDateInput(dayStart),
     hasMore,
     orders: orders.map((o) => ({
       id: o.id,

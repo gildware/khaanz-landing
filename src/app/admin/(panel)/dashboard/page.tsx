@@ -16,7 +16,9 @@ import {
   PillRankChartCard,
   type PillRankSourceRow,
 } from "@/components/admin/pill-rank-chart";
+import { ReportInsightsPanel } from "@/components/admin/report-insights-panel";
 import { formatRupees } from "@/lib/payroll/payroll-utils";
+import type { ReportInsight } from "@/lib/reports/build-insights";
 import { useMenuData } from "@/contexts/menu-data-context";
 
 type SalesRankRow = { key: string; label: string; qty: number };
@@ -53,6 +55,7 @@ type DashboardSummary = {
     topVendorItemsByQty: SalesRankRow[];
     bottomVendorItemsByQty: SalesRankRow[];
   };
+  insights: ReportInsight[];
 };
 
 const fetcher = async (url: string) => {
@@ -135,6 +138,12 @@ export default function AdminDashboardPage() {
           Sales, expenses, vendor sales, and performance overview.
         </p>
       </div>
+
+      <ReportInsightsPanel
+        insights={summary?.insights ?? []}
+        isLoading={isLoading && !summary}
+        periodLabel="This month"
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard

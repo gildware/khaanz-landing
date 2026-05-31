@@ -8,9 +8,7 @@ import {
   PencilIcon,
   PlusCircleIcon,
   PlusIcon,
-  SearchIcon,
   Settings2Icon,
-  Trash2Icon,
   TruckIcon,
   WalletIcon,
   WarehouseIcon,
@@ -48,6 +46,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DataTableToolbar,
+  type ActiveFilter,
+  selectControlClassName,
+} from "@/components/admin/data-table-toolbar";
 import { PillRankChartCard } from "@/components/admin/pill-rank-chart";
 import {
   chartTooltipRupeePair,
@@ -344,16 +347,6 @@ const emptyItemForm = {
   minStockBase: "0",
 };
 
-type ActiveFilter = "all" | "active" | "inactive";
-
-const selectControlClassName = "min-w-[8.5rem]";
-
-const STATUS_FILTER_OPTIONS: SearchableSelectOption[] = [
-  { value: "all", label: "All" },
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-];
-
 const STOCK_FILTER_OPTIONS: SearchableSelectOption[] = [
   { value: "all", label: "All" },
   { value: "low", label: "Low stock only" },
@@ -385,13 +378,6 @@ const ADJUSTMENT_REASON_OPTIONS: SearchableSelectOption[] = [
   { value: "OTHER", label: "Other" },
 ];
 
-const WASTAGE_TYPE_OPTIONS: SearchableSelectOption[] = [
-  { value: "SPOILAGE", label: "Spoiled / expired" },
-  { value: "PREPARATION", label: "Used in kitchen prep" },
-  { value: "OVERPRODUCTION", label: "Made too much" },
-  { value: "OTHER", label: "Other waste" },
-];
-
 const SUPPLIER_PAYMENT_METHOD_OPTIONS: SearchableSelectOption[] = [
   { value: "cash", label: "Cash" },
   { value: "upi", label: "UPI" },
@@ -400,7 +386,7 @@ const SUPPLIER_PAYMENT_METHOD_OPTIONS: SearchableSelectOption[] = [
   { value: "other", label: "Other" },
 ];
 
-type OpsMenuId = "opening" | "adjustment" | "wastage" | "payment" | "activity" | "settings";
+type OpsMenuId = "opening" | "adjustment" | "payment" | "activity" | "settings";
 
 const OPS_MENU_SECTIONS: {
   group: string;
@@ -415,7 +401,6 @@ const OPS_MENU_SECTIONS: {
     items: [
       { id: "opening", label: "Add opening / extra stock", Icon: PlusCircleIcon },
       { id: "adjustment", label: "Fix stock count", Icon: ArrowUpDownIcon },
-      { id: "wastage", label: "Record waste", Icon: Trash2Icon },
     ],
   },
   {
@@ -564,83 +549,13 @@ function InventoryItemSelect(props: {
   );
 }
 
-function InventoryTableToolbar(props: {
-  search: string;
-  onSearchChange: (value: string) => void;
-  searchPlaceholder: string;
-  sort: string;
-  onSortChange: (value: string) => void;
-  sortOptions: { value: string; label: string }[];
-  filteredCount: number;
-  totalCount: number;
-  children?: React.ReactNode;
-  showStatusFilter?: boolean;
-  statusFilter?: ActiveFilter;
-  onStatusFilterChange?: (value: ActiveFilter) => void;
-}) {
-  const {
-    search,
-    onSearchChange,
-    searchPlaceholder,
-    statusFilter = "all",
-    onStatusFilterChange,
-    sort,
-    onSortChange,
-    sortOptions,
-    filteredCount,
-    totalCount,
-    children,
-    showStatusFilter = true,
-  } = props;
-
-  return (
-    <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-3 shadow-sm">
-      <div className="relative min-w-[12rem] flex-1">
-        <SearchIcon
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-          aria-hidden
-        />
-        <Input
-          className="pl-8"
-          placeholder={searchPlaceholder}
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
-      </div>
-      {children}
-      {showStatusFilter && onStatusFilterChange ? (
-        <div className="space-y-1">
-          <Label className="text-muted-foreground text-xs">Status</Label>
-          <SearchableSelect
-            triggerClassName={selectControlClassName}
-            options={STATUS_FILTER_OPTIONS}
-            value={statusFilter}
-            onValueChange={(v) => onStatusFilterChange(v as ActiveFilter)}
-            placeholder="Status"
-            searchPlaceholder="Search status…"
-          />
-        </div>
-      ) : null}
-      <div className="space-y-1">
-        <Label className="text-muted-foreground text-xs">Sort</Label>
-        <SearchableSelect
-          triggerClassName={selectControlClassName}
-          options={sortOptions}
-          value={sort}
-          onValueChange={onSortChange}
-          placeholder="Sort"
-          searchPlaceholder="Search sort…"
-        />
-      </div>
-      <p className="pb-1 text-muted-foreground text-xs tabular-nums">
-        {filteredCount} of {totalCount}
-      </p>
-    </div>
-  );
-}
-
 type MenuPayload = {
-  items: { id: string; name: string; variations: { id: string; name: string }[] }[];
+  items: {
+    id: string;
+    name: string;
+    category: string;
+    variations: { id: string; name: string; price: number }[];
+  }[];
 };
 
 type ExpiryReport = {
@@ -1084,9 +999,6 @@ export default function AdminInventoryPage() {
     adjustmentQty: "",
     adjustmentDirection: "down",
     adjustmentReason: "CORRECTION",
-    wastageItemId: "",
-    wastageQty: "",
-    wastageType: "SPOILAGE",
     paymentSupplierId: "",
     paymentAmountRupees: "",
     paymentMethod: "upi",
@@ -1135,23 +1047,6 @@ export default function AdminInventoryPage() {
         }),
       });
       toast.success("Adjustment saved");
-      await Promise.all([loadItems(), loadSummary(), loadMovements()]);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed");
-    }
-  };
-
-  const postWastage = async () => {
-    try {
-      await adminFetch("/api/admin/inventory/wastage", {
-        method: "POST",
-        body: JSON.stringify({
-          inventoryItemId: ops.wastageItemId,
-          qtyBase: ops.wastageQty,
-          wastageType: ops.wastageType,
-        }),
-      });
-      toast.success("Wastage recorded");
       await Promise.all([loadItems(), loadSummary(), loadMovements()]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
@@ -1738,7 +1633,7 @@ export default function AdminInventoryPage() {
             </Button>
           </div>
 
-          <InventoryTableToolbar
+          <DataTableToolbar
             search={itemSearch}
             onSearchChange={setItemSearch}
             searchPlaceholder="Search name, category, units…"
@@ -1781,7 +1676,7 @@ export default function AdminInventoryPage() {
                 searchPlaceholder="Search…"
               />
             </div>
-          </InventoryTableToolbar>
+          </DataTableToolbar>
 
           <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
             <Table>
@@ -2020,7 +1915,7 @@ export default function AdminInventoryPage() {
             </Button>
           </div>
 
-          <InventoryTableToolbar
+          <DataTableToolbar
             search={supplierSearch}
             onSearchChange={setSupplierSearch}
             searchPlaceholder="Search name, phone, address…"
@@ -2167,7 +2062,7 @@ export default function AdminInventoryPage() {
             </Button>
           </div>
 
-          <InventoryTableToolbar
+          <DataTableToolbar
             search={purchaseSearch}
             onSearchChange={setPurchaseSearch}
             searchPlaceholder="Search batch, supplier, payment…"
@@ -2209,7 +2104,7 @@ export default function AdminInventoryPage() {
                 searchPlaceholder="Search suppliers…"
               />
             </div>
-          </InventoryTableToolbar>
+          </DataTableToolbar>
 
           <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
             <Table>
@@ -2483,7 +2378,7 @@ export default function AdminInventoryPage() {
             </Button>
           </div>
 
-          <InventoryTableToolbar
+          <DataTableToolbar
             search={recipeSearch}
             onSearchChange={setRecipeSearch}
             searchPlaceholder="Search menu item, variation…"
@@ -2516,7 +2411,7 @@ export default function AdminInventoryPage() {
                 searchPlaceholder="Search dishes…"
               />
             </div>
-          </InventoryTableToolbar>
+          </DataTableToolbar>
 
           <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
             <Table>
@@ -2885,56 +2780,6 @@ export default function AdminInventoryPage() {
               </StockActionCard>
               ) : null}
 
-              {opsMenu === "wastage" ? (
-              <StockActionCard
-                title="Record waste"
-                description="Removes stock that was thrown away, spoiled, or used up in the kitchen (not sold to a customer)."
-                whenToUse="Expired milk, prep trimmings, overcooked batch, or tasting — anything that leaves inventory without a sale."
-                action={
-                  <Button type="button" onClick={() => void postWastage()}>
-                    Record waste
-                  </Button>
-                }
-              >
-                <div className="space-y-2">
-                  <Label>Item</Label>
-                  <InventoryItemSelect
-                    value={ops.wastageItemId}
-                    onChange={(v) => setOps({ ...ops, wastageItemId: v })}
-                    items={items}
-                  />
-                  <ItemOnHandHint item={items.find((i) => i.id === ops.wastageItemId)} />
-                </div>
-                <div className="space-y-2">
-                  <Label>
-                    Quantity wasted
-                    {ops.wastageItemId ? (
-                      <span className="text-muted-foreground font-normal">
-                        {" "}
-                        ({items.find((i) => i.id === ops.wastageItemId)?.baseUnit ?? "units"})
-                      </span>
-                    ) : null}
-                  </Label>
-                  <Input
-                    inputMode="decimal"
-                    placeholder="e.g. 1"
-                    value={ops.wastageQty}
-                    onChange={(e) => setOps({ ...ops, wastageQty: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Type of waste</Label>
-                  <SearchableSelect
-                    options={WASTAGE_TYPE_OPTIONS}
-                    value={ops.wastageType}
-                    onValueChange={(v) => setOps({ ...ops, wastageType: v })}
-                    placeholder="Choose type…"
-                    searchPlaceholder="Search types…"
-                  />
-                </div>
-              </StockActionCard>
-              ) : null}
-
               {opsMenu === "payment" ? (
               <StockActionCard
                 title="Pay a supplier"
@@ -3034,7 +2879,7 @@ export default function AdminInventoryPage() {
               </p>
             </div>
 
-            <InventoryTableToolbar
+            <DataTableToolbar
               search={movementSearch}
               onSearchChange={setMovementSearch}
               searchPlaceholder="Search item, type, note…"
@@ -3066,7 +2911,7 @@ export default function AdminInventoryPage() {
                   searchPlaceholder="Search types…"
                 />
               </div>
-            </InventoryTableToolbar>
+            </DataTableToolbar>
 
             <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
               <Table>

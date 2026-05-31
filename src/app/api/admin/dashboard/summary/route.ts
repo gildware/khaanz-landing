@@ -12,6 +12,7 @@ import {
 } from "@/lib/inventory/stock-value-charts";
 import { readMenuPayload } from "@/lib/menu-repository";
 import { getPrisma } from "@/lib/prisma";
+import { buildReportInsights } from "@/lib/reports/build-insights";
 import type { CartLine } from "@/types/menu";
 
 type SalesRow = { key: string; label: string; qty: number };
@@ -354,6 +355,35 @@ export async function GET(request: Request) {
   const catalog = await buildMenuCatalogRows();
   const soldRows = mergeSalesIntoCatalog(catalog, soldByKey);
   const { top: topSelling, bottom: leastSelling } = splitTopBottom(soldRows);
+  const zeroSalesTotalCount = soldRows.filter((r) => r.qty === 0).length;
+
+  const wastageEntries = await prisma.wastageEntry.findMany({
+    where: { wastedAt: { gte: monthStart, lt: monthEndExclusive } },
+    select: {
+      qtyBase: true,
+      item: { select: { avgCostPaisePerBase: true } },
+    },
+  });
+  let wastageCostPaise = 0;
+  for (const w of wastageEntries) {
+    wastageCostPaise += Math.round(Number(w.qtyBase.mul(w.item.avgCostPaisePerBase).toString()));
+  }
+
+  const insights = buildReportInsights({
+    netProfitPaise,
+    grossMarginPaise,
+    salesPaise: monthSalesMinor,
+    expensesPaise: monthExpensesPaise,
+    salariesPaise,
+    wastageCostPaise,
+    personalUsePaise: 0,
+    topSelling,
+    zeroSalesTotalCount,
+    orderCount: monthSalesAgg._count._all ?? 0,
+    topExpenseCategory: null,
+    topWastageType: null,
+  });
+
   const stockValueRows = await loadStockValueRankRows();
   const { topByValue: topStockValue, lowestByValue: lowestStockValue } =
     splitStockValueRanks(stockValueRows);
@@ -399,6 +429,7 @@ export async function GET(request: Request) {
       topVendorItemsByQty,
       bottomVendorItemsByQty,
     },
+    insights,
   });
 }
 

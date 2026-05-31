@@ -91,9 +91,11 @@ model MenuItem {
   category          Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   variations        MenuItemVariation[]
   addons            MenuItemAddon[]
-  recipeVersions    RecipeVersion[]
-  vendorSaleLines   VendorSaleLine[]
-  sellableToVendors VendorSellableMenuItem?
+  recipeVersions      RecipeVersion[]
+  vendorSaleLines     VendorSaleLine[]
+  sellableToVendors   VendorSellableMenuItem?
+  personalUseEntries  PersonalUseEntry[]
+  menuWastageEntries  MenuWastageEntry[]
 
   @@index([categoryId])
   @@map("menu_items")
@@ -106,6 +108,8 @@ model MenuItemVariation {
   price     Float
   sortOrder Int      @map("sort_order")
   item      MenuItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  personalUseEntries PersonalUseEntry[]
+  menuWastageEntries MenuWastageEntry[]
 
   @@index([itemId])
   @@map("menu_item_variations")
@@ -718,19 +722,43 @@ model StockAdjustment {
 }
 
 model WastageEntry {
+  id                 String      @id @default(cuid())
+  inventoryItemId    String      @map("inventory_item_id")
+  menuWastageEntryId String?     @map("menu_wastage_entry_id")
+  wastedAt           DateTime    @map("wasted_at")
+  qtyBase            Decimal     @map("qty_base") @db.Decimal(24, 8)
+  wastageType        WastageType @map("wastage_type")
+  note               String      @default("")
+  createdByUserId    String?     @map("created_by_user_id")
+  createdAt          DateTime    @default(now()) @map("created_at")
+
+  item            InventoryItem     @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  menuWastageEntry MenuWastageEntry? @relation(fields: [menuWastageEntryId], references: [id], onDelete: SetNull)
+
+  @@index([inventoryItemId, wastedAt])
+  @@index([menuWastageEntryId])
+  @@map("wastage_entries")
+}
+
+/// Prepared menu dish wasted (deducts ingredients via recipe).
+model MenuWastageEntry {
   id              String      @id @default(cuid())
-  inventoryItemId String      @map("inventory_item_id")
+  menuItemId      String      @map("menu_item_id")
+  variationId     String      @map("variation_id")
+  quantity        Decimal     @db.Decimal(24, 8)
   wastedAt        DateTime    @map("wasted_at")
-  qtyBase         Decimal     @map("qty_base") @db.Decimal(24, 8)
   wastageType     WastageType @map("wastage_type")
   note            String      @default("")
   createdByUserId String?     @map("created_by_user_id")
   createdAt       DateTime    @default(now()) @map("created_at")
 
-  item InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  menuItem    MenuItem          @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+  variation   MenuItemVariation @relation(fields: [variationId], references: [id], onDelete: Restrict)
+  ingredients WastageEntry[]
 
-  @@index([inventoryItemId, wastedAt])
-  @@map("wastage_entries")
+  @@index([menuItemId, wastedAt])
+  @@index([wastedAt])
+  @@map("menu_wastage_entries")
 }
 
 model StockAudit {
@@ -846,17 +874,22 @@ model PersonalUseEntry {
   cashAmountPaise Int             @default(0) @map("cash_amount_paise")
   inventoryItemId String?         @map("inventory_item_id")
   qtyBase         Decimal?        @map("qty_base") @db.Decimal(24, 8)
+  menuItemId      String?         @map("menu_item_id")
+  variationId     String?         @map("variation_id")
   orderId         String?         @map("order_id")
   note            String          @default("") @db.VarChar(500)
   createdById     String?         @map("created_by_user_id")
   createdAt       DateTime        @default(now()) @map("created_at")
 
-  item  InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  order Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  item      InventoryItem?     @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  menuItem  MenuItem?          @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+  variation MenuItemVariation? @relation(fields: [variationId], references: [id], onDelete: SetNull)
+  order     Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
 
   @@index([occurredAt])
   @@index([kind, occurredAt])
   @@index([inventoryItemId, occurredAt])
+  @@index([menuItemId, occurredAt])
   @@index([orderId])
   @@map("personal_use_entries")
 }

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2Icon } from "lucide-react";
+import { Loader2Icon, RefreshCwIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import type { OrderStatus } from "@prisma/client";
 
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { formatIstDateInput } from "@/lib/ist-dates";
 import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
 import { POS_ANONYMOUS_PHONE_DIGITS } from "@/lib/phone-digits";
 import {
@@ -170,20 +172,30 @@ export default function AdminOrdersPage() {
   const [posSettings, setPosSettings] = useState<RestaurantSettingsPayload | null>(
     null,
   );
+  const [orderDate, setOrderDate] = useState(() => formatIstDateInput(new Date()));
+  const todayIst = formatIstDateInput(new Date());
+  const viewingToday = orderDate === todayIst;
 
-  const fetchOrdersPage = useCallback(async (limit: number, offset: number) => {
-    const res = await fetch(
-      `/api/admin/orders?limit=${limit}&offset=${offset}`,
-      { credentials: "include" },
-    );
-    if (!res.ok) throw new Error("fetch failed");
-    return (await res.json()) as { orders: OrderRow[]; hasMore: boolean };
-  }, []);
+  const fetchOrdersPage = useCallback(
+    async (limit: number, offset: number, date: string) => {
+      const params = new URLSearchParams({
+        limit: String(limit),
+        offset: String(offset),
+        date,
+      });
+      const res = await fetch(`/api/admin/orders?${params.toString()}`, {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("fetch failed");
+      return (await res.json()) as { orders: OrderRow[]; hasMore: boolean };
+    },
+    [],
+  );
 
   const loadInitial = useCallback(async () => {
     setInitialLoad(true);
     try {
-      const data = await fetchOrdersPage(PAGE_SIZE, 0);
+      const data = await fetchOrdersPage(PAGE_SIZE, 0, orderDate);
       setOrders(data.orders);
       setHasMore(data.hasMore);
     } catch {
@@ -191,13 +203,13 @@ export default function AdminOrdersPage() {
     } finally {
       setInitialLoad(false);
     }
-  }, [fetchOrdersPage]);
+  }, [fetchOrdersPage, orderDate]);
 
   const refreshOrders = useCallback(async () => {
     setRefreshing(true);
     try {
       const n = Math.max(ordersRef.current.length, PAGE_SIZE);
-      const data = await fetchOrdersPage(n, 0);
+      const data = await fetchOrdersPage(n, 0, orderDate);
       setOrders(data.orders);
       setHasMore(data.hasMore);
     } catch {
@@ -205,7 +217,7 @@ export default function AdminOrdersPage() {
     } finally {
       setRefreshing(false);
     }
-  }, [fetchOrdersPage]);
+  }, [fetchOrdersPage, orderDate]);
 
   const loadMore = useCallback(async () => {
     if (loadMoreInFlight.current || loadingMore || !hasMore) return;
@@ -213,7 +225,7 @@ export default function AdminOrdersPage() {
     setLoadingMore(true);
     const offset = ordersRef.current.length;
     try {
-      const data = await fetchOrdersPage(PAGE_SIZE, offset);
+      const data = await fetchOrdersPage(PAGE_SIZE, offset, orderDate);
       setOrders((prev) => [...prev, ...data.orders]);
       setHasMore(data.hasMore);
     } catch {
@@ -222,7 +234,7 @@ export default function AdminOrdersPage() {
       loadMoreInFlight.current = false;
       setLoadingMore(false);
     }
-  }, [fetchOrdersPage, hasMore, loadingMore]);
+  }, [fetchOrdersPage, hasMore, loadingMore, orderDate]);
 
   useEffect(() => {
     void loadInitial();
@@ -402,38 +414,59 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-semibold text-2xl">Orders</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-semibold text-2xl tracking-tight">Orders</h1>
           <p className="text-muted-foreground text-sm">
             Advance status one step at a time, or cancel. Customers get a
             WhatsApp update when Cloud API is configured.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-4">
+
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Checkbox
               id="auto-refresh"
               checked={autoRefresh}
               onCheckedChange={(v) => setAutoRefresh(v === true)}
             />
-            <Label htmlFor="auto-refresh" className="text-sm font-normal">
+            <Label htmlFor="auto-refresh" className="text-sm font-normal whitespace-nowrap">
               Auto-refresh (30s)
             </Label>
           </div>
-          <div className="flex items-center gap-2">
-            {refreshing && (
-              <Loader2Icon className="text-muted-foreground size-4 animate-spin" />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            disabled={refreshing}
+            onClick={() => void refreshOrders()}
+          >
+            {refreshing ? (
+              <Loader2Icon className="size-4 animate-spin" />
+            ) : (
+              <RefreshCwIcon className="size-4" />
             )}
+            Refresh
+          </Button>
+          <Input
+            id="orders-date"
+            type="date"
+            value={orderDate}
+            onChange={(e) => setOrderDate(e.target.value)}
+            className="w-40"
+            aria-label="Order date"
+          />
+          {!viewingToday ? (
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => void refreshOrders()}
+              onClick={() => setOrderDate(todayIst)}
             >
-              Refresh now
+              Today
             </Button>
-          </div>
+          ) : null}
         </div>
       </div>
 
@@ -471,11 +504,13 @@ export default function AdminOrdersPage() {
       <div className="space-y-4">
         {orders.length === 0 ? (
           <div className="rounded-2xl border border-dashed bg-muted/20 px-4 py-12 text-center text-muted-foreground text-sm">
-            No orders yet.
+            {viewingToday
+              ? "No orders today."
+              : `No orders on ${orderDate}.`}
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="rounded-2xl border border-dashed bg-muted/20 px-4 py-12 text-center text-muted-foreground text-sm">
-            No orders in this status.
+            No orders in this status for the selected date.
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
