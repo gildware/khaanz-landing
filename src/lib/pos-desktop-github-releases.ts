@@ -26,7 +26,10 @@ export function pickInstallerUrlsFromAssets(
       ?.browser_download_url ??
     "";
   const windows =
-    assets.find((a) => /\.exe$/i.test(a.name))?.browser_download_url ?? "";
+    assets.find((a) => /setup.*\.exe$/i.test(a.name))?.browser_download_url ??
+    assets.find((a) => /\.exe$/i.test(a.name) && !/elevate/i.test(a.name))
+      ?.browser_download_url ??
+    "";
   return { mac, windows };
 }
 
