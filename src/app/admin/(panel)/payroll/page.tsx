@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { AdvanceMethod, AttendanceKind } from "@prisma/client";
 import { toast } from "sonner";
@@ -63,7 +63,7 @@ function dayKeyLocal(y: number, m0: number, day: number): string {
   return `${y}-${mm}-${dd}`;
 }
 
-export default function AdminPayrollPage() {
+function AdminPayrollPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editEmployeeId = searchParams.get("edit");
@@ -916,6 +916,18 @@ function PayrunTab({ monthKey }: { monthKey: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminPayrollPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="text-muted-foreground text-sm">Loading payroll…</div>
+      }
+    >
+      <AdminPayrollPageContent />
+    </Suspense>
   );
 }
 

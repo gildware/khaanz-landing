@@ -169,7 +169,7 @@ async function placeOrderViaDesktopBridgeIfAvailable(args: {
 
 export default function AdminPosPage() {
   const router = useRouter();
-  const { data: menu, isLoading, error } = useMenuData();
+  const { data: menu, isLoading, error, mutate } = useMenuData();
   const categories = useMemo(() => menu?.categories ?? [], [menu]);
   const items = useMemo(() => menu?.items ?? [], [menu]);
   const combos = useMemo(() => menu?.combos ?? [], [menu]);
@@ -377,7 +377,7 @@ export default function AdminPosPage() {
     } finally {
       setSyncingNow(false);
     }
-  }, [refreshOfflineCount]);
+  }, [refreshOfflineCount, mutate]);
 
   useEffect(() => {
     void refreshOfflineCount();

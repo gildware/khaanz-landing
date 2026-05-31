@@ -216,7 +216,7 @@ export async function GET(req: Request) {
     for (const line of order.lines) {
       let row: LineReportRow | null = null;
       try {
-        row = lineFromCartLine(migrateCartLine(line.payload as CartLine));
+        row = lineFromCartLine(migrateCartLine(line.payload as unknown as CartLine));
       } catch {
         row = lineFromPayload(line.payload);
       }
