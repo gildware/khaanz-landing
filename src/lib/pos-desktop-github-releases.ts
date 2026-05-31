@@ -7,6 +7,7 @@ type GhAsset = { name: string; browser_download_url: string };
 type GhRelease = {
   tag_name: string;
   html_url: string;
+  published_at: string;
   assets: GhAsset[];
 };
 
@@ -15,7 +16,31 @@ export type DesktopPosReleaseUrls = {
   windows: string;
   version: string;
   releaseUrl: string;
+  /** ISO 8601 from GitHub (`published_at`). */
+  publishedAt: string;
 };
+
+/** e.g. "2 hours ago" — uses `Intl.RelativeTimeFormat`. */
+export function formatTimeAgo(iso: string, nowMs = Date.now()): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+
+  const seconds = Math.floor((nowMs - then) / 1000);
+  if (seconds < 0) return "just now";
+
+  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  if (seconds < 60) return rtf.format(-seconds, "second");
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return rtf.format(-minutes, "minute");
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return rtf.format(-hours, "hour");
+  const days = Math.floor(hours / 24);
+  if (days < 30) return rtf.format(-days, "day");
+  const months = Math.floor(days / 30);
+  if (months < 12) return rtf.format(-months, "month");
+  const years = Math.floor(months / 12);
+  return rtf.format(-years, "year");
+}
 
 export function pickInstallerUrlsFromAssets(
   assets: GhAsset[],
@@ -57,5 +82,6 @@ export async function fetchLatestDesktopPosReleaseUrls(): Promise<DesktopPosRele
     windows,
     version: (data.tag_name ?? "").replace(/^v/, ""),
     releaseUrl: data.html_url ?? `https://github.com/${repo}/releases/latest`,
+    publishedAt: data.published_at ?? "",
   };
 }

@@ -10,6 +10,7 @@ import {
   getDesktopPosDownloadUrls,
   type DesktopPosClientOs,
 } from "@/lib/pos-desktop-download-config";
+import { formatTimeAgo } from "@/lib/pos-desktop-github-releases";
 import { cn } from "@/lib/utils";
 
 type ReleaseApi = {
@@ -17,6 +18,7 @@ type ReleaseApi = {
   windows: string;
   version: string | null;
   releaseUrl: string | null;
+  publishedAt: string | null;
 };
 
 const releaseFetcher = (url: string) =>
@@ -34,8 +36,15 @@ function osLabel(os: DesktopPosClientOs): string {
 
 export function DesktopPosDownloadCard() {
   const [os, setOs] = useState<DesktopPosClientOs>("unknown");
+  const [now, setNow] = useState(() => Date.now());
+
   useEffect(() => {
     setOs(detectDesktopPosClientOs());
+  }, []);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
   }, []);
 
   const envUrls = getDesktopPosDownloadUrls();
@@ -67,6 +76,16 @@ export function DesktopPosDownloadCard() {
         : "";
   const otherHref = layout.primary === "mac" ? windows : mac;
   const otherLabel = layout.primary === "mac" ? "Windows installer" : "macOS installer";
+
+  const publishedAgo = release?.publishedAt
+    ? formatTimeAgo(release.publishedAt, now) || null
+    : null;
+  const publishedExact = release?.publishedAt
+    ? new Date(release.publishedAt).toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : null;
 
   return (
     <div className="space-y-3 rounded-xl border bg-card p-4">
@@ -183,7 +202,16 @@ export function DesktopPosDownloadCard() {
           <p className="text-muted-foreground text-xs">
             {release?.version ? (
               <>
-                Latest release:{" "}
+                Latest app available{" "}
+                {publishedAgo ? (
+                  <span
+                    className="font-medium text-foreground"
+                    title={publishedExact ?? undefined}
+                  >
+                    {publishedAgo}
+                  </span>
+                ) : null}
+                {publishedAgo ? " · " : null}
                 <span className="font-medium text-foreground">v{release.version}</span>
                 {release.releaseUrl ? (
                   <>

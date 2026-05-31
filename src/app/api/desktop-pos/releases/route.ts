@@ -20,6 +20,7 @@ export async function GET() {
     windows,
     version: fromGithub?.version ?? null,
     releaseUrl: fromGithub?.releaseUrl ?? null,
+    publishedAt: fromGithub?.publishedAt ?? null,
     githubRepo: getDesktopPosGithubRepo(),
     source: {
       mac: envUrls.mac ? "env" : fromGithub?.mac ? "github" : null,
