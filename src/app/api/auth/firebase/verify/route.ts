@@ -30,8 +30,20 @@ export async function POST(request: Request) {
   try {
     const r = await getFirebaseAdminAuth().verifyIdToken(idToken);
     decoded = { phone_number: r.phone_number, uid: r.uid };
-  } catch {
-    return NextResponse.json({ error: "Invalid Firebase token." }, { status: 401 });
+  } catch (err) {
+    const code =
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      typeof (err as { code: unknown }).code === "string"
+        ? (err as { code: string }).code
+        : undefined;
+    console.error("Firebase verifyIdToken failed:", code ?? err);
+    const detail = process.env.NODE_ENV === "development" && code ? ` (${code})` : "";
+    return NextResponse.json(
+      { error: `Invalid Firebase token${detail}.` },
+      { status: 401 },
+    );
   }
 
   const phone = typeof decoded.phone_number === "string" ? decoded.phone_number : "";

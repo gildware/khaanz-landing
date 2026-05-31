@@ -172,7 +172,12 @@ function PhoneAuthForm() {
           return;
         }
         const cred = await c.confirm(code.trim());
-        const idToken = await cred.user.getIdToken();
+        await cred.user.reload();
+        const idToken = await cred.user.getIdToken(true);
+        if (!idToken.trim()) {
+          toast.error("Could not get sign-in token. Please try again.");
+          return;
+        }
 
         const res = await fetch("/api/auth/firebase/verify", {
           method: "POST",

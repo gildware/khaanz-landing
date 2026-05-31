@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
 import { DownloadIcon, ExternalLinkIcon } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -10,6 +11,19 @@ import {
   type DesktopPosClientOs,
 } from "@/lib/pos-desktop-download-config";
 import { cn } from "@/lib/utils";
+
+type ReleaseApi = {
+  mac: string;
+  windows: string;
+  version: string | null;
+  releaseUrl: string | null;
+};
+
+const releaseFetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error("Failed to load release");
+    return r.json() as Promise<ReleaseApi>;
+  });
 
 function osLabel(os: DesktopPosClientOs): string {
   if (os === "mac") return "macOS";
@@ -24,7 +38,13 @@ export function DesktopPosDownloadCard() {
     setOs(detectDesktopPosClientOs());
   }, []);
 
-  const { mac, windows } = getDesktopPosDownloadUrls();
+  const envUrls = getDesktopPosDownloadUrls();
+  const { data: release } = useSWR<ReleaseApi>("/api/desktop-pos/releases", releaseFetcher, {
+    revalidateOnFocus: false,
+  });
+
+  const mac = envUrls.mac || release?.mac || "";
+  const windows = envUrls.windows || release?.windows || "";
   const hasMac = Boolean(mac);
   const hasWin = Boolean(windows);
   const hasAny = hasMac || hasWin;
@@ -61,17 +81,18 @@ export function DesktopPosDownloadCard() {
 
       {!hasAny ? (
         <p className="text-muted-foreground text-sm">
-          Add installer URLs to your deployment environment:{" "}
+          Installers appear here after a GitHub Release is published from{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">pos-desktop</code> (push to{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">main</code> or tag{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">v*</code>). Optional overrides:{" "}
           <code className="rounded bg-muted px-1 py-0.5 text-xs">
             NEXT_PUBLIC_DESKTOP_POS_MAC_URL
-          </code>{" "}
-          and{" "}
+          </code>
+          ,{" "}
           <code className="rounded bg-muted px-1 py-0.5 text-xs">
             NEXT_PUBLIC_DESKTOP_POS_WINDOWS_URL
-          </code>{" "}
-          (e.g. <code className="text-xs">.dmg</code> and <code className="text-xs">.exe</code> from{" "}
-          <code className="text-xs">pos-desktop/release</code> after{" "}
-          <code className="text-xs">npm run dist</code>).
+          </code>
+          .
         </p>
       ) : (
         <>
@@ -160,9 +181,34 @@ export function DesktopPosDownloadCard() {
           </div>
 
           <p className="text-muted-foreground text-xs">
-            Dev: <code className="rounded bg-muted px-1 py-0.5">npm run desktop</code> (from{" "}
-            <code className="rounded bg-muted px-1 py-0.5">khaanz/</code>) · Ship:{" "}
-            <code className="rounded bg-muted px-1 py-0.5">pos-desktop/npm run dist</code>
+            {release?.version ? (
+              <>
+                Latest release:{" "}
+                <span className="font-medium text-foreground">v{release.version}</span>
+                {release.releaseUrl ? (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <a
+                      href={release.releaseUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline underline-offset-4 hover:no-underline"
+                    >
+                      GitHub
+                    </a>
+                  </>
+                ) : null}
+                {" "}
+                · Installed apps auto-update from GitHub.
+              </>
+            ) : (
+              <>
+                Dev: <code className="rounded bg-muted px-1 py-0.5">npm run desktop</code> · Ship: push{" "}
+                <code className="rounded bg-muted px-1 py-0.5">pos-desktop</code> to{" "}
+                <code className="rounded bg-muted px-1 py-0.5">main</code>
+              </>
+            )}
           </p>
         </>
       )}
