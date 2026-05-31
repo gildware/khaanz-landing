@@ -27,6 +27,9 @@ export interface OrderCreateParsed {
   lines: CartLine[];
   latitude: number | null;
   longitude: number | null;
+  /** POS billing adjustments (minor units / paise). */
+  deliveryChargeMinor?: number;
+  discountMinor?: number;
 }
 
 
@@ -132,6 +135,17 @@ export type ParseOrderBodyOptions = {
   /** Admin POS: name/phone can be omitted (defaults to Guest + anonymous phone). */
   posMode?: boolean;
 };
+
+function parseNonNegativeMinor(raw: unknown): number {
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return Math.max(0, Math.round(raw));
+  }
+  if (typeof raw === "string") {
+    const n = Number(raw.trim());
+    if (Number.isFinite(n) && n >= 0) return Math.round(n);
+  }
+  return 0;
+}
 
 export function parseOrderCreateBody(
   body: unknown,
@@ -276,6 +290,14 @@ export function parseOrderCreateBody(
     return { error: "Invalid cart lines." };
   }
 
+  let deliveryChargeMinor = 0;
+  let discountMinor = 0;
+  if (posMode) {
+    deliveryChargeMinor =
+      fulfillment === "delivery" ? parseNonNegativeMinor(o.deliveryChargeMinor) : 0;
+    discountMinor = parseNonNegativeMinor(o.discountMinor);
+  }
+
   return {
     customerName,
     phone,
@@ -288,5 +310,7 @@ export function parseOrderCreateBody(
     lines,
     latitude: fulfillment === "delivery" ? latitude : null,
     longitude: fulfillment === "delivery" ? longitude : null,
+    deliveryChargeMinor,
+    discountMinor,
   };
 }

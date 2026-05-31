@@ -19,7 +19,7 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
       "apps/**",
-      "desktop-pos/**",
+      "pos-desktop/**",
       "public/**/*.js",
     ],
   },

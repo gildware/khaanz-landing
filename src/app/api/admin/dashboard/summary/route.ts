@@ -6,8 +6,16 @@ import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import { migrateCartLine } from "@/lib/cart-line";
 import { d } from "@/lib/inventory/decimal-utils";
 import { planOrderConsumption } from "@/lib/inventory/plan-order-consumption";
+import {
+  loadStockValueRankRows,
+  splitStockValueRanks,
+} from "@/lib/inventory/stock-value-charts";
+import { readMenuPayload } from "@/lib/menu-repository";
 import { getPrisma } from "@/lib/prisma";
 import type { CartLine } from "@/types/menu";
+
+type SalesRow = { key: string; label: string; qty: number };
+type ValueRankRow = { key: string; label: string; valuePaise: number };
 
 export const runtime = "nodejs";
 
@@ -50,14 +58,148 @@ function istStartOfNextMonth(now: Date): Date {
   );
 }
 
-function clampTopBottom(
-  rows: Array<{ key: string; label: string; qty: number }>,
-  limit: number,
-) {
-  const sorted = [...rows].sort((a, b) => b.qty - a.qty);
-  const top = sorted.slice(0, limit);
-  const bottom = [...sorted].reverse().slice(0, limit);
-  return { top, bottom };
+const CHART_ITEMS_LIMIT = 5;
+
+function splitTopBottom(rows: SalesRow[]) {
+  const sorted = [...rows].sort((a, b) => b.qty - a.qty || a.label.localeCompare(b.label));
+  const bottom = [...sorted].reverse();
+  return {
+    top: sorted.slice(0, CHART_ITEMS_LIMIT),
+    bottom: bottom.slice(0, CHART_ITEMS_LIMIT),
+  };
+}
+
+function splitTopBottomValues(rows: ValueRankRow[]) {
+  const sorted = [...rows].sort(
+    (a, b) => b.valuePaise - a.valuePaise || a.label.localeCompare(b.label),
+  );
+  const bottom = [...sorted].reverse();
+  return {
+    top: sorted.slice(0, CHART_ITEMS_LIMIT),
+    bottom: bottom.slice(0, CHART_ITEMS_LIMIT),
+  };
+}
+
+async function buildVendorChartRows(
+  monthStart: Date,
+  monthEndExclusive: Date,
+): Promise<{
+  topVendorsBySales: ValueRankRow[];
+  bottomVendorsBySales: ValueRankRow[];
+  topVendorItemsByQty: SalesRow[];
+  bottomVendorItemsByQty: SalesRow[];
+}> {
+  const prisma = getPrisma();
+
+  const [vendorSalesAgg, vendorLines] = await Promise.all([
+    prisma.vendorSale.groupBy({
+      by: ["vendorId"],
+      where: { soldAt: { gte: monthStart, lt: monthEndExclusive } },
+      _sum: { totalPaise: true },
+    }),
+    prisma.vendorSaleLine.findMany({
+      where: {
+        sale: { soldAt: { gte: monthStart, lt: monthEndExclusive } },
+      },
+      select: {
+        menuItemId: true,
+        quantity: true,
+        menuItem: { select: { name: true } },
+      },
+    }),
+  ]);
+
+  const vendorIds = vendorSalesAgg.map((v) => v.vendorId);
+  const vendors =
+    vendorIds.length > 0
+      ? await prisma.vendor.findMany({
+          where: { id: { in: vendorIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+  const vendorName = new Map(vendors.map((v) => [v.id, v.name]));
+
+  const vendorRows: ValueRankRow[] = vendorSalesAgg
+    .map((v) => ({
+      key: v.vendorId,
+      label: vendorName.get(v.vendorId) ?? v.vendorId,
+      valuePaise: v._sum.totalPaise ?? 0,
+    }))
+    .filter((r) => r.valuePaise > 0);
+
+  const itemQty = new Map<string, { label: string; qty: number }>();
+  for (const ln of vendorLines) {
+    const qty = Number(ln.quantity);
+    if (!Number.isFinite(qty) || qty <= 0) continue;
+    const prev = itemQty.get(ln.menuItemId) ?? { label: ln.menuItem.name, qty: 0 };
+    itemQty.set(ln.menuItemId, { label: prev.label, qty: prev.qty + qty });
+  }
+  const itemRows: SalesRow[] = [...itemQty.entries()].map(([key, v]) => ({
+    key,
+    label: v.label,
+    qty: v.qty,
+  }));
+
+  const { top: topVendorsBySales, bottom: bottomVendorsBySales } =
+    splitTopBottomValues(vendorRows);
+  const { top: topVendorItemsByQty, bottom: bottomVendorItemsByQty } =
+    splitTopBottom(itemRows);
+
+  return {
+    topVendorsBySales,
+    bottomVendorsBySales,
+    topVendorItemsByQty,
+    bottomVendorItemsByQty,
+  };
+}
+
+async function sumVendorReceivablePaise(): Promise<number> {
+  const prisma = getPrisma();
+  const ledgerAgg = await prisma.vendorLedgerEntry.groupBy({
+    by: ["vendorId"],
+    _sum: { debitPaise: true, creditPaise: true },
+  });
+  return ledgerAgg.reduce((sum, g) => {
+    const balance = (g._sum.debitPaise ?? 0) - (g._sum.creditPaise ?? 0);
+    return sum + (balance > 0 ? balance : 0);
+  }, 0);
+}
+
+async function buildMenuCatalogRows(): Promise<SalesRow[]> {
+  const menu = await readMenuPayload();
+  const rows: SalesRow[] = [];
+
+  for (const item of menu.items) {
+    for (const v of item.variations) {
+      rows.push({
+        key: `item:${item.id}:${v.id}`,
+        label: `${item.name}${v.name ? ` • ${v.name}` : ""}`,
+        qty: 0,
+      });
+    }
+  }
+  for (const combo of menu.combos) {
+    rows.push({
+      key: `combo:${combo.id}`,
+      label: combo.name || "Combo",
+      qty: 0,
+    });
+  }
+  return rows;
+}
+
+function mergeSalesIntoCatalog(catalog: SalesRow[], soldByKey: Map<string, { label: string; qty: number }>) {
+  const byKey = new Map(catalog.map((r) => [r.key, r]));
+  for (const [key, sold] of soldByKey) {
+    const row = byKey.get(key);
+    if (row) {
+      row.qty = sold.qty;
+      if (sold.label) row.label = sold.label;
+    } else {
+      byKey.set(key, { key, label: sold.label, qty: sold.qty });
+    }
+  }
+  return [...byKey.values()];
 }
 
 export async function GET(request: Request) {
@@ -83,7 +225,7 @@ export async function GET(request: Request) {
 
   const prisma = getPrisma();
 
-  const [todaySalesAgg, monthSalesAgg, todayExpenseAgg, monthExpenseAgg, payroll] =
+  const [todaySalesAgg, monthSalesAgg, todayExpenseAgg, monthExpenseAgg, payroll, todayVendorSalesAgg, monthVendorSalesAgg, monthVendorPaymentsAgg, overdueVendorSalesCount] =
     await prisma.$transaction([
       prisma.order.aggregate({
         where: {
@@ -112,6 +254,23 @@ export async function GET(request: Request) {
       prisma.payrollRun.findUnique({
         where: { monthKey },
         select: { lines: { select: { netPayPaise: true } } },
+      }),
+      prisma.vendorSale.aggregate({
+        where: { soldAt: { gte: todayStart, lt: tomorrowStart } },
+        _sum: { totalPaise: true },
+        _count: { _all: true },
+      }),
+      prisma.vendorSale.aggregate({
+        where: { soldAt: { gte: monthStart, lt: monthEndExclusive } },
+        _sum: { totalPaise: true },
+        _count: { _all: true },
+      }),
+      prisma.vendorPayment.aggregate({
+        where: { paidAt: { gte: monthStart, lt: monthEndExclusive } },
+        _sum: { amountPaise: true },
+      }),
+      prisma.vendorSale.count({
+        where: { paymentType: "CREDIT", dueAt: { lt: at } },
       }),
     ]);
 
@@ -192,12 +351,15 @@ export async function GET(request: Request) {
   const monthExpensesPaise = monthExpenseAgg._sum.amountPaise ?? 0;
   const netProfitPaise = grossMarginPaise - monthExpensesPaise - salariesPaise;
 
-  const soldRows = [...soldByKey.entries()].map(([key, v]) => ({
-    key,
-    label: v.label,
-    qty: v.qty,
-  }));
-  const { top: topSelling, bottom: leastSelling } = clampTopBottom(soldRows, 10);
+  const catalog = await buildMenuCatalogRows();
+  const soldRows = mergeSalesIntoCatalog(catalog, soldByKey);
+  const { top: topSelling, bottom: leastSelling } = splitTopBottom(soldRows);
+  const stockValueRows = await loadStockValueRankRows();
+  const { topByValue: topStockValue, lowestByValue: lowestStockValue } =
+    splitStockValueRanks(stockValueRows);
+  const vendorReceivablePaise = await sumVendorReceivablePaise();
+  const { topVendorsBySales, bottomVendorsBySales, topVendorItemsByQty, bottomVendorItemsByQty } =
+    await buildVendorChartRows(monthStart, monthEndExclusive);
 
   return NextResponse.json({
     at: at.toISOString(),
@@ -219,10 +381,23 @@ export async function GET(request: Request) {
       netProfitPaise,
       todayOrdersCount: todaySalesAgg._count._all ?? 0,
       monthOrdersCount: monthSalesAgg._count._all ?? 0,
+      todayVendorSalesPaise: todayVendorSalesAgg._sum.totalPaise ?? 0,
+      todayVendorSalesCount: todayVendorSalesAgg._count._all ?? 0,
+      monthVendorSalesPaise: monthVendorSalesAgg._sum.totalPaise ?? 0,
+      monthVendorSalesCount: monthVendorSalesAgg._count._all ?? 0,
+      vendorReceivablePaise,
+      overdueVendorSalesCount,
+      monthVendorPaymentsPaise: monthVendorPaymentsAgg._sum.amountPaise ?? 0,
     },
     charts: {
       topSelling,
       leastSelling,
+      topStockValue,
+      lowestStockValue,
+      topVendorsBySales,
+      bottomVendorsBySales,
+      topVendorItemsByQty,
+      bottomVendorItemsByQty,
     },
   });
 }

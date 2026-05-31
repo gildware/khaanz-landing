@@ -300,6 +300,9 @@ export type PosBillPrintOptions = {
   paymentLabel: string;
   lines: PosReceiptLine[];
   total: number;
+  itemsSubtotal?: number;
+  deliveryCharge?: number;
+  discount?: number;
 };
 
 function splitLines(text: string): string[] {
@@ -352,6 +355,22 @@ ${o.notes.trim() ? `<div class="muted">Note: ${escapeHtml(o.notes.trim())}</div>
 <thead><tr><th>Item</th><th class="right">Qty</th><th class="right">₹</th><th class="right">₹</th></tr></thead>
 <tbody>${rows}</tbody>
 </table>
+${(() => {
+  const itemsSub =
+    o.itemsSubtotal ??
+    o.lines.reduce((s, r) => s + r.subtotal, 0);
+  const parts: string[] = [];
+  if (itemsSub > 0 && (o.deliveryCharge || o.discount)) {
+    parts.push(`<div class="muted">Subtotal: ₹${Math.round(itemsSub)}</div>`);
+  }
+  if (o.deliveryCharge && o.deliveryCharge > 0) {
+    parts.push(`<div class="muted">Delivery: ₹${Math.round(o.deliveryCharge)}</div>`);
+  }
+  if (o.discount && o.discount > 0) {
+    parts.push(`<div class="muted">Discount: -₹${Math.round(o.discount)}</div>`);
+  }
+  return parts.join("");
+})()}
 <div class="sep total">Total: ₹${Math.round(o.total)}</div>
 ${o.paymentLabel ? `<div class="muted">Payment: ${escapeHtml(o.paymentLabel)}</div>` : ""}
 ${footerHtml}

@@ -3,10 +3,19 @@
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
+import { AlertTriangleIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
 
-import { DesktopPosDownloadCard } from "@/components/admin/desktop-pos-download-card";
+import { DesktopPosDownloadCard } from "@/components/admin/pos-desktop-download-card";
+import { ADMIN_RESET_CONFIRM_PHRASE } from "@/lib/admin-reset-confirm-phrase";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,6 +43,9 @@ export default function AdminSettingsPage() {
     { id: "upi", name: "UPI" },
     { id: "mpay", name: "Mpay" },
   ]);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetConfirmInput, setResetConfirmInput] = useState("");
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -122,6 +134,38 @@ export default function AdminSettingsPage() {
     ]);
   };
 
+  const runResetAllData = async () => {
+    if (resetConfirmInput.trim() !== ADMIN_RESET_CONFIRM_PHRASE) return;
+    setResetSubmitting(true);
+    try {
+      const res = await fetch("/api/admin/reset-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ confirmPhrase: resetConfirmInput.trim() }),
+      });
+      if (!res.ok) {
+        let msg = "Reset failed";
+        try {
+          const j = (await res.json()) as { error?: string };
+          if (j.error) msg = j.error;
+        } catch {
+          /* ignore */
+        }
+        toast.error(msg);
+        return;
+      }
+      toast.success(
+        "All business data was removed. Default menu and settings were restored.",
+      );
+      setResetDialogOpen(false);
+      setResetConfirmInput("");
+      await load();
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
+
   const previewLogoSrc = logoUrl.trim() || SITE.logoPath;
   const previewName = displayName.trim() || SITE.name;
 
@@ -151,6 +195,7 @@ export default function AdminSettingsPage() {
           <TabsTrigger value="bill">Bill settings</TabsTrigger>
           <TabsTrigger value="payment">Payment methods</TabsTrigger>
           <TabsTrigger value="desktop">POS app</TabsTrigger>
+          <TabsTrigger value="danger">Data reset</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">
@@ -364,7 +409,96 @@ export default function AdminSettingsPage() {
         <TabsContent value="desktop" className="space-y-6">
           <DesktopPosDownloadCard />
         </TabsContent>
+
+        <TabsContent value="danger" className="space-y-6">
+          <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+            <div className="flex items-start gap-2">
+              <AlertTriangleIcon className="mt-0.5 size-5 shrink-0 text-destructive" />
+              <div className="min-w-0 space-y-2">
+                <p className="font-medium text-destructive">Reset all data</p>
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  Permanently deletes orders, customers, the current menu,
+                  inventory, vendors, payroll, expenses, and all related records.
+                  Admin logins are kept. Afterwards the bundled default menu is
+                  written again, and restaurant and inventory settings match a
+                  fresh install (including an empty floor plan).
+                </p>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    setResetConfirmInput("");
+                    setResetDialogOpen(true);
+                  }}
+                >
+                  Reset all data…
+                </Button>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
+
+      <Dialog
+        open={resetDialogOpen}
+        onOpenChange={(open) => {
+          if (!resetSubmitting) setResetDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton={!resetSubmitting}>
+          <DialogHeader>
+            <DialogTitle>Reset all data?</DialogTitle>
+            <DialogDescription>
+              This cannot be undone. Type{" "}
+              <span className="font-mono font-medium text-foreground">
+                {ADMIN_RESET_CONFIRM_PHRASE}
+              </span>{" "}
+              to confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reset-confirm">Confirmation phrase</Label>
+            <Input
+              id="reset-confirm"
+              value={resetConfirmInput}
+              onChange={(e) => setResetConfirmInput(e.target.value)}
+              placeholder={ADMIN_RESET_CONFIRM_PHRASE}
+              autoComplete="off"
+              disabled={resetSubmitting}
+              className="font-mono text-sm"
+            />
+          </div>
+          <DialogFooter className="border-0 bg-transparent p-0 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={resetSubmitting}
+              onClick={() => setResetDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={
+                resetSubmitting ||
+                resetConfirmInput.trim() !== ADMIN_RESET_CONFIRM_PHRASE
+              }
+              onClick={() => void runResetAllData()}
+            >
+              {resetSubmitting ? (
+                <>
+                  <Loader2Icon className="mr-2 size-4 animate-spin" />
+                  Resetting…
+                </>
+              ) : (
+                "Erase everything"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Button
         type="button"

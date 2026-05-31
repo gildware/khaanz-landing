@@ -1,11 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronDownIcon,
-  ExternalLinkIcon,
   ImageIcon,
   Loader2Icon,
   MinusIcon,
@@ -13,7 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useMenuData } from "@/contexts/menu-data-context";
@@ -32,6 +32,10 @@ import {
   buildLineId,
   computeUnitPrice,
 } from "@/lib/cart-line";
+import {
+  computePosBillTotals,
+  parseRupeeInputToCents,
+} from "@/lib/billing-utils";
 import { isMenuItemAvailable } from "@/lib/menu-availability";
 import { formatComboComponentSummary, isComboAvailable } from "@/lib/menu-combos";
 import {
@@ -42,6 +46,8 @@ import {
 import {
   cartLinesToReceiptRows,
   kotLinesFromCart,
+  buildBillHtmlBody,
+  buildKotHtmlBody,
   printPosBillThermal,
   printPosKotThermal,
   type PosBillPrintOptions,
@@ -78,6 +84,54 @@ function posFulfillmentLabel(m: FulfillmentMode): string {
   return "Delivery";
 }
 
+async function desktopSilentPrintOrToast(args: {
+  html: string;
+  title: string;
+  timeoutMs?: number;
+}): Promise<boolean> {
+  const d = getKhaanzDesktop();
+  if (!d?.printSilentHtml) return false;
+  // If desktop app is running but printer isn't configured/available, don't try to print.
+  if (d.isDesktop) {
+    try {
+      const [list, current] = await Promise.all([
+        d.listPrinters ? d.listPrinters() : Promise.resolve([]),
+        d.getSilentPrinter ? d.getSilentPrinter() : Promise.resolve({ deviceName: "" }),
+      ]);
+      const chosen = (current?.deviceName || "").trim();
+      const connected =
+        (chosen && (list ?? []).some((p) => p.name === chosen)) ||
+        (!chosen && (list ?? []).some((p) => p.isDefault));
+      if (!connected) {
+        toast.error("Printer not connected. Click “Connect printer”.");
+        return false;
+      }
+    } catch {
+      toast.error("Printer not connected. Click “Connect printer”.");
+      return false;
+    }
+  }
+  const timeoutMs = args.timeoutMs ?? 22_000;
+  try {
+    const r = await Promise.race([
+      d.printSilentHtml(args.html, args.title),
+      new Promise<{ ok: boolean; error?: string }>((resolve) => {
+        window.setTimeout(
+          () => resolve({ ok: false, error: "Print timed out" }),
+          timeoutMs,
+        );
+      }),
+    ]);
+    if (!r.ok) toast.error(r.error ?? "Print failed");
+    return r.ok;
+  } catch (e) {
+    toast.error(
+      e instanceof Error && e.message ? e.message : "Print failed",
+    );
+    return false;
+  }
+}
+
 /** Category rail keys (not real menu category names). */
 const CAT_OPEN = "__pos_open__";
 const CAT_COMBOS = "__pos_combos__";
@@ -91,13 +145,42 @@ function buildDeliveryFooterNote(address: string, landmark: string): string {
   return parts.join("\n");
 }
 
+async function placeOrderViaDesktopBridgeIfAvailable(args: {
+  clientOrderId: string;
+  orderPayload: Record<string, unknown>;
+}): Promise<{ ok: true; orderRef: string } | { ok: false; error: string } | null> {
+  const d = getKhaanzDesktop() as
+    | (ReturnType<typeof getKhaanzDesktop> & {
+        placePosOrder?: (
+          clientOrderId: string,
+          body: Record<string, unknown>,
+        ) => Promise<{ ok: boolean; orderRef?: string; error?: string }>;
+      })
+    | undefined;
+  if (!d?.isDesktop || !d.placePosOrder) return null;
+  try {
+    const r = await d.placePosOrder(args.clientOrderId, args.orderPayload);
+    if (r?.ok && r.orderRef) return { ok: true, orderRef: r.orderRef };
+    return { ok: false, error: r?.error ?? "Could not save offline." };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not save offline." };
+  }
+}
+
 export default function AdminPosPage() {
+  const router = useRouter();
   const { data: menu, isLoading, error } = useMenuData();
   const categories = useMemo(() => menu?.categories ?? [], [menu]);
   const items = useMemo(() => menu?.items ?? [], [menu]);
   const combos = useMemo(() => menu?.combos ?? [], [menu]);
 
-  const [categoryKey, setCategoryKey] = useState<string>("");
+  const logout = useCallback(async () => {
+    await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
+    router.push("/admin/login");
+    router.refresh();
+  }, [router]);
+
+  const [categoryKey, setCategoryKey] = useState<string>(CAT_OPEN);
   const [query, setQuery] = useState("");
   const [openItemName, setOpenItemName] = useState("");
   const [openItemPrice, setOpenItemPrice] = useState("");
@@ -117,7 +200,15 @@ export default function AdminPosPage() {
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [customerDetailsOpen, setCustomerDetailsOpen] = useState(false);
+  const [discountInput, setDiscountInput] = useState("");
+  const [deliveryChargeInput, setDeliveryChargeInput] = useState("");
   const [placing, setPlacing] = useState(false);
+  const [printerDialogOpen, setPrinterDialogOpen] = useState(false);
+  const [printerDeviceName, setPrinterDeviceName] = useState<string>("");
+  const [printers, setPrinters] = useState<{ name: string; isDefault?: boolean }[]>(
+    [],
+  );
+  const [printerConnected, setPrinterConnected] = useState(false);
   const [posSettings, setPosSettings] = useState<RestaurantSettingsPayload | null>(
     null,
   );
@@ -150,22 +241,50 @@ export default function AdminPosPage() {
     [categories],
   );
 
+  const refreshPrinterStatus = useCallback(async () => {
+    const d = getKhaanzDesktop();
+    if (!d?.listPrinters || !d.getSilentPrinter) {
+      setPrinters([]);
+      setPrinterDeviceName("");
+      setPrinterConnected(false);
+      return;
+    }
+    try {
+      const [list, current] = await Promise.all([
+        d.listPrinters(),
+        d.getSilentPrinter(),
+      ]);
+      setPrinters(Array.isArray(list) ? list : []);
+      const device = typeof current?.deviceName === "string" ? current.deviceName : "";
+      setPrinterDeviceName(device);
+      const chosen = device.trim();
+      const connected =
+        (chosen && (list ?? []).some((p) => p.name === chosen)) ||
+        (!chosen && (list ?? []).some((p) => p.isDefault));
+      setPrinterConnected(Boolean(connected));
+    } catch {
+      setPrinterConnected(false);
+    }
+  }, []);
+
   useEffect(() => {
-    const defaultKey =
-      categories.length > 0
-        ? categories[0]!.name
-        : combos.length > 0
-          ? CAT_COMBOS
-          : CAT_OPEN;
     setCategoryKey((prev) => {
       const valid = new Set<string>([
         CAT_OPEN,
         CAT_COMBOS,
         ...categories.map((c) => c.name),
       ]);
-      return prev && valid.has(prev) ? prev : defaultKey;
+      return prev && valid.has(prev) ? prev : CAT_OPEN;
     });
   }, [categories, combos.length]);
+
+  useEffect(() => {
+    void refreshPrinterStatus();
+    const id = window.setInterval(() => {
+      void refreshPrinterStatus();
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [refreshPrinterStatus]);
 
   useEffect(() => {
     if (cart.length > 0) setLastBill(null);
@@ -202,6 +321,10 @@ export default function AdminPosPage() {
   }, [fulfillment]);
 
   useEffect(() => {
+    if (fulfillment !== "delivery") setDeliveryChargeInput("");
+  }, [fulfillment]);
+
+  useEffect(() => {
     if (fulfillment !== "dine_in") setSelectedTableId(null);
   }, [fulfillment]);
 
@@ -217,6 +340,7 @@ export default function AdminPosPage() {
   }, [tablePickModalOpen]);
 
   const [offlineQueueCount, setOfflineQueueCount] = useState(0);
+  const [syncingNow, setSyncingNow] = useState(false);
 
   const refreshOfflineCount = useCallback(async () => {
     const d = getKhaanzDesktop();
@@ -227,6 +351,33 @@ export default function AdminPosPage() {
     const q = await d.getOfflineQueue();
     setOfflineQueueCount(q.length);
   }, []);
+
+  const syncNow = useCallback(async () => {
+    const d = getKhaanzDesktop() as
+      | (ReturnType<typeof getKhaanzDesktop> & {
+          syncNow?: () => Promise<{ ok: boolean; error?: string; serverTime?: string }>;
+        })
+      | undefined;
+    if (!d?.isDesktop || !d.syncNow) {
+      toast.error("Sync is available in the desktop app only.");
+      return;
+    }
+    setSyncingNow(true);
+    try {
+      const out = await d.syncNow();
+      if (!out.ok) {
+        toast.error(out.error ?? "Sync failed.");
+        return;
+      }
+      toast.success("Synced.");
+      await refreshOfflineCount();
+      await mutate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Sync failed.");
+    } finally {
+      setSyncingNow(false);
+    }
+  }, [refreshOfflineCount]);
 
   useEffect(() => {
     void refreshOfflineCount();
@@ -267,10 +418,30 @@ export default function AdminPosPage() {
   const [variationId, setVariationId] = useState<string>("");
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
 
-  const total = useMemo(
-    () => cart.reduce((s, l) => s + l.unitPrice * l.quantity, 0),
-    [cart],
-  );
+  const billTotals = useMemo(() => {
+    const itemsSubtotalCents = Math.round(
+      cart.reduce((s, l) => s + l.unitPrice * l.quantity, 0) * 100,
+    );
+    const deliveryChargeCents =
+      fulfillment === "delivery" ? parseRupeeInputToCents(deliveryChargeInput) : 0;
+    const discountCents = parseRupeeInputToCents(discountInput);
+    const bill = computePosBillTotals({
+      subtotalCents: itemsSubtotalCents,
+      taxCents: 0,
+      deliveryChargeCents,
+      discountCents,
+    });
+    return {
+      itemsTotal: bill.itemsTotal / 100,
+      deliveryCharge: bill.deliveryChargeCents / 100,
+      discount: bill.discountCents / 100,
+      total: bill.total / 100,
+      deliveryChargeMinor: bill.deliveryChargeCents,
+      discountMinor: bill.discountCents,
+    };
+  }, [cart, fulfillment, deliveryChargeInput, discountInput]);
+
+  const total = billTotals.total;
 
   const dialogConfigureUnit = useMemo(() => {
     if (!dialogItem) return 0;
@@ -491,6 +662,9 @@ export default function AdminPosPage() {
       paymentLabel: string;
       header: string;
       footer: string;
+      itemsSubtotal?: number;
+      deliveryCharge?: number;
+      discount?: number;
     }): PosBillPrintOptions => ({
       restaurantName: SITE.name,
       billHeader: args.header,
@@ -506,6 +680,9 @@ export default function AdminPosPage() {
       paymentLabel: args.paymentLabel,
       lines: args.lines,
       total: args.printTotal,
+      itemsSubtotal: args.itemsSubtotal,
+      deliveryCharge: args.deliveryCharge,
+      discount: args.discount,
     }),
     [],
   );
@@ -572,22 +749,38 @@ export default function AdminPosPage() {
         longitude: null,
         paymentMethodKey: payKey,
         tableId: selectedTableId ?? "",
+        deliveryChargeMinor: billTotals.deliveryChargeMinor,
+        discountMinor: billTotals.discountMinor,
       };
 
       setPlacing(true);
       try {
-        const res = await fetch("/api/admin/orders/pos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(orderPayload),
+        const desktop = getKhaanzDesktop();
+        const desktopPlaced = await placeOrderViaDesktopBridgeIfAvailable({
+          clientOrderId,
+          orderPayload: orderPayload as unknown as Record<string, unknown>,
         });
-        const j = (await res.json()) as { orderRef?: string; error?: string };
-        if (!res.ok) {
-          toast.error(j.error ?? "Could not place order.");
-          return;
+        let orderRef = "";
+        if (desktopPlaced) {
+          if (!desktopPlaced.ok) {
+            toast.error(desktopPlaced.error);
+            return;
+          }
+          orderRef = desktopPlaced.orderRef;
+        } else {
+          const res = await fetch("/api/admin/orders/pos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(orderPayload),
+          });
+          const j = (await res.json()) as { orderRef?: string; error?: string };
+          if (!res.ok) {
+            toast.error(j.error ?? "Could not place order.");
+            return;
+          }
+          orderRef = j.orderRef ?? "";
         }
-        const orderRef = j.orderRef;
         if (!orderRef) {
           toast.error("Order saved without reference.");
           return;
@@ -612,36 +805,60 @@ export default function AdminPosPage() {
         setNotes("");
         setAddress("");
         setLandmark("");
+        setDiscountInput("");
+        setDeliveryChargeInput("");
 
         if (printMode === "kot" || printMode === "both") {
-          await printPosKotThermal({
-            restaurantName: SITE.name,
-            billHeader: header,
-            orderRef,
-            fulfillmentLabel: fulfillLabel,
-            dineInTable: tablePrintLabel || undefined,
-            notes: notesSnap,
-            lines: snapshotKot,
+          const desktopOk = await desktopSilentPrintOrToast({
+            html: buildKotHtmlBody({
+              restaurantName: SITE.name,
+              billHeader: header,
+              orderRef,
+              fulfillmentLabel: fulfillLabel,
+              dineInTable: tablePrintLabel || undefined,
+              notes: notesSnap,
+              lines: snapshotKot,
+            }),
+            title: "KOT",
           });
+          if (!desktopOk && !desktop?.isDesktop) {
+            await printPosKotThermal({
+              restaurantName: SITE.name,
+              billHeader: header,
+              orderRef,
+              fulfillmentLabel: fulfillLabel,
+              dineInTable: tablePrintLabel || undefined,
+              notes: notesSnap,
+              lines: snapshotKot,
+            });
+          }
         }
         if (printMode === "bill" || printMode === "both") {
-          await printPosBillThermal(
-            buildBillOptions({
-              lines: snapshotLines,
-              printTotal: snapTotal,
-              orderRef,
-              proforma: false,
-              fulfillmentPrint: fulfillLabel,
-              dineInTable: tablePrintLabel || undefined,
-              namePrint: nameSnap,
-              phonePrint: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
-              notesPrint: notesSnap,
-              footerPrint: footerNote,
-              paymentLabel: paymentDisplayName(payKey),
-              header,
-              footer,
-            }),
-          );
+          const billOptions = buildBillOptions({
+            lines: snapshotLines,
+            printTotal: snapTotal,
+            orderRef,
+            proforma: false,
+            fulfillmentPrint: fulfillLabel,
+            dineInTable: tablePrintLabel || undefined,
+            namePrint: nameSnap,
+            phonePrint: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
+            notesPrint: notesSnap,
+            footerPrint: footerNote,
+            paymentLabel: paymentDisplayName(payKey),
+            header,
+            footer,
+            itemsSubtotal: billTotals.itemsTotal,
+            deliveryCharge: billTotals.deliveryCharge > 0 ? billTotals.deliveryCharge : undefined,
+            discount: billTotals.discount > 0 ? billTotals.discount : undefined,
+          });
+          const desktopOk = await desktopSilentPrintOrToast({
+            html: buildBillHtmlBody(billOptions),
+            title: "Bill",
+          });
+          if (!desktopOk && !desktop?.isDesktop) {
+            await printPosBillThermal(billOptions);
+          }
         }
       } catch (err) {
         const desktop = getKhaanzDesktop();
@@ -682,34 +899,56 @@ export default function AdminPosPage() {
           void refreshOfflineCount();
 
           if (printMode === "kot" || printMode === "both") {
-            await printPosKotThermal({
-              restaurantName: SITE.name,
-              billHeader: header,
-              orderRef: offlineRef,
-              fulfillmentLabel: fulfillLabel,
-              dineInTable: tablePrintLabel || undefined,
-              notes: notesSnap,
-              lines: snapshotKot,
+            const desktopOk = await desktopSilentPrintOrToast({
+              html: buildKotHtmlBody({
+                restaurantName: SITE.name,
+                billHeader: header,
+                orderRef: offlineRef,
+                fulfillmentLabel: fulfillLabel,
+                dineInTable: tablePrintLabel || undefined,
+                notes: notesSnap,
+                lines: snapshotKot,
+              }),
+              title: "KOT",
             });
+            if (!desktopOk && !getKhaanzDesktop()?.isDesktop) {
+              await printPosKotThermal({
+                restaurantName: SITE.name,
+                billHeader: header,
+                orderRef: offlineRef,
+                fulfillmentLabel: fulfillLabel,
+                dineInTable: tablePrintLabel || undefined,
+                notes: notesSnap,
+                lines: snapshotKot,
+              });
+            }
           }
           if (printMode === "bill" || printMode === "both") {
-            await printPosBillThermal(
-              buildBillOptions({
-                lines: snapshotLines,
-                printTotal: snapTotal,
-                orderRef: offlineRef,
-                proforma: true,
-                fulfillmentPrint: fulfillLabel,
-                dineInTable: tablePrintLabel || undefined,
-                namePrint: nameSnap,
-                phonePrint: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
-                notesPrint: notesSnap,
-                footerPrint: footerNote,
-                paymentLabel: paymentDisplayName(payKey),
-                header,
-                footer,
-              }),
-            );
+            const billOptions = buildBillOptions({
+              lines: snapshotLines,
+              printTotal: snapTotal,
+              orderRef: offlineRef,
+              proforma: true,
+              fulfillmentPrint: fulfillLabel,
+              dineInTable: tablePrintLabel || undefined,
+              namePrint: nameSnap,
+              phonePrint: phonePayload || POS_ANONYMOUS_PHONE_DIGITS,
+              notesPrint: notesSnap,
+              footerPrint: footerNote,
+              paymentLabel: paymentDisplayName(payKey),
+              header,
+              footer,
+              itemsSubtotal: billTotals.itemsTotal,
+              deliveryCharge: billTotals.deliveryCharge > 0 ? billTotals.deliveryCharge : undefined,
+              discount: billTotals.discount > 0 ? billTotals.discount : undefined,
+            });
+            const desktopOk = await desktopSilentPrintOrToast({
+              html: buildBillHtmlBody(billOptions),
+              title: "Bill",
+            });
+            if (!desktopOk && !getKhaanzDesktop()?.isDesktop) {
+              await printPosBillThermal(billOptions);
+            }
           }
         } else {
           toast.error("Network error.");
@@ -720,7 +959,7 @@ export default function AdminPosPage() {
     },
     [
       cart,
-      total,
+      billTotals,
       fulfillment,
       address,
       landmark,
@@ -786,18 +1025,27 @@ export default function AdminPosPage() {
             </p>
           </div>
         </div>
-        <Link
-          href="/admin/orders"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "inline-flex shrink-0 gap-1.5",
-          )}
-        >
-          <ExternalLinkIcon className="size-3.5" />
-          Orders
-        </Link>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {getKhaanzDesktop()?.isDesktop ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={syncingNow}
+              onClick={() => void syncNow()}
+            >
+              {syncingNow ? "Syncing…" : "Sync now"}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void logout()}
+          >
+            Sign out
+          </Button>
+        </div>
       </div>
 
       <div className="grid min-h-0 flex-1 gap-0 overflow-hidden rounded-xl border bg-card shadow-sm lg:grid-cols-[1fr_min(420px,40%)]">
@@ -949,8 +1197,8 @@ export default function AdminPosPage() {
           </div>
         </div>
 
-        <div className="flex min-h-[min(420px,45dvh)] flex-col border-t bg-muted/20 lg:min-h-0 lg:border-t-0">
-          <div className="border-b p-3">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-t bg-muted/20 lg:min-h-0 lg:border-t-0">
+          <div className="shrink-0 border-b p-3">
             <p className="mb-2 font-medium text-sm">Order type</p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -998,88 +1246,86 @@ export default function AdminPosPage() {
             ) : null}
           </div>
 
-          <div className="min-h-0 flex-1 space-y-3 overflow-auto p-3">
-            <details
-              open={customerDetailsOpen}
-              onToggle={(e) => setCustomerDetailsOpen(e.currentTarget.open)}
-              className="rounded-lg border bg-background open:[&>summary_svg]:rotate-180 [&_summary::-webkit-details-marker]:hidden"
-            >
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-3 text-sm font-medium hover:bg-muted/40">
-                <span>
-                  {fulfillment === "delivery"
-                    ? "Customer details"
-                    : "Customer & notes (optional)"}
-                </span>
-                <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-transform" />
-              </summary>
-              <div className="space-y-3 border-t p-3 pt-3">
-                <div className="space-y-2">
-                  <Label htmlFor="pos-name">Name</Label>
-                  <Input
-                    id="pos-name"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Optional — defaults to Guest"
-                    autoComplete="name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pos-phone">Phone</Label>
-                  <Input
-                    id="pos-phone"
-                    inputMode="numeric"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Optional — 10-digit Indian mobile"
-                    autoComplete="tel"
-                  />
-                </div>
-                {fulfillment === "delivery" ? (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="pos-address">Delivery address</Label>
-                      <Textarea
-                        id="pos-address"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        rows={2}
-                        placeholder="Full address (required for delivery)"
-                        className="resize-none bg-background"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="pos-landmark">Landmark (optional)</Label>
-                      <Input
-                        id="pos-landmark"
-                        value={landmark}
-                        onChange={(e) => setLandmark(e.target.value)}
-                        placeholder="Near…"
-                        className="bg-background"
-                      />
-                    </div>
-                  </>
-                ) : null}
-                <div className="space-y-2">
-                  <Label htmlFor="pos-notes">Notes</Label>
-                  <Textarea
-                    id="pos-notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={2}
-                    placeholder="Table, packing, instructions…"
-                    className="resize-none"
-                  />
-                </div>
+          <details
+            open={customerDetailsOpen}
+            onToggle={(e) => setCustomerDetailsOpen(e.currentTarget.open)}
+            className="shrink-0 border-b bg-background open:[&>summary_svg]:rotate-180 [&_summary::-webkit-details-marker]:hidden"
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-sm font-medium hover:bg-muted/40">
+              <span>
+                {fulfillment === "delivery"
+                  ? "Customer details"
+                  : "Customer & notes (optional)"}
+              </span>
+              <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-transform" />
+            </summary>
+            <div className="space-y-3 border-t px-3 py-3">
+              <div className="space-y-2">
+                <Label htmlFor="pos-name">Name</Label>
+                <Input
+                  id="pos-name"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Optional — defaults to Guest"
+                  autoComplete="name"
+                />
               </div>
-            </details>
+              <div className="space-y-2">
+                <Label htmlFor="pos-phone">Phone</Label>
+                <Input
+                  id="pos-phone"
+                  inputMode="numeric"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Optional — 10-digit Indian mobile"
+                  autoComplete="tel"
+                />
+              </div>
+              {fulfillment === "delivery" ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="pos-address">Delivery address</Label>
+                    <Textarea
+                      id="pos-address"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      rows={2}
+                      placeholder="Full address (required for delivery)"
+                      className="resize-none bg-background"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pos-landmark">Landmark (optional)</Label>
+                    <Input
+                      id="pos-landmark"
+                      value={landmark}
+                      onChange={(e) => setLandmark(e.target.value)}
+                      placeholder="Near…"
+                      className="bg-background"
+                    />
+                  </div>
+                </>
+              ) : null}
+              <div className="space-y-2">
+                <Label htmlFor="pos-notes">Notes</Label>
+                <Textarea
+                  id="pos-notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Table, packing, instructions…"
+                  className="resize-none"
+                />
+              </div>
+            </div>
+          </details>
 
-            <Separator />
-
-            <div>
-              <p className="mb-2 font-medium text-sm">Preview</p>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="shrink-0 px-3 pt-3 pb-2">
+              <p className="font-medium text-sm">Preview</p>
               {cart.length > 0 ? (
                 <div
-                  className="mb-1.5 grid max-w-md grid-cols-[1fr_minmax(2.25rem,auto)_minmax(2.5rem,auto)_minmax(2.5rem,auto)] gap-x-1.5 text-[10px] text-muted-foreground"
+                  className="mt-1.5 grid max-w-md grid-cols-[1fr_minmax(2.25rem,auto)_minmax(2.5rem,auto)_minmax(2.5rem,auto)] gap-x-1.5 text-[10px] text-muted-foreground"
                   aria-hidden
                 >
                   <span>Item</span>
@@ -1088,12 +1334,15 @@ export default function AdminPosPage() {
                   <span className="text-right">₹</span>
                 </div>
               ) : null}
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3">
               {cart.length === 0 ? (
                 <p className="text-muted-foreground text-sm">
                   Tap items on the left to build an order.
                 </p>
               ) : (
-                <ul className="space-y-2">
+                <ul className="space-y-2 pb-2">
                   {cart.map((line) => {
                     const label = isCartComboLine(line)
                       ? `${line.name} (Combo)`
@@ -1183,19 +1432,80 @@ export default function AdminPosPage() {
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t pt-3 font-semibold">
-              <span>Total</span>
-              <span className="tabular-nums">{formatMoney(total)}</span>
+            <div className="shrink-0 border-t bg-muted/20 px-3 py-3">
+              <details className="rounded-lg border border-border/60 bg-background [&>summary_svg]:-rotate-180 open:[&>summary_svg]:rotate-0 [&_summary::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 font-semibold hover:bg-muted/40">
+                  <span>Total</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="tabular-nums">{formatMoney(total)}</span>
+                    <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform" />
+                  </span>
+                </summary>
+                <div className="space-y-2.5 border-t px-3 py-2.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="tabular-nums">{formatMoney(billTotals.itemsTotal)}</span>
+                  </div>
+                  {fulfillment === "delivery" ? (
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="pos-delivery-charge" className="shrink-0 text-xs">
+                        Delivery ₹
+                      </Label>
+                      <Input
+                        id="pos-delivery-charge"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        inputMode="decimal"
+                        value={deliveryChargeInput}
+                        onChange={(e) => setDeliveryChargeInput(e.target.value)}
+                        placeholder="0"
+                        className="h-8 min-w-0 flex-1 bg-background text-sm tabular-nums"
+                      />
+                    </div>
+                  ) : null}
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="pos-discount" className="shrink-0 text-xs">
+                      Discount ₹
+                    </Label>
+                    <Input
+                      id="pos-discount"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      inputMode="decimal"
+                      value={discountInput}
+                      onChange={(e) => setDiscountInput(e.target.value)}
+                      placeholder="0"
+                      className="h-8 min-w-0 flex-1 bg-background text-sm tabular-nums"
+                    />
+                  </div>
+                  {billTotals.deliveryCharge > 0 ? (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Delivery charge</span>
+                      <span className="tabular-nums">+{formatMoney(billTotals.deliveryCharge)}</span>
+                    </div>
+                  ) : null}
+                  {billTotals.discount > 0 ? (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Discount applied</span>
+                      <span className="tabular-nums text-emerald-700">
+                        −{formatMoney(billTotals.discount)}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+              </details>
+              {lastBill ? (
+                <p className="mt-2 text-muted-foreground text-xs">
+                  Last placed:{" "}
+                  <strong className="text-foreground">{lastBill.orderRef}</strong>
+                </p>
+              ) : null}
             </div>
-            {lastBill ? (
-              <p className="text-muted-foreground text-xs">
-                Last placed:{" "}
-                <strong className="text-foreground">{lastBill.orderRef}</strong>
-              </p>
-            ) : null}
           </div>
 
-          <div className="space-y-3 border-t p-3">
+          <footer className="shrink-0 border-t bg-background p-3">
             <div className="space-y-2">
               <Label>Payment</Label>
               {(posSettings?.paymentMethods ?? []).length === 0 ? (
@@ -1244,41 +1554,65 @@ export default function AdminPosPage() {
                   type="button"
                   variant="outline"
                   disabled={placing || cart.length === 0}
-                  onClick={() => void submitPosOrder("kot")}
+                  onClick={() => {
+                    if (getKhaanzDesktop()?.isDesktop && !printerConnected) {
+                      setPrinterDialogOpen(true);
+                      return;
+                    }
+                    void submitPosOrder("kot");
+                  }}
                 >
                   {placing ? (
                     <Loader2Icon className="size-4 animate-spin" />
                   ) : (
-                    "Save & KOT"
+                    getKhaanzDesktop()?.isDesktop && !printerConnected
+                      ? "Connect printer"
+                      : "Save & KOT"
                   )}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   disabled={placing || cart.length === 0}
-                  onClick={() => void submitPosOrder("bill")}
+                  onClick={() => {
+                    if (getKhaanzDesktop()?.isDesktop && !printerConnected) {
+                      setPrinterDialogOpen(true);
+                      return;
+                    }
+                    void submitPosOrder("bill");
+                  }}
                 >
                   {placing ? (
                     <Loader2Icon className="size-4 animate-spin" />
                   ) : (
-                    "Save & Bill"
+                    getKhaanzDesktop()?.isDesktop && !printerConnected
+                      ? "Connect printer"
+                      : "Save & Bill"
                   )}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   disabled={placing || cart.length === 0}
-                  onClick={() => void submitPosOrder("both")}
+                  onClick={() => {
+                    if (getKhaanzDesktop()?.isDesktop && !printerConnected) {
+                      setPrinterDialogOpen(true);
+                      return;
+                    }
+                    void submitPosOrder("both");
+                  }}
                 >
                   {placing ? (
                     <Loader2Icon className="size-4 animate-spin" />
                   ) : (
-                    "Save & Print"
+                    getKhaanzDesktop()?.isDesktop && !printerConnected
+                      ? "Connect printer"
+                      : "Save & Print"
                   )}
                 </Button>
               </div>
             </div>
-          </div>
+          </footer>
         </div>
       </div>
 
@@ -1403,6 +1737,120 @@ export default function AdminPosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={printerDialogOpen}
+        onOpenChange={(o) => {
+          // Keep simple: allow closing any time.
+          setPrinterDialogOpen(o);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Connect printer</DialogTitle>
+            <DialogDescription>
+              Select a printer for silent KOT/Bill printing in the desktop app.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Status</p>
+              <p
+                className={cn(
+                  "text-sm font-semibold",
+                  printerConnected ? "text-emerald-600" : "text-destructive",
+                )}
+              >
+                {printerConnected ? "Connected" : "Not connected"}
+              </p>
+            </div>
+
+            {getKhaanzDesktop()?.isDesktop ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">Printer</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void refreshPrinterStatus()}
+                  >
+                    Refresh
+                  </Button>
+                </div>
+
+                {printers.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">
+                    No printers detected. Connect a printer and click Refresh.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <SearchableSelect
+                      options={[
+                        { value: "", label: "System default" },
+                        ...printers.map((p) => ({
+                          value: p.name,
+                          label: `${p.name}${p.isDefault ? " (default)" : ""}`,
+                        })),
+                      ]}
+                      value={printerDeviceName}
+                      onValueChange={setPrinterDeviceName}
+                      placeholder="System default"
+                      searchPlaceholder="Search printers…"
+                    />
+                    <Button
+                      type="button"
+                      className="w-full"
+                      onClick={async () => {
+                        const d = getKhaanzDesktop();
+                        if (!d?.setSilentPrinter) {
+                          toast.error("Printer selection is not available.");
+                          return;
+                        }
+                        const out = await d.setSilentPrinter(printerDeviceName);
+                        if (!out.ok) {
+                          toast.error(out.error ?? "Could not set printer.");
+                          return;
+                        }
+                        await refreshPrinterStatus();
+                        toast.success("Printer saved.");
+                        setPrinterDialogOpen(false);
+                      }}
+                    >
+                      Save printer
+                    </Button>
+                    <p className="text-muted-foreground text-xs leading-relaxed">
+                      Tip: If you set <code>KHAANZ_SILENT_PRINTER</code>, it will
+                      override this selection.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                Printer connection is available in the desktop POS app only.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {getKhaanzDesktop()?.isDesktop ? (
+        <div className="fixed bottom-4 right-4 z-50">
+          <button
+            type="button"
+            className={cn(
+              "rounded-full border px-3 py-2 text-xs font-semibold shadow-sm",
+              printerConnected
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-border bg-background text-foreground",
+            )}
+            onClick={() => setPrinterDialogOpen(true)}
+          >
+            {printerConnected ? "Printer connected" : "Connect printer"}
+          </button>
+        </div>
+      ) : null}
 
       <Dialog
         open={dialogItem !== null}

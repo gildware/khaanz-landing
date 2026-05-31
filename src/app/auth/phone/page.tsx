@@ -33,38 +33,57 @@ function PhoneAuthForm() {
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
   const confirmRef = useRef<ConfirmationResult | null>(null);
 
+  const initRecaptcha = async () => {
+    if (!auth) return false;
+    try {
+      const mod = await import("firebase/auth");
+      try {
+        recaptchaRef.current?.clear();
+      } catch {
+        // ignore clear failures on a stale verifier
+      }
+      recaptchaRef.current = new mod.RecaptchaVerifier(auth, recaptchaContainerId, {
+        size: "invisible",
+      });
+      await recaptchaRef.current.render();
+      return true;
+    } catch (e) {
+      const msg =
+        e instanceof Error ? e.message : typeof e === "string" ? e : "Unknown error";
+      console.error("Firebase reCAPTCHA init failed:", e);
+      toast.error(`Could not initialize reCAPTCHA: ${msg}`);
+      return false;
+    }
+  };
+
   useEffect(() => {
     if (!firebaseEnabled || !auth) return;
     if (typeof window === "undefined") return;
 
     let cancelled = false;
-    (async () => {
-      try {
-        const mod = await import("firebase/auth");
-        if (cancelled) return;
-        if (recaptchaRef.current) return;
-        recaptchaRef.current = new mod.RecaptchaVerifier(auth, recaptchaContainerId, {
-          size: "invisible",
-        });
-        // Prime it so the first send is fast.
-        await recaptchaRef.current.render();
-      } catch (e) {
-        // Firebase throws helpful messages here (e.g. CSP blocked script, domain not authorized, etc.)
-        const msg =
-          e instanceof Error
-            ? e.message
-            : typeof e === "string"
-              ? e
-              : "Unknown error";
-        console.error("Firebase reCAPTCHA init failed:", e);
-        toast.error(`Could not initialize reCAPTCHA: ${msg}`);
-      }
-    })();
+    void initRecaptcha().then((ok) => {
+      if (!ok || cancelled) recaptchaRef.current = null;
+    });
 
     return () => {
       cancelled = true;
     };
   }, [firebaseEnabled, auth]);
+
+  const firebaseSmsErrorHint = (errCode: string | null): string | null => {
+    if (errCode !== "auth/invalid-app-credential") return null;
+    const host = typeof window !== "undefined" ? window.location.hostname : "";
+    if (host === "localhost" || host === "127.0.0.1") {
+      return (
+        "Firebase SMS does not work on localhost. Open the app at http://127.0.0.1:3000 " +
+        "(add 127.0.0.1 under Firebase → Authentication → Settings → Authorized domains), " +
+        "use a Firebase test phone number, or set NEXT_PUBLIC_FIREBASE_PHONE_AUTH_ENABLED=0 for local dev."
+      );
+    }
+    return (
+      "Check Firebase Console: Phone sign-in enabled, billing active, and this domain listed under Authorized domains."
+    );
+  };
 
   const sendOtp = async () => {
     const digits = phone.replace(/\D/g, "").slice(0, 10);
@@ -81,11 +100,7 @@ function PhoneAuthForm() {
         }
         const e164 = `+91${digits}`;
         try {
-          // Force reCAPTCHA to run now so we can fail fast with a clearer signal
-          // if the verifier is blocked/misconfigured.
-          const token = await recaptchaRef.current.verify();
-          console.info("reCAPTCHA token acquired:", token ? `${token.length} chars` : "empty");
-
+          // signInWithPhoneNumber runs reCAPTCHA internally; do not call verify() first.
           confirmRef.current = await signInWithPhoneNumber(
             auth,
             e164,
@@ -106,18 +121,17 @@ function PhoneAuthForm() {
               ? anyErr.message
               : null;
           console.error("Firebase signInWithPhoneNumber failed:", e);
-          try {
-            // RecaptchaVerifier doesn't expose reset(); clear() removes the widget so it can be re-rendered.
-            recaptchaRef.current.clear();
-          } catch {
-            // ignore reset failures
-          }
+          recaptchaRef.current = null;
+          void initRecaptcha();
+          const hint = firebaseSmsErrorHint(code);
           toast.error(
-            code
-              ? `Could not send SMS (${code}).`
-              : msg
-                ? `Could not send SMS: ${msg}`
-                : "Could not send SMS.",
+            hint ??
+              (code
+                ? `Could not send SMS (${code}).`
+                : msg
+                  ? `Could not send SMS: ${msg}`
+                  : "Could not send SMS."),
+            hint ? { duration: 15_000 } : undefined,
           );
           return;
         }

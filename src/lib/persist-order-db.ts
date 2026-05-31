@@ -15,12 +15,15 @@ function phoneDigits(phone: string): string {
   return normalizeIndianMobileDigits(phone);
 }
 
-function orderTotalMinor(lines: OrderCreateParsed["lines"]): number {
+function orderTotalMinor(parsed: OrderCreateParsed): number {
   let sum = 0;
-  for (const line of lines) {
+  for (const line of parsed.lines) {
     sum += Math.round(line.unitPrice * line.quantity * 100);
   }
-  return sum;
+  const delivery = Math.max(0, parsed.deliveryChargeMinor ?? 0);
+  const discount = Math.max(0, parsed.discountMinor ?? 0);
+  sum += delivery;
+  return Math.max(0, sum - Math.min(discount, sum));
 }
 
 export async function persistOrderToDatabase(
@@ -31,7 +34,7 @@ export async function persistOrderToDatabase(
 ): Promise<{ orderRef: string }> {
   const prisma = getPrisma();
   const digits = phoneDigits(parsed.phone);
-  const totalMinor = orderTotalMinor(parsed.lines);
+  const totalMinor = orderTotalMinor(parsed);
   const scheduledAt =
     parsed.scheduleMode === "scheduled" && parsed.scheduledAt
       ? new Date(parsed.scheduledAt)
@@ -102,7 +105,7 @@ export async function persistPosOrderToDatabase(
 ): Promise<{ orderRef: string }> {
   const prisma = getPrisma();
   const digits = phoneDigits(parsed.phone);
-  const totalMinor = orderTotalMinor(parsed.lines);
+  const totalMinor = orderTotalMinor(parsed);
   const scheduledAt =
     parsed.scheduleMode === "scheduled" && parsed.scheduledAt
       ? new Date(parsed.scheduledAt)

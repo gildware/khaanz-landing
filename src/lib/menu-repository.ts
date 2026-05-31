@@ -26,9 +26,14 @@ export async function readMenuPayload(): Promise<MenuPayload> {
     await Promise.all([
       prisma.category.findMany({
         where: { parentId: null },
-        // Be resilient to partially-migrated local DBs (older `categories` tables
-        // may not have newer columns like `image` / `icon` yet).
-        select: { id: true, name: true, parentId: true, sortOrder: true },
+        select: {
+          id: true,
+          name: true,
+          parentId: true,
+          sortOrder: true,
+          image: true,
+          icon: true,
+        },
         orderBy: { sortOrder: "asc" },
       }),
       prisma.category.findMany({
@@ -65,8 +70,8 @@ export async function readMenuPayload(): Promise<MenuPayload> {
 
   const categories = topCategories.map((c) => ({
     name: c.name,
-    image: "",
-    icon: "utensils-crossed",
+    image: (c.image ?? "").trim(),
+    icon: (c.icon ?? "").trim() || "utensils-crossed",
   }));
 
   const menuItems: MenuItem[] = items.map((row) => ({

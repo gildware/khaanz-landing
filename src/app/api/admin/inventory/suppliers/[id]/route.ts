@@ -25,7 +25,6 @@ export async function PATCH(request: Request, context: Ctx) {
     data.name = body.name.trim().slice(0, 200);
   }
   if (typeof body.phone === "string") data.phone = body.phone.trim().slice(0, 32);
-  if (typeof body.email === "string") data.email = body.email.trim().slice(0, 120);
   if (typeof body.address === "string") {
     data.address = body.address.trim().slice(0, 4000);
   }

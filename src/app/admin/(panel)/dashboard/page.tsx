@@ -2,27 +2,26 @@
 
 import useSWR from "swr";
 import {
+  AlertCircleIcon,
   BanknoteIcon,
   CreditCardIcon,
+  HandshakeIcon,
+  IndianRupeeIcon,
   LineChartIcon,
   ReceiptIndianRupeeIcon,
   TrendingUpIcon,
   WalletIcon,
 } from "lucide-react";
 import {
-  Bar,
-  BarChart,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-
-import { formatPaise } from "@/lib/payroll/payroll-utils";
+  PillRankChartCard,
+  type PillRankSourceRow,
+} from "@/components/admin/pill-rank-chart";
+import { formatRupees } from "@/lib/payroll/payroll-utils";
 import { useMenuData } from "@/contexts/menu-data-context";
+
+type SalesRankRow = { key: string; label: string; qty: number };
+type StockValueRankRow = { key: string; label: string; valuePaise: number };
+type VendorValueRankRow = { key: string; label: string; valuePaise: number };
 
 type DashboardSummary = {
   kpis: {
@@ -36,10 +35,23 @@ type DashboardSummary = {
     netProfitPaise: number;
     todayOrdersCount: number;
     monthOrdersCount: number;
+    todayVendorSalesPaise: number;
+    todayVendorSalesCount: number;
+    monthVendorSalesPaise: number;
+    monthVendorSalesCount: number;
+    vendorReceivablePaise: number;
+    overdueVendorSalesCount: number;
+    monthVendorPaymentsPaise: number;
   };
   charts: {
-    topSelling: Array<{ key: string; label: string; qty: number }>;
-    leastSelling: Array<{ key: string; label: string; qty: number }>;
+    topSelling: SalesRankRow[];
+    leastSelling: SalesRankRow[];
+    topStockValue: StockValueRankRow[];
+    lowestStockValue: StockValueRankRow[];
+    topVendorsBySales: VendorValueRankRow[];
+    bottomVendorsBySales: VendorValueRankRow[];
+    topVendorItemsByQty: SalesRankRow[];
+    bottomVendorItemsByQty: SalesRankRow[];
   };
 };
 
@@ -49,16 +61,17 @@ const fetcher = async (url: string) => {
   return (await res.json()) as DashboardSummary;
 };
 
-const PIE_COLORS = [
-  "#2563eb",
-  "#16a34a",
-  "#f97316",
-  "#a855f7",
-  "#ef4444",
-  "#14b8a6",
-  "#eab308",
-  "#64748b",
-];
+function salesToPillRows(rows: SalesRankRow[]): PillRankSourceRow[] {
+  return rows.map((r) => ({ key: r.key, label: r.label, value: r.qty }));
+}
+
+function stockToPillRows(rows: StockValueRankRow[]): PillRankSourceRow[] {
+  return rows.map((r) => ({ key: r.key, label: r.label, value: r.valuePaise }));
+}
+
+function vendorValueToPillRows(rows: VendorValueRankRow[]): PillRankSourceRow[] {
+  return rows.map((r) => ({ key: r.key, label: r.label, value: r.valuePaise }));
+}
 
 function KpiCard(props: {
   title: string;
@@ -107,41 +120,46 @@ export default function AdminDashboardPage() {
 
   const top = summary?.charts.topSelling ?? [];
   const least = summary?.charts.leastSelling ?? [];
-  const pieData = top.slice(0, 6).map((x) => ({ name: x.label, value: x.qty }));
+  const topStock = summary?.charts.topStockValue ?? [];
+  const lowestStock = summary?.charts.lowestStockValue ?? [];
+  const topVendors = summary?.charts.topVendorsBySales ?? [];
+  const bottomVendors = summary?.charts.bottomVendorsBySales ?? [];
+  const topVendorItems = summary?.charts.topVendorItemsByQty ?? [];
+  const bottomVendorItems = summary?.charts.bottomVendorItemsByQty ?? [];
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-semibold text-2xl tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-sm">
-          Sales, expenses and performance overview.
+          Sales, expenses, vendor sales, and performance overview.
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           title="Today’s sale"
-          value={summary ? formatPaise(summary.kpis.todaySalesPaise) : isLoading ? "…" : "—"}
+          value={summary ? formatRupees(summary.kpis.todaySalesPaise) : isLoading ? "…" : "—"}
           subtitle={summary ? `${summary.kpis.todayOrdersCount} orders` : undefined}
           Icon={WalletIcon}
           gradientClassName="bg-gradient-to-br from-emerald-500/25 via-teal-500/15 to-sky-500/20"
         />
         <KpiCard
           title="This month sale"
-          value={summary ? formatPaise(summary.kpis.monthSalesPaise) : isLoading ? "…" : "—"}
+          value={summary ? formatRupees(summary.kpis.monthSalesPaise) : isLoading ? "…" : "—"}
           subtitle={summary ? `${summary.kpis.monthOrdersCount} orders` : undefined}
           Icon={TrendingUpIcon}
           gradientClassName="bg-gradient-to-br from-blue-500/25 via-indigo-500/15 to-fuchsia-500/15"
         />
         <KpiCard
           title="Today’s expenses"
-          value={summary ? formatPaise(summary.kpis.todayExpensesPaise) : isLoading ? "…" : "—"}
+          value={summary ? formatRupees(summary.kpis.todayExpensesPaise) : isLoading ? "…" : "—"}
           Icon={ReceiptIndianRupeeIcon}
           gradientClassName="bg-gradient-to-br from-amber-500/25 via-orange-500/15 to-rose-500/15"
         />
         <KpiCard
           title="This month expenses"
-          value={summary ? formatPaise(summary.kpis.monthExpensesPaise) : isLoading ? "…" : "—"}
+          value={summary ? formatRupees(summary.kpis.monthExpensesPaise) : isLoading ? "…" : "—"}
           Icon={CreditCardIcon}
           gradientClassName="bg-gradient-to-br from-slate-500/20 via-zinc-500/10 to-stone-500/15"
         />
@@ -150,10 +168,10 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <KpiCard
           title="Gross margin (month)"
-          value={summary ? formatPaise(summary.kpis.grossMarginPaise) : isLoading ? "…" : "—"}
+          value={summary ? formatRupees(summary.kpis.grossMarginPaise) : isLoading ? "…" : "—"}
           subtitle={
             summary
-              ? `Sale − stock used: ${formatPaise(summary.kpis.monthSalesPaise)} − ${formatPaise(summary.kpis.stockCostUsedPaise)}`
+              ? `Sale − stock used: ${formatRupees(summary.kpis.monthSalesPaise)} − ${formatRupees(summary.kpis.stockCostUsedPaise)}`
               : undefined
           }
           Icon={LineChartIcon}
@@ -161,72 +179,151 @@ export default function AdminDashboardPage() {
         />
         <KpiCard
           title="Salaries (month)"
-          value={summary ? formatPaise(summary.kpis.salariesPaise) : isLoading ? "…" : "—"}
+          value={summary ? formatRupees(summary.kpis.salariesPaise) : isLoading ? "…" : "—"}
           subtitle="From payroll run (if created)."
           Icon={BanknoteIcon}
           gradientClassName="bg-gradient-to-br from-cyan-500/20 via-sky-500/15 to-blue-500/15"
         />
         <KpiCard
           title="Net profit (month)"
-          value={summary ? formatPaise(summary.kpis.netProfitPaise) : isLoading ? "…" : "—"}
+          value={summary ? formatRupees(summary.kpis.netProfitPaise) : isLoading ? "…" : "—"}
           subtitle={summary ? "Gross margin − expenses − salaries" : undefined}
           Icon={TrendingUpIcon}
           gradientClassName="bg-gradient-to-br from-emerald-500/20 via-lime-500/10 to-amber-500/15"
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border bg-card p-4 shadow-sm">
-          <div className="mb-3">
-            <p className="font-medium">Most selling items (month)</p>
-            <p className="text-muted-foreground text-xs">Top 10 by quantity</p>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={top} margin={{ left: 8, right: 8, top: 10, bottom: 40 }}>
-                <XAxis dataKey="label" angle={-25} textAnchor="end" interval={0} height={60} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="qty" fill="#2563eb" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        <div className="rounded-2xl border bg-card p-4 shadow-sm">
-          <div className="mb-3">
-            <p className="font-medium">Less selling items (month)</p>
-            <p className="text-muted-foreground text-xs">Bottom 10 by quantity</p>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={least} margin={{ left: 8, right: 8, top: 10, bottom: 40 }}>
-                <XAxis dataKey="label" angle={-25} textAnchor="end" interval={0} height={60} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Bar dataKey="qty" fill="#64748b" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      <div>
+        <h2 className="font-medium text-base">Vendor sales</h2>
+        <p className="text-muted-foreground text-sm">
+          B2B sales to vendors, receivables, and payments this month.
+        </p>
       </div>
 
-      <div className="rounded-2xl border bg-card p-4 shadow-sm">
-        <div className="mb-3">
-          <p className="font-medium">Top selling share</p>
-          <p className="text-muted-foreground text-xs">Pie chart of top items</p>
-        </div>
-        <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Tooltip />
-              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110}>
-                {pieData.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          title="Today’s vendor sales"
+          value={
+            summary
+              ? formatRupees(summary.kpis.todayVendorSalesPaise)
+              : isLoading
+                ? "…"
+                : "—"
+          }
+          subtitle={
+            summary ? `${summary.kpis.todayVendorSalesCount} sales posted` : undefined
+          }
+          Icon={HandshakeIcon}
+          gradientClassName="bg-gradient-to-br from-blue-500/25 via-indigo-500/15 to-violet-500/15"
+        />
+        <KpiCard
+          title="This month vendor sales"
+          value={
+            summary
+              ? formatRupees(summary.kpis.monthVendorSalesPaise)
+              : isLoading
+                ? "…"
+                : "—"
+          }
+          subtitle={
+            summary ? `${summary.kpis.monthVendorSalesCount} sales posted` : undefined
+          }
+          Icon={TrendingUpIcon}
+          gradientClassName="bg-gradient-to-br from-emerald-500/25 via-teal-500/15 to-cyan-500/15"
+        />
+        <KpiCard
+          title="Vendor receivable"
+          value={
+            summary
+              ? formatRupees(summary.kpis.vendorReceivablePaise)
+              : isLoading
+                ? "…"
+                : "—"
+          }
+          subtitle="Outstanding credit from vendors"
+          Icon={IndianRupeeIcon}
+          gradientClassName="bg-gradient-to-br from-amber-500/25 via-orange-500/15 to-rose-500/15"
+        />
+        <KpiCard
+          title="Overdue / payments"
+          value={
+            summary
+              ? `${summary.kpis.overdueVendorSalesCount} overdue`
+              : isLoading
+                ? "…"
+                : "—"
+          }
+          subtitle={
+            summary
+              ? `${formatRupees(summary.kpis.monthVendorPaymentsPaise)} collected this month`
+              : undefined
+          }
+          Icon={AlertCircleIcon}
+          gradientClassName="bg-gradient-to-br from-rose-500/20 via-red-500/10 to-orange-500/15"
+        />
+      </div>
+
+      <div className="flex flex-col gap-4 lg:flex-row">
+        <PillRankChartCard
+          title="Item sales this month"
+          subtitle="Top 5 by quantity — name on each bar."
+          topTabLabel="Top movers"
+          bottomTabLabel="Slow movers"
+          topRows={salesToPillRows(top)}
+          bottomRows={salesToPillRows(least)}
+          isLoading={isLoading}
+          loadingMessage="Loading sales data…"
+          emptyMessage="No menu items to display."
+          formatValue={(v) => String(v)}
+          valueTitle={(r) => `${r.label}: ${r.value} sold`}
+          footnoteSuffix="units"
+          filterTopPositive
+        />
+        <PillRankChartCard
+          title="Top items by stock value"
+          subtitle="Top 5 on-hand value (qty × unit cost)."
+          topTabLabel="Top value"
+          bottomTabLabel="Low value"
+          topRows={stockToPillRows(topStock)}
+          bottomRows={stockToPillRows(lowestStock)}
+          isLoading={isLoading}
+          loadingMessage="Loading stock value…"
+          emptyMessage="No stock value to chart."
+          formatValue={(v) => formatRupees(v)}
+          valueTitle={(r) => `${r.label}: ${formatRupees(r.value)}`}
+        />
+      </div>
+
+      <div className="flex flex-col gap-4 lg:flex-row">
+        <PillRankChartCard
+          title="Top vendors this month"
+          subtitle="Top 5 by vendor sale amount."
+          topTabLabel="Top vendors"
+          bottomTabLabel="Smallest vendors"
+          topRows={vendorValueToPillRows(topVendors)}
+          bottomRows={vendorValueToPillRows(bottomVendors)}
+          isLoading={isLoading}
+          loadingMessage="Loading vendor sales…"
+          emptyMessage="No vendor sales this month."
+          formatValue={(v) => formatRupees(v)}
+          valueTitle={(r) => `${r.label}: ${formatRupees(r.value)}`}
+          filterTopPositive
+        />
+        <PillRankChartCard
+          title="Items sold to vendors"
+          subtitle="Top 5 menu items by quantity this month."
+          topTabLabel="Top items"
+          bottomTabLabel="Slow items"
+          topRows={salesToPillRows(topVendorItems)}
+          bottomRows={salesToPillRows(bottomVendorItems)}
+          isLoading={isLoading}
+          loadingMessage="Loading vendor items…"
+          emptyMessage="No items sold to vendors this month."
+          formatValue={(v) => String(v)}
+          valueTitle={(r) => `${r.label}: ${r.value} sold`}
+          footnoteSuffix="units"
+          filterTopPositive
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

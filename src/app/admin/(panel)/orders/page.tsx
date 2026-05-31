@@ -12,6 +12,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -58,6 +59,16 @@ type OrderRow = {
   customerPhone: string;
   customerName: string | null;
   lines: { sortIndex: number; payload: unknown }[];
+};
+
+type PendingStatusChange = {
+  orderId: string;
+  orderRef: string;
+  currentStatusLabel: string;
+  nextStatus: string;
+  nextStatusLabel: string;
+  actionLabel: string;
+  destructive?: boolean;
 };
 
 type AdminOrderDetail = {
@@ -152,6 +163,9 @@ export default function AdminOrdersPage() {
   const [detail, setDetail] = useState<AdminOrderDetail | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusConfirm, setStatusConfirm] = useState<PendingStatusChange | null>(
+    null,
+  );
 
   const [posSettings, setPosSettings] = useState<RestaurantSettingsPayload | null>(
     null,
@@ -250,14 +264,20 @@ export default function AdminOrdersPage() {
     return () => obs.disconnect();
   }, [hasMore, loadMore]);
 
-  const setStatus = async (orderId: string, status: string) => {
+  const requestStatusChange = (payload: PendingStatusChange) => {
+    setStatusConfirm(payload);
+  };
+
+  const confirmStatusChange = async () => {
+    if (!statusConfirm) return;
+    const { orderId, nextStatus } = statusConfirm;
     setUpdatingId(orderId);
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: nextStatus }),
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -265,6 +285,7 @@ export default function AdminOrdersPage() {
         return;
       }
       toast.success("Order updated");
+      setStatusConfirm(null);
       await refreshOrders();
       if (detail?.id === orderId) {
         void fetchOrderDetail(orderId);
@@ -602,7 +623,19 @@ export default function AdminOrdersPage() {
                           variant="default"
                           className="h-8 text-xs"
                           disabled={busy}
-                          onClick={() => void setStatus(o.id, step.nextStatus)}
+                          onClick={() =>
+                            requestStatusChange({
+                              orderId: o.id,
+                              orderRef: o.orderRef ?? o.id.slice(0, 8),
+                              currentStatusLabel: o.statusLabel,
+                              nextStatus: step.nextStatus,
+                              nextStatusLabel:
+                                ORDER_STATUS_LABEL[
+                                  step.nextStatus as OrderStatus
+                                ] ?? step.nextStatus,
+                              actionLabel: step.label,
+                            })
+                          }
                         >
                           {busy ? "…" : step.label}
                         </Button>
@@ -614,7 +647,17 @@ export default function AdminOrdersPage() {
                           variant="outline"
                           className="h-8 text-xs"
                           disabled={busy}
-                          onClick={() => void setStatus(o.id, "CANCELLED")}
+                          onClick={() =>
+                            requestStatusChange({
+                              orderId: o.id,
+                              orderRef: o.orderRef ?? o.id.slice(0, 8),
+                              currentStatusLabel: o.statusLabel,
+                              nextStatus: "CANCELLED",
+                              nextStatusLabel: ORDER_STATUS_LABEL.CANCELLED,
+                              actionLabel: "Cancel order",
+                              destructive: true,
+                            })
+                          }
                         >
                           Cancel
                         </Button>
@@ -794,7 +837,17 @@ export default function AdminOrdersPage() {
                             size="sm"
                             disabled={busy}
                             onClick={() =>
-                              void setStatus(detail.id, step.nextStatus)
+                              requestStatusChange({
+                                orderId: detail.id,
+                                orderRef: detail.orderRef ?? detail.id.slice(0, 8),
+                                currentStatusLabel: detail.statusLabel,
+                                nextStatus: step.nextStatus,
+                                nextStatusLabel:
+                                  ORDER_STATUS_LABEL[
+                                    step.nextStatus as OrderStatus
+                                  ] ?? step.nextStatus,
+                                actionLabel: step.label,
+                              })
                             }
                           >
                             {busy ? "…" : step.label}
@@ -807,7 +860,15 @@ export default function AdminOrdersPage() {
                             variant="outline"
                             disabled={busy}
                             onClick={() =>
-                              void setStatus(detail.id, "CANCELLED")
+                              requestStatusChange({
+                                orderId: detail.id,
+                                orderRef: detail.orderRef ?? detail.id.slice(0, 8),
+                                currentStatusLabel: detail.statusLabel,
+                                nextStatus: "CANCELLED",
+                                nextStatusLabel: ORDER_STATUS_LABEL.CANCELLED,
+                                actionLabel: "Cancel order",
+                                destructive: true,
+                              })
                             }
                           >
                             Cancel order
@@ -820,6 +881,63 @@ export default function AdminOrdersPage() {
               </>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={statusConfirm !== null}
+        onOpenChange={(open) => {
+          if (
+            !open &&
+            (!statusConfirm || updatingId !== statusConfirm.orderId)
+          ) {
+            setStatusConfirm(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          {statusConfirm ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>{statusConfirm.actionLabel}?</DialogTitle>
+                <DialogDescription>
+                  Order{" "}
+                  <span className="font-medium text-foreground">
+                    {statusConfirm.orderRef}
+                  </span>{" "}
+                  will change from{" "}
+                  <span className="font-medium text-foreground">
+                    {statusConfirm.currentStatusLabel}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-medium text-foreground">
+                    {statusConfirm.nextStatusLabel}
+                  </span>
+                  .
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={Boolean(
+                    statusConfirm && updatingId === statusConfirm.orderId,
+                  )}
+                  onClick={() => setStatusConfirm(null)}
+                >
+                  Back
+                </Button>
+                <Button
+                  type="button"
+                  variant={statusConfirm.destructive ? "destructive" : "default"}
+                  disabled={updatingId === statusConfirm.orderId}
+                  onClick={() => void confirmStatusChange()}
+                >
+                  {updatingId === statusConfirm.orderId ? "Updating…" : "Confirm"}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

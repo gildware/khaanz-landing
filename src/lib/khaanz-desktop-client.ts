@@ -1,6 +1,6 @@
 /**
  * Bridge for the Khaanz Desktop POS (Electron) app: silent print + offline queue.
- * `window.khaanzDesktop` is injected by `desktop-pos/preload.cjs`.
+ * `window.khaanzDesktop` is injected by `pos-desktop/electron/preload.cjs`.
  */
 
 export type KhaanzDesktopOfflineRow = {
@@ -16,6 +16,8 @@ export type KhaanzDesktopApi = {
     title?: string,
   ): Promise<{ ok: boolean; error?: string }>;
   listPrinters(): Promise<{ name: string; isDefault?: boolean }[]>;
+  getSilentPrinter(): Promise<{ deviceName: string }>;
+  setSilentPrinter(deviceName: string): Promise<{ ok: boolean; error?: string }>;
   enqueueOfflineOrder(row: {
     clientOrderId: string;
     body: Record<string, unknown>;

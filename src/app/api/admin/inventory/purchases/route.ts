@@ -10,6 +10,39 @@ export const runtime = "nodejs";
 
 const PAY: PurchasePaymentType[] = ["CASH", "CHEQUE", "CREDIT"];
 
+export async function GET() {
+  const session = await requireAdminInventorySession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const prisma = getPrisma();
+  const rows = await prisma.purchase.findMany({
+    orderBy: { purchasedAt: "desc" },
+    take: 500,
+    include: {
+      supplier: { select: { id: true, name: true } },
+      _count: { select: { lines: true } },
+    },
+  });
+
+  return NextResponse.json({
+    purchases: rows.map((p) => ({
+      id: p.id,
+      batchRef: p.batchRef,
+      supplierId: p.supplierId,
+      supplierName: p.supplier.name,
+      purchasedAt: p.purchasedAt.toISOString(),
+      paymentType: p.paymentType,
+      creditDays: p.creditDays,
+      dueAt: p.dueAt?.toISOString() ?? null,
+      totalPaise: p.totalPaise,
+      lineCount: p._count.lines,
+      notes: p.notes,
+    })),
+  });
+}
+
 function isPaymentType(x: unknown): x is PurchasePaymentType {
   return typeof x === "string" && PAY.includes(x as PurchasePaymentType);
 }

@@ -8,7 +8,7 @@ import {
   detectDesktopPosClientOs,
   getDesktopPosDownloadUrls,
   type DesktopPosClientOs,
-} from "@/lib/desktop-pos-download-config";
+} from "@/lib/pos-desktop-download-config";
 import { cn } from "@/lib/utils";
 
 function osLabel(os: DesktopPosClientOs): string {
@@ -51,14 +51,11 @@ export function DesktopPosDownloadCard() {
   return (
     <div className="space-y-3 rounded-xl border bg-card p-4">
       <div>
-        <p className="font-medium">Khaanz Desktop POS</p>
+        <p className="font-medium">Khaanz POS (offline desktop)</p>
         <p className="text-muted-foreground text-xs">
-          Standalone app for the register: silent receipt printing and offline
-          order queue. After install, set{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-[11px]">
-            KHAANZ_APP_URL
-          </code>{" "}
-          to this site&apos;s origin.
+          Standalone offline-first register app (local menu and orders, optional sync).
+          Set <code className="rounded bg-muted px-1 py-0.5 text-[11px]">KHAANZ_API_ORIGIN</code> when
+          you want to push orders to this site.
         </p>
       </div>
 
@@ -72,8 +69,9 @@ export function DesktopPosDownloadCard() {
           <code className="rounded bg-muted px-1 py-0.5 text-xs">
             NEXT_PUBLIC_DESKTOP_POS_WINDOWS_URL
           </code>{" "}
-          (e.g. <code className="text-xs">.dmg</code> and <code className="text-xs">.exe</code>{" "}
-          from <code className="text-xs">desktop-pos/release</code>).
+          (e.g. <code className="text-xs">.dmg</code> and <code className="text-xs">.exe</code> from{" "}
+          <code className="text-xs">pos-desktop/release</code> after{" "}
+          <code className="text-xs">npm run dist</code>).
         </p>
       ) : (
         <>
@@ -162,9 +160,9 @@ export function DesktopPosDownloadCard() {
           </div>
 
           <p className="text-muted-foreground text-xs">
-            Dev: <code className="rounded bg-muted px-1 py-0.5">npm run desktop</code> ·
-            Ship:{" "}
-            <code className="rounded bg-muted px-1 py-0.5">desktop-pos/npm run dist</code>
+            Dev: <code className="rounded bg-muted px-1 py-0.5">npm run desktop</code> (from{" "}
+            <code className="rounded bg-muted px-1 py-0.5">khaanz/</code>) · Ship:{" "}
+            <code className="rounded bg-muted px-1 py-0.5">pos-desktop/npm run dist</code>
           </p>
         </>
       )}

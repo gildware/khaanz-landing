@@ -1,19 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { AdvanceMethod, AttendanceKind } from "@prisma/client";
 import { toast } from "sonner";
-import { Loader2Icon, PlusIcon, RefreshCcwIcon } from "lucide-react";
+import { Loader2Icon, PlusIcon, RefreshCcwIcon, SearchIcon } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { formatPaise, monthKeyFromDate } from "@/lib/payroll/payroll-utils";
+import {
+  formatRupees,
+  monthKeyFromDate,
+  paiseToRupeesInput,
+  rupeesToPaise,
+} from "@/lib/payroll/payroll-utils";
 
 type EmployeeRow = {
   id: string;
@@ -40,15 +47,6 @@ type AdvanceRow = {
   employee: { name: string; code: string };
 };
 
-type EmployeeDoc = {
-  id: string;
-  kind: "ID_PROOF" | "ADDRESS_PROOF" | "CONTRACT" | "OTHER";
-  title: string;
-  fileUrl: string;
-  note: string;
-  createdAt: string;
-};
-
 function startOfMonthLocal(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
@@ -66,6 +64,9 @@ function dayKeyLocal(y: number, m0: number, day: number): string {
 }
 
 export default function AdminPayrollPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const editEmployeeId = searchParams.get("edit");
   const [tab, setTab] = useState("employees");
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
@@ -126,7 +127,13 @@ export default function AdminPayrollPage() {
         </TabsList>
 
         <TabsContent value="employees" className="space-y-4">
-          <EmployeesTab employees={employees} onChanged={reloadEmployees} />
+          <EmployeesTab
+            employees={employees}
+            onChanged={reloadEmployees}
+            editEmployeeId={editEmployeeId}
+            onClearEdit={() => router.replace("/admin/payroll")}
+            onOpenProfile={(id) => router.push(`/admin/payroll/employees/${id}`)}
+          />
         </TabsContent>
 
         <TabsContent value="attendance" className="space-y-4">
@@ -148,11 +155,18 @@ export default function AdminPayrollPage() {
 function EmployeesTab({
   employees,
   onChanged,
+  editEmployeeId,
+  onClearEdit,
+  onOpenProfile,
 }: {
   employees: EmployeeRow[];
   onChanged: () => Promise<void>;
+  editEmployeeId: string | null;
+  onClearEdit: () => void;
+  onOpenProfile: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<EmployeeRow | null>(null);
 
@@ -165,11 +179,6 @@ function EmployeesTab({
   const [active, setActive] = useState(true);
   const [joinedAt, setJoinedAt] = useState("");
   const [address, setAddress] = useState("");
-  const [docs, setDocs] = useState<EmployeeDoc[]>([]);
-  const [docKind, setDocKind] = useState<EmployeeDoc["kind"]>("ID_PROOF");
-  const [docTitle, setDocTitle] = useState("");
-  const [docUrl, setDocUrl] = useState("");
-  const [docNote, setDocNote] = useState("");
 
   const resetForm = () => {
     setCode("");
@@ -181,18 +190,6 @@ function EmployeesTab({
     setActive(true);
     setJoinedAt("");
     setAddress("");
-    setDocs([]);
-    setDocKind("ID_PROOF");
-    setDocTitle("");
-    setDocUrl("");
-    setDocNote("");
-  };
-
-  const loadDocs = async (employeeId: string) => {
-    const res = await fetch(`/api/admin/payroll/employees/${employeeId}`, { credentials: "include" });
-    if (!res.ok) return;
-    const j = (await res.json()) as { employee?: { documents?: EmployeeDoc[] } };
-    setDocs(j.employee?.documents ?? []);
   };
 
   const openNew = () => {
@@ -206,15 +203,32 @@ function EmployeesTab({
     setCode(e.code ?? "");
     setName(e.name ?? "");
     setPhone(e.phone ?? "");
-    setMonthlySalary(String(e.monthlySalaryPaise ?? 0));
-    setDailyRate(String(e.dailyRatePaise ?? 0));
+    setMonthlySalary(paiseToRupeesInput(e.monthlySalaryPaise ?? 0));
+    setDailyRate(paiseToRupeesInput(e.dailyRatePaise ?? 0));
     setPaidLeaves(String(e.paidLeavesPerMonth ?? 4));
     setActive(Boolean(e.active));
     setJoinedAt(e.joinedAt ? String(e.joinedAt).slice(0, 10) : "");
     setAddress(e.address ?? "");
     setOpen(true);
-    void loadDocs(e.id);
   };
+
+  useEffect(() => {
+    if (!editEmployeeId || employees.length === 0) return;
+    const emp = employees.find((x) => x.id === editEmployeeId);
+    if (emp) {
+      openEdit(emp);
+      onClearEdit();
+    }
+  }, [editEmployeeId, employees, onClearEdit]);
+
+  const filteredEmployees = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return employees;
+    return employees.filter((e) => {
+      const hay = `${e.name} ${e.code} ${e.phone}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [employees, search]);
 
   const save = async () => {
     setSaving(true);
@@ -225,8 +239,8 @@ function EmployeesTab({
         phone,
         address,
         active,
-        monthlySalaryPaise: Number.parseInt(monthlySalary || "0", 10),
-        dailyRatePaise: Number.parseInt(dailyRate || "0", 10),
+        monthlySalaryPaise: rupeesToPaise(monthlySalary || "0"),
+        dailyRatePaise: rupeesToPaise(dailyRate || "0"),
         paidLeavesPerMonth: Number.parseInt(paidLeaves || "4", 10),
         joinedAt: joinedAt ? new Date(joinedAt).toISOString() : null,
       };
@@ -268,110 +282,120 @@ function EmployeesTab({
     }
   };
 
-  const addDoc = async () => {
-    if (!editing) return;
-    try {
-      const res = await fetch(`/api/admin/payroll/employees/${editing.id}/documents`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          kind: docKind,
-          title: docTitle,
-          fileUrl: docUrl,
-          note: docNote,
-        }),
-      });
-      if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(j.error || "Save failed");
-      }
-      setDocTitle("");
-      setDocUrl("");
-      setDocNote("");
-      await loadDocs(editing.id);
-      toast.success("Document added");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save failed");
-    }
-  };
-
-  const deleteDoc = async (docId: string) => {
-    if (!editing) return;
-    if (!confirm("Delete this document?")) return;
-    try {
-      const res = await fetch(
-        `/api/admin/payroll/employees/${editing.id}/documents?docId=${encodeURIComponent(docId)}`,
-        { method: "DELETE", credentials: "include" },
-      );
-      if (!res.ok) throw new Error("Delete failed");
-      await loadDocs(editing.id);
-      toast.success("Document deleted");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Delete failed");
-    }
-  };
-
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          Monthly salary is fixed. Daily rate is used for leave-day work bonus and unpaid deductions.
-        </p>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-medium">Employees</h2>
+          <p className="text-muted-foreground text-sm">
+            Click a row to open the full employee profile — salary, advances, leaves, and docs.
+          </p>
+        </div>
         <Button type="button" onClick={openNew}>
-          <PlusIcon className="size-4" />
+          <PlusIcon className="mr-2 size-4" aria-hidden />
           Add employee
         </Button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-24">Code</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead className="w-28">Status</TableHead>
-            <TableHead className="w-48 text-right">Monthly salary</TableHead>
-            <TableHead className="w-48 text-right">Daily rate</TableHead>
-            <TableHead className="w-32 text-right">Leaves/mo</TableHead>
-            <TableHead className="w-44 text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {employees.map((e) => (
-            <TableRow key={e.id}>
-              <TableCell className="font-mono text-xs">{e.code || "-"}</TableCell>
-              <TableCell className="font-medium">{e.name}</TableCell>
-              <TableCell className={e.active ? "" : "text-muted-foreground"}>
-                {e.active ? "Active" : "Inactive"}
-              </TableCell>
-              <TableCell className="text-right">{formatPaise(e.monthlySalaryPaise)}</TableCell>
-              <TableCell className="text-right">{formatPaise(e.dailyRatePaise)}</TableCell>
-              <TableCell className="text-right">{e.paidLeavesPerMonth}</TableCell>
-              <TableCell className="space-x-2 text-right">
-                <Button type="button" variant="outline" size="sm" onClick={() => openEdit(e)}>
-                  Edit
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive"
-                  onClick={() => void remove(e.id)}
-                >
-                  Delete
-                </Button>
-              </TableCell>
+      <div className="relative max-w-md">
+        <SearchIcon
+          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
+        <Input
+          className="pl-8"
+          placeholder="Search name, code, phone…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-24">Code</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead className="w-28">Status</TableHead>
+              <TableHead className="text-right">Monthly salary</TableHead>
+              <TableHead className="text-right">Daily rate</TableHead>
+              <TableHead className="text-right">Leaves/mo</TableHead>
+              <TableHead className="w-28 text-right">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {employees.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                  No employees yet. Add one to start payroll.
+                </TableCell>
+              </TableRow>
+            ) : filteredEmployees.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                  No employees match your search.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredEmployees.map((e) => (
+                <TableRow
+                  key={e.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => onOpenProfile(e.id)}
+                >
+                  <TableCell className="font-mono text-xs">{e.code || "—"}</TableCell>
+                  <TableCell className="font-medium">{e.name}</TableCell>
+                  <TableCell>
+                    <Badge variant={e.active ? "default" : "secondary"}>
+                      {e.active ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatRupees(e.monthlySalaryPaise)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatRupees(e.dailyRatePaise)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{e.paidLeavesPerMonth}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        openEdit(e);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        void remove(e.id);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
+        <DialogContent className="flex max-h-[min(92vh,900px)] w-[min(96vw,56rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,56rem)]">
+          <DialogHeader className="shrink-0 border-b px-6 py-4">
             <DialogTitle>{editing ? "Edit employee" : "Add employee"}</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1">
               <Label htmlFor="emp-code">Code</Label>
               <Input id="emp-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. E-001" />
@@ -380,7 +404,7 @@ function EmployeesTab({
               <Label htmlFor="emp-phone">Phone</Label>
               <Input id="emp-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="digits" />
             </div>
-            <div className="space-y-1 sm:col-span-2">
+            <div className="space-y-1 sm:col-span-2 lg:col-span-3">
               <Label htmlFor="emp-name">Name</Label>
               <Input id="emp-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Employee name" />
             </div>
@@ -390,123 +414,50 @@ function EmployeesTab({
             </div>
             <div className="space-y-1">
               <Label htmlFor="emp-active">Active (true/false)</Label>
-              <Select value={active ? "true" : "false"} onValueChange={(v) => setActive(v === "true")}>
-                <SelectTrigger id="emp-active">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                id="emp-active"
+                options={[
+                  { value: "true", label: "Active" },
+                  { value: "false", label: "Inactive" },
+                ]}
+                value={active ? "true" : "false"}
+                onValueChange={(v) => setActive(v === "true")}
+                placeholder="Status"
+                searchPlaceholder="Search…"
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="emp-monthly">Monthly salary (paise)</Label>
-              <Input id="emp-monthly" value={monthlySalary} onChange={(e) => setMonthlySalary(e.target.value)} className="font-mono" />
-              <p className="text-muted-foreground text-xs">Example: ₹25,000 = 2500000 paise</p>
+              <Label htmlFor="emp-monthly">Monthly salary (₹)</Label>
+              <Input
+                id="emp-monthly"
+                inputMode="decimal"
+                value={monthlySalary}
+                onChange={(e) => setMonthlySalary(e.target.value)}
+                placeholder="e.g. 25000"
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="emp-daily">Daily rate (paise)</Label>
-              <Input id="emp-daily" value={dailyRate} onChange={(e) => setDailyRate(e.target.value)} className="font-mono" />
+              <Label htmlFor="emp-daily">Daily rate (₹)</Label>
+              <Input
+                id="emp-daily"
+                inputMode="decimal"
+                value={dailyRate}
+                onChange={(e) => setDailyRate(e.target.value)}
+                placeholder="e.g. 800"
+              />
             </div>
             <div className="space-y-1">
               <Label htmlFor="emp-leaves">Paid leaves per month</Label>
               <Input id="emp-leaves" value={paidLeaves} onChange={(e) => setPaidLeaves(e.target.value)} className="font-mono" />
             </div>
-            <div className="space-y-1 sm:col-span-2">
+            <div className="space-y-1 sm:col-span-2 lg:col-span-3">
               <Label htmlFor="emp-address">Address / note</Label>
               <Textarea id="emp-address" value={address} onChange={(e) => setAddress(e.target.value)} rows={3} />
             </div>
           </div>
+          </div>
 
-          {editing ? (
-            <div className="space-y-3">
-              <div className="rounded-xl border bg-card p-4">
-                <p className="font-medium">Documents</p>
-                <p className="text-muted-foreground text-xs">
-                  Add document title and optional link (Google Drive, WhatsApp file link, etc.).
-                </p>
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <Label>Kind</Label>
-                    <Select value={docKind} onValueChange={(v) => setDocKind(v as EmployeeDoc["kind"])}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ID_PROOF">ID proof</SelectItem>
-                        <SelectItem value="ADDRESS_PROOF">Address proof</SelectItem>
-                        <SelectItem value="CONTRACT">Contract</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Title</Label>
-                    <Input value={docTitle} onChange={(e) => setDocTitle(e.target.value)} placeholder="e.g. Aadhaar" />
-                  </div>
-                  <div className="space-y-1 sm:col-span-2">
-                    <Label>File URL (optional)</Label>
-                    <Input value={docUrl} onChange={(e) => setDocUrl(e.target.value)} className="font-mono text-xs" />
-                  </div>
-                  <div className="space-y-1 sm:col-span-2">
-                    <Label>Note (optional)</Label>
-                    <Textarea value={docNote} onChange={(e) => setDocNote(e.target.value)} rows={2} />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Button type="button" variant="outline" onClick={() => void addDoc()}>
-                      Add document
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="mt-4 overflow-auto rounded-lg border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Kind</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>URL</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {docs.length ? (
-                        docs.map((d) => (
-                          <TableRow key={d.id}>
-                            <TableCell className="font-mono text-xs">{d.kind}</TableCell>
-                            <TableCell className="font-medium">{d.title}</TableCell>
-                            <TableCell className="max-w-[220px] truncate font-mono text-xs text-muted-foreground">
-                              {d.fileUrl || "-"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive"
-                                onClick={() => void deleteDoc(d.id)}
-                              >
-                                Delete
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-muted-foreground text-sm">
-                            No documents added yet.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          <DialogFooter>
+          <DialogFooter className="shrink-0 border-t px-6 py-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>
               Cancel
             </Button>
@@ -632,21 +583,21 @@ function AttendanceTab({
                   const disabled = savingKey === k;
                   return (
                     <TableCell key={dayKey} className="p-1 text-center">
-                      <Select
+                      <SearchableSelect
+                        options={[
+                          { value: "WORKED", label: "W", searchText: "Worked" },
+                          { value: "LEAVE", label: "L", searchText: "Leave" },
+                          { value: "ABSENT", label: "A", searchText: "Absent" },
+                          { value: "WORKED_ON_LEAVE", label: "WL", searchText: "Worked on leave" },
+                        ]}
                         value={v}
-                        onValueChange={(nv) => void setKind(e.id, dayKey, nv as AttendanceKind)}
+                        onValueChange={(nv) =>
+                          void setKind(e.id, dayKey, nv as AttendanceKind)
+                        }
                         disabled={disabled}
-                      >
-                        <SelectTrigger className="h-8 w-14 px-1 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="WORKED">W</SelectItem>
-                          <SelectItem value="LEAVE">L</SelectItem>
-                          <SelectItem value="ABSENT">A</SelectItem>
-                          <SelectItem value="WORKED_ON_LEAVE">WL</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        triggerClassName="h-8 min-w-[3.5rem] px-1 text-xs"
+                        searchPlaceholder="W / L / A…"
+                      />
                     </TableCell>
                   );
                 })}
@@ -667,7 +618,7 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
 
   const [employeeId, setEmployeeId] = useState<string>(employees[0]?.id ?? "");
   const [occurredAt, setOccurredAt] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [amountPaise, setAmountPaise] = useState("0");
+  const [amountRupees, setAmountRupees] = useState("");
   const [method, setMethod] = useState<AdvanceMethod>("CASH");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
@@ -700,7 +651,7 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
         body: JSON.stringify({
           employeeId,
           occurredAt: new Date(occurredAt).toISOString(),
-          amountPaise: Number.parseInt(amountPaise || "0", 10),
+          amountPaise: rupeesToPaise(amountRupees || "0"),
           method,
           reference,
           note,
@@ -755,7 +706,7 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
                 <TableCell className="font-mono text-xs">{String(r.occurredAt).slice(0, 10)}</TableCell>
                 <TableCell className="font-medium">{r.employee.name}</TableCell>
                 <TableCell className="font-mono text-xs">{r.method}</TableCell>
-                <TableCell className="text-right">{formatPaise(r.amountPaise)}</TableCell>
+                <TableCell className="text-right">{formatRupees(r.amountPaise)}</TableCell>
                 <TableCell className="text-muted-foreground">{r.reference || "-"}</TableCell>
                 <TableCell className="text-muted-foreground">{r.note || "-"}</TableCell>
               </TableRow>
@@ -772,18 +723,13 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1 sm:col-span-2">
               <Label>Employee</Label>
-              <Select value={employeeId} onValueChange={(v) => setEmployeeId(v ?? "")}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={employees.map((e) => ({ value: e.id, label: e.name }))}
+                value={employeeId}
+                onValueChange={setEmployeeId}
+                placeholder="Employee"
+                searchPlaceholder="Search employees…"
+              />
             </div>
             <div className="space-y-1">
               <Label>Date</Label>
@@ -791,20 +737,26 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
             </div>
             <div className="space-y-1">
               <Label>Method</Label>
-              <Select value={method} onValueChange={(v) => setMethod(v as AdvanceMethod)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CASH">Cash</SelectItem>
-                  <SelectItem value="RECHARGE">Recharge</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={[
+                  { value: "CASH", label: "Cash" },
+                  { value: "RECHARGE", label: "Recharge" },
+                  { value: "OTHER", label: "Other" },
+                ]}
+                value={method}
+                onValueChange={(v) => setMethod(v as AdvanceMethod)}
+                placeholder="Method"
+                searchPlaceholder="Search method…"
+              />
             </div>
             <div className="space-y-1">
-              <Label>Amount (paise)</Label>
-              <Input value={amountPaise} onChange={(e) => setAmountPaise(e.target.value)} className="font-mono" />
+              <Label>Amount (₹)</Label>
+              <Input
+                inputMode="decimal"
+                placeholder="0.00"
+                value={amountRupees}
+                onChange={(e) => setAmountRupees(e.target.value)}
+              />
             </div>
             <div className="space-y-1">
               <Label>Reference</Label>
@@ -952,11 +904,11 @@ function PayrunTab({ monthKey }: { monthKey: string }) {
               {(run.lines ?? []).map((l) => (
                 <TableRow key={l.id}>
                   <TableCell className="font-medium">{l.employee?.name ?? l.employeeId}</TableCell>
-                  <TableCell className="text-right">{formatPaise(l.monthlySalaryPaise)}</TableCell>
-                  <TableCell className="text-right">{formatPaise(l.extrasPaise)}</TableCell>
-                  <TableCell className="text-right">{formatPaise(l.deductionsPaise)}</TableCell>
-                  <TableCell className="text-right">{formatPaise(l.advancesPaise)}</TableCell>
-                  <TableCell className="text-right font-semibold">{formatPaise(l.netPayPaise)}</TableCell>
+                  <TableCell className="text-right">{formatRupees(l.monthlySalaryPaise)}</TableCell>
+                  <TableCell className="text-right">{formatRupees(l.extrasPaise)}</TableCell>
+                  <TableCell className="text-right">{formatRupees(l.deductionsPaise)}</TableCell>
+                  <TableCell className="text-right">{formatRupees(l.advancesPaise)}</TableCell>
+                  <TableCell className="text-right font-semibold">{formatRupees(l.netPayPaise)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

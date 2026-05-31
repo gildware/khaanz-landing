@@ -6,12 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboardIcon,
-  LayersIcon,
   UtensilsCrossedIcon,
-  PlusSquareIcon,
   LogOutIcon,
   SettingsIcon,
-  BoxesIcon,
   ClipboardListIcon,
   StoreIcon,
   LayoutGridIcon,
@@ -39,10 +36,11 @@ const links: {
   { href: "/admin/expenses", label: "Expenses", icon: IndianRupeeIcon },
   { href: "/admin/floor-plan", label: "Table layout", icon: LayoutGridIcon },
   { href: "/admin/pos", label: "POS", icon: StoreIcon, openInNewTab: true },
-  { href: "/admin/categories", label: "Categories", icon: LayersIcon },
-  { href: "/admin/items", label: "Menu items", icon: UtensilsCrossedIcon },
-  { href: "/admin/combos", label: "Combos", icon: BoxesIcon },
-  { href: "/admin/addons", label: "Add-ons", icon: PlusSquareIcon },
+  {
+    href: "/admin/menu",
+    label: "Menu catalogue",
+    icon: UtensilsCrossedIcon,
+  },
   { href: "/admin/payroll", label: "Payroll", icon: UsersIcon },
   { href: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];

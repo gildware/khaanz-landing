@@ -1,4 +1,4 @@
-/** OS family for choosing a desktop POS installer link in admin. */
+/** OS family for choosing an offline POS desktop installer link in admin. */
 export type DesktopPosClientOs = "mac" | "windows" | "linux" | "unknown";
 
 /**

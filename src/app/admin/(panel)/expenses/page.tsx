@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Table,
   TableBody,
@@ -15,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatRupees, rupeesToPaise } from "@/lib/payroll/payroll-utils";
 
 type ExpenseCategoryGroup = "RAW_MATERIAL" | "BILLS" | "OTHER";
 type PersonalUseKind = "CASH" | "STOCK" | "ORDER" | "OTHER";
@@ -75,11 +77,6 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
     );
   }
   return json as T;
-}
-
-function formatPaise(paise: number): string {
-  const rupees = paise / 100;
-  return rupees.toLocaleString("en-IN", { style: "currency", currency: "INR" });
 }
 
 function toLocalInputValue(d: Date): string {
@@ -195,12 +192,12 @@ export default function AdminExpensesPage() {
 
   const [newExpense, setNewExpense] = useState<{
     categoryId: string;
-    amountPaise: string;
+    amountRupees: string;
     occurredAt: string;
     note: string;
   }>({
     categoryId: "",
-    amountPaise: "",
+    amountRupees: "",
     occurredAt: toLocalInputValue(new Date()),
     note: "",
   });
@@ -211,13 +208,13 @@ export default function AdminExpensesPage() {
         method: "POST",
         body: JSON.stringify({
           categoryId: newExpense.categoryId,
-          amountPaise: Number(newExpense.amountPaise),
+          amountPaise: rupeesToPaise(newExpense.amountRupees),
           occurredAt: new Date(newExpense.occurredAt).toISOString(),
           note: newExpense.note,
         }),
       });
       toast.success("Expense recorded");
-      setNewExpense((x) => ({ ...x, amountPaise: "", note: "" }));
+      setNewExpense((x) => ({ ...x, amountRupees: "", note: "" }));
       await Promise.all([loadExpenses(), loadSummary()]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Create failed");
@@ -227,7 +224,7 @@ export default function AdminExpensesPage() {
   const [newPersonal, setNewPersonal] = useState<{
     kind: PersonalUseKind;
     occurredAt: string;
-    cashAmountPaise: string;
+    cashAmountRupees: string;
     inventoryItemId: string;
     qtyBase: string;
     orderId: string;
@@ -235,7 +232,7 @@ export default function AdminExpensesPage() {
   }>({
     kind: "CASH",
     occurredAt: toLocalInputValue(new Date()),
-    cashAmountPaise: "",
+    cashAmountRupees: "",
     inventoryItemId: "",
     qtyBase: "",
     orderId: "",
@@ -249,7 +246,7 @@ export default function AdminExpensesPage() {
         body: JSON.stringify({
           kind: newPersonal.kind,
           occurredAt: new Date(newPersonal.occurredAt).toISOString(),
-          cashAmountPaise: Number(newPersonal.cashAmountPaise),
+          cashAmountPaise: rupeesToPaise(newPersonal.cashAmountRupees),
           inventoryItemId: newPersonal.inventoryItemId,
           qtyBase: newPersonal.qtyBase,
           orderId: newPersonal.orderId,
@@ -259,7 +256,7 @@ export default function AdminExpensesPage() {
       toast.success("Personal use saved");
       setNewPersonal((x) => ({
         ...x,
-        cashAmountPaise: "",
+        cashAmountRupees: "",
         qtyBase: "",
         orderId: "",
         note: "",
@@ -304,13 +301,13 @@ export default function AdminExpensesPage() {
             <div className="rounded-lg border border-border p-4">
               <p className="text-muted-foreground text-xs">Business expenses (total)</p>
               <p className="mt-1 font-semibold text-2xl">
-                {formatPaise(summary?.business.totalPaise ?? 0)}
+                {formatRupees(summary?.business.totalPaise ?? 0)}
               </p>
             </div>
             <div className="rounded-lg border border-border p-4">
               <p className="text-muted-foreground text-xs">Personal cash taken</p>
               <p className="mt-1 font-semibold text-2xl">
-                {formatPaise(summary?.personal.cashTotalPaise ?? 0)}
+                {formatRupees(summary?.personal.cashTotalPaise ?? 0)}
               </p>
               <p className="text-muted-foreground text-xs">
                 {summary?.personal.cashCount ?? 0} entries
@@ -343,17 +340,19 @@ export default function AdminExpensesPage() {
             </div>
             <div className="space-y-2">
               <Label>Group</Label>
-              <select
-                className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+              <SearchableSelect
+                options={[
+                  { value: "RAW_MATERIAL", label: "RAW_MATERIAL" },
+                  { value: "BILLS", label: "BILLS" },
+                  { value: "OTHER", label: "OTHER" },
+                ]}
                 value={newCategory.group}
-                onChange={(e) =>
-                  setNewCategory((x) => ({ ...x, group: e.target.value as ExpenseCategoryGroup }))
+                onValueChange={(v) =>
+                  setNewCategory((x) => ({ ...x, group: v as ExpenseCategoryGroup }))
                 }
-              >
-                <option value="RAW_MATERIAL">RAW_MATERIAL</option>
-                <option value="BILLS">BILLS</option>
-                <option value="OTHER">OTHER</option>
-              </select>
+                placeholder="Group"
+                searchPlaceholder="Search group…"
+              />
             </div>
             <div className="md:col-span-3">
               <Button type="button" onClick={() => void createCategory()}>
@@ -394,29 +393,28 @@ export default function AdminExpensesPage() {
           <div className="grid gap-3 rounded-lg border border-border p-4 md:grid-cols-4">
             <div className="space-y-2 md:col-span-2">
               <Label>Category</Label>
-              <select
-                className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+              <SearchableSelect
+                options={categories.map((c) => ({
+                  value: c.id,
+                  label: `${c.name} (${c.group})`,
+                  searchText: c.group,
+                }))}
                 value={newExpense.categoryId}
-                onChange={(e) =>
-                  setNewExpense((x) => ({ ...x, categoryId: e.target.value }))
+                onValueChange={(v) =>
+                  setNewExpense((x) => ({ ...x, categoryId: v }))
                 }
-              >
-                <option value="">Select…</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.group})
-                  </option>
-                ))}
-              </select>
+                placeholder="Select category…"
+                searchPlaceholder="Search categories…"
+              />
             </div>
 
             <div className="space-y-2">
-              <Label>Amount (paise)</Label>
+              <Label>Amount (₹)</Label>
               <Input
-                inputMode="numeric"
-                value={newExpense.amountPaise}
-                onChange={(e) => setNewExpense((x) => ({ ...x, amountPaise: e.target.value }))}
-                placeholder="e.g. 15000"
+                inputMode="decimal"
+                value={newExpense.amountRupees}
+                onChange={(e) => setNewExpense((x) => ({ ...x, amountRupees: e.target.value }))}
+                placeholder="e.g. 150"
               />
             </div>
 
@@ -472,7 +470,7 @@ export default function AdminExpensesPage() {
                       <span className="text-muted-foreground text-xs"> ({e.category.group})</span>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs">{e.note || "—"}</TableCell>
-                    <TableCell className="text-right">{formatPaise(e.amountPaise)}</TableCell>
+                    <TableCell className="text-right">{formatRupees(e.amountPaise)}</TableCell>
                   </TableRow>
                 ))
               )}
@@ -484,18 +482,20 @@ export default function AdminExpensesPage() {
           <div className="grid gap-3 rounded-lg border border-border p-4 md:grid-cols-4">
             <div className="space-y-2">
               <Label>Type</Label>
-              <select
-                className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+              <SearchableSelect
+                options={[
+                  { value: "CASH", label: "CASH" },
+                  { value: "STOCK", label: "STOCK" },
+                  { value: "ORDER", label: "ORDER" },
+                  { value: "OTHER", label: "OTHER" },
+                ]}
                 value={newPersonal.kind}
-                onChange={(e) =>
-                  setNewPersonal((x) => ({ ...x, kind: e.target.value as PersonalUseKind }))
+                onValueChange={(v) =>
+                  setNewPersonal((x) => ({ ...x, kind: v as PersonalUseKind }))
                 }
-              >
-                <option value="CASH">CASH</option>
-                <option value="STOCK">STOCK</option>
-                <option value="ORDER">ORDER</option>
-                <option value="OTHER">OTHER</option>
-              </select>
+                placeholder="Type"
+                searchPlaceholder="Search type…"
+              />
             </div>
 
             <div className="space-y-2">
@@ -509,14 +509,14 @@ export default function AdminExpensesPage() {
 
             {newPersonal.kind === "CASH" && (
               <div className="space-y-2 md:col-span-2">
-                <Label>Cash amount (paise)</Label>
+                <Label>Cash amount (₹)</Label>
                 <Input
-                  inputMode="numeric"
-                  value={newPersonal.cashAmountPaise}
+                  inputMode="decimal"
+                  value={newPersonal.cashAmountRupees}
                   onChange={(e) =>
-                    setNewPersonal((x) => ({ ...x, cashAmountPaise: e.target.value }))
+                    setNewPersonal((x) => ({ ...x, cashAmountRupees: e.target.value }))
                   }
-                  placeholder="e.g. 5000"
+                  placeholder="e.g. 50"
                 />
               </div>
             )}
@@ -525,22 +525,21 @@ export default function AdminExpensesPage() {
               <>
                 <div className="space-y-2 md:col-span-2">
                   <Label>Stock item</Label>
-                  <select
-                    className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
-                    value={newPersonal.inventoryItemId}
-                    onChange={(e) =>
-                      setNewPersonal((x) => ({ ...x, inventoryItemId: e.target.value }))
-                    }
-                  >
-                    <option value="">Select…</option>
-                    {invItems
+                  <SearchableSelect
+                    options={invItems
                       .filter((x) => x.active)
-                      .map((it) => (
-                        <option key={it.id} value={it.id}>
-                          {it.name} ({it.baseUnit})
-                        </option>
-                      ))}
-                  </select>
+                      .map((it) => ({
+                        value: it.id,
+                        label: `${it.name} (${it.baseUnit})`,
+                        searchText: it.name,
+                      }))}
+                    value={newPersonal.inventoryItemId}
+                    onValueChange={(v) =>
+                      setNewPersonal((x) => ({ ...x, inventoryItemId: v }))
+                    }
+                    placeholder="Select item…"
+                    searchPlaceholder="Search items…"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Qty (base)</Label>
@@ -621,7 +620,7 @@ export default function AdminExpensesPage() {
                       ) : p.kind === "ORDER" ? (
                         <>
                           {p.order?.orderRef ?? p.orderId} ·{" "}
-                          {p.order ? formatPaise(p.order.totalMinor) : "—"}
+                          {p.order ? formatRupees(p.order.totalMinor) : "—"}
                         </>
                       ) : (
                         p.note || "—"
@@ -629,7 +628,7 @@ export default function AdminExpensesPage() {
                       {p.note && p.kind !== "CASH" ? ` · ${p.note}` : ""}
                     </TableCell>
                     <TableCell className="text-right">
-                      {p.kind === "CASH" ? formatPaise(p.cashAmountPaise) : "—"}
+                      {p.kind === "CASH" ? formatRupees(p.cashAmountPaise) : "—"}
                     </TableCell>
                   </TableRow>
                 ))

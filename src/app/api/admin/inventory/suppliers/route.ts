@@ -32,8 +32,6 @@ export async function POST(request: Request) {
   }
   const phone =
     typeof body.phone === "string" ? body.phone.trim().slice(0, 32) : "";
-  const email =
-    typeof body.email === "string" ? body.email.trim().slice(0, 120) : "";
   const address =
     typeof body.address === "string" ? body.address.trim().slice(0, 4000) : "";
   let defaultCreditDays: number | null = null;
@@ -53,7 +51,6 @@ export async function POST(request: Request) {
     data: {
       name: name.slice(0, 200),
       phone,
-      email,
       address,
       defaultCreditDays,
     },
