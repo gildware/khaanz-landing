@@ -1048,7 +1048,7 @@ export default function AdminPosPage() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-0 overflow-hidden rounded-xl border bg-card shadow-sm max-lg:grid-rows-[minmax(0,1fr)_minmax(min(34rem,58dvh),auto)] lg:grid-cols-[1fr_min(520px,44%)]">
+      <div className="grid min-h-0 flex-1 gap-0 overflow-hidden rounded-xl border bg-card shadow-sm max-lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[1fr_min(520px,44%)]">
         <div className="flex min-h-0 min-w-0 flex-col border-b lg:border-r lg:border-b-0">
           <div className="shrink-0 space-y-3 border-b bg-muted/30 p-3">
             <Input
@@ -1197,7 +1197,7 @@ export default function AdminPosPage() {
           </div>
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-t bg-muted/20 max-lg:min-h-[min(34rem,58dvh)] lg:min-h-0 lg:border-t-0">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-t bg-muted/20 lg:min-h-0 lg:border-t-0">
           <div className="shrink-0 border-b p-3">
             <p className="mb-2 font-medium text-sm">Order type</p>
             <div className="flex flex-wrap gap-2">
@@ -1320,7 +1320,7 @@ export default function AdminPosPage() {
             </div>
           </details>
 
-          <div className="flex min-h-[29.5rem] flex-1 flex-col overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="shrink-0 px-3 pt-3 pb-2">
               <p className="font-medium text-sm">Preview</p>
               {cart.length > 0 ? (
@@ -1336,7 +1336,7 @@ export default function AdminPosPage() {
               ) : null}
             </div>
 
-            <div className="min-h-[calc(4.5rem*6+0.5rem*5)] flex-1 overflow-y-auto overflow-x-hidden px-3">
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3">
               {cart.length === 0 ? (
                 <p className="text-muted-foreground text-sm">
                   Tap items on the left to build an order.
