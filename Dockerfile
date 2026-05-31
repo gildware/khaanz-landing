@@ -22,6 +22,8 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# Runtime: resolve latest desktop POS installers from GitHub (no rebuild needed to change repo).
+ENV DESKTOP_POS_GITHUB_REPO=gildware/khaanz-desktop-pos
 
 COPY --from=builder /app/package*.json ./
 # Avoid running `postinstall` in the slim runtime image (it would try to run

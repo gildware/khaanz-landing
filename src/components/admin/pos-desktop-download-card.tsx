@@ -7,7 +7,6 @@ import { DownloadIcon, ExternalLinkIcon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import {
   detectDesktopPosClientOs,
-  getDesktopPosDownloadUrls,
   type DesktopPosClientOs,
 } from "@/lib/pos-desktop-download-config";
 import { formatTimeAgo } from "@/lib/pos-desktop-github-releases";
@@ -47,13 +46,18 @@ export function DesktopPosDownloadCard() {
     return () => window.clearInterval(id);
   }, []);
 
-  const envUrls = getDesktopPosDownloadUrls();
-  const { data: release } = useSWR<ReleaseApi>("/api/desktop-pos/releases", releaseFetcher, {
-    revalidateOnFocus: false,
+  const {
+    data: release,
+    error: releaseError,
+    isLoading: releaseLoading,
+    mutate: refreshRelease,
+  } = useSWR<ReleaseApi>("/api/desktop-pos/releases", releaseFetcher, {
+    revalidateOnFocus: true,
+    refreshInterval: 5 * 60_000,
   });
 
-  const mac = envUrls.mac || release?.mac || "";
-  const windows = envUrls.windows || release?.windows || "";
+  const mac = release?.mac || "";
+  const windows = release?.windows || "";
   const hasMac = Boolean(mac);
   const hasWin = Boolean(windows);
   const hasAny = hasMac || hasWin;
@@ -98,22 +102,38 @@ export function DesktopPosDownloadCard() {
         </p>
       </div>
 
-      {!hasAny ? (
-        <p className="text-muted-foreground text-sm">
-          Installers appear here after a GitHub Release is published from{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">pos-desktop</code> (push to{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">main</code> or tag{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">v*</code>). Optional overrides:{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">
-            NEXT_PUBLIC_DESKTOP_POS_MAC_URL
-          </code>
-          ,{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">
-            NEXT_PUBLIC_DESKTOP_POS_WINDOWS_URL
-          </code>
+      {releaseLoading && !release ? (
+        <p className="text-muted-foreground text-sm">Loading latest desktop release from GitHub…</p>
+      ) : null}
+
+      {releaseError ? (
+        <p className="text-destructive text-sm">
+          Could not load release info from GitHub. Redeploy khaanz with the latest code, then{" "}
+          <button
+            type="button"
+            className="underline underline-offset-4"
+            onClick={() => void refreshRelease()}
+          >
+            retry
+          </button>
           .
         </p>
-      ) : (
+      ) : null}
+
+      {!hasAny && !releaseLoading ? (
+        <p className="text-muted-foreground text-sm">
+          Installers appear here after a GitHub Release is published from{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">gildware/khaanz-desktop-pos</code>{" "}
+          (push <code className="rounded bg-muted px-1 py-0.5 text-xs">pos-desktop</code> to{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">main</code>). Remove stale{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">
+            NEXT_PUBLIC_DESKTOP_POS_*_URL
+          </code>{" "}
+          env vars if downloads point to an old repo.
+        </p>
+      ) : null}
+
+      {hasAny ? (
         <>
           <p className="text-muted-foreground text-xs">
             This browser:{" "}
@@ -228,18 +248,15 @@ export function DesktopPosDownloadCard() {
                   </>
                 ) : null}
                 {" "}
-                · Installed apps auto-update from GitHub.
+                · Download links always use the latest GitHub Release · Installed apps
+                auto-update from GitHub.
               </>
             ) : (
-              <>
-                Dev: <code className="rounded bg-muted px-1 py-0.5">npm run desktop</code> · Ship: push{" "}
-                <code className="rounded bg-muted px-1 py-0.5">pos-desktop</code> to{" "}
-                <code className="rounded bg-muted px-1 py-0.5">main</code>
-              </>
+              <>Download links loaded · checking GitHub for version…</>
             )}
           </p>
         </>
-      )}
+      ) : null}
 
       {hasAny ? (
         <a
