@@ -68,7 +68,7 @@ export async function fetchLatestDesktopPosReleaseUrls(): Promise<DesktopPosRele
       Accept: "application/vnd.github+json",
       "User-Agent": "khaanz-admin",
     },
-    next: { revalidate: 300 },
+    cache: "no-store",
   });
 
   if (!res.ok) return null;

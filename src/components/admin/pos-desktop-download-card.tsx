@@ -53,7 +53,8 @@ export function DesktopPosDownloadCard() {
     mutate: refreshRelease,
   } = useSWR<ReleaseApi>("/api/desktop-pos/releases", releaseFetcher, {
     revalidateOnFocus: true,
-    refreshInterval: 5 * 60_000,
+    dedupingInterval: 15_000,
+    refreshInterval: 60_000,
   });
 
   const mac = release?.mac || "";
@@ -222,17 +223,20 @@ export function DesktopPosDownloadCard() {
           <p className="text-muted-foreground text-xs">
             {release?.version ? (
               <>
-                Latest app available{" "}
-                {publishedAgo ? (
-                  <span
-                    className="font-medium text-foreground"
-                    title={publishedExact ?? undefined}
-                  >
-                    {publishedAgo}
-                  </span>
-                ) : null}
-                {publishedAgo ? " · " : null}
+                Latest release{" "}
                 <span className="font-medium text-foreground">v{release.version}</span>
+                {publishedAgo ? (
+                  <>
+                    {" "}
+                    · published{" "}
+                    <span
+                      className="font-medium text-foreground"
+                      title={publishedExact ?? undefined}
+                    >
+                      {publishedAgo}
+                    </span>
+                  </>
+                ) : null}
                 {release.releaseUrl ? (
                   <>
                     {" "}
@@ -248,7 +252,7 @@ export function DesktopPosDownloadCard() {
                   </>
                 ) : null}
                 {" "}
-                · Download links always use the latest GitHub Release · Installed apps
+                · Downloads always point at the current GitHub Release · Installed apps
                 auto-update from GitHub.
               </>
             ) : (
