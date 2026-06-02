@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from "@/hooks/use-tab-param";
 import {
   DataTableToolbar,
   selectControlClassName,
@@ -246,6 +247,7 @@ function resetBusinessDraft(): {
 }
 
 export default function AdminExpensesPage() {
+  const [activeTab, setActiveTab] = useTabParam("business");
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [expenseEntries, setExpenseEntries] = useState<ExpenseEntry[]>([]);
   const [personalEntries, setPersonalEntries] = useState<PersonalUseEntry[]>([]);
@@ -568,7 +570,7 @@ export default function AdminExpensesPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="business">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="business" className="data-[state=active]:font-semibold">
             Business expenses

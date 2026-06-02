@@ -9,6 +9,7 @@ import {
   PlusCircleIcon,
   PlusIcon,
   Settings2Icon,
+  Trash2Icon,
   TruckIcon,
   WalletIcon,
   WarehouseIcon,
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -58,6 +60,7 @@ import {
   paiseToRupeesNumber,
   rupeesToPaise,
 } from "@/lib/payroll/payroll-utils";
+import { useTabParam } from "@/hooks/use-tab-param";
 
 function cx(...x: Array<string | false | null | undefined>): string {
   return x.filter(Boolean).join(" ");
@@ -760,6 +763,34 @@ export default function AdminInventoryPage() {
     }
   };
 
+  const [deletingItem, setDeletingItem] = useState<InvItem | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+
+  const confirmDeleteItem = async () => {
+    if (!deletingItem) return;
+    setDeleteSubmitting(true);
+    try {
+      const res = await adminFetch<{ deleted?: boolean; archived?: boolean }>(
+        `/api/admin/inventory/items/${deletingItem.id}`,
+        { method: "DELETE" },
+      );
+      if (res.archived) {
+        toast.success(
+          `"${deletingItem.name}" is used in existing records, so it was archived (deactivated) to keep history intact.`,
+        );
+      } else {
+        toast.success(`"${deletingItem.name}" deleted`);
+      }
+      setDeletingItem(null);
+      await loadItems();
+      await loadSummary();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  };
+
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [editingSupplierId, setEditingSupplierId] = useState<string | null>(null);
   const [supplierForm, setSupplierForm] = useState(emptySupplierForm);
@@ -812,6 +843,34 @@ export default function AdminInventoryPage() {
       await loadSummary();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
+    }
+  };
+
+  const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null);
+  const [supplierDeleteSubmitting, setSupplierDeleteSubmitting] = useState(false);
+
+  const confirmDeleteSupplier = async () => {
+    if (!deletingSupplier) return;
+    setSupplierDeleteSubmitting(true);
+    try {
+      const res = await adminFetch<{ archived?: boolean }>(
+        `/api/admin/inventory/suppliers/${deletingSupplier.id}`,
+        { method: "DELETE" },
+      );
+      if (res.archived) {
+        toast.success(
+          `"${deletingSupplier.name}" has purchase history, so it was archived (deactivated) to keep records intact.`,
+        );
+      } else {
+        toast.success(`"${deletingSupplier.name}" deleted`);
+      }
+      setDeletingSupplier(null);
+      await loadSuppliers();
+      await loadSummary();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setSupplierDeleteSubmitting(false);
     }
   };
 
@@ -915,6 +974,32 @@ export default function AdminInventoryPage() {
     }
   };
 
+  const [deletingPurchase, setDeletingPurchase] = useState<PurchaseRow | null>(null);
+  const [purchaseDeleteSubmitting, setPurchaseDeleteSubmitting] = useState(false);
+
+  const confirmDeletePurchase = async () => {
+    if (!deletingPurchase) return;
+    setPurchaseDeleteSubmitting(true);
+    try {
+      await adminFetch(`/api/admin/inventory/purchases/${deletingPurchase.id}`, {
+        method: "DELETE",
+      });
+      toast.success(`Purchase ${deletingPurchase.batchRef} deleted and reversed`);
+      setDeletingPurchase(null);
+      await Promise.all([
+        loadItems(),
+        loadSummary(),
+        loadSuppliers(),
+        loadPurchases(),
+        loadMovements(),
+      ]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setPurchaseDeleteSubmitting(false);
+    }
+  };
+
   const [recipe, setRecipe] = useState({
     menuItemId: "",
     variationId: "",
@@ -988,6 +1073,26 @@ export default function AdminInventoryPage() {
       await loadRecipesList();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Recipe save failed");
+    }
+  };
+
+  const [deletingRecipe, setDeletingRecipe] = useState<RecipeRow | null>(null);
+  const [recipeDeleteSubmitting, setRecipeDeleteSubmitting] = useState(false);
+
+  const confirmDeleteRecipe = async () => {
+    if (!deletingRecipe) return;
+    setRecipeDeleteSubmitting(true);
+    try {
+      await adminFetch(`/api/admin/inventory/recipes/${deletingRecipe.id}`, {
+        method: "DELETE",
+      });
+      toast.success("Recipe version deleted");
+      setDeletingRecipe(null);
+      await loadRecipesList();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setRecipeDeleteSubmitting(false);
     }
   };
 
@@ -1141,13 +1246,13 @@ export default function AdminInventoryPage() {
   }, [items]);
 
   const [itemSearch, setItemSearch] = useState("");
-  const [itemStatusFilter, setItemStatusFilter] = useState<ActiveFilter>("all");
+  const [itemStatusFilter, setItemStatusFilter] = useState<ActiveFilter>("active");
   const [itemCategoryFilter, setItemCategoryFilter] = useState("all");
   const [itemStockFilter, setItemStockFilter] = useState<"all" | "low">("all");
   const [itemSort, setItemSort] = useState("name-asc");
 
   const [supplierSearch, setSupplierSearch] = useState("");
-  const [supplierStatusFilter, setSupplierStatusFilter] = useState<ActiveFilter>("all");
+  const [supplierStatusFilter, setSupplierStatusFilter] = useState<ActiveFilter>("active");
   const [supplierSort, setSupplierSort] = useState("name-asc");
 
   const [purchaseSearch, setPurchaseSearch] = useState("");
@@ -1163,6 +1268,7 @@ export default function AdminInventoryPage() {
   const [movementTypeFilter, setMovementTypeFilter] = useState("all");
   const [movementSort, setMovementSort] = useState("date-desc");
   const [opsMenu, setOpsMenu] = useState<OpsMenuId>("opening");
+  const [activeTab, setActiveTab] = useTabParam("overview");
 
   const recipeVariationLabel = useCallback(
     (menuItemId: string, variationId: string | null) => {
@@ -1347,7 +1453,7 @@ export default function AdminInventoryPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
           <TabsTrigger value="overview" className="data-[state=active]:font-semibold">
             Overview
@@ -1687,7 +1793,7 @@ export default function AdminInventoryPage() {
                   <TableHead>Units</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-[5rem] text-right">Actions</TableHead>
+                  <TableHead className="w-[7rem] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1727,15 +1833,27 @@ export default function AdminInventoryPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditItem(r)}
-                        >
-                          <PencilIcon className="size-4" aria-hidden />
-                          <span className="sr-only">Edit {r.name}</span>
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditItem(r)}
+                          >
+                            <PencilIcon className="size-4" aria-hidden />
+                            <span className="sr-only">Edit {r.name}</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setDeletingItem(r)}
+                          >
+                            <Trash2Icon className="size-4" aria-hidden />
+                            <span className="sr-only">Delete {r.name}</span>
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -1899,6 +2017,78 @@ export default function AdminInventoryPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Dialog
+            open={deletingItem !== null}
+            onOpenChange={(open) => {
+              if (!open && !deleteSubmitting) setDeletingItem(null);
+            }}
+          >
+            <DialogContent className="sm:max-w-md" showCloseButton={!deleteSubmitting}>
+              <DialogHeader>
+                <DialogTitle>Delete item?</DialogTitle>
+                <DialogDescription render={<div />}>
+                  <div className="space-y-3 text-sm">
+                    <p>
+                      You are about to delete{" "}
+                      <span className="font-medium text-foreground">
+                        {deletingItem?.name}
+                      </span>
+                      . Here is what happens:
+                    </p>
+                    <ul className="list-disc space-y-1.5 pl-5">
+                      <li>
+                        If this item has{" "}
+                        <span className="font-medium text-foreground">no history</span> (no
+                        purchases, batches, stock movements, recipes, wastage, adjustments,
+                        audits, or personal-use records), it is{" "}
+                        <span className="font-medium text-foreground">
+                          permanently removed
+                        </span>
+                        .
+                      </li>
+                      <li>
+                        If it is{" "}
+                        <span className="font-medium text-foreground">used anywhere</span>, it
+                        is instead{" "}
+                        <span className="font-medium text-foreground">
+                          archived (deactivated)
+                        </span>{" "}
+                        to keep your records and reports intact.
+                      </li>
+                      <li>
+                        Archived items are hidden from this list and from item pickers
+                        (purchases, recipes, stock actions). Set the{" "}
+                        <span className="font-medium text-foreground">Status</span> filter to{" "}
+                        <span className="font-medium text-foreground">Inactive only</span> or{" "}
+                        <span className="font-medium text-foreground">All statuses</span> to
+                        view them again.
+                      </li>
+                    </ul>
+                    <p>This cannot be undone.</p>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={deleteSubmitting}
+                  onClick={() => setDeletingItem(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={deleteSubmitting}
+                  onClick={() => void confirmDeleteItem()}
+                >
+                  {deleteSubmitting ? "Deleting…" : "Delete item"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="suppliers" className="space-y-4 pt-4">
@@ -1939,7 +2129,7 @@ export default function AdminInventoryPage() {
                   <TableHead>Phone</TableHead>
                   <TableHead className="min-w-[12rem]">Address</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-[5rem] text-right">Actions</TableHead>
+                  <TableHead className="w-[7rem] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1973,15 +2163,27 @@ export default function AdminInventoryPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditSupplier(s)}
-                        >
-                          <PencilIcon className="size-4" aria-hidden />
-                          <span className="sr-only">Edit {s.name}</span>
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditSupplier(s)}
+                          >
+                            <PencilIcon className="size-4" aria-hidden />
+                            <span className="sr-only">Edit {s.name}</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setDeletingSupplier(s)}
+                          >
+                            <Trash2Icon className="size-4" aria-hidden />
+                            <span className="sr-only">Delete {s.name}</span>
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -2042,6 +2244,78 @@ export default function AdminInventoryPage() {
                 </Button>
                 <Button type="button" onClick={() => void saveSupplier()}>
                   {editingSupplierId ? "Save changes" : "Add supplier"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
+            open={deletingSupplier !== null}
+            onOpenChange={(open) => {
+              if (!open && !supplierDeleteSubmitting) setDeletingSupplier(null);
+            }}
+          >
+            <DialogContent
+              className="sm:max-w-md"
+              showCloseButton={!supplierDeleteSubmitting}
+            >
+              <DialogHeader>
+                <DialogTitle>Delete supplier?</DialogTitle>
+                <DialogDescription render={<div />}>
+                  <div className="space-y-3 text-sm">
+                    <p>
+                      You are about to delete{" "}
+                      <span className="font-medium text-foreground">
+                        {deletingSupplier?.name}
+                      </span>
+                      . Here is what happens:
+                    </p>
+                    <ul className="list-disc space-y-1.5 pl-5">
+                      <li>
+                        If this supplier has{" "}
+                        <span className="font-medium text-foreground">no history</span> (no
+                        purchases, payments, ledger entries, or returns), it is{" "}
+                        <span className="font-medium text-foreground">
+                          permanently removed
+                        </span>
+                        .
+                      </li>
+                      <li>
+                        If it has any history, it is instead{" "}
+                        <span className="font-medium text-foreground">
+                          archived (deactivated)
+                        </span>{" "}
+                        so purchases, payments, and payable balances stay intact.
+                      </li>
+                      <li>
+                        Archived suppliers are hidden from this list and from supplier
+                        pickers. Set the{" "}
+                        <span className="font-medium text-foreground">Status</span> filter to{" "}
+                        <span className="font-medium text-foreground">Inactive only</span> or{" "}
+                        <span className="font-medium text-foreground">All statuses</span> to
+                        view them again.
+                      </li>
+                    </ul>
+                    <p>This cannot be undone.</p>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={supplierDeleteSubmitting}
+                  onClick={() => setDeletingSupplier(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={supplierDeleteSubmitting}
+                  onClick={() => void confirmDeleteSupplier()}
+                >
+                  {supplierDeleteSubmitting ? "Deleting…" : "Delete supplier"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -2116,18 +2390,19 @@ export default function AdminInventoryPage() {
                   <TableHead>Payment</TableHead>
                   <TableHead className="text-right">Lines</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="w-[4rem] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {purchases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                       No purchases yet. Record your first purchase.
                     </TableCell>
                   </TableRow>
                 ) : filteredPurchases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                       No purchases match your search or filters.
                     </TableCell>
                   </TableRow>
@@ -2145,6 +2420,18 @@ export default function AdminInventoryPage() {
                       <TableCell className="text-right tabular-nums">{p.lineCount}</TableCell>
                       <TableCell className="text-right tabular-nums">
                         {formatRupees(p.totalPaise)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setDeletingPurchase(p)}
+                        >
+                          <Trash2Icon className="size-4" aria-hidden />
+                          <span className="sr-only">Delete purchase {p.batchRef}</span>
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -2362,6 +2649,80 @@ export default function AdminInventoryPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Dialog
+            open={deletingPurchase !== null}
+            onOpenChange={(open) => {
+              if (!open && !purchaseDeleteSubmitting) setDeletingPurchase(null);
+            }}
+          >
+            <DialogContent
+              className="sm:max-w-md"
+              showCloseButton={!purchaseDeleteSubmitting}
+            >
+              <DialogHeader>
+                <DialogTitle>Delete purchase?</DialogTitle>
+                <DialogDescription render={<div />}>
+                  <div className="space-y-3 text-sm">
+                    <p>
+                      You are about to delete purchase{" "}
+                      <span className="font-medium text-foreground">
+                        {deletingPurchase?.batchRef}
+                      </span>{" "}
+                      from{" "}
+                      <span className="font-medium text-foreground">
+                        {deletingPurchase?.supplierName}
+                      </span>
+                      . This fully reverses it:
+                    </p>
+                    <ul className="list-disc space-y-1.5 pl-5">
+                      <li>
+                        The received quantities are{" "}
+                        <span className="font-medium text-foreground">
+                          removed from stock
+                        </span>{" "}
+                        and the stock batches and movements are deleted.
+                      </li>
+                      <li>
+                        The supplier{" "}
+                        <span className="font-medium text-foreground">ledger debit</span> is
+                        reversed, and any auto-settled{" "}
+                        <span className="font-medium text-foreground">cash payment</span> is
+                        removed. Item costs are recalculated.
+                      </li>
+                      <li>
+                        This is only allowed while{" "}
+                        <span className="font-medium text-foreground">
+                          none of the received stock has been used
+                        </span>{" "}
+                        (sold, wasted, adjusted, or returned). Otherwise the delete is
+                        blocked to protect your records.
+                      </li>
+                    </ul>
+                    <p>This cannot be undone.</p>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={purchaseDeleteSubmitting}
+                  onClick={() => setDeletingPurchase(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={purchaseDeleteSubmitting}
+                  onClick={() => void confirmDeletePurchase()}
+                >
+                  {purchaseDeleteSubmitting ? "Deleting…" : "Delete purchase"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="recipes" className="space-y-4 pt-4">
@@ -2421,7 +2782,7 @@ export default function AdminInventoryPage() {
                   <TableHead>Variation</TableHead>
                   <TableHead>Effective from</TableHead>
                   <TableHead className="text-right">Ingredients</TableHead>
-                  <TableHead className="w-[5rem] text-right">Actions</TableHead>
+                  <TableHead className="w-[7rem] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -2451,15 +2812,29 @@ export default function AdminInventoryPage() {
                         {r.ingredients.length}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditRecipe(r)}
-                        >
-                          <PencilIcon className="size-4" aria-hidden />
-                          <span className="sr-only">Edit recipe for {r.menuItemName}</span>
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditRecipe(r)}
+                          >
+                            <PencilIcon className="size-4" aria-hidden />
+                            <span className="sr-only">Edit recipe for {r.menuItemName}</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setDeletingRecipe(r)}
+                          >
+                            <Trash2Icon className="size-4" aria-hidden />
+                            <span className="sr-only">
+                              Delete recipe for {r.menuItemName}
+                            </span>
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -2589,6 +2964,73 @@ export default function AdminInventoryPage() {
                 </Button>
                 <Button type="button" onClick={() => void submitRecipe()}>
                   Save version
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
+            open={deletingRecipe !== null}
+            onOpenChange={(open) => {
+              if (!open && !recipeDeleteSubmitting) setDeletingRecipe(null);
+            }}
+          >
+            <DialogContent
+              className="sm:max-w-md"
+              showCloseButton={!recipeDeleteSubmitting}
+            >
+              <DialogHeader>
+                <DialogTitle>Delete recipe version?</DialogTitle>
+                <DialogDescription render={<div />}>
+                  <div className="space-y-3 text-sm">
+                    <p>
+                      You are about to delete the recipe version for{" "}
+                      <span className="font-medium text-foreground">
+                        {deletingRecipe?.menuItemName}
+                      </span>
+                      {deletingRecipe?.label ? ` (${deletingRecipe.label})` : ""}. Here is
+                      what happens:
+                    </p>
+                    <ul className="list-disc space-y-1.5 pl-5">
+                      <li>
+                        This recipe version and its ingredient list are{" "}
+                        <span className="font-medium text-foreground">
+                          permanently removed
+                        </span>
+                        .
+                      </li>
+                      <li>
+                        New orders for this dish/variation will{" "}
+                        <span className="font-medium text-foreground">
+                          no longer deduct these ingredients
+                        </span>{" "}
+                        until another recipe version is in effect.
+                      </li>
+                      <li>
+                        Past orders and their stock movements are{" "}
+                        <span className="font-medium text-foreground">not affected</span>.
+                      </li>
+                    </ul>
+                    <p>This cannot be undone.</p>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={recipeDeleteSubmitting}
+                  onClick={() => setDeletingRecipe(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={recipeDeleteSubmitting}
+                  onClick={() => void confirmDeleteRecipe()}
+                >
+                  {recipeDeleteSubmitting ? "Deleting…" : "Delete version"}
                 </Button>
               </DialogFooter>
             </DialogContent>

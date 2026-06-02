@@ -1,0 +1,376 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  EyeIcon,
+  EyeOffIcon,
+  GripVerticalIcon,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { MenuItemImage } from "@/components/MenuItemImage";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { useMenuData } from "@/contexts/menu-data-context";
+import { CategoryIcon } from "@/lib/category-icons";
+import { persistMenuLayout } from "@/lib/persist-menu-client";
+import { cn } from "@/lib/utils";
+import type { MenuCategoryDef } from "@/types/menu-category";
+import type { MenuItem } from "@/types/menu";
+
+const FALLBACK_ICON = "utensils-crossed";
+
+function moveInArray<T>(arr: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length) {
+    return arr;
+  }
+  const next = [...arr];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved!);
+  return next;
+}
+
+function itemIsVisible(item: MenuItem): boolean {
+  return item.available !== false;
+}
+
+export function HomeLayoutManager() {
+  const { data, isLoading, mutate } = useMenuData();
+
+  const [cats, setCats] = useState<MenuCategoryDef[]>([]);
+  const [groups, setGroups] = useState<Record<string, MenuItem[]>>({});
+  const [orphans, setOrphans] = useState<MenuItem[]>([]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const dragCat = useRef<number | null>(null);
+  const dragItem = useRef<{ cat: string; index: number } | null>(null);
+
+  // Sync local working copy from the menu payload. Skip while there are
+  // unsaved edits so a background SWR refresh can't clobber them.
+  useEffect(() => {
+    if (!data || dirty) return;
+    const nextCats = [...(data.categories ?? [])];
+    const names = new Set(nextCats.map((c) => c.name));
+    const nextGroups: Record<string, MenuItem[]> = {};
+    for (const c of nextCats) nextGroups[c.name] = [];
+    const nextOrphans: MenuItem[] = [];
+    for (const item of data.items ?? []) {
+      if (names.has(item.category)) nextGroups[item.category]!.push(item);
+      else nextOrphans.push(item);
+    }
+    setCats(nextCats);
+    setGroups(nextGroups);
+    setOrphans(nextOrphans);
+  }, [data, dirty]);
+
+  const totalHidden = useMemo(() => {
+    let n = 0;
+    for (const list of Object.values(groups)) {
+      for (const it of list) if (!itemIsVisible(it)) n += 1;
+    }
+    return n;
+  }, [groups]);
+
+  const moveCategory = (from: number, to: number) => {
+    setCats((prev) => moveInArray(prev, from, to));
+    setDirty(true);
+  };
+
+  const moveItem = (cat: string, from: number, to: number) => {
+    setGroups((prev) => ({
+      ...prev,
+      [cat]: moveInArray(prev[cat] ?? [], from, to),
+    }));
+    setDirty(true);
+  };
+
+  const setItemVisible = (cat: string, id: string, visible: boolean) => {
+    setGroups((prev) => ({
+      ...prev,
+      [cat]: (prev[cat] ?? []).map((i) =>
+        i.id === id ? { ...i, available: visible } : i,
+      ),
+    }));
+    setDirty(true);
+  };
+
+  const toggleExpanded = (name: string) => {
+    setExpanded((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
+
+  const discard = () => {
+    setDirty(false);
+    toast.message("Changes discarded");
+  };
+
+  const save = async () => {
+    if (!data) return;
+    setSaving(true);
+    const ordered: MenuItem[] = [];
+    for (const c of cats) {
+      for (const it of groups[c.name] ?? []) ordered.push(it);
+    }
+    for (const it of orphans) ordered.push(it);
+    try {
+      await persistMenuLayout({
+        categories: cats.map((c) => c.name),
+        items: ordered.map((it) => ({
+          id: it.id,
+          available: itemIsVisible(it),
+        })),
+      });
+      setDirty(false);
+      await mutate();
+      toast.success("Home layout saved");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (isLoading && !data) {
+    return (
+      <div className="text-muted-foreground text-sm">Loading menu…</div>
+    );
+  }
+
+  if (cats.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
+        <p className="font-medium text-muted-foreground">No categories yet.</p>
+        <p className="mt-1 text-muted-foreground text-sm">
+          Add categories in the Menu catalogue first, then arrange them here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="sticky top-0 z-10 -mx-1 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <p className="text-muted-foreground text-sm">
+          {dirty ? (
+            <span className="font-medium text-foreground">
+              You have unsaved changes
+            </span>
+          ) : (
+            <>
+              Drag to reorder. {totalHidden > 0 ? `${totalHidden} item${totalHidden === 1 ? "" : "s"} hidden.` : "All items visible."}
+            </>
+          )}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={discard}
+            disabled={!dirty || saving}
+          >
+            Discard
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => void save()}
+            disabled={!dirty || saving}
+          >
+            {saving ? "Saving…" : "Save layout"}
+          </Button>
+        </div>
+      </div>
+
+      <ul className="space-y-2">
+        {cats.map((cat, idx) => {
+          const list = groups[cat.name] ?? [];
+          const isOpen = expanded[cat.name] ?? false;
+          const hiddenInCat = list.filter((i) => !itemIsVisible(i)).length;
+          return (
+            <li
+              key={cat.name}
+              className="overflow-hidden rounded-xl border border-border bg-card"
+            >
+              <div
+                draggable
+                onDragStart={() => {
+                  dragCat.current = idx;
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  const from = dragCat.current;
+                  if (from === null || from === idx) return;
+                  moveCategory(from, idx);
+                  dragCat.current = idx;
+                }}
+                onDragEnd={() => {
+                  dragCat.current = null;
+                }}
+                className="flex cursor-grab items-center gap-2 px-2 py-2.5 active:cursor-grabbing sm:px-3"
+              >
+                <GripVerticalIcon className="size-4 shrink-0 text-muted-foreground/70" />
+                <CategoryIcon
+                  iconKey={cat.icon || FALLBACK_ICON}
+                  className="size-5 shrink-0 text-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(cat.name)}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                >
+                  <span className="truncate font-medium">{cat.name}</span>
+                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground tabular-nums">
+                    {list.length} item{list.length === 1 ? "" : "s"}
+                    {hiddenInCat > 0 ? ` · ${hiddenInCat} hidden` : ""}
+                  </span>
+                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Move category up"
+                    disabled={idx === 0}
+                    onClick={() => moveCategory(idx, idx - 1)}
+                  >
+                    <ArrowUpIcon />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Move category down"
+                    disabled={idx === cats.length - 1}
+                    onClick={() => moveCategory(idx, idx + 1)}
+                  >
+                    <ArrowDownIcon />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={isOpen ? "Collapse" : "Expand"}
+                    onClick={() => toggleExpanded(cat.name)}
+                  >
+                    {isOpen ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                  </Button>
+                </div>
+              </div>
+
+              {isOpen ? (
+                <div className="border-t border-border/70 bg-muted/20 p-2 sm:p-3">
+                  {list.length === 0 ? (
+                    <p className="px-2 py-3 text-muted-foreground text-sm">
+                      No items in this category.
+                    </p>
+                  ) : (
+                    <ul className="space-y-1.5">
+                      {list.map((item, i) => {
+                        const visible = itemIsVisible(item);
+                        return (
+                          <li
+                            key={item.id}
+                            draggable
+                            onDragStart={(e) => {
+                              e.stopPropagation();
+                              dragItem.current = { cat: cat.name, index: i };
+                            }}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const d = dragItem.current;
+                              if (!d || d.cat !== cat.name || d.index === i) {
+                                return;
+                              }
+                              moveItem(cat.name, d.index, i);
+                              dragItem.current = { cat: cat.name, index: i };
+                            }}
+                            onDragEnd={() => {
+                              dragItem.current = null;
+                            }}
+                            className={cn(
+                              "flex cursor-grab items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 active:cursor-grabbing",
+                              !visible && "opacity-60",
+                            )}
+                          >
+                            <GripVerticalIcon className="size-4 shrink-0 text-muted-foreground/70" />
+                            <div className="relative size-9 shrink-0 overflow-hidden rounded-md bg-muted">
+                              <MenuItemImage
+                                src={item.image}
+                                alt=""
+                                fill
+                                className="object-cover"
+                                sizes="36px"
+                              />
+                            </div>
+                            <span className="min-w-0 flex-1 truncate text-sm">
+                              {item.name}
+                            </span>
+                            <div className="flex shrink-0 items-center gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="Move item up"
+                                disabled={i === 0}
+                                onClick={() => moveItem(cat.name, i, i - 1)}
+                              >
+                                <ArrowUpIcon />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="Move item down"
+                                disabled={i === list.length - 1}
+                                onClick={() => moveItem(cat.name, i, i + 1)}
+                              >
+                                <ArrowDownIcon />
+                              </Button>
+                              <span
+                                className="ml-1 text-muted-foreground"
+                                title={visible ? "Visible" : "Hidden"}
+                              >
+                                {visible ? (
+                                  <EyeIcon className="size-4" />
+                                ) : (
+                                  <EyeOffIcon className="size-4" />
+                                )}
+                              </span>
+                              <Switch
+                                checked={visible}
+                                onCheckedChange={(v) =>
+                                  setItemVisible(cat.name, item.id, Boolean(v))
+                                }
+                                aria-label={
+                                  visible ? "Hide item" : "Show item"
+                                }
+                              />
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+
+      {orphans.length > 0 ? (
+        <p className="px-1 text-muted-foreground text-xs">
+          {orphans.length} item{orphans.length === 1 ? "" : "s"} without a
+          matching category are kept at the end of the menu.
+        </p>
+      ) : null}
+    </div>
+  );
+}

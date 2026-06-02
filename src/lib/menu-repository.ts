@@ -238,6 +238,46 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
   });
 }
 
+/**
+ * Home-layout save: reorder categories/items and toggle item visibility.
+ *
+ * Unlike `writeMenuPayload`, this performs targeted `sortOrder` / `available`
+ * updates only — it never deletes menu rows, so it is safe even when items or
+ * variations are referenced by wastage, recipes, vendor sales, etc.
+ */
+export async function writeMenuLayout(layout: {
+  categories: string[];
+  items: { id: string; available: boolean }[];
+}): Promise<void> {
+  const prisma = getPrisma();
+
+  await prisma.$transaction(async (tx) => {
+    const topCategories = await tx.category.findMany({
+      where: { parentId: null },
+      select: { id: true, name: true },
+    });
+    const idByName = new Map(topCategories.map((c) => [c.name, c.id]));
+
+    const seen = new Set<string>();
+    for (let i = 0; i < layout.categories.length; i++) {
+      const name = layout.categories[i]!;
+      const id = idByName.get(name);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      await tx.category.update({ where: { id }, data: { sortOrder: i } });
+    }
+
+    for (let i = 0; i < layout.items.length; i++) {
+      const it = layout.items[i]!;
+      // updateMany avoids throwing if an item was removed concurrently.
+      await tx.menuItem.updateMany({
+        where: { id: it.id },
+        data: { sortOrder: i, available: it.available },
+      });
+    }
+  });
+}
+
 /** Kept for script compatibility; menu lives in the database — use `npm run db:seed`. */
 export async function ensureMenuFileFromDefaults(): Promise<void> {
   // no-op

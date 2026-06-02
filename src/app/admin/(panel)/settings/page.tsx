@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from "@/hooks/use-tab-param";
 import { Textarea } from "@/components/ui/textarea";
 import { SITE } from "@/lib/site";
 import type {
@@ -27,6 +28,7 @@ import type {
 } from "@/types/restaurant-settings";
 
 export default function AdminSettingsPage() {
+  const [activeTab, setActiveTab] = useTabParam("general");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState("");
@@ -188,7 +190,7 @@ export default function AdminSettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="general" className="w-full gap-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full gap-6">
         <TabsList variant="line" className="h-auto min-h-9 w-full flex-wrap justify-start gap-0">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="timing">Timing</TabsTrigger>

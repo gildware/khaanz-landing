@@ -42,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from "@/hooks/use-tab-param";
 import {
   DataTableToolbar,
   type ActiveFilter,
@@ -194,6 +195,7 @@ const emptyVendorForm = {
 };
 
 export default function AdminVendorsPage() {
+  const [activeTab, setActiveTab] = useTabParam("overview");
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [menu, setMenu] = useState<MenuPayload | null>(null);
@@ -553,7 +555,7 @@ export default function AdminVendorsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-5">
           <TabsTrigger value="overview" className="data-[state=active]:font-semibold">
             Overview

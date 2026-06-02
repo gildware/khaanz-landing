@@ -51,6 +51,8 @@ COPY --from=builder /app/public ./public
 # Seed imports `src/` (menu + repositories); Prisma CLI + tsx are production dependencies.
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/src ./src
+# Production menu upgrade script (`npm run menu:upgrade`) lives here.
+COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 EXPOSE 3000

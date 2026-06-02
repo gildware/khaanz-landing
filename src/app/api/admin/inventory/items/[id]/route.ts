@@ -98,9 +98,75 @@ export async function DELETE(_request: Request, context: Ctx) {
     return NextResponse.json({ error: "Missing id" }, { status: 400 });
   }
   const prisma = getPrisma();
+
+  const existing = await prisma.inventoryItem.findUnique({ where: { id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Item not found" }, { status: 404 });
+  }
+
+  // Count every record that references this item. The schema uses
+  // onDelete: Restrict, so a hard delete is only possible when there is no
+  // linked history. Otherwise we archive (deactivate) to preserve records.
+  const [
+    purchaseLines,
+    returnLines,
+    batches,
+    movements,
+    batchConsumptions,
+    recipeIngredients,
+    wastageRows,
+    stockAdjustments,
+    stockAuditLines,
+    personalUseEntries,
+  ] = await Promise.all([
+    prisma.purchaseLine.count({ where: { inventoryItemId: id } }),
+    prisma.purchaseReturnLine.count({ where: { inventoryItemId: id } }),
+    prisma.inventoryBatch.count({ where: { inventoryItemId: id } }),
+    prisma.inventoryMovement.count({ where: { inventoryItemId: id } }),
+    prisma.inventoryBatchConsumption.count({ where: { inventoryItemId: id } }),
+    prisma.recipeIngredient.count({ where: { inventoryItemId: id } }),
+    prisma.wastageEntry.count({ where: { inventoryItemId: id } }),
+    prisma.stockAdjustment.count({ where: { inventoryItemId: id } }),
+    prisma.stockAuditLine.count({ where: { inventoryItemId: id } }),
+    prisma.personalUseEntry.count({ where: { inventoryItemId: id } }),
+  ]);
+
+  const linkedCount =
+    purchaseLines +
+    returnLines +
+    batches +
+    movements +
+    batchConsumptions +
+    recipeIngredients +
+    wastageRows +
+    stockAdjustments +
+    stockAuditLines +
+    personalUseEntries;
+
+  if (linkedCount === 0) {
+    await prisma.inventoryItem.delete({ where: { id } });
+    return NextResponse.json({ ok: true, deleted: true });
+  }
+
   await prisma.inventoryItem.update({
     where: { id },
     data: { active: false },
   });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    deleted: false,
+    archived: true,
+    linkedRecords: {
+      purchaseLines,
+      returnLines,
+      batches,
+      movements,
+      batchConsumptions,
+      recipeIngredients,
+      wastageRows,
+      stockAdjustments,
+      stockAuditLines,
+      personalUseEntries,
+    },
+  });
 }

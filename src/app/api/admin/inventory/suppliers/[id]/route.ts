@@ -51,3 +51,45 @@ export async function PATCH(request: Request, context: Ctx) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 }
+
+export async function DELETE(_request: Request, context: Ctx) {
+  const session = await requireAdminInventorySession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const { id } = await context.params;
+  if (!id) {
+    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+  }
+  const prisma = getPrisma();
+
+  const existing = await prisma.supplier.findUnique({ where: { id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Supplier relations all use onDelete: Restrict, so a hard delete is only
+  // possible when there is no purchase/ledger/payment/return history.
+  // Otherwise we archive (deactivate) to keep accounting intact.
+  const [purchases, ledgerEntries, payments, purchaseReturns] = await Promise.all([
+    prisma.purchase.count({ where: { supplierId: id } }),
+    prisma.supplierLedgerEntry.count({ where: { supplierId: id } }),
+    prisma.supplierPayment.count({ where: { supplierId: id } }),
+    prisma.purchaseReturn.count({ where: { supplierId: id } }),
+  ]);
+
+  const linkedCount = purchases + ledgerEntries + payments + purchaseReturns;
+
+  if (linkedCount === 0) {
+    await prisma.supplier.delete({ where: { id } });
+    return NextResponse.json({ ok: true, deleted: true });
+  }
+
+  await prisma.supplier.update({ where: { id }, data: { active: false } });
+  return NextResponse.json({
+    ok: true,
+    deleted: false,
+    archived: true,
+    linkedRecords: { purchases, ledgerEntries, payments, purchaseReturns },
+  });
+}

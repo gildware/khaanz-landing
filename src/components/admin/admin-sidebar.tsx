@@ -18,6 +18,7 @@ import {
   HandshakeIcon,
   Trash2Icon,
   BarChart3Icon,
+  LayoutTemplateIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ const links: {
     label: "Menu catalogue",
     icon: UtensilsCrossedIcon,
   },
+  { href: "/admin/home-layout", label: "Home layout", icon: LayoutTemplateIcon },
   { href: "/admin/payroll", label: "Payroll", icon: UsersIcon },
   { href: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ];

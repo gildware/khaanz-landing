@@ -10,6 +10,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "seed:menu": "prisma db seed",
+    "menu:upgrade": "tsx scripts/seed-khaanz-menu.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",

@@ -1,25 +1,32 @@
 import type { MenuPayload } from "@/types/menu-payload";
 import type { MenuCategoryDef } from "@/types/menu-category";
 import type { MenuAddon, MenuCombo, MenuItem } from "../types/menu";
+import {
+  KHAANZ_CATEGORIES,
+  KHAANZ_COMBOS,
+  KHAANZ_GLOBAL_ADDONS,
+  KHAANZ_ITEMS,
+} from "./khaanz-menu";
 
 const u = (photoId: string) =>
   `https://images.unsplash.com/${photoId}?w=800&q=80&auto=format&fit=crop`;
 
 /** Top-level categories with default hero imagery and tab icons (see `category-icons.tsx`). */
 export const MENU_CATEGORY_DEFAULTS: MenuCategoryDef[] = [
-  { name: "Pizza Zone", image: u("photo-1513104890138-7c749659a591"), icon: "pizza" },
-  { name: "Chef Specials", image: u("photo-1546069901-ba9599a7e63c"), icon: "sparkles" },
-  { name: "Momo Mania", image: u("photo-1496116218417-1a781b1c416c"), icon: "soup" },
-  { name: "Rice Royale", image: u("photo-1588168333986-5078d3ae3976"), icon: "wheat" },
-  { name: "Tandoor Breads", image: u("photo-1601050690597-df0568f70950"), icon: "flame" },
-  { name: "Crispy Bites", image: u("photo-1561758033-d89a9ad46330"), icon: "cookie" },
-  { name: "Fries & More", image: u("photo-1573080496219-bb080dd4f877"), icon: "sandwich" },
-  { name: "Noodle Hub", image: u("photo-1569718212162-84a2218e0a53"), icon: "soup" },
-  { name: "Spicy Chinese", image: u("photo-1582878826629-29b7ad1cdc43"), icon: "flame" },
-  { name: "Parathas & Rolls", image: u("photo-1606491956689-2ea866880c84"), icon: "croissant" },
-  { name: "Mojitos", image: u("photo-1514362541407-c7d109c5a4de"), icon: "martini" },
-  { name: "Shakes", image: u("photo-1572490122747-3968b75cc699"), icon: "ice-cream" },
-  { name: "Soft Drinks", image: u("photo-1622483767028-0f05fb13751d"), icon: "cup-soda" },
+  { name: "Pizza Zone", image: "/menu/cheesy-bliss-pizza.jpg", icon: "pizza" },
+  { name: "Chef Specials", image: "/menu/butter-chicken.jpg", icon: "sparkles" },
+  { name: "Momo Mania", image: "/menu/steamed-chicken-momo.jpg", icon: "soup" },
+  { name: "Rice Royale", image: "/menu/dum-chicken-biryani.jpg", icon: "wheat" },
+  { name: "Tandoor Breads", image: "/menu/butter-garlic-naan.jpg", icon: "flame" },
+  { name: "Crispy Bites", image: "/menu/fried-chicken.jpg", icon: "cookie" },
+  { name: "Fries & More", image: "/menu/peri-peri-fries.jpg", icon: "sandwich" },
+  { name: "Noodle Hub", image: "/menu/chicken-chowmein.jpg", icon: "soup" },
+  { name: "Spicy Chinese", image: "/menu/chilli-chicken.jpg", icon: "flame" },
+  { name: "Parathas & Rolls", image: "/menu/chicken-paratha.jpg", icon: "croissant" },
+  { name: "Mojitos", image: "/menu/virgin-mojito.jpg", icon: "martini" },
+  { name: "Shakes", image: "/menu/classic-chocolate.jpg", icon: "ice-cream" },
+  { name: "Soft Drinks", image: "/menu/coke.jpg", icon: "cup-soda" },
+  ...KHAANZ_CATEGORIES,
 ];
 
 /** Category display names only (matches `MENU_CATEGORY_DEFAULTS` order). */
@@ -30,10 +37,11 @@ export const GLOBAL_ADDONS: MenuAddon[] = [
   { id: "ga-mayo", name: "Extra Mayonnaise", price: 10 },
   { id: "ga-cheese", name: "Extra Cheese", price: 30 },
   { id: "ga-chicken", name: "Extra Chicken", price: 60 },
+  ...KHAANZ_GLOBAL_ADDONS,
 ];
 
-type MenuItemInput = Omit<MenuItem, "description" | "addons"> &
-  Partial<Pick<MenuItem, "description" | "addons">>;
+type MenuItemInput = Omit<MenuItem, "description" | "addons" | "image"> &
+  Partial<Pick<MenuItem, "description" | "addons" | "image">>;
 
 const ADDONS_BREADS: MenuAddon[] = [
   { id: "ia-tandoori-roti", name: "Tandoori Roti", price: 20 },
@@ -216,7 +224,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "virgin-mojito",
     name: "Virgin Mojito",
     category: "Mojitos",
-    image: u("photo-1513558161293-cdaf765ed2fd"),
     isVeg: true,
     variations: [{ id: "virgin-mojito", name: "Regular", price: 150 }],
   },
@@ -224,7 +231,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "watermelon-cooler",
     name: "Watermelon Cooler",
     category: "Mojitos",
-    image: u("photo-1514362545857-3bc16c4c7d1b"),
     isVeg: true,
     variations: [{ id: "watermelon-cooler", name: "Regular", price: 150 }],
   },
@@ -232,7 +238,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "blue-thunder",
     name: "Blue Thunder",
     category: "Mojitos",
-    image: u("photo-1513558161293-cdaf765ed2fd"),
     isVeg: true,
     variations: [{ id: "blue-thunder", name: "Regular", price: 150 }],
   },
@@ -240,7 +245,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "strawberry-mojito",
     name: "Strawberry Mojito",
     category: "Mojitos",
-    image: u("photo-1497534446932-c925b458314e"),
     isVeg: true,
     variations: [{ id: "strawberry-mojito", name: "Regular", price: 150 }],
   },
@@ -248,7 +252,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "green-apple",
     name: "Green Apple",
     category: "Mojitos",
-    image: u("photo-1546171753-97d7676e4602"),
     isVeg: true,
     variations: [{ id: "green-apple", name: "Regular", price: 150 }],
   },
@@ -258,7 +261,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "mango-blast",
     name: "Mango Blast",
     category: "Shakes",
-    image: u("photo-1623065422902-30a2d299bbe4"),
     isVeg: true,
     variations: [{ id: "mango-blast", name: "Regular", price: 160 }],
   },
@@ -266,7 +268,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "blackcurrent-blast",
     name: "Blackcurrent Blast",
     category: "Shakes",
-    image: u("photo-1577805947697-89e18249d767"),
     isVeg: true,
     variations: [{ id: "blackcurrent-blast", name: "Regular", price: 160 }],
   },
@@ -274,7 +275,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "true-vanilla",
     name: "True Vanilla",
     category: "Shakes",
-    image: u("photo-1579954115545-a95591f28bfc"),
     isVeg: true,
     variations: [{ id: "true-vanilla", name: "Regular", price: 160 }],
   },
@@ -282,7 +282,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "classic-chocolate",
     name: "Classic Chocolate",
     category: "Shakes",
-    image: u("photo-1572490122747-3968b75cc699"),
     isVeg: true,
     variations: [{ id: "classic-chocolate", name: "Regular", price: 160 }],
   },
@@ -290,7 +289,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "kit-kat-milkshake",
     name: "Kit Kat Milkshake",
     category: "Shakes",
-    image: u("photo-1619158403521-254fe32f5cb0"),
     isVeg: true,
     variations: [{ id: "kit-kat-milkshake", name: "Regular", price: 160 }],
   },
@@ -298,7 +296,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "cold-coffee",
     name: "Cold Coffee",
     category: "Shakes",
-    image: u("photo-1461023058943-07fcbe16d735"),
     isVeg: true,
     variations: [{ id: "cold-coffee", name: "Regular", price: 160 }],
   },
@@ -306,7 +303,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "strawberry-sweetness",
     name: "Strawberry Sweetness",
     category: "Shakes",
-    image: u("photo-1497534446932-c925b458314e"),
     isVeg: true,
     variations: [{ id: "strawberry-sweetness", name: "Regular", price: 160 }],
   },
@@ -314,7 +310,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "oreo-biscuit",
     name: "Oreo Biscuit",
     category: "Shakes",
-    image: u("photo-1572490122747-3968b75cc699"),
     isVeg: true,
     variations: [{ id: "oreo-biscuit", name: "Regular", price: 160 }],
   },
@@ -324,7 +319,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "coke",
     name: "Coca-Cola",
     category: "Soft Drinks",
-    image: u("photo-1551024709-8f23befc6f87"),
     isVeg: true,
     variations: [
       { id: "coke-250", name: "250 ml", price: 40 },
@@ -335,7 +329,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "pepsi",
     name: "Pepsi",
     category: "Soft Drinks",
-    image: u("photo-1551024709-8f23befc6f87"),
     isVeg: true,
     variations: [
       { id: "pepsi-250", name: "250 ml", price: 40 },
@@ -346,7 +339,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "mountain-dew",
     name: "Mountain Dew",
     category: "Soft Drinks",
-    image: u("photo-1551024709-8f23befc6f87"),
     isVeg: true,
     variations: [
       { id: "dew-250", name: "250 ml", price: 40 },
@@ -359,7 +351,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "fried-chicken-momo",
     name: "Fried Chicken Momo",
     category: "Momo Mania",
-    image: u("photo-1626776876729-bab4369a5a5e"),
     isVeg: false,
     variations: [{ id: "fried-chicken-momo", name: "Plate", price: 120 }],
   },
@@ -367,7 +358,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "steamed-chicken-momo",
     name: "Steamed Chicken Momo",
     category: "Momo Mania",
-    image: u("photo-1496116218417-1a781b1c416c"),
     isVeg: false,
     variations: [{ id: "steamed-chicken-momo", name: "Plate", price: 120 }],
   },
@@ -375,7 +365,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "tandoori-chicken-momo",
     name: "Tandoori Chicken Momo",
     category: "Momo Mania",
-    image: u("photo-1601050690597-df0568f70950"),
     isVeg: false,
     variations: [{ id: "tandoori-chicken-momo", name: "Plate", price: 160 }],
   },
@@ -385,7 +374,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "fried-chicken",
     name: "Fried Chicken",
     category: "Crispy Bites",
-    image: u("photo-1626082926499-eeaf5ee27f95"),
     isVeg: false,
     variations: [
       { id: "fried-chicken-half", name: "Half", price: 250 },
@@ -396,7 +384,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "fried-fish",
     name: "Fried Fish",
     category: "Crispy Bites",
-    image: u("photo-1544943910-4c1dc44aab44"),
     isVeg: false,
     variations: [{ id: "fried-fish", name: "1 KG", price: 500 }],
   },
@@ -406,7 +393,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "butter-chicken",
     name: "Butter Chicken",
     category: "Chef Specials",
-    image: u("photo-1603894584373-5ac82b2ae398"),
     isVeg: false,
     variations: [
       { id: "butter-chicken-half", name: "Half", price: 300 },
@@ -417,7 +403,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "kadai-chicken",
     name: "Kadai Chicken",
     category: "Chef Specials",
-    image: u("photo-1588166524941-3bf61a9c41db"),
     isVeg: false,
     variations: [
       { id: "kadai-chicken-half", name: "Half", price: 300 },
@@ -428,7 +413,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "masala-chicken",
     name: "Masala Chicken",
     category: "Chef Specials",
-    image: u("photo-1604908176997-125f25cc6f3d"),
     isVeg: false,
     variations: [
       { id: "masala-chicken-half", name: "Half", price: 300 },
@@ -439,7 +423,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "special-chicken",
     name: "Special Chicken",
     category: "Chef Specials",
-    image: u("photo-1603360946369-dc9bb6258143"),
     isVeg: false,
     variations: [
       { id: "special-chicken-half", name: "Half", price: 350 },
@@ -450,7 +433,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "tandoori-chicken",
     name: "Tandoori Chicken",
     category: "Chef Specials",
-    image: u("photo-1610057099431-d73a1c9d2f2f"),
     isVeg: false,
     variations: [
       { id: "tandoori-chicken-half", name: "Half", price: 300 },
@@ -463,7 +445,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "plain-naan",
     name: "Plain Naan",
     category: "Tandoor Breads",
-    image: u("photo-1601050690597-df0568f70950"),
     isVeg: true,
     variations: [{ id: "plain-naan", name: "Single", price: 30 }],
   },
@@ -471,7 +452,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "butter-naan",
     name: "Butter Naan",
     category: "Tandoor Breads",
-    image: u("photo-1601050690597-df0568f70950"),
     isVeg: true,
     variations: [{ id: "butter-naan", name: "Single", price: 40 }],
   },
@@ -479,7 +459,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "butter-garlic-naan",
     name: "Butter Garlic Naan",
     category: "Tandoor Breads",
-    image: u("photo-1626074357427-bfda8a5e1f6d"),
     isVeg: true,
     variations: [{ id: "butter-garlic-naan", name: "Single", price: 50 }],
   },
@@ -487,7 +466,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "tandoori-roti",
     name: "Tandoori Roti",
     category: "Tandoor Breads",
-    image: u("photo-1512058564366-18510be2db19"),
     isVeg: true,
     variations: [{ id: "tandoori-roti", name: "Single", price: 20 }],
   },
@@ -495,7 +473,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "butter-tandoori-roti",
     name: "Butter Tandoori Roti",
     category: "Tandoor Breads",
-    image: u("photo-1512058564366-18510be2db19"),
     isVeg: true,
     variations: [{ id: "butter-tandoori-roti", name: "Single", price: 25 }],
   },
@@ -503,7 +480,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "tawa-roti",
     name: "Tawa Roti",
     category: "Tandoor Breads",
-    image: u("photo-1603360946369-dc9bb6258143"),
     isVeg: true,
     variations: [{ id: "tawa-roti", name: "Single", price: 15 }],
   },
@@ -511,7 +487,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "butter-tawa-roti",
     name: "Butter Tawa Roti",
     category: "Tandoor Breads",
-    image: u("photo-1603360946369-dc9bb6258143"),
     isVeg: true,
     variations: [{ id: "butter-tawa-roti", name: "Single", price: 20 }],
   },
@@ -521,7 +496,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "fried-chicken-biryani",
     name: "Fried Chicken Biryani",
     category: "Rice Royale",
-    image: u("photo-1563379091339-03246963ba2b"),
     isVeg: false,
     variations: [
       { id: "fried-chicken-biryani-half", name: "Half", price: 100 },
@@ -532,7 +506,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "dum-chicken-biryani",
     name: "Dum Chicken Biryani",
     category: "Rice Royale",
-    image: u("photo-1631515243349-e0cb75fb8d3a"),
     isVeg: false,
     variations: [
       { id: "dum-chicken-biryani-half", name: "Half", price: 100 },
@@ -543,7 +516,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "veg-fried-rice",
     name: "Veg. Fried Rice",
     category: "Rice Royale",
-    image: u("photo-1512058564366-18510be2db19"),
     isVeg: true,
     variations: [
       { id: "veg-fried-rice-half", name: "Half", price: 90 },
@@ -554,7 +526,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "schezwan-fried-rice-veg",
     name: "Schezwan Fried Rice (V)",
     category: "Rice Royale",
-    image: u("photo-1512058564366-18510be2db19"),
     isVeg: true,
     variations: [
       { id: "schezwan-fried-rice-veg-half", name: "Half", price: 100 },
@@ -565,7 +536,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "chicken-fried-rice",
     name: "Chicken Fried Rice",
     category: "Rice Royale",
-    image: u("photo-1603133872878-684f208fb84b"),
     isVeg: false,
     variations: [
       { id: "chicken-fried-rice-half", name: "Half", price: 120 },
@@ -576,7 +546,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "schezwan-fried-rice-nonveg",
     name: "Schezwan Fried Rice (N)",
     category: "Rice Royale",
-    image: u("photo-1603133872878-684f208fb84b"),
     isVeg: false,
     variations: [
       { id: "schezwan-fried-rice-nonveg-half", name: "Half", price: 130 },
@@ -587,7 +556,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "egg-fried-rice",
     name: "Egg Fried Rice",
     category: "Rice Royale",
-    image: u("photo-1603133872878-684f208fb84b"),
     isVeg: false,
     variations: [
       { id: "egg-fried-rice-half", name: "Half", price: 110 },
@@ -600,7 +568,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "cheesy-bliss-pizza",
     name: "Cheesy Bliss Pizza",
     category: "Pizza Zone",
-    image: u("photo-1513104890138-7c749354f784"),
     isVeg: true,
     variations: [
       { id: "cheesy-bliss-pizza-small", name: "Small", price: 180 },
@@ -611,7 +578,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "cheesy-corn-burst",
     name: "Cheesy Corn Burst",
     category: "Pizza Zone",
-    image: u("photo-1513104890138-7c749354f784"),
     isVeg: true,
     variations: [
       { id: "cheesy-corn-burst-small", name: "Small", price: 200 },
@@ -622,7 +588,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "veggie-supreme",
     name: "Veggie Supreme",
     category: "Pizza Zone",
-    image: u("photo-1571407970349-bc81e7e96d47"),
     isVeg: true,
     variations: [
       { id: "veggie-supreme-small", name: "Small", price: 250 },
@@ -633,7 +598,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "chicken-feast-pizza",
     name: "Chicken Feast Pizza",
     category: "Pizza Zone",
-    image: u("photo-1628840042765-356cda07504e"),
     isVeg: false,
     variations: [
       { id: "chicken-feast-pizza-small", name: "Small", price: 280 },
@@ -644,7 +608,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "chicken-royale-pizza",
     name: "Chicken Royale Pizza",
     category: "Pizza Zone",
-    image: u("photo-1628840042765-356cda07504e"),
     isVeg: false,
     variations: [
       { id: "chicken-royale-pizza-small", name: "Small", price: 350 },
@@ -655,7 +618,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "veg-royale-pizza",
     name: "Veg Royale Pizza",
     category: "Pizza Zone",
-    image: u("photo-1571407970349-bc81e7e96d47"),
     isVeg: true,
     variations: [
       { id: "veg-royale-pizza-small", name: "Small", price: 280 },
@@ -668,7 +630,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "chicken-paratha",
     name: "Chicken Paratha",
     category: "Parathas & Rolls",
-    image: u("photo-1626132647523-66e0f9d7d5dd"),
     isVeg: false,
     variations: [{ id: "chicken-paratha", name: "Single", price: 150 }],
   },
@@ -676,7 +637,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "cheese-paratha",
     name: "Cheese Paratha",
     category: "Parathas & Rolls",
-    image: u("photo-1626132647523-66e0f9d7d5dd"),
     isVeg: true,
     variations: [{ id: "cheese-paratha", name: "Single", price: 120 }],
   },
@@ -684,7 +644,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "aloo-paratha",
     name: "Aloo Paratha",
     category: "Parathas & Rolls",
-    image: u("photo-1512058564366-18510be2db19"),
     isVeg: true,
     variations: [{ id: "aloo-paratha", name: "Single", price: 80 }],
   },
@@ -692,7 +651,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "egg-roll",
     name: "Egg Roll",
     category: "Parathas & Rolls",
-    image: u("photo-1529692236671-f1f6cf9683ba"),
     isVeg: false,
     variations: [{ id: "egg-roll", name: "Single", price: 70 }],
   },
@@ -700,7 +658,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "chicken-roll",
     name: "Chicken Roll",
     category: "Parathas & Rolls",
-    image: u("photo-1529692236671-f1f6cf9683ba"),
     isVeg: false,
     variations: [{ id: "chicken-roll", name: "Single", price: 150 }],
   },
@@ -708,7 +665,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "egg-chicken-roll",
     name: "Egg + Chicken Roll",
     category: "Parathas & Rolls",
-    image: u("photo-1529692236671-f1f6cf9683ba"),
     isVeg: false,
     variations: [{ id: "egg-chicken-roll", name: "Single", price: 170 }],
   },
@@ -718,7 +674,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "veg-chowmein",
     name: "Veg. Chowmein",
     category: "Noodle Hub",
-    image: u("photo-1612929633738-8fe44f7ec841"),
     isVeg: true,
     variations: [
       { id: "veg-chowmein-half", name: "Half", price: 90 },
@@ -729,7 +684,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "veg-schezwan-noodles",
     name: "Veg Schezwan Noodles",
     category: "Noodle Hub",
-    image: u("photo-1612929633738-8fe44f7ec841"),
     isVeg: true,
     variations: [
       { id: "veg-schezwan-noodles-half", name: "Half", price: 100 },
@@ -740,7 +694,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "egg-chowmein",
     name: "Egg Chowmein",
     category: "Noodle Hub",
-    image: u("photo-1617093727343-374954b7b0d6"),
     isVeg: false,
     variations: [
       { id: "egg-chowmein-half", name: "Half", price: 110 },
@@ -751,7 +704,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "chicken-chowmein",
     name: "Chicken Chowmein",
     category: "Noodle Hub",
-    image: u("photo-1617093727343-374954b7b0d6"),
     isVeg: false,
     variations: [
       { id: "chicken-chowmein-half", name: "Half", price: 120 },
@@ -762,7 +714,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "chicken-schezwan-noodles",
     name: "Chicken Schezwan Noodles",
     category: "Noodle Hub",
-    image: u("photo-1617093727343-374954b7b0d6"),
     isVeg: false,
     variations: [
       { id: "chicken-schezwan-noodles-half", name: "Half", price: 140 },
@@ -775,7 +726,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "egg-chilli",
     name: "Egg Chilli",
     category: "Spicy Chinese",
-    image: u("photo-1599487488170-d11ec9c172f0"),
     isVeg: false,
     variations: [
       { id: "egg-chilli-half", name: "Half", price: 150 },
@@ -786,7 +736,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "egg-manchurian",
     name: "Egg Manchurian",
     category: "Spicy Chinese",
-    image: u("photo-1599487488170-d11ec9c172f0"),
     isVeg: false,
     variations: [
       { id: "egg-manchurian-half", name: "Half", price: 180 },
@@ -797,7 +746,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "chilli-chicken",
     name: "Chilli Chicken",
     category: "Spicy Chinese",
-    image: u("photo-1599487488170-d11ec9c172f0"),
     isVeg: false,
     variations: [
       { id: "chilli-chicken-half", name: "Half", price: 280 },
@@ -808,7 +756,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "chicken-kanti",
     name: "Chicken Kanti",
     category: "Spicy Chinese",
-    image: u("photo-1599487488170-d11ec9c172f0"),
     isVeg: false,
     variations: [
       { id: "chicken-kanti-half", name: "Half", price: 300 },
@@ -819,7 +766,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "crispy-chilli-chicken",
     name: "Crispy Chilli Chicken",
     category: "Spicy Chinese",
-    image: u("photo-1599487488170-d11ec9c172f0"),
     isVeg: false,
     variations: [
       { id: "crispy-chilli-chicken-half", name: "Half", price: 300 },
@@ -830,7 +776,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "chicken-manchurian",
     name: "Chicken Manchurian",
     category: "Spicy Chinese",
-    image: u("photo-1599487488170-d11ec9c172f0"),
     isVeg: false,
     variations: [
       { id: "chicken-manchurian-half", name: "Half", price: 300 },
@@ -841,7 +786,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "fish-chilli",
     name: "Fish Chilli",
     category: "Spicy Chinese",
-    image: u("photo-1544943910-4c1dc44aab44"),
     isVeg: false,
     variations: [
       { id: "fish-chilli-half", name: "Half", price: 280 },
@@ -854,7 +798,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "french-fries",
     name: "French Fries",
     category: "Fries & More",
-    image: u("photo-1573080496219-bb080dd4f877"),
     isVeg: true,
     variations: [
       { id: "french-fries-half", name: "Half", price: 70 },
@@ -865,7 +808,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "peri-peri-fries",
     name: "Peri Peri Fries",
     category: "Fries & More",
-    image: u("photo-1573080496219-bb080dd4f877"),
     isVeg: true,
     variations: [
       { id: "peri-peri-fries-half", name: "Half", price: 80 },
@@ -876,7 +818,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "chilli-potato",
     name: "Chilli Potato",
     category: "Fries & More",
-    image: u("photo-1606755962773-d324e0a13086"),
     isVeg: true,
     variations: [
       { id: "chilli-potato-half", name: "Half", price: 100 },
@@ -887,7 +828,6 @@ const menuItemsRaw: MenuItemInput[] = [
     id: "honey-chilli-potato",
     name: "Honey Chilli Potato",
     category: "Fries & More",
-    image: u("photo-1606755962773-d324e0a13086"),
     isVeg: true,
     variations: [
       { id: "honey-chilli-potato-half", name: "Half", price: 120 },
@@ -896,11 +836,15 @@ const menuItemsRaw: MenuItemInput[] = [
   },
 ];
 
-export const menuItems: MenuItem[] = menuItemsRaw.map((item) => ({
-  ...item,
-  description: item.description ?? defaultDescriptionForItem(item),
-  addons: item.addons ?? defaultAddonsForItem(item),
-}));
+export const menuItems: MenuItem[] = [
+  ...menuItemsRaw.map((item) => ({
+    ...item,
+    image: item.image ?? `/menu/${item.id}.jpg`,
+    description: item.description ?? defaultDescriptionForItem(item),
+    addons: item.addons ?? defaultAddonsForItem(item),
+  })),
+  ...KHAANZ_ITEMS,
+];
 
 
 const defaultCombos: MenuCombo[] = [
@@ -1074,6 +1018,7 @@ const defaultCombos: MenuCombo[] = [
       { itemId: "french-fries", variationId: "ff-full", quantity: 1 },
     ],
   },
+  ...KHAANZ_COMBOS,
 ];
 
 export function getDefaultMenuPayload(): MenuPayload {

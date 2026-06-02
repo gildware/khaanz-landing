@@ -20,6 +20,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useTabParam } from "@/hooks/use-tab-param";
 import {
   formatRupees,
   monthKeyFromDate,
@@ -72,7 +73,7 @@ function AdminPayrollPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editEmployeeId = searchParams.get("edit");
-  const [tab, setTab] = useState("employees");
+  const [tab, setTab] = useTabParam("employees");
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
 

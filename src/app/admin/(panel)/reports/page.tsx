@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from "@/hooks/use-tab-param";
 import { formatIstDateInput, istStartOfMonth } from "@/lib/ist-dates";
 import type { ReportInsight } from "@/lib/reports/build-insights";
 import {
@@ -186,6 +187,7 @@ function defaultCustomTo(): string {
 }
 
 export default function AdminReportsPage() {
+  const [activeTab, setActiveTab] = useTabParam("overview");
   const [preset, setPreset] = useState<DatePreset>("this_month");
   const [customFrom, setCustomFrom] = useState(defaultCustomFrom);
   const [customTo, setCustomTo] = useState(defaultCustomTo);
@@ -456,7 +458,7 @@ export default function AdminReportsPage() {
         />
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="flex h-auto flex-wrap gap-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="sales">Sales</TabsTrigger>

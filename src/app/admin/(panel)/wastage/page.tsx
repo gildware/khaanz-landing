@@ -41,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTabParam } from "@/hooks/use-tab-param";
 import {
   Bar,
   BarChart,
@@ -284,7 +285,7 @@ export default function AdminWastagePage() {
   const [recordOpen, setRecordOpen] = useState(false);
   const [recordTab, setRecordTab] = useState<"ingredient" | "dish">("ingredient");
 
-  const [pageTab, setPageTab] = useState<"overview" | "reports">("overview");
+  const [pageTab, setPageTab] = useTabParam("overview");
   const [summary, setSummary] = useState<WastageSummary | null>(null);
   const [periodPreset, setPeriodPreset] = useState<WastagePreset>("this_month");
 
@@ -532,7 +533,7 @@ export default function AdminWastagePage() {
         </Button>
       </div>
 
-      <Tabs value={pageTab} onValueChange={(v) => setPageTab(v as "overview" | "reports")}>
+      <Tabs value={pageTab} onValueChange={setPageTab}>
         <TabsList className="h-8">
           <TabsTrigger value="overview" className="text-xs px-3 py-1">
             Overview
