@@ -33,7 +33,10 @@ export type TravelDistanceResult = {
 };
 
 export type TravelDistanceResponse = {
+  /** Admin delivery pricing is available (always true when the API succeeds). */
   configured: boolean;
+  /** Google Distance Matrix + restaurant coordinates are set on the server. */
+  distanceMatrixReady?: boolean;
   distance: TravelDistanceResult | null;
   /** Delivery fee in rupees for this location (null when distance unknown). */
   deliveryCharge: number | null;
@@ -51,6 +54,7 @@ export async function fetchTravelDistance(
   if (!res.ok) {
     return {
       configured: false,
+      distanceMatrixReady: false,
       distance: null,
       deliveryCharge: null,
       freeDeliveryUptoKm: 0,
@@ -60,7 +64,8 @@ export async function fetchTravelDistance(
   }
   const data = (await res.json()) as Partial<TravelDistanceResponse>;
   return {
-    configured: data.configured === true,
+    configured: data.configured !== false,
+    distanceMatrixReady: data.distanceMatrixReady === true,
     distance: data.distance ?? null,
     deliveryCharge:
       typeof data.deliveryCharge === "number" ? data.deliveryCharge : null,

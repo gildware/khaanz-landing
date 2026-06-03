@@ -21,36 +21,39 @@ export async function GET(request: Request) {
     );
   }
 
-  if (!isTravelDistanceConfigured()) {
-    return NextResponse.json({
-      configured: false,
-      distance: null,
-      deliveryCharge: null,
-      freeDeliveryUptoKm: 0,
-      baseDeliveryCharge: 0,
-      deliveryPerKmCharge: 0,
-    });
-  }
-
-  const [distance, settings] = await Promise.all([
-    getTravelDistance(lat, lng),
-    readRestaurantSettings(),
-  ]);
-
-  const deliveryCharge = distance
-    ? computeDeliveryChargeRupees(distance.meters, {
-        freeDeliveryUptoKm: settings.freeDeliveryUptoKm,
-        baseDeliveryCharge: settings.baseDeliveryCharge,
-        deliveryPerKmCharge: settings.deliveryPerKmCharge,
-      })
-    : null;
-
-  return NextResponse.json({
-    configured: true,
-    distance,
-    deliveryCharge,
+  const settings = await readRestaurantSettings();
+  const pricing = {
     freeDeliveryUptoKm: settings.freeDeliveryUptoKm,
     baseDeliveryCharge: settings.baseDeliveryCharge,
     deliveryPerKmCharge: settings.deliveryPerKmCharge,
+  };
+  const distanceMatrixReady = isTravelDistanceConfigured();
+
+  if (!distanceMatrixReady) {
+    const flatFallback =
+      pricing.baseDeliveryCharge > 0 ? pricing.baseDeliveryCharge : null;
+    return NextResponse.json({
+      configured: true,
+      distanceMatrixReady: false,
+      distance: null,
+      deliveryCharge: flatFallback,
+      ...pricing,
+    });
+  }
+
+  const distance = await getTravelDistance(lat, lng);
+
+  const deliveryCharge = distance
+    ? computeDeliveryChargeRupees(distance.meters, pricing)
+    : pricing.baseDeliveryCharge > 0
+      ? pricing.baseDeliveryCharge
+      : null;
+
+  return NextResponse.json({
+    configured: true,
+    distanceMatrixReady: true,
+    distance,
+    deliveryCharge,
+    ...pricing,
   });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -60,9 +60,9 @@ import {
 } from "@/lib/phone-digits";
 import type { SavedAddressDTO } from "@/lib/customer-address";
 import {
+  beginDeviceLocationRequest,
   deviceLocationErrorMessage,
   queryGeolocationPermission,
-  requestDeviceLocation,
 } from "@/lib/device-location";
 import { cn } from "@/lib/utils";
 
@@ -88,14 +88,14 @@ export function CheckoutForm() {
   const [addressLoading, setAddressLoading] = useState(false);
   const [distance, setDistance] = useState<TravelDistanceResult | null>(null);
   const [distanceLoading, setDistanceLoading] = useState(false);
-  const [distanceConfigured, setDistanceConfigured] = useState(true);
+  const [deliveryPricingReady, setDeliveryPricingReady] = useState(true);
+  const [distanceMatrixReady, setDistanceMatrixReady] = useState(true);
   const [deliveryCharge, setDeliveryCharge] = useState<number | null>(null);
   const [mapFlyTrigger, setMapFlyTrigger] = useState(0);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddressDTO[]>([]);
   const [savedAddressesLoaded, setSavedAddressesLoaded] = useState(false);
   const [addressMode, setAddressMode] = useState<"saved" | "new">("new");
   const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
-  const didAutoLocateOnLocationStepRef = useRef(false);
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("asap");
   const [placingOrder, setPlacingOrder] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -132,7 +132,7 @@ export function CheckoutForm() {
 
   const deliveryFee =
     fulfillment === "delivery" &&
-    distanceConfigured &&
+    deliveryPricingReady &&
     typeof deliveryCharge === "number"
       ? deliveryCharge
       : 0;
@@ -177,12 +177,14 @@ export function CheckoutForm() {
       fetchTravelDistance(latitude, longitude)
         .then((r) => {
           if (cancelled) return;
-          setDistanceConfigured(r.configured);
+          setDeliveryPricingReady(r.configured);
+          setDistanceMatrixReady(r.distanceMatrixReady !== false);
           setDistance(r.distance);
           setDeliveryCharge(r.deliveryCharge);
         })
         .catch(() => {
           if (!cancelled) {
+            setDeliveryPricingReady(false);
             setDistance(null);
             setDeliveryCharge(null);
           }
@@ -198,26 +200,29 @@ export function CheckoutForm() {
     };
   }, [latitude, longitude, currentStepLabel]);
 
-  const locateFromGps = useCallback(async () => {
-    setGeoLoading(true);
+  const applyDeviceCoordinates = useCallback((lat: number, lng: number) => {
+    setLatitude(lat);
+    setLongitude(lng);
+    setMapFlyTrigger((n) => n + 1);
+    setLocationPermissionDenied(false);
     setGeoError(null);
-    const result = await requestDeviceLocation({
-      enableHighAccuracy: true,
-      timeout: 15000,
-      maximumAge: 0,
-    });
-    if (result.ok) {
-      setLatitude(result.latitude);
-      setLongitude(result.longitude);
-      setMapFlyTrigger((n) => n + 1);
-      setLocationPermissionDenied(false);
-      setGeoError(null);
-    } else {
-      setGeoError(deviceLocationErrorMessage(result.error));
-      setLocationPermissionDenied(result.error === "permission_denied");
-    }
     setGeoLoading(false);
   }, []);
+
+  /** Must run synchronously from a click/tap so the browser shows the permission prompt. */
+  const locateFromGps = useCallback(() => {
+    setGeoLoading(true);
+    setGeoError(null);
+    beginDeviceLocationRequest(
+      (lat, lng) => applyDeviceCoordinates(lat, lng),
+      (error) => {
+        setGeoError(deviceLocationErrorMessage(error));
+        setLocationPermissionDenied(error === "permission_denied");
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  }, [applyDeviceCoordinates]);
 
   useEffect(() => {
     if (typeof navigator === "undefined" || !navigator.permissions?.query) return;
@@ -230,7 +235,7 @@ export function CheckoutForm() {
       }
       if (permissionStatus?.state === "granted") {
         setLocationPermissionDenied(false);
-        void locateFromGps();
+        locateFromGps();
       } else if (permissionStatus?.state === "denied") {
         setLocationPermissionDenied(true);
         setGeoError(deviceLocationErrorMessage("permission_denied"));
@@ -263,22 +268,6 @@ export function CheckoutForm() {
       }
     });
   }, [currentStepLabel, addressMode]);
-
-  useEffect(() => {
-    if (fulfillment === "pickup") {
-      didAutoLocateOnLocationStepRef.current = false;
-    }
-  }, [fulfillment]);
-
-  useEffect(() => {
-    if (currentStepLabel !== "Location") return;
-    if (!savedAddressesLoaded) return;
-    // Don't grab GPS when the customer is reusing a saved address.
-    if (addressMode !== "new") return;
-    if (didAutoLocateOnLocationStepRef.current) return;
-    didAutoLocateOnLocationStepRef.current = true;
-    locateFromGps();
-  }, [currentStepLabel, savedAddressesLoaded, addressMode, locateFromGps]);
 
   const handlePositionChange = (lat: number, lng: number) => {
     setLatitude(lat);
@@ -338,8 +327,6 @@ export function CheckoutForm() {
     setDeliveryCharge(null);
     setGeoError(null);
     setLocationPermissionDenied(false);
-    // Allow the location step to auto-detect GPS again for the fresh address.
-    didAutoLocateOnLocationStepRef.current = false;
   }, []);
 
   const deleteSavedAddress = useCallback(
@@ -726,9 +713,9 @@ export function CheckoutForm() {
             <Loader2Icon className="size-3.5 animate-spin" />
             Calculating distance from restaurant…
           </span>
-        ) : !distanceConfigured ? (
+        ) : !deliveryPricingReady ? (
           <span className="text-muted-foreground text-sm">
-            Distance and delivery fee are not configured for this restaurant.
+            Could not load delivery pricing. Refresh and try again.
           </span>
         ) : distance ? (
           <div className="min-w-0 flex-1">
@@ -744,6 +731,32 @@ export function CheckoutForm() {
                 </span>
               )}
             </p>
+            <p className="mt-1 text-sm">
+              <span className="text-muted-foreground">Delivery fee: </span>
+              {deliveryFee > 0 ? (
+                <span className="font-semibold text-primary tabular-nums">
+                  ₹{deliveryFee}
+                </span>
+              ) : (
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  Free
+                </span>
+              )}
+            </p>
+          </div>
+        ) : typeof deliveryCharge === "number" ? (
+          <div className="min-w-0 flex-1">
+            {!distanceMatrixReady ? (
+              <p className="text-muted-foreground text-xs">
+                Exact distance unavailable — showing base delivery fee from your
+                restaurant settings.
+              </p>
+            ) : (
+              <p className="text-muted-foreground text-xs">
+                Distance unavailable for this pin — delivery fee estimated from
+                base charge.
+              </p>
+            )}
             <p className="mt-1 text-sm">
               <span className="text-muted-foreground">Delivery fee: </span>
               {deliveryFee > 0 ? (
@@ -1123,21 +1136,22 @@ export function CheckoutForm() {
 
           {addressMode === "new" && (
             <div className="space-y-4">
-              {locationPermissionDenied && (
+              {locationPermissionDenied ? (
                 <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3">
                   <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
-                    Allow location access
+                    Location access is blocked
                   </p>
                   <p className="mt-1 text-amber-900/80 text-sm dark:text-amber-200/80">
-                    We use your location to pin your delivery address on the map.
-                    Tap below — your browser will ask for permission.
+                    Enable location for this site in your browser settings (lock icon
+                    in the address bar), then tap below again. Or search for your area
+                    on the map.
                   </p>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     className="mt-3 border-amber-500/50 bg-background/80"
-                    onClick={() => void locateFromGps()}
+                    onClick={locateFromGps}
                     disabled={geoLoading}
                   >
                     {geoLoading ? (
@@ -1148,22 +1162,49 @@ export function CheckoutForm() {
                     ) : (
                       <>
                         <NavigationIcon className="size-3.5" />
-                        Allow location
+                        Try again
                       </>
                     )}
                   </Button>
                 </div>
-              )}
-              {geoError && !locationPermissionDenied && (
+              ) : latitude == null || longitude == null ? (
+                <div className="rounded-xl border border-primary/25 bg-primary/5 px-4 py-3">
+                  <p className="text-sm font-medium">Pin your delivery location</p>
+                  <p className="mt-1 text-muted-foreground text-sm">
+                    Tap below — your browser will ask to use your location, then we
+                    place the pin on the map.
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="mt-3"
+                    onClick={locateFromGps}
+                    disabled={geoLoading}
+                  >
+                    {geoLoading ? (
+                      <>
+                        <Loader2Icon className="size-3.5 animate-spin" />
+                        Getting location…
+                      </>
+                    ) : (
+                      <>
+                        <NavigationIcon className="size-3.5" />
+                        Use my location
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ) : null}
+              {geoError && !locationPermissionDenied ? (
                 <p className="text-destructive text-sm">{geoError}</p>
-              )}
+              ) : null}
               <LocationSearch onPick={handleSearchPick} disabled={geoLoading} />
               <LocationMapPicker
                 latitude={position.lat}
                 longitude={position.lng}
                 onPositionChange={handlePositionChange}
                 flyTrigger={mapFlyTrigger}
-                onUseCurrentLocation={() => locateFromGps()}
+                onUseCurrentLocation={locateFromGps}
                 locating={geoLoading}
               />
               <p className="text-muted-foreground text-xs">

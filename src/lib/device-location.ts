@@ -27,6 +27,30 @@ function mapGeolocationError(error: GeolocationPositionError): DeviceLocationErr
   }
 }
 
+/**
+ * Start geolocation from a user gesture (click/tap). Call synchronously inside
+ * the event handler so mobile browsers show the permission prompt.
+ */
+export function beginDeviceLocationRequest(
+  onSuccess: (latitude: number, longitude: number) => void,
+  onError: (error: DeviceLocationError) => void,
+  options: PositionOptions = DEFAULT_OPTIONS,
+): void {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    onError("unsupported");
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      onSuccess(pos.coords.latitude, pos.coords.longitude);
+    },
+    (err) => {
+      onError(mapGeolocationError(err));
+    },
+    { ...DEFAULT_OPTIONS, ...options },
+  );
+}
+
 /** Resolves with device coordinates or a typed error (never throws). */
 export function requestDeviceLocation(
   options: PositionOptions = DEFAULT_OPTIONS,
@@ -36,17 +60,9 @@ export function requestDeviceLocation(
   }
 
   return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        resolve({
-          ok: true,
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        });
-      },
-      (err) => {
-        resolve({ ok: false, error: mapGeolocationError(err) });
-      },
+    beginDeviceLocationRequest(
+      (latitude, longitude) => resolve({ ok: true, latitude, longitude }),
+      (error) => resolve({ ok: false, error }),
       options,
     );
   });
