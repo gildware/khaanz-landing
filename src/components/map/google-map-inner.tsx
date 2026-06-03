@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { loadGoogleMaps } from "@/lib/google-maps-loader";
 
@@ -11,6 +11,8 @@ export interface GoogleMapInnerProps {
   /** Increment to pan the map (GPS / search pick). Do not tie to marker drag. */
   flyTrigger?: number;
   className?: string;
+  /** Called when the Maps JS API fails to load (missing key, quota, network, etc.). */
+  onLoadError?: () => void;
 }
 
 export function GoogleMapInner({
@@ -19,14 +21,13 @@ export function GoogleMapInner({
   onPositionChange,
   flyTrigger = 0,
   className,
+  onLoadError,
 }: GoogleMapInnerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markerRef = useRef<google.maps.Marker | null>(null);
   const onChangeRef = useRef(onPositionChange);
   onChangeRef.current = onPositionChange;
-
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,9 +63,7 @@ export function GoogleMapInner({
         markerRef.current = marker;
       })
       .catch(() => {
-        if (!cancelled) {
-          setError("Could not load the map. Check your connection.");
-        }
+        if (!cancelled) onLoadError?.();
       });
 
     return () => {
@@ -72,7 +71,7 @@ export function GoogleMapInner({
     };
     // Only initialise once; subsequent position changes are handled below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onLoadError]);
 
   // Keep the marker in sync when the position changes externally (search, GPS, manual edit).
   useEffect(() => {
@@ -88,19 +87,6 @@ export function GoogleMapInner({
     map.panTo({ lat: latitude, lng: longitude });
     map.setZoom(16);
   }, [flyTrigger, latitude, longitude]);
-
-  if (error) {
-    return (
-      <div
-        className={
-          className ??
-          "flex h-64 w-full items-center justify-center rounded-xl border border-border/50 bg-muted/30"
-        }
-      >
-        <p className="px-4 text-center text-destructive text-sm">{error}</p>
-      </div>
-    );
-  }
 
   return <div ref={containerRef} className={className} />;
 }

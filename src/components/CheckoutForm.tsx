@@ -9,6 +9,7 @@ import {
   Loader2Icon,
   MapPinIcon,
   MapPinnedIcon,
+  NavigationIcon,
   PackageIcon,
   PlusIcon,
   Trash2Icon,
@@ -57,6 +58,11 @@ import {
   normalizeIndianMobileDigits,
 } from "@/lib/phone-digits";
 import type { SavedAddressDTO } from "@/lib/customer-address";
+import {
+  deviceLocationErrorMessage,
+  queryGeolocationPermission,
+  requestDeviceLocation,
+} from "@/lib/device-location";
 import { cn } from "@/lib/utils";
 
 export function CheckoutForm() {
@@ -77,6 +83,7 @@ export function CheckoutForm() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
   const [distance, setDistance] = useState<TravelDistanceResult | null>(null);
   const [distanceLoading, setDistanceLoading] = useState(false);
@@ -189,29 +196,71 @@ export function CheckoutForm() {
     };
   }, [latitude, longitude, currentStepLabel]);
 
-  const locateFromGps = useCallback(() => {
-    if (!navigator.geolocation) {
-      setGeoError("Geolocation is not supported in this browser.");
-      return;
-    }
+  const locateFromGps = useCallback(async () => {
     setGeoLoading(true);
     setGeoError(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLatitude(pos.coords.latitude);
-        setLongitude(pos.coords.longitude);
-        setMapFlyTrigger((n) => n + 1);
-        setGeoLoading(false);
-      },
-      () => {
-        setGeoError(
-          "Could not use device location. Search below, or tap the map to set the pin.",
-        );
-        setGeoLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 12000 },
-    );
+    const result = await requestDeviceLocation({
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
+    });
+    if (result.ok) {
+      setLatitude(result.latitude);
+      setLongitude(result.longitude);
+      setMapFlyTrigger((n) => n + 1);
+      setLocationPermissionDenied(false);
+      setGeoError(null);
+    } else {
+      setGeoError(deviceLocationErrorMessage(result.error));
+      setLocationPermissionDenied(result.error === "permission_denied");
+    }
+    setGeoLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.permissions?.query) return;
+    let cancelled = false;
+    let permissionStatus: PermissionStatus | null = null;
+
+    const onPermissionChange = () => {
+      if (cancelled || currentStepLabel !== "Location" || addressMode !== "new") {
+        return;
+      }
+      if (permissionStatus?.state === "granted") {
+        setLocationPermissionDenied(false);
+        void locateFromGps();
+      } else if (permissionStatus?.state === "denied") {
+        setLocationPermissionDenied(true);
+        setGeoError(deviceLocationErrorMessage("permission_denied"));
+      }
+    };
+
+    void navigator.permissions
+      .query({ name: "geolocation" })
+      .then((status) => {
+        if (cancelled) return;
+        permissionStatus = status;
+        if (status.state === "denied") {
+          setLocationPermissionDenied(true);
+        }
+        status.addEventListener("change", onPermissionChange);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+      permissionStatus?.removeEventListener("change", onPermissionChange);
+    };
+  }, [currentStepLabel, addressMode, locateFromGps]);
+
+  useEffect(() => {
+    if (currentStepLabel !== "Location" || addressMode !== "new") return;
+    void queryGeolocationPermission().then((state) => {
+      if (state === "denied") {
+        setLocationPermissionDenied(true);
+      }
+    });
+  }, [currentStepLabel, addressMode]);
 
   useEffect(() => {
     if (fulfillment === "pickup") {
@@ -265,6 +314,7 @@ export function CheckoutForm() {
     setDistance(null);
     setDeliveryCharge(null);
     setGeoError(null);
+    setLocationPermissionDenied(false);
     // Allow the location step to auto-detect GPS again for the fresh address.
     didAutoLocateOnLocationStepRef.current = false;
   }, []);
@@ -1043,7 +1093,38 @@ export function CheckoutForm() {
 
           {addressMode === "new" && (
             <div className="space-y-4">
-              {geoError && (
+              {locationPermissionDenied && (
+                <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3">
+                  <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
+                    Allow location access
+                  </p>
+                  <p className="mt-1 text-amber-900/80 text-sm dark:text-amber-200/80">
+                    We use your location to pin your delivery address on the map.
+                    Tap below — your browser will ask for permission.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 border-amber-500/50 bg-background/80"
+                    onClick={() => void locateFromGps()}
+                    disabled={geoLoading}
+                  >
+                    {geoLoading ? (
+                      <>
+                        <Loader2Icon className="size-3.5 animate-spin" />
+                        Getting location…
+                      </>
+                    ) : (
+                      <>
+                        <NavigationIcon className="size-3.5" />
+                        Allow location
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+              {geoError && !locationPermissionDenied && (
                 <p className="text-destructive text-sm">{geoError}</p>
               )}
               <LocationSearch onPick={handleSearchPick} disabled={geoLoading} />
