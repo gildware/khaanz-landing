@@ -43,6 +43,7 @@ export interface MenuCombo {
   price: number;
   components: MenuComboComponent[];
   isVeg: boolean;
+  recommended?: boolean;
   available?: boolean;
 }
 

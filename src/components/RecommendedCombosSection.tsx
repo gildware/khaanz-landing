@@ -18,9 +18,9 @@ function matchesComboSearch(combo: MenuCombo, q: string): boolean {
 }
 
 /**
- * Storefront combos rail — below hero / recommended, above the main menu grid.
+ * Storefront rail for combos marked "recommended" in the home-layout admin.
  */
-export function HomeCombosSection() {
+export function RecommendedCombosSection() {
   const { searchQuery } = useMenuExplore();
   const { data, isLoading } = useMenuData();
   const q = searchQuery;
@@ -30,7 +30,7 @@ export function HomeCombosSection() {
     const combos = data?.combos ?? [];
     return combos.filter(
       (c) =>
-        !c.recommended &&
+        c.recommended &&
         c.available !== false &&
         isComboAvailable(c, items) &&
         matchesComboSearch(c, q),
@@ -41,22 +41,22 @@ export function HomeCombosSection() {
   if (visible.length === 0) return null;
 
   return (
-    <section className="space-y-3" aria-labelledby="home-combos-heading">
+    <section className="space-y-3" aria-labelledby="recommended-combos-heading">
       <div className="px-1">
         <h2
-          id="home-combos-heading"
+          id="recommended-combos-heading"
           className="font-heading text-xl font-bold tracking-tight"
         >
-          Combos
+          Recommended Combos
         </h2>
         <p className="text-muted-foreground text-sm">
-          Bundle deals — tap to view what&apos;s included
+          Hand-picked bundle deals
         </p>
       </div>
       <div
         className="no-scrollbar -mx-4 flex items-start gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0"
         role="list"
-        aria-label="Menu combos"
+        aria-label="Recommended combos"
       >
         {visible.map((c) => (
           <div

@@ -46,8 +46,18 @@ export function CartDrawer() {
               {items.map((line) => (
                 <li
                   key={line.lineId}
-                  className="flex gap-3 rounded-2xl border border-border bg-muted/20 p-3"
+                  className="relative flex gap-3 rounded-2xl border border-border bg-muted/20 p-3"
                 >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    className="absolute right-2 top-2 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeItem(line.lineId)}
+                    aria-label="Remove item"
+                  >
+                    <Trash2Icon className="size-4" />
+                  </Button>
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl">
                     {isCartOpenLine(line) ? (
                       <div className="flex h-full w-full items-center justify-center bg-muted text-[10px] text-muted-foreground font-medium">
@@ -63,7 +73,7 @@ export function CartDrawer() {
                       />
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 pr-8">
                     <p className="font-medium leading-tight">{line.name}</p>
                     <p className="text-muted-foreground text-xs">
                       {isCartComboLine(line) ? (
@@ -94,20 +104,10 @@ export function CartDrawer() {
                         onDecrease={() => decreaseQty(line.lineId)}
                         min={0}
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => removeItem(line.lineId)}
-                        aria-label="Remove item"
-                      >
-                        <Trash2Icon className="size-4" />
-                      </Button>
+                      <span className="font-semibold tabular-nums">
+                        ₹{line.unitPrice * line.quantity}
+                      </span>
                     </div>
-                  </div>
-                  <div className="shrink-0 self-start font-semibold tabular-nums">
-                    ₹{line.unitPrice * line.quantity}
                   </div>
                 </li>
               ))}

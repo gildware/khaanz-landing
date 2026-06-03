@@ -9,18 +9,24 @@ import {
   EyeIcon,
   EyeOffIcon,
   GripVerticalIcon,
+  SparklesIcon,
+  XIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { MenuItemImage } from "@/components/MenuItemImage";
 import { Button } from "@/components/ui/button";
+import {
+  SearchableSelect,
+  type SearchableSelectOption,
+} from "@/components/ui/searchable-select";
 import { Switch } from "@/components/ui/switch";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { CategoryIcon } from "@/lib/category-icons";
 import { persistMenuLayout } from "@/lib/persist-menu-client";
 import { cn } from "@/lib/utils";
 import type { MenuCategoryDef } from "@/types/menu-category";
-import type { MenuItem } from "@/types/menu";
+import type { MenuCombo, MenuItem } from "@/types/menu";
 
 const FALLBACK_ICON = "utensils-crossed";
 
@@ -44,7 +50,9 @@ export function HomeLayoutManager() {
   const [cats, setCats] = useState<MenuCategoryDef[]>([]);
   const [groups, setGroups] = useState<Record<string, MenuItem[]>>({});
   const [orphans, setOrphans] = useState<MenuItem[]>([]);
+  const [combos, setCombos] = useState<MenuCombo[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [recOpen, setRecOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -67,7 +75,40 @@ export function HomeLayoutManager() {
     setCats(nextCats);
     setGroups(nextGroups);
     setOrphans(nextOrphans);
+    setCombos([...(data.combos ?? [])]);
   }, [data, dirty]);
+
+  const allItems = useMemo(
+    () => [...Object.values(groups).flat(), ...orphans],
+    [groups, orphans],
+  );
+
+  const recommendedItemsList = useMemo(
+    () => allItems.filter((i) => i.recommended),
+    [allItems],
+  );
+  const recommendedCombosList = useMemo(
+    () => combos.filter((c) => c.recommended),
+    [combos],
+  );
+  const recommendedCount =
+    recommendedItemsList.length + recommendedCombosList.length;
+
+  // Options for the "add recommended" dropdowns — only entries not yet picked.
+  const recItemOptions = useMemo<SearchableSelectOption[]>(
+    () =>
+      allItems
+        .filter((i) => !i.recommended)
+        .map((i) => ({ value: i.id, label: i.name })),
+    [allItems],
+  );
+  const recComboOptions = useMemo<SearchableSelectOption[]>(
+    () =>
+      combos
+        .filter((c) => !c.recommended)
+        .map((c) => ({ value: c.id, label: c.name })),
+    [combos],
+  );
 
   const totalHidden = useMemo(() => {
     let n = 0;
@@ -100,6 +141,29 @@ export function HomeLayoutManager() {
     setDirty(true);
   };
 
+  const setItemRecommended = (id: string, recommended: boolean) => {
+    setGroups((prev) => {
+      const next: Record<string, MenuItem[]> = {};
+      for (const [cat, list] of Object.entries(prev)) {
+        next[cat] = list.map((i) =>
+          i.id === id ? { ...i, recommended } : i,
+        );
+      }
+      return next;
+    });
+    setOrphans((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, recommended } : i)),
+    );
+    setDirty(true);
+  };
+
+  const setComboRecommended = (id: string, recommended: boolean) => {
+    setCombos((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, recommended } : c)),
+    );
+    setDirty(true);
+  };
+
   const toggleExpanded = (name: string) => {
     setExpanded((prev) => ({ ...prev, [name]: !prev[name] }));
   };
@@ -123,6 +187,11 @@ export function HomeLayoutManager() {
         items: ordered.map((it) => ({
           id: it.id,
           available: itemIsVisible(it),
+          recommended: Boolean(it.recommended),
+        })),
+        combos: combos.map((c) => ({
+          id: c.id,
+          recommended: Boolean(c.recommended),
         })),
       });
       setDirty(false);
@@ -185,6 +254,134 @@ export function HomeLayoutManager() {
             {saving ? "Saving…" : "Save layout"}
           </Button>
         </div>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <button
+          type="button"
+          onClick={() => setRecOpen((v) => !v)}
+          className="flex w-full items-center gap-2 px-3 py-3 text-left"
+        >
+          <SparklesIcon className="size-5 shrink-0 text-amber-500" />
+          <div className="min-w-0 flex-1">
+            <p className="font-medium">Recommended</p>
+            <p className="text-muted-foreground text-xs">
+              Featured on the home page. Pick dishes and combos to highlight.
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground tabular-nums">
+            {recommendedCount} selected
+          </span>
+          {recOpen ? (
+            <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
+          )}
+        </button>
+
+        {recOpen ? (
+          <div className="space-y-5 border-t border-border/70 bg-muted/20 p-2 sm:p-3">
+            <div className="space-y-2">
+              <p className="px-1 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                Recommended dishes
+              </p>
+              <SearchableSelect
+                options={recItemOptions}
+                value=""
+                onValueChange={(id) => setItemRecommended(id, true)}
+                placeholder="Add a dish…"
+                searchPlaceholder="Search dishes…"
+                emptyMessage="No more dishes to add"
+              />
+              {recommendedItemsList.length === 0 ? (
+                <p className="px-1 py-1 text-muted-foreground text-sm">
+                  No recommended dishes yet.
+                </p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {recommendedItemsList.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5"
+                    >
+                      <div className="relative size-9 shrink-0 overflow-hidden rounded-md bg-muted">
+                        <MenuItemImage
+                          src={item.image}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="36px"
+                        />
+                      </div>
+                      <span className="min-w-0 flex-1 truncate text-sm">
+                        {item.name}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Remove ${item.name} from recommended`}
+                        onClick={() => setItemRecommended(item.id, false)}
+                      >
+                        <XIcon />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <p className="px-1 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                Recommended combos
+              </p>
+              <SearchableSelect
+                options={recComboOptions}
+                value=""
+                onValueChange={(id) => setComboRecommended(id, true)}
+                placeholder="Add a combo…"
+                searchPlaceholder="Search combos…"
+                emptyMessage="No more combos to add"
+              />
+              {recommendedCombosList.length === 0 ? (
+                <p className="px-1 py-1 text-muted-foreground text-sm">
+                  No recommended combos yet.
+                </p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {recommendedCombosList.map((combo) => (
+                    <li
+                      key={combo.id}
+                      className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5"
+                    >
+                      <div className="relative size-9 shrink-0 overflow-hidden rounded-md bg-muted">
+                        <MenuItemImage
+                          src={combo.image}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="36px"
+                        />
+                      </div>
+                      <span className="min-w-0 flex-1 truncate text-sm">
+                        {combo.name}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Remove ${combo.name} from recommended`}
+                        onClick={() => setComboRecommended(combo.id, false)}
+                      >
+                        <XIcon />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <ul className="space-y-2">

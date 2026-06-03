@@ -24,12 +24,14 @@ export async function persistMenuPayload(payload: MenuPayload): Promise<void> {
 }
 
 /**
- * Reorder categories/items and toggle item visibility without rewriting the
- * whole menu (safe when items are referenced by wastage, recipes, etc.).
+ * Reorder categories/items, toggle item visibility, and set recommended
+ * items/combos without rewriting the whole menu (safe when items are
+ * referenced by wastage, recipes, etc.).
  */
 export async function persistMenuLayout(layout: {
   categories: string[];
-  items: { id: string; available: boolean }[];
+  items: { id: string; available: boolean; recommended: boolean }[];
+  combos: { id: string; recommended: boolean }[];
 }): Promise<void> {
   await putJson("/api/admin/menu/layout", layout);
 }

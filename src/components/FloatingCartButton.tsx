@@ -26,7 +26,7 @@ export function FloatingCartButton({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-[4.5rem] z-30 flex justify-center md:bottom-8",
+        "pointer-events-none fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 flex justify-center md:bottom-8",
         className,
       )}
     >

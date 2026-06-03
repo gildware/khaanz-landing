@@ -6,8 +6,9 @@ export default function AdminHomeLayoutPage() {
       <div>
         <h1 className="font-semibold text-2xl">Home layout</h1>
         <p className="text-muted-foreground text-sm">
-          Arrange which categories appear first, set item priority by dragging,
-          and hide or show individual dishes on the storefront home page.
+          Choose recommended dishes and combos, arrange which categories appear
+          first, set item priority by dragging, and hide or show individual
+          dishes on the storefront home page.
         </p>
       </div>
       <HomeLayoutManager />

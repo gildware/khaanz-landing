@@ -102,6 +102,7 @@ export async function readMenuPayload(): Promise<MenuPayload> {
     image: c.image,
     price: c.price,
     isVeg: c.isVeg,
+    recommended: c.recommended || undefined,
     available: c.available,
     components: c.components.map((x) => ({
       itemId: x.itemId,
@@ -222,6 +223,7 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
           image: c.image ?? "",
           price: c.price,
           isVeg: c.isVeg,
+          recommended: c.recommended ?? false,
           available: c.available !== false,
           sortOrder: ci,
           components: {
@@ -239,15 +241,17 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
 }
 
 /**
- * Home-layout save: reorder categories/items and toggle item visibility.
+ * Home-layout save: reorder categories/items, toggle item visibility, and set
+ * which items/combos are recommended on the storefront home page.
  *
- * Unlike `writeMenuPayload`, this performs targeted `sortOrder` / `available`
- * updates only — it never deletes menu rows, so it is safe even when items or
- * variations are referenced by wastage, recipes, vendor sales, etc.
+ * Unlike `writeMenuPayload`, this performs targeted `sortOrder` / `available` /
+ * `recommended` updates only — it never deletes menu rows, so it is safe even
+ * when items or variations are referenced by wastage, recipes, vendor sales, etc.
  */
 export async function writeMenuLayout(layout: {
   categories: string[];
-  items: { id: string; available: boolean }[];
+  items: { id: string; available: boolean; recommended?: boolean }[];
+  combos?: { id: string; recommended: boolean }[];
 }): Promise<void> {
   const prisma = getPrisma();
 
@@ -272,7 +276,20 @@ export async function writeMenuLayout(layout: {
       // updateMany avoids throwing if an item was removed concurrently.
       await tx.menuItem.updateMany({
         where: { id: it.id },
-        data: { sortOrder: i, available: it.available },
+        data: {
+          sortOrder: i,
+          available: it.available,
+          ...(typeof it.recommended === "boolean"
+            ? { recommended: it.recommended }
+            : {}),
+        },
+      });
+    }
+
+    for (const c of layout.combos ?? []) {
+      await tx.menuCombo.updateMany({
+        where: { id: c.id },
+        data: { recommended: c.recommended },
       });
     }
   });

@@ -6,7 +6,8 @@ import { writeMenuLayout } from "@/lib/menu-repository";
 
 type LayoutPayload = {
   categories: string[];
-  items: { id: string; available: boolean }[];
+  items: { id: string; available: boolean; recommended: boolean }[];
+  combos: { id: string; recommended: boolean }[];
 };
 
 function parseLayout(body: unknown): LayoutPayload | null {
@@ -19,15 +20,29 @@ function parseLayout(body: unknown): LayoutPayload | null {
     if (typeof c === "string" && c.trim()) categories.push(c.trim());
   }
 
-  const items: { id: string; available: boolean }[] = [];
+  const items: { id: string; available: boolean; recommended: boolean }[] = [];
   for (const raw of o.items) {
     if (!raw || typeof raw !== "object") return null;
     const r = raw as Record<string, unknown>;
     if (typeof r.id !== "string" || !r.id) return null;
-    items.push({ id: r.id, available: r.available !== false });
+    items.push({
+      id: r.id,
+      available: r.available !== false,
+      recommended: r.recommended === true,
+    });
   }
 
-  return { categories, items };
+  const combos: { id: string; recommended: boolean }[] = [];
+  if (Array.isArray(o.combos)) {
+    for (const raw of o.combos) {
+      if (!raw || typeof raw !== "object") return null;
+      const r = raw as Record<string, unknown>;
+      if (typeof r.id !== "string" || !r.id) return null;
+      combos.push({ id: r.id, recommended: r.recommended === true });
+    }
+  }
+
+  return { categories, items, combos };
 }
 
 export async function PUT(request: Request) {

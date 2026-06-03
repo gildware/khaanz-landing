@@ -137,6 +137,7 @@ model MenuCombo {
   image       String               @default("")
   price       Float
   isVeg       Boolean              @default(true) @map("is_veg")
+  recommended Boolean              @default(false)
   available   Boolean              @default(true)
   sortOrder   Int                  @default(0) @map("sort_order")
   components  MenuComboComponent[]
