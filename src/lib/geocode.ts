@@ -18,9 +18,11 @@ export async function reverseGeocode(
 }
 
 export type GeocodeSearchHit = {
-  lat: number;
-  lon: number;
   displayName: string;
+  lat?: number;
+  lon?: number;
+  /** Google Places ID — resolved to coordinates when the user picks a result. */
+  placeId?: string;
 };
 
 export type TravelDistanceResult = {
@@ -84,4 +86,28 @@ export async function searchPlaces(query: string): Promise<GeocodeSearchHit[]> {
   }
   const data = (await res.json()) as { results?: GeocodeSearchHit[] };
   return Array.isArray(data.results) ? data.results : [];
+}
+
+export async function resolvePlace(
+  placeId: string,
+): Promise<{ lat: number; lon: number; displayName: string }> {
+  const res = await fetch(
+    `/api/geocode/place?${new URLSearchParams({ placeId }).toString()}`,
+  );
+  if (!res.ok) {
+    throw new Error("Could not resolve place");
+  }
+  const data = (await res.json()) as {
+    lat?: number;
+    lng?: number;
+    displayName?: string;
+  };
+  if (
+    typeof data.lat !== "number" ||
+    typeof data.lng !== "number" ||
+    !data.displayName
+  ) {
+    throw new Error("Invalid place response");
+  }
+  return { lat: data.lat, lon: data.lng, displayName: data.displayName };
 }

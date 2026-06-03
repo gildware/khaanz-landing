@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   fetchTravelDistance,
+  resolvePlace,
   reverseGeocode,
   type GeocodeSearchHit,
   type TravelDistanceResult,
@@ -193,6 +194,7 @@ export function CheckoutForm() {
     return () => {
       cancelled = true;
       clearTimeout(handle);
+      setDistanceLoading(false);
     };
   }, [latitude, longitude, currentStepLabel]);
 
@@ -281,15 +283,36 @@ export function CheckoutForm() {
   const handlePositionChange = (lat: number, lng: number) => {
     setLatitude(lat);
     setLongitude(lng);
-  };
-
-  const handleSearchPick = (hit: GeocodeSearchHit) => {
-    setLatitude(hit.lat);
-    setLongitude(hit.lon);
-    setAddress(hit.displayName);
-    setMapFlyTrigger((n) => n + 1);
     setGeoError(null);
   };
+
+  const handleSearchPick = useCallback(async (hit: GeocodeSearchHit) => {
+    setGeoError(null);
+    setAddressLoading(true);
+    try {
+      let lat = hit.lat;
+      let lon = hit.lon;
+      let displayName = hit.displayName;
+      if (hit.placeId && (lat == null || lon == null)) {
+        const resolved = await resolvePlace(hit.placeId);
+        lat = resolved.lat;
+        lon = resolved.lon;
+        displayName = resolved.displayName;
+      }
+      if (lat == null || lon == null) {
+        setGeoError("Could not resolve that location. Try another result.");
+        return;
+      }
+      setLatitude(lat);
+      setLongitude(lon);
+      setAddress(displayName);
+      setMapFlyTrigger((n) => n + 1);
+    } catch {
+      setGeoError("Could not resolve that location. Try another result.");
+    } finally {
+      setAddressLoading(false);
+    }
+  }, []);
 
   const selectSavedAddress = useCallback((a: SavedAddressDTO) => {
     setAddressMode("saved");
@@ -694,6 +717,54 @@ export function CheckoutForm() {
     );
   }
 
+  const deliveryDistanceSection =
+    latitude != null && longitude != null ? (
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 px-3 py-2.5">
+        <MapPinnedIcon className="size-5 shrink-0 text-primary" />
+        {distanceLoading ? (
+          <span className="flex items-center gap-2 text-muted-foreground text-sm">
+            <Loader2Icon className="size-3.5 animate-spin" />
+            Calculating distance from restaurant…
+          </span>
+        ) : !distanceConfigured ? (
+          <span className="text-muted-foreground text-sm">
+            Distance and delivery fee are not configured for this restaurant.
+          </span>
+        ) : distance ? (
+          <div className="min-w-0 flex-1">
+            <p className="text-muted-foreground text-xs uppercase tracking-wide">
+              Distance from restaurant
+            </p>
+            <p className="font-medium text-sm">
+              {distance.text}
+              {distance.durationText && (
+                <span className="text-muted-foreground font-normal">
+                  {" "}
+                  · ~{distance.durationText} drive
+                </span>
+              )}
+            </p>
+            <p className="mt-1 text-sm">
+              <span className="text-muted-foreground">Delivery fee: </span>
+              {deliveryFee > 0 ? (
+                <span className="font-semibold text-primary tabular-nums">
+                  ₹{deliveryFee}
+                </span>
+              ) : (
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  Free
+                </span>
+              )}
+            </p>
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-sm">
+            Distance unavailable for this location.
+          </span>
+        )}
+      </div>
+    ) : null;
+
   return (
     <div className="space-y-8">
       <StepperHeader step={step} steps={steps} />
@@ -1048,48 +1119,7 @@ export function CheckoutForm() {
             </div>
           )}
 
-          {(latitude != null && longitude != null) && distanceConfigured && (
-            <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 px-3 py-2.5">
-              <MapPinnedIcon className="size-5 shrink-0 text-primary" />
-              {distanceLoading ? (
-                <span className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <Loader2Icon className="size-3.5 animate-spin" />
-                  Calculating distance from restaurant…
-                </span>
-              ) : distance ? (
-                <div className="min-w-0 flex-1">
-                  <p className="text-muted-foreground text-xs uppercase tracking-wide">
-                    Distance from restaurant
-                  </p>
-                  <p className="font-medium text-sm">
-                    {distance.text}
-                    {distance.durationText && (
-                      <span className="text-muted-foreground font-normal">
-                        {" "}
-                        · ~{distance.durationText} drive
-                      </span>
-                    )}
-                  </p>
-                  <p className="mt-1 text-sm">
-                    <span className="text-muted-foreground">Delivery fee: </span>
-                    {deliveryFee > 0 ? (
-                      <span className="font-semibold text-primary tabular-nums">
-                        ₹{deliveryFee}
-                      </span>
-                    ) : (
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                        Free
-                      </span>
-                    )}
-                  </p>
-                </div>
-              ) : (
-                <span className="text-muted-foreground text-sm">
-                  Distance unavailable for this location.
-                </span>
-              )}
-            </div>
-          )}
+          {addressMode === "saved" && deliveryDistanceSection}
 
           {addressMode === "new" && (
             <div className="space-y-4">
@@ -1140,6 +1170,7 @@ export function CheckoutForm() {
                 Search above, or tap the map and drag the pin to fine-tune. Address
                 updates automatically.
               </p>
+              {deliveryDistanceSection}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="address">Full address</Label>

@@ -9,7 +9,7 @@ import { searchPlaces, type GeocodeSearchHit } from "@/lib/geocode";
 import { cn } from "@/lib/utils";
 
 type LocationSearchProps = {
-  onPick: (hit: GeocodeSearchHit) => void;
+  onPick: (hit: GeocodeSearchHit) => void | Promise<void>;
   disabled?: boolean;
 };
 
@@ -86,7 +86,7 @@ export function LocationSearch({ onPick, disabled }: LocationSearchProps) {
           role="listbox"
         >
           {results.map((hit, i) => (
-            <li key={`${hit.lat}-${hit.lon}-${i}`}>
+            <li key={hit.placeId ?? `${hit.lat}-${hit.lon}-${i}`}>
               <button
                 type="button"
                 className={cn(
@@ -94,9 +94,10 @@ export function LocationSearch({ onPick, disabled }: LocationSearchProps) {
                 )}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
-                  onPick(hit);
-                  setQ(hit.displayName.split(",")[0]?.trim() ?? "");
-                  setOpen(false);
+                  void Promise.resolve(onPick(hit)).then(() => {
+                    setQ(hit.displayName.split(",")[0]?.trim() ?? "");
+                    setOpen(false);
+                  });
                 }}
               >
                 {hit.displayName}
@@ -104,6 +105,11 @@ export function LocationSearch({ onPick, disabled }: LocationSearchProps) {
             </li>
           ))}
         </ul>
+      )}
+      {open && !loading && q.trim().length >= 2 && results.length === 0 && (
+        <p className="absolute left-0 right-0 top-full z-[800] mt-1 rounded-xl border border-border bg-popover px-3 py-2.5 text-muted-foreground text-sm shadow-lg">
+          No locations found. Try a nearby landmark or area name.
+        </p>
       )}
     </div>
   );
