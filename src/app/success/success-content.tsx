@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { useCartStore } from "@/store/cartStore";
 import { cn } from "@/lib/utils";
 
 export function SuccessContent() {
@@ -18,6 +19,9 @@ export function SuccessContent() {
 
   useEffect(() => {
     setWaHref(sessionStorage.getItem("khaanz_wa_order_href"));
+    // Safety net: the cart is cleared right after the order POST succeeds, but
+    // clear again here so reaching this page always leaves an empty cart.
+    useCartStore.getState().clearCart();
   }, []);
 
   const trackKey = orderRef || orderUuid;

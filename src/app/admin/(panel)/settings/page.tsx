@@ -40,6 +40,9 @@ export default function AdminSettingsPage() {
   const [deliveryEnd, setDeliveryEnd] = useState("23:00");
   const [billHeader, setBillHeader] = useState("");
   const [billFooter, setBillFooter] = useState("");
+  const [freeDeliveryUptoKm, setFreeDeliveryUptoKm] = useState("0");
+  const [baseDeliveryCharge, setBaseDeliveryCharge] = useState("0");
+  const [deliveryPerKmCharge, setDeliveryPerKmCharge] = useState("0");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodConfig[]>([
     { id: "cash", name: "Cash" },
     { id: "upi", name: "UPI" },
@@ -67,6 +70,9 @@ export default function AdminSettingsPage() {
       setDeliveryEnd(data.delivery.end);
       setBillHeader(data.billHeader ?? "");
       setBillFooter(data.billFooter ?? "");
+      setFreeDeliveryUptoKm(String(data.freeDeliveryUptoKm ?? 0));
+      setBaseDeliveryCharge(String(data.baseDeliveryCharge ?? 0));
+      setDeliveryPerKmCharge(String(data.deliveryPerKmCharge ?? 0));
       if (data.paymentMethods?.length) {
         setPaymentMethods(data.paymentMethods);
       }
@@ -90,6 +96,9 @@ export default function AdminSettingsPage() {
         delivery: { start: deliveryStart, end: deliveryEnd },
         billHeader,
         billFooter,
+        freeDeliveryUptoKm: Math.max(0, Number(freeDeliveryUptoKm) || 0),
+        baseDeliveryCharge: Math.max(0, Number(baseDeliveryCharge) || 0),
+        deliveryPerKmCharge: Math.max(0, Number(deliveryPerKmCharge) || 0),
         paymentMethods,
       };
       const res = await fetch("/api/admin/settings", {
@@ -194,6 +203,7 @@ export default function AdminSettingsPage() {
         <TabsList variant="line" className="h-auto min-h-9 w-full flex-wrap justify-start gap-0">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="timing">Timing</TabsTrigger>
+          <TabsTrigger value="delivery-charges">Delivery charges</TabsTrigger>
           <TabsTrigger value="bill">Bill settings</TabsTrigger>
           <TabsTrigger value="payment">Payment methods</TabsTrigger>
           <TabsTrigger value="desktop">POS app</TabsTrigger>
@@ -319,6 +329,95 @@ export default function AdminSettingsPage() {
                   onChange={(e) => setDeliveryEnd(e.target.value)}
                 />
               </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="delivery-charges" className="space-y-6">
+          <div className="space-y-3 rounded-xl border bg-card p-4">
+            <p className="font-medium">Delivery charges</p>
+            <p className="text-muted-foreground text-xs">
+              Delivery is free within the free distance. The first km past it
+              costs the base charge; each additional km adds the per-km charge.
+              The fee is calculated automatically from the driving distance when
+              the customer picks a delivery location at checkout.
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="space-y-1">
+                <Label htmlFor="free-delivery-km">Free up to (km)</Label>
+                <Input
+                  id="free-delivery-km"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  inputMode="decimal"
+                  value={freeDeliveryUptoKm}
+                  onChange={(e) => setFreeDeliveryUptoKm(e.target.value)}
+                  placeholder="0"
+                />
+                <p className="text-muted-foreground text-xs">
+                  No fee within this distance.
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="base-charge">Base charge (₹)</Label>
+                <Input
+                  id="base-charge"
+                  type="number"
+                  min={0}
+                  step="1"
+                  inputMode="decimal"
+                  value={baseDeliveryCharge}
+                  onChange={(e) => setBaseDeliveryCharge(e.target.value)}
+                  placeholder="0"
+                />
+                <p className="text-muted-foreground text-xs">
+                  Flat fee for the first km past the free distance.
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="per-km-charge">Per km charge (₹)</Label>
+                <Input
+                  id="per-km-charge"
+                  type="number"
+                  min={0}
+                  step="1"
+                  inputMode="decimal"
+                  value={deliveryPerKmCharge}
+                  onChange={(e) => setDeliveryPerKmCharge(e.target.value)}
+                  placeholder="0"
+                />
+                <p className="text-muted-foreground text-xs">
+                  Added for each additional km.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-muted-foreground text-xs">
+              <p>
+                With free {Number(freeDeliveryUptoKm) || 0} km, base ₹
+                {Number(baseDeliveryCharge) || 0}, ₹
+                {Number(deliveryPerKmCharge) || 0}/km:
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {[1, 2, 3, 4].map((toKm) => {
+                  const free = Number(freeDeliveryUptoKm) || 0;
+                  const base = Number(baseDeliveryCharge) || 0;
+                  const perKm = Number(deliveryPerKmCharge) || 0;
+                  const fromKm = free + toKm - 1;
+                  const upToKm = free + toKm;
+                  const charge = Math.max(0, Math.round(base + perKm * (toKm - 1)));
+                  return (
+                    <li key={toKm} className="tabular-nums">
+                      {fromKm}–{upToKm} km →{" "}
+                      <span className="font-medium text-foreground">₹{charge}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-1">
+                Needs the restaurant coordinates and Google key configured on the
+                server.
+              </p>
             </div>
           </div>
         </TabsContent>

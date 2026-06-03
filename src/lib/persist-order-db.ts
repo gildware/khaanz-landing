@@ -1,6 +1,7 @@
 import type { OrderSource, Prisma } from "@prisma/client";
 
 import type { CustomerSession } from "@/lib/customer-auth";
+import { upsertCustomerAddress } from "@/lib/customer-address";
 import { applyOrderInventoryDeduction } from "@/lib/inventory/apply-order-inventory";
 import type { OrderCreateParsed } from "@/lib/parse-order-create-body";
 import {
@@ -35,6 +36,8 @@ export async function persistOrderToDatabase(
   const prisma = getPrisma();
   const digits = phoneDigits(parsed.phone);
   const totalMinor = orderTotalMinor(parsed);
+  const deliveryChargeMinor = Math.max(0, parsed.deliveryChargeMinor ?? 0);
+  const discountMinor = Math.max(0, parsed.discountMinor ?? 0);
   const scheduledAt =
     parsed.scheduleMode === "scheduled" && parsed.scheduledAt
       ? new Date(parsed.scheduledAt)
@@ -74,6 +77,8 @@ export async function persistOrderToDatabase(
         latitude: parsed.latitude,
         longitude: parsed.longitude,
         totalMinor,
+        deliveryChargeMinor,
+        discountMinor,
         messageSentViaWhatsApp,
         source: "website" satisfies OrderSource,
         paymentMethod: "",
@@ -88,6 +93,16 @@ export async function persistOrderToDatabase(
     });
 
     await applyOrderInventoryDeduction(tx, orderId, parsed, null, now);
+
+    // Remember the delivery address so the customer can reuse it next time.
+    if (parsed.fulfillment === "delivery" && parsed.address.trim().length > 0) {
+      await upsertCustomerAddress(tx, customer.id, {
+        address: parsed.address,
+        landmark: parsed.landmark,
+        latitude: parsed.latitude,
+        longitude: parsed.longitude,
+      });
+    }
 
     return { orderRef };
   });
@@ -106,6 +121,8 @@ export async function persistPosOrderToDatabase(
   const prisma = getPrisma();
   const digits = phoneDigits(parsed.phone);
   const totalMinor = orderTotalMinor(parsed);
+  const deliveryChargeMinor = Math.max(0, parsed.deliveryChargeMinor ?? 0);
+  const discountMinor = Math.max(0, parsed.discountMinor ?? 0);
   const scheduledAt =
     parsed.scheduleMode === "scheduled" && parsed.scheduledAt
       ? new Date(parsed.scheduledAt)
@@ -143,6 +160,8 @@ export async function persistPosOrderToDatabase(
         latitude: parsed.latitude,
         longitude: parsed.longitude,
         totalMinor,
+        deliveryChargeMinor,
+        discountMinor,
         messageSentViaWhatsApp: false,
         source: "pos" satisfies OrderSource,
         paymentMethod: paymentKey,

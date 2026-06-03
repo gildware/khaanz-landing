@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 
 import { getPrisma } from "@/lib/prisma";
 import {
-  isIndianMobile10,
+  DEMO_CUSTOMER_OTP,
+  isDemoCustomerLoginEnabled,
+  isDemoCustomerPhone,
+  isLoginPhoneAllowed,
   normalizeIndianMobileDigits,
 } from "@/lib/phone-digits";
 import { sendWhatsAppCloudText, isWhatsAppCloudConfigured } from "@/lib/whatsapp-cloud";
@@ -29,7 +32,13 @@ export async function POST(request: Request) {
 
   const raw = typeof body.phone === "string" ? body.phone.trim() : "";
   const digits = normalizeIndianMobileDigits(raw);
-  if (!isIndianMobile10(digits)) {
+
+  // Dev-only demo customer: skip OTP delivery, always use the fixed demo code.
+  if (isDemoCustomerLoginEnabled() && isDemoCustomerPhone(digits)) {
+    return NextResponse.json({ ok: true, devOtp: DEMO_CUSTOMER_OTP });
+  }
+
+  if (!isLoginPhoneAllowed(digits)) {
     return NextResponse.json(
       { error: "Enter a valid 10-digit Indian mobile number." },
       { status: 400 },

@@ -29,6 +29,7 @@ import {
   printPosKotThermal,
   receiptLineToKotLine,
 } from "@/lib/pos-print";
+import { OrderLineView } from "@/components/orders/order-line-view";
 import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import type { RestaurantSettingsPayload } from "@/types/restaurant-settings";
@@ -56,6 +57,8 @@ type OrderRow = {
   fulfillment: string;
   dineInTable: string;
   totalMinor: number;
+  deliveryChargeMinor: number;
+  discountMinor: number;
   currency: string;
   createdAt: string;
   customerPhone: string;
@@ -88,6 +91,8 @@ type AdminOrderDetail = {
   latitude: number | null;
   longitude: number | null;
   totalMinor: number;
+  deliveryChargeMinor: number;
+  discountMinor: number;
   currency: string;
   createdAt: string;
   updatedAt: string;
@@ -182,6 +187,7 @@ export default function AdminOrdersPage() {
         limit: String(limit),
         offset: String(offset),
         date,
+        view: "exclude_online_pending",
       });
       const res = await fetch(`/api/admin/orders?${params.toString()}`, {
         credentials: "include",
@@ -350,6 +356,15 @@ export default function AdminOrdersPage() {
             paymentLabel: "",
             lines: receiptLines,
             total: totalRupees,
+            deliveryCharge:
+              o.deliveryChargeMinor > 0
+                ? o.deliveryChargeMinor / 100
+                : undefined,
+            discount: o.discountMinor > 0 ? o.discountMinor / 100 : undefined,
+            itemsSubtotal:
+              o.deliveryChargeMinor > 0 || o.discountMinor > 0
+                ? (o.totalMinor - o.deliveryChargeMinor + o.discountMinor) / 100
+                : undefined,
           });
         }
       } catch (e) {
@@ -552,9 +567,16 @@ export default function AdminOrdersPage() {
                       <p className="font-semibold text-lg tabular-nums">
                         ₹{rupee}
                       </p>
-                      <p className="text-muted-foreground text-xs">
-                        {o.currency}
-                      </p>
+                      {o.deliveryChargeMinor > 0 ? (
+                        <p className="text-muted-foreground text-xs tabular-nums">
+                          incl. ₹{(o.deliveryChargeMinor / 100).toFixed(0)}{" "}
+                          delivery
+                        </p>
+                      ) : (
+                        <p className="text-muted-foreground text-xs">
+                          {o.currency}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -784,6 +806,36 @@ export default function AdminOrdersPage() {
                     <span className="text-muted-foreground">Placed: </span>
                     {new Date(detail.createdAt).toLocaleString()}
                   </div>
+                  {detail.deliveryChargeMinor > 0 || detail.discountMinor > 0 ? (
+                    <>
+                      <div>
+                        <span className="text-muted-foreground">Items: </span>
+                        ₹
+                        {(
+                          (detail.totalMinor -
+                            detail.deliveryChargeMinor +
+                            detail.discountMinor) /
+                          100
+                        ).toFixed(2)}
+                      </div>
+                      {detail.deliveryChargeMinor > 0 ? (
+                        <div>
+                          <span className="text-muted-foreground">
+                            Delivery fee:{" "}
+                          </span>
+                          ₹{(detail.deliveryChargeMinor / 100).toFixed(2)}
+                        </div>
+                      ) : null}
+                      {detail.discountMinor > 0 ? (
+                        <div>
+                          <span className="text-muted-foreground">
+                            Discount:{" "}
+                          </span>
+                          −₹{(detail.discountMinor / 100).toFixed(2)}
+                        </div>
+                      ) : null}
+                    </>
+                  ) : null}
                   <div>
                     <span className="text-muted-foreground">Total: </span>
                     ₹{(detail.totalMinor / 100).toFixed(2)} {detail.currency}
@@ -979,86 +1031,3 @@ export default function AdminOrdersPage() {
   );
 }
 
-const orderLineBoxClass =
-  "rounded-xl border border-border/70 bg-muted/20 p-3 text-sm shadow-sm";
-
-function OrderLineView({ payload }: { payload: unknown }) {
-  if (!payload || typeof payload !== "object") {
-    return (
-      <div className={orderLineBoxClass}>
-        <pre className="max-h-40 overflow-auto text-xs">
-          {JSON.stringify(payload, null, 2)}
-        </pre>
-      </div>
-    );
-  }
-  const p = payload as Record<string, unknown>;
-  const qty =
-    typeof p.quantity === "number" && Number.isFinite(p.quantity)
-      ? p.quantity
-      : 1;
-  const unit =
-    typeof p.unitPrice === "number" && Number.isFinite(p.unitPrice)
-      ? p.unitPrice
-      : 0;
-  const lineTotal = (unit * qty).toFixed(2);
-
-  if (p.kind === "combo") {
-    return (
-      <div className={orderLineBoxClass}>
-        <div className="flex justify-between gap-2">
-          <span className="font-medium">{String(p.name)}</span>
-          <span className="shrink-0 tabular-nums">₹{lineTotal}</span>
-        </div>
-        <div className="text-muted-foreground text-xs">Combo × {qty}</div>
-        {typeof p.componentSummary === "string" && p.componentSummary ? (
-          <div className="mt-1.5 text-muted-foreground text-xs leading-snug">
-            {p.componentSummary}
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (p.kind === "open") {
-    return (
-      <div className={orderLineBoxClass}>
-        <div className="flex justify-between gap-2">
-          <span className="font-medium">{String(p.name)}</span>
-          <span className="shrink-0 tabular-nums">₹{lineTotal}</span>
-        </div>
-        <div className="text-muted-foreground text-xs">Open item × {qty}</div>
-      </div>
-    );
-  }
-
-  const v = p.variation as Record<string, unknown> | undefined;
-  const addons = Array.isArray(p.addons) ? p.addons : [];
-  return (
-    <div className={orderLineBoxClass}>
-      <div className="flex justify-between gap-2">
-        <span className="font-medium">{String(p.name)}</span>
-        <span className="shrink-0 tabular-nums">₹{lineTotal}</span>
-      </div>
-      <div className="text-muted-foreground text-xs">
-        × {qty}
-        {v && typeof v.name === "string" ? ` · ${v.name}` : ""}
-      </div>
-      {addons.length > 0 && (
-        <ul className="mt-2 list-disc space-y-0.5 pl-4 text-muted-foreground text-xs">
-          {(addons as Record<string, unknown>[]).map((a, i) => (
-            <li key={i}>
-              {String(a.name)}
-              {typeof a.quantity === "number" && a.quantity > 0
-                ? ` ×${a.quantity}`
-                : ""}
-              {typeof a.price === "number" && a.price > 0
-                ? ` (+₹${a.price.toFixed(2)} each)`
-                : ""}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}

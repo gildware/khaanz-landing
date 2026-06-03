@@ -22,6 +22,12 @@ export interface RestaurantSettingsPayload {
   billHeader: string;
   /** Printed below total on POS bill */
   billFooter: string;
+  /** Delivery is free within this many km of the restaurant (0 = no free distance). */
+  freeDeliveryUptoKm: number;
+  /** Flat charge (rupees) for the first km past the free radius. */
+  baseDeliveryCharge: number;
+  /** Charge per additional km (rupees) after the first chargeable km. */
+  deliveryPerKmCharge: number;
   /** Configurable payment options for POS */
   paymentMethods: PaymentMethodConfig[];
 }

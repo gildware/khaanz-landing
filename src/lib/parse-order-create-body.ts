@@ -3,7 +3,7 @@ import {
   type ScheduleMode,
 } from "@/lib/order-schedule";
 import {
-  isIndianMobile10,
+  isLoginPhoneAllowed,
   normalizeIndianMobileDigits,
   POS_ANONYMOUS_PHONE_DIGITS,
 } from "@/lib/phone-digits";
@@ -123,7 +123,7 @@ function isCartItemLineRow(x: unknown): boolean {
   return true;
 }
 
-function isCartLine(x: unknown): x is CartLine {
+export function isCartLine(x: unknown): x is CartLine {
   return (
     isCartOpenLineRow(x) ||
     isCartComboLineRow(x) ||
@@ -131,12 +131,71 @@ function isCartLine(x: unknown): x is CartLine {
   );
 }
 
+/** Maps already-validated raw line rows into normalized CartLine objects. */
+export function toCartLines(rawLines: unknown[]): CartLine[] {
+  return rawLines.map((row) => {
+    const l = row as Record<string, unknown>;
+    if (l.kind === "open") {
+      return {
+        kind: "open" as const,
+        lineId: l.lineId as string,
+        name: (l.name as string).trim(),
+        quantity: l.quantity as number,
+        unitPrice: l.unitPrice as number,
+      };
+    }
+    if (l.kind === "combo") {
+      return {
+        kind: "combo" as const,
+        lineId: l.lineId as string,
+        comboId: l.comboId as string,
+        name: l.name as string,
+        image: l.image as string,
+        isVeg: typeof l.isVeg === "boolean" ? l.isVeg : true,
+        quantity: l.quantity as number,
+        unitPrice: l.unitPrice as number,
+        componentSummary: l.componentSummary as string,
+      };
+    }
+    const rawAddons = (l.addons as unknown[]) ?? [];
+    const addons: CartAddonWithQty[] = rawAddons
+      .map((r) => {
+        const a = r as Record<string, unknown>;
+        const base: MenuAddon = {
+          id: a.id as string,
+          name: a.name as string,
+          price: a.price as number,
+          image: typeof a.image === "string" ? a.image : undefined,
+        };
+        const q = a.quantity;
+        const quantity =
+          typeof q === "number" && Number.isInteger(q) && q >= 0 && q <= 99
+            ? q
+            : 1;
+        return { ...base, quantity };
+      })
+      .filter((x) => x.quantity > 0);
+    return {
+      kind: "item" as const,
+      lineId: l.lineId as string,
+      itemId: l.itemId as string,
+      name: l.name as string,
+      image: l.image as string,
+      isVeg: typeof l.isVeg === "boolean" ? l.isVeg : true,
+      variation: l.variation as MenuVariation,
+      addons,
+      quantity: l.quantity as number,
+      unitPrice: l.unitPrice as number,
+    };
+  });
+}
+
 export type ParseOrderBodyOptions = {
   /** Admin POS: name/phone can be omitted (defaults to Guest + anonymous phone). */
   posMode?: boolean;
 };
 
-function parseNonNegativeMinor(raw: unknown): number {
+export function parseNonNegativeMinor(raw: unknown): number {
   if (typeof raw === "number" && Number.isFinite(raw)) {
     return Math.max(0, Math.round(raw));
   }
@@ -194,7 +253,7 @@ export function parseOrderCreateBody(
   if (!customerName) {
     return { error: "Name is required." };
   }
-  if (!isIndianMobile10(phone)) {
+  if (!isLoginPhoneAllowed(phone)) {
     return { error: "Enter a valid 10-digit Indian mobile number." };
   }
   if (
@@ -230,61 +289,7 @@ export function parseOrderCreateBody(
     return { error: "Invalid cart lines." };
   }
 
-  const lines: CartLine[] = (o.lines as unknown[]).map((row) => {
-    const l = row as Record<string, unknown>;
-    if (l.kind === "open") {
-      return {
-        kind: "open" as const,
-        lineId: l.lineId as string,
-        name: (l.name as string).trim(),
-        quantity: l.quantity as number,
-        unitPrice: l.unitPrice as number,
-      };
-    }
-    if (l.kind === "combo") {
-      return {
-        kind: "combo" as const,
-        lineId: l.lineId as string,
-        comboId: l.comboId as string,
-        name: l.name as string,
-        image: l.image as string,
-        isVeg: typeof l.isVeg === "boolean" ? l.isVeg : true,
-        quantity: l.quantity as number,
-        unitPrice: l.unitPrice as number,
-        componentSummary: l.componentSummary as string,
-      };
-    }
-    const rawAddons = l.addons as unknown[];
-    const addons: CartAddonWithQty[] = rawAddons
-      .map((r) => {
-        const a = r as Record<string, unknown>;
-        const base: MenuAddon = {
-          id: a.id as string,
-          name: a.name as string,
-          price: a.price as number,
-          image: typeof a.image === "string" ? a.image : undefined,
-        };
-        const q = a.quantity;
-        const quantity =
-          typeof q === "number" && Number.isInteger(q) && q >= 0 && q <= 99
-            ? q
-            : 1;
-        return { ...base, quantity };
-      })
-      .filter((x) => x.quantity > 0);
-    return {
-      kind: "item" as const,
-      lineId: l.lineId as string,
-      itemId: l.itemId as string,
-      name: l.name as string,
-      image: l.image as string,
-      isVeg: typeof l.isVeg === "boolean" ? l.isVeg : true,
-      variation: l.variation as MenuVariation,
-      addons,
-      quantity: l.quantity as number,
-      unitPrice: l.unitPrice as number,
-    };
-  });
+  const lines: CartLine[] = toCartLines(o.lines as unknown[]);
 
   if (!posMode && lines.some((l) => l.kind === "open")) {
     return { error: "Invalid cart lines." };

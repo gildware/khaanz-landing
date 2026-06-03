@@ -39,6 +39,12 @@ model RestaurantSettings {
   deliveryEnd        String   @map("delivery_end")
   billHeader         String   @default("") @map("bill_header")
   billFooter         String   @default("") @map("bill_footer")
+  /// Delivery is free within this many km of the restaurant (0 = no free distance).
+  freeDeliveryUptoKm  Float    @default(0) @map("free_delivery_upto_km")
+  /// Flat charge (rupees) for the first km past the free radius.
+  baseDeliveryCharge  Float    @default(0) @map("base_delivery_charge")
+  /// Charge per additional km (rupees) after the first chargeable km.
+  deliveryPerKmCharge Float    @default(0) @map("delivery_per_km_charge")
   paymentMethodsJson Json     @default("[{\"id\":\"cash\",\"name\":\"Cash\"},{\"id\":\"upi\",\"name\":\"UPI\"},{\"id\":\"mpay\",\"name\":\"Mpay\"}]") @map("payment_methods_json")
   /// POS dine-in floor plan: `{ "tables": [{ "id", "label", "xPct", "yPct", "wPct", "hPct" }] }` (percent of layout box).
   floorPlanJson      Json     @default("{\"tables\":[]}") @map("floor_plan_json")
@@ -165,9 +171,29 @@ model Customer {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  orders Order[]
+  orders    Order[]
+  addresses CustomerAddress[]
 
   @@map("customers")
+}
+
+/// Saved delivery addresses for a customer, reused at checkout.
+model CustomerAddress {
+  id         String   @id @default(cuid())
+  customerId String   @map("customer_id")
+  address    String
+  landmark   String   @default("")
+  latitude   Float?
+  longitude  Float?
+  /// Bumped each time the address is used for an order; drives "most recent" ordering.
+  lastUsedAt DateTime @default(now()) @map("last_used_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("customer_addresses")
 }
 
 /// Short-lived phone OTP for customer login (hashed code).
@@ -231,6 +257,10 @@ model Order {
   latitude               Float?
   longitude              Float?
   totalMinor             Int             @map("total_minor")
+  /// Delivery fee portion of `totalMinor` (paise); 0 for pickup/dine-in.
+  deliveryChargeMinor    Int             @default(0) @map("delivery_charge_minor")
+  /// Discount applied to `totalMinor` (paise); 0 when none.
+  discountMinor          Int             @default(0) @map("discount_minor")
   currency               String          @default("INR")
   messageSentViaWhatsApp Boolean         @default(false) @map("message_sent_via_whatsapp")
   /// Placed from public site vs admin POS — notifications only for website.

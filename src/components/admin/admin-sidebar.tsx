@@ -10,6 +10,7 @@ import {
   LogOutIcon,
   SettingsIcon,
   ClipboardListIcon,
+  ShoppingBagIcon,
   StoreIcon,
   LayoutGridIcon,
   WarehouseIcon,
@@ -34,6 +35,7 @@ const links: {
 }[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboardIcon },
   { href: "/admin/reports", label: "Reports", icon: BarChart3Icon },
+  { href: "/admin/online-orders", label: "Online orders", icon: ShoppingBagIcon },
   { href: "/admin/orders", label: "Orders", icon: ClipboardListIcon },
   { href: "/admin/inventory", label: "Inventory", icon: WarehouseIcon },
   { href: "/admin/wastage", label: "Wastage", icon: Trash2Icon },

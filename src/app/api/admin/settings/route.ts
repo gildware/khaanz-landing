@@ -10,6 +10,7 @@ import { readFloorPlan } from "@/lib/floor-plan";
 import {
   isRestaurantSettingsPayload,
   normalizeHHMM,
+  normalizeNonNegativeNumber,
   normalizeWhatsAppPhone,
   readRestaurantSettings,
   writeRestaurantSettings,
@@ -98,6 +99,9 @@ export async function PUT(request: Request) {
     typeof o.billHeader === "string" ? o.billHeader : "";
   const billFooter =
     typeof o.billFooter === "string" ? o.billFooter : "";
+  const freeDeliveryUptoKm = normalizeNonNegativeNumber(o.freeDeliveryUptoKm);
+  const baseDeliveryCharge = normalizeNonNegativeNumber(o.baseDeliveryCharge);
+  const deliveryPerKmCharge = normalizeNonNegativeNumber(o.deliveryPerKmCharge);
   const pmParsed = parsePaymentMethodsBody(o.paymentMethods);
   if (!pmParsed) {
     return NextResponse.json(
@@ -120,6 +124,9 @@ export async function PUT(request: Request) {
     },
     billHeader,
     billFooter,
+    freeDeliveryUptoKm,
+    baseDeliveryCharge,
+    deliveryPerKmCharge,
     paymentMethods: pmParsed,
   };
 

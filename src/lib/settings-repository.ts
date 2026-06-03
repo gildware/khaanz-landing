@@ -20,8 +20,23 @@ export const DEFAULT_RESTAURANT_SETTINGS: RestaurantSettingsPayload = {
   delivery: { start: "11:00", end: "23:00" },
   billHeader: "",
   billFooter: "",
+  freeDeliveryUptoKm: 0,
+  baseDeliveryCharge: 0,
+  deliveryPerKmCharge: 0,
   paymentMethods: DEFAULT_PAYMENT_METHODS,
 };
+
+/** Clamp to a finite, non-negative number (rounded to 2 decimals); fallback 0. */
+export function normalizeNonNegativeNumber(input: unknown): number {
+  const n =
+    typeof input === "number"
+      ? input
+      : typeof input === "string"
+        ? Number(input.trim())
+        : NaN;
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.round(n * 100) / 100;
+}
 
 /** Normalize browser time values to HH:mm */
 export function normalizeHHMM(input: string): string {
@@ -77,6 +92,19 @@ export function isRestaurantSettingsPayload(
   if (typeof o.billHeader !== "string" || typeof o.billFooter !== "string") {
     return false;
   }
+  if (
+    typeof o.freeDeliveryUptoKm !== "number" ||
+    !Number.isFinite(o.freeDeliveryUptoKm) ||
+    o.freeDeliveryUptoKm < 0 ||
+    typeof o.baseDeliveryCharge !== "number" ||
+    !Number.isFinite(o.baseDeliveryCharge) ||
+    o.baseDeliveryCharge < 0 ||
+    typeof o.deliveryPerKmCharge !== "number" ||
+    !Number.isFinite(o.deliveryPerKmCharge) ||
+    o.deliveryPerKmCharge < 0
+  ) {
+    return false;
+  }
   if (!Array.isArray(o.paymentMethods)) return false;
   const pm = parsePaymentMethodsJson(o.paymentMethods);
   if (pm.length === 0) return false;
@@ -98,6 +126,9 @@ function rowToPayload(row: {
   deliveryEnd: string;
   billHeader: string;
   billFooter: string;
+  freeDeliveryUptoKm: number;
+  baseDeliveryCharge: number;
+  deliveryPerKmCharge: number;
   paymentMethodsJson: unknown;
 }): RestaurantSettingsPayload {
   return {
@@ -111,6 +142,9 @@ function rowToPayload(row: {
     },
     billHeader: row.billHeader ?? "",
     billFooter: row.billFooter ?? "",
+    freeDeliveryUptoKm: normalizeNonNegativeNumber(row.freeDeliveryUptoKm),
+    baseDeliveryCharge: normalizeNonNegativeNumber(row.baseDeliveryCharge),
+    deliveryPerKmCharge: normalizeNonNegativeNumber(row.deliveryPerKmCharge),
     paymentMethods: parsePaymentMethodsJson(row.paymentMethodsJson),
   };
 }
@@ -134,6 +168,9 @@ export async function writeRestaurantSettings(
   const pm = parsePaymentMethodsJson(payload.paymentMethods);
   const displayName = payload.displayName.trim().slice(0, 120);
   const logoUrl = payload.logoUrl.trim().slice(0, 500);
+  const freeDeliveryUptoKm = normalizeNonNegativeNumber(payload.freeDeliveryUptoKm);
+  const baseDeliveryCharge = normalizeNonNegativeNumber(payload.baseDeliveryCharge);
+  const deliveryPerKmCharge = normalizeNonNegativeNumber(payload.deliveryPerKmCharge);
   await prisma.restaurantSettings.upsert({
     where: { id: "default" },
     create: {
@@ -147,6 +184,9 @@ export async function writeRestaurantSettings(
       deliveryEnd: normalizeHHMM(payload.delivery.end),
       billHeader: payload.billHeader.trim(),
       billFooter: payload.billFooter.trim(),
+      freeDeliveryUptoKm,
+      baseDeliveryCharge,
+      deliveryPerKmCharge,
       paymentMethodsJson: pm as unknown as Prisma.InputJsonValue,
     },
     update: {
@@ -159,6 +199,9 @@ export async function writeRestaurantSettings(
       deliveryEnd: normalizeHHMM(payload.delivery.end),
       billHeader: payload.billHeader.trim(),
       billFooter: payload.billFooter.trim(),
+      freeDeliveryUptoKm,
+      baseDeliveryCharge,
+      deliveryPerKmCharge,
       paymentMethodsJson: pm as unknown as Prisma.InputJsonValue,
     },
   });

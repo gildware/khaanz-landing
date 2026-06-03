@@ -12,8 +12,10 @@ import { normalizeIndianMobileDigits } from "@/lib/phone-digits";
 import { httpResponseForOrderPersistError } from "@/lib/order-persist-errors";
 import { persistOrderToDatabase } from "@/lib/persist-order-db";
 import { parseOrderCreateBody } from "@/lib/parse-order-create-body";
+import { computeDeliveryChargeRupees } from "@/lib/delivery-charge";
 import { isChannelOpenAt } from "@/lib/restaurant-hours";
 import { readRestaurantSettings } from "@/lib/settings-repository";
+import { getTravelDistance } from "@/lib/travel-distance";
 import {
   isWhatsAppCloudConfigured,
   sendRestaurantOrderViaWhatsAppCloud,
@@ -85,6 +87,23 @@ export async function POST(req: Request) {
       }
     }
 
+    // Delivery fee is computed server-side (never trusted from the client) using
+    // the saved per-km settings and the driving distance to the pin.
+    let deliveryChargeRupees = 0;
+    if (
+      parsed.fulfillment === "delivery" &&
+      parsed.latitude != null &&
+      parsed.longitude != null
+    ) {
+      const travel = await getTravelDistance(parsed.latitude, parsed.longitude);
+      deliveryChargeRupees = computeDeliveryChargeRupees(travel?.meters ?? null, {
+        freeDeliveryUptoKm: settings.freeDeliveryUptoKm,
+        baseDeliveryCharge: settings.baseDeliveryCharge,
+        deliveryPerKmCharge: settings.deliveryPerKmCharge,
+      });
+      parsed.deliveryChargeMinor = deliveryChargeRupees * 100;
+    }
+
     const cloudConfigured = isWhatsAppCloudConfigured();
 
     let orderRef: string;
@@ -115,6 +134,7 @@ export async function POST(req: Request) {
       lines: parsed.lines,
       latitude: parsed.latitude,
       longitude: parsed.longitude,
+      deliveryChargeRupees,
     };
 
     const orderSummaryText = buildWhatsAppMessage(waPayload, {

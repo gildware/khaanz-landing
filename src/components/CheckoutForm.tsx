@@ -7,8 +7,11 @@ import {
   CalendarClockIcon,
   CheckIcon,
   Loader2Icon,
-  NavigationIcon,
+  MapPinIcon,
+  MapPinnedIcon,
   PackageIcon,
+  PlusIcon,
+  Trash2Icon,
   TruckIcon,
   ZapIcon,
 } from "lucide-react";
@@ -21,7 +24,12 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { reverseGeocode, type GeocodeSearchHit } from "@/lib/geocode";
+import {
+  fetchTravelDistance,
+  reverseGeocode,
+  type GeocodeSearchHit,
+  type TravelDistanceResult,
+} from "@/lib/geocode";
 import { useRestaurantSettings } from "@/contexts/restaurant-settings-context";
 import {
   formatRangeLabel,
@@ -45,9 +53,10 @@ import {
   type ScheduleMode,
 } from "@/lib/order-schedule";
 import {
-  isIndianMobile10,
+  isLoginPhoneAllowed,
   normalizeIndianMobileDigits,
 } from "@/lib/phone-digits";
+import type { SavedAddressDTO } from "@/lib/customer-address";
 import { cn } from "@/lib/utils";
 
 export function CheckoutForm() {
@@ -69,7 +78,15 @@ export function CheckoutForm() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [addressLoading, setAddressLoading] = useState(false);
+  const [distance, setDistance] = useState<TravelDistanceResult | null>(null);
+  const [distanceLoading, setDistanceLoading] = useState(false);
+  const [distanceConfigured, setDistanceConfigured] = useState(true);
+  const [deliveryCharge, setDeliveryCharge] = useState<number | null>(null);
   const [mapFlyTrigger, setMapFlyTrigger] = useState(0);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddressDTO[]>([]);
+  const [savedAddressesLoaded, setSavedAddressesLoaded] = useState(false);
+  const [addressMode, setAddressMode] = useState<"saved" | "new">("new");
+  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
   const didAutoLocateOnLocationStepRef = useRef(false);
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("asap");
   const [placingOrder, setPlacingOrder] = useState(false);
@@ -105,6 +122,14 @@ export function CheckoutForm() {
     return { lat, lng };
   }, [latitude, longitude]);
 
+  const deliveryFee =
+    fulfillment === "delivery" &&
+    distanceConfigured &&
+    typeof deliveryCharge === "number"
+      ? deliveryCharge
+      : 0;
+  const grandTotal = totalAmount + deliveryFee;
+
   const fetchAddress = useCallback(async (lat: number, lng: number) => {
     setAddressLoading(true);
     setGeoError(null);
@@ -119,13 +144,50 @@ export function CheckoutForm() {
   }, []);
 
   useEffect(() => {
-    if (latitude != null && longitude != null && currentStepLabel === "Location") {
+    // Only auto-fill the address from the pin when entering a brand-new address.
+    // For a chosen saved address we keep its exact text.
+    if (
+      addressMode === "new" &&
+      latitude != null &&
+      longitude != null &&
+      currentStepLabel === "Location"
+    ) {
       const handle = setTimeout(() => {
         void fetchAddress(latitude, longitude);
       }, 500);
       return () => clearTimeout(handle);
     }
-  }, [latitude, longitude, currentStepLabel, fetchAddress]);
+  }, [latitude, longitude, currentStepLabel, fetchAddress, addressMode]);
+
+  useEffect(() => {
+    if (latitude == null || longitude == null || currentStepLabel !== "Location") {
+      return;
+    }
+    let cancelled = false;
+    setDistanceLoading(true);
+    const handle = setTimeout(() => {
+      fetchTravelDistance(latitude, longitude)
+        .then((r) => {
+          if (cancelled) return;
+          setDistanceConfigured(r.configured);
+          setDistance(r.distance);
+          setDeliveryCharge(r.deliveryCharge);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setDistance(null);
+            setDeliveryCharge(null);
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setDistanceLoading(false);
+        });
+    }, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [latitude, longitude, currentStepLabel]);
 
   const locateFromGps = useCallback(() => {
     if (!navigator.geolocation) {
@@ -159,10 +221,13 @@ export function CheckoutForm() {
 
   useEffect(() => {
     if (currentStepLabel !== "Location") return;
+    if (!savedAddressesLoaded) return;
+    // Don't grab GPS when the customer is reusing a saved address.
+    if (addressMode !== "new") return;
     if (didAutoLocateOnLocationStepRef.current) return;
     didAutoLocateOnLocationStepRef.current = true;
     locateFromGps();
-  }, [currentStepLabel, locateFromGps]);
+  }, [currentStepLabel, savedAddressesLoaded, addressMode, locateFromGps]);
 
   const handlePositionChange = (lat: number, lng: number) => {
     setLatitude(lat);
@@ -176,6 +241,63 @@ export function CheckoutForm() {
     setMapFlyTrigger((n) => n + 1);
     setGeoError(null);
   };
+
+  const useSavedAddress = useCallback((a: SavedAddressDTO) => {
+    setAddressMode("saved");
+    setSelectedSavedId(a.id);
+    setAddress(a.address);
+    setLandmark(a.landmark);
+    setLatitude(a.latitude);
+    setLongitude(a.longitude);
+    setGeoError(null);
+    if (a.latitude != null && a.longitude != null) {
+      setMapFlyTrigger((n) => n + 1);
+    }
+  }, []);
+
+  const startNewAddress = useCallback(() => {
+    setAddressMode("new");
+    setSelectedSavedId(null);
+    setAddress("");
+    setLandmark("");
+    setLatitude(null);
+    setLongitude(null);
+    setDistance(null);
+    setDeliveryCharge(null);
+    setGeoError(null);
+    // Allow the location step to auto-detect GPS again for the fresh address.
+    didAutoLocateOnLocationStepRef.current = false;
+  }, []);
+
+  const deleteSavedAddress = useCallback(
+    async (id: string) => {
+      try {
+        const res = await fetch(`/api/customer/addresses/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        if (!res.ok) {
+          toast.error("Could not remove address. Try again.");
+          return;
+        }
+      } catch {
+        toast.error("Network error. Try again.");
+        return;
+      }
+      setSavedAddresses((prev) => {
+        const next = prev.filter((a) => a.id !== id);
+        if (selectedSavedId === id) {
+          if (next[0]) {
+            useSavedAddress(next[0]);
+          } else {
+            startNewAddress();
+          }
+        }
+        return next;
+      });
+    },
+    [selectedSavedId, useSavedAddress, startNewAddress],
+  );
 
   const bothClosed =
     !!settings &&
@@ -224,7 +346,7 @@ export function CheckoutForm() {
     scheduleChannel,
   ]);
 
-  const phoneOk = isIndianMobile10(phoneDigits);
+  const phoneOk = isLoginPhoneAllowed(phoneDigits);
   const accountReady =
     customerMe !== null &&
     customerMe.loggedIn &&
@@ -236,9 +358,10 @@ export function CheckoutForm() {
     name.trim().length > 0 && phoneOk && accountReady && profileReady;
 
   const canNextFromLocation =
-    latitude != null &&
-    longitude != null &&
-    address.trim().length > 0;
+    address.trim().length > 0 &&
+    (addressMode === "saved"
+      ? selectedSavedId != null
+      : latitude != null && longitude != null);
 
   const goNext = () => {
     if (currentStepLabel === "When & how" && !canNextFromWhenHow) return;
@@ -277,6 +400,36 @@ export function CheckoutForm() {
       })
       .catch(() => setCustomerMe({ loggedIn: false }));
   }, []);
+
+  useEffect(() => {
+    if (!customerMe?.loggedIn) {
+      if (customerMe !== null) setSavedAddressesLoaded(true);
+      return;
+    }
+    let cancelled = false;
+    void fetch("/api/customer/addresses", { credentials: "include" })
+      .then((r) => (r.ok ? (r.json() as Promise<{ addresses?: SavedAddressDTO[] }>) : { addresses: [] }))
+      .then((d) => {
+        if (cancelled) return;
+        const list = Array.isArray(d.addresses) ? d.addresses : [];
+        setSavedAddresses(list);
+        if (list.length > 0) {
+          // Default to reusing the most recently used address.
+          useSavedAddress(list[0]);
+        } else {
+          setAddressMode("new");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAddressMode("new");
+      })
+      .finally(() => {
+        if (!cancelled) setSavedAddressesLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [customerMe, useSavedAddress]);
 
   useEffect(() => {
     // If user is signed in but has no saved name yet, force the Contact step.
@@ -451,6 +604,7 @@ export function CheckoutForm() {
             lines,
             latitude: fulfillment === "delivery" ? latitude : null,
             longitude: fulfillment === "delivery" ? longitude : null,
+            deliveryChargeRupees: fulfillment === "delivery" ? deliveryFee : 0,
           },
           { useWhatsAppFormatting: true },
         );
@@ -680,7 +834,6 @@ export function CheckoutForm() {
               <span className="font-mono font-medium text-foreground">
                 {customerMe.phoneDigits}
               </span>
-              . Phone on this order must match.
             </p>
           )}
           {customerMe?.loggedIn && !profileReady && (
@@ -771,68 +924,175 @@ export function CheckoutForm() {
 
       {currentStepLabel === "Location" && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              className="rounded-full"
-              onClick={() => locateFromGps()}
-              disabled={geoLoading}
-            >
-              {geoLoading ? (
-                <Loader2Icon className="size-4 animate-spin" />
-              ) : (
-                <NavigationIcon className="size-4" />
-              )}
-              Use current location
-            </Button>
-          </div>
-          {geoError && (
-            <p className="text-destructive text-sm">{geoError}</p>
+          {savedAddresses.length > 0 && (
+            <div className="space-y-2">
+              <Label>
+                {addressMode === "saved"
+                  ? "Deliver to a saved address"
+                  : "Your saved addresses"}
+              </Label>
+              <div className="space-y-2">
+                {savedAddresses.map((a) => {
+                  const selected =
+                    addressMode === "saved" && selectedSavedId === a.id;
+                  return (
+                    <div
+                      key={a.id}
+                      className={cn(
+                        "flex items-start gap-2 rounded-2xl border p-3 transition-all",
+                        selected
+                          ? "border-primary bg-primary/15 shadow-sm shadow-primary/10"
+                          : "border-border bg-muted/20",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => useSavedAddress(a)}
+                        className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                      >
+                        <MapPinIcon
+                          className={cn(
+                            "mt-0.5 size-5 shrink-0",
+                            selected ? "text-primary" : "text-muted-foreground",
+                          )}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block whitespace-pre-wrap text-sm">
+                            {a.address}
+                          </span>
+                          {a.landmark && (
+                            <span className="mt-1 block text-muted-foreground text-xs">
+                              Landmark: {a.landmark}
+                            </span>
+                          )}
+                        </span>
+                        {selected && (
+                          <CheckIcon className="mt-0.5 size-5 shrink-0 text-primary" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void deleteSavedAddress(a.id)}
+                        aria-label="Remove saved address"
+                        className="shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash2Icon className="size-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={startNewAddress}
+                className={cn(
+                  "flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-3 text-sm font-medium transition-all",
+                  addressMode === "new"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                )}
+              >
+                <PlusIcon className="size-4" />
+                Add a new address
+              </button>
+            </div>
           )}
-          <LocationSearch onPick={handleSearchPick} disabled={geoLoading} />
-          <LocationMapPicker
-            latitude={position.lat}
-            longitude={position.lng}
-            onPositionChange={handlePositionChange}
-            flyTrigger={mapFlyTrigger}
-          />
-          <p className="text-muted-foreground text-xs">
-            Search above, or tap the map and drag the pin to fine-tune. Address updates
-            automatically.
-          </p>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="address">Full address</Label>
-              {addressLoading && (
-                <span className="flex items-center gap-1 text-muted-foreground text-xs">
-                  <Loader2Icon className="size-3 animate-spin" />
-                  Looking up…
+
+          {(latitude != null && longitude != null) && distanceConfigured && (
+            <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 px-3 py-2.5">
+              <MapPinnedIcon className="size-5 shrink-0 text-primary" />
+              {distanceLoading ? (
+                <span className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <Loader2Icon className="size-3.5 animate-spin" />
+                  Calculating distance from restaurant…
+                </span>
+              ) : distance ? (
+                <div className="min-w-0 flex-1">
+                  <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                    Distance from restaurant
+                  </p>
+                  <p className="font-medium text-sm">
+                    {distance.text}
+                    {distance.durationText && (
+                      <span className="text-muted-foreground font-normal">
+                        {" "}
+                        · ~{distance.durationText} drive
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-1 text-sm">
+                    <span className="text-muted-foreground">Delivery fee: </span>
+                    {deliveryFee > 0 ? (
+                      <span className="font-semibold text-primary tabular-nums">
+                        ₹{deliveryFee}
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        Free
+                      </span>
+                    )}
+                  </p>
+                </div>
+              ) : (
+                <span className="text-muted-foreground text-sm">
+                  Distance unavailable for this location.
                 </span>
               )}
             </div>
-            <Textarea
-              id="address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="House, street, area — auto-filled from map"
-              rows={4}
-              className="rounded-xl border-border bg-muted/30"
-            />
-            {address.trim().length === 0 && (
-              <p className="text-destructive text-xs">Address is required</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="landmark">Landmark (optional)</Label>
-            <Input
-              id="landmark"
-              value={landmark}
-              onChange={(e) => setLandmark(e.target.value)}
-              placeholder="Near metro gate, blue building…"
-              className="h-11 rounded-xl border-border bg-muted/30"
-            />
-          </div>
+          )}
+
+          {addressMode === "new" && (
+            <div className="space-y-4">
+              {geoError && (
+                <p className="text-destructive text-sm">{geoError}</p>
+              )}
+              <LocationSearch onPick={handleSearchPick} disabled={geoLoading} />
+              <LocationMapPicker
+                latitude={position.lat}
+                longitude={position.lng}
+                onPositionChange={handlePositionChange}
+                flyTrigger={mapFlyTrigger}
+                onUseCurrentLocation={() => locateFromGps()}
+                locating={geoLoading}
+              />
+              <p className="text-muted-foreground text-xs">
+                Search above, or tap the map and drag the pin to fine-tune. Address
+                updates automatically.
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="address">Full address</Label>
+                  {addressLoading && (
+                    <span className="flex items-center gap-1 text-muted-foreground text-xs">
+                      <Loader2Icon className="size-3 animate-spin" />
+                      Looking up…
+                    </span>
+                  )}
+                </div>
+                <Textarea
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="House, street, area — auto-filled from map"
+                  rows={4}
+                  className="rounded-xl border-border bg-muted/30"
+                />
+                {address.trim().length === 0 && (
+                  <p className="text-destructive text-xs">Address is required</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="landmark">Landmark (optional)</Label>
+                <Input
+                  id="landmark"
+                  value={landmark}
+                  onChange={(e) => setLandmark(e.target.value)}
+                  placeholder="Near metro gate, blue building…"
+                  className="h-11 rounded-xl border-border bg-muted/30"
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -911,11 +1171,34 @@ export function CheckoutForm() {
               <p className="text-sm">{notes}</p>
             </div>
           )}
-          <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
-            <span className="font-medium">Order total</span>
-            <span className="font-heading text-2xl font-bold text-primary tabular-nums">
-              ₹{totalAmount}
-            </span>
+          <div className="space-y-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3">
+            {fulfillment === "delivery" && (
+              <>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Items</span>
+                  <span className="tabular-nums">₹{totalAmount}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Delivery fee</span>
+                  <span className="tabular-nums">
+                    {deliveryFee > 0 ? (
+                      `₹${deliveryFee}`
+                    ) : (
+                      <span className="text-emerald-600 dark:text-emerald-400">
+                        Free
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div className="h-px bg-primary/20" />
+              </>
+            )}
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Order total</span>
+              <span className="font-heading text-2xl font-bold text-primary tabular-nums">
+                ₹{grandTotal}
+              </span>
+            </div>
           </div>
         </div>
       )}

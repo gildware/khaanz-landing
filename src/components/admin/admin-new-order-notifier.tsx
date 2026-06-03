@@ -200,7 +200,7 @@ export function AdminNewOrderNotifier() {
             </p>
           </div>
           <Link
-            href="/admin/orders"
+            href="/admin/online-orders"
             className={cn(buttonVariants({ size: "sm" }), "shrink-0 self-start sm:self-auto")}
           >
             View orders
@@ -262,7 +262,7 @@ export function AdminNewOrderNotifier() {
             <Button type="button" variant="outline" onClick={dismissModal}>
               Dismiss
             </Button>
-            <Link href="/admin/orders" className={cn(buttonVariants())}>
+            <Link href="/admin/online-orders" className={cn(buttonVariants())}>
               Open orders
             </Link>
           </DialogFooter>

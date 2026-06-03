@@ -55,6 +55,40 @@ export function istDateLabel(now: Date): string {
   }).format(now);
 }
 
+function ordinalSuffix(day: number): string {
+  const v = day % 100;
+  if (v >= 11 && v <= 13) return "th";
+  switch (day % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
+}
+
+/** Format a date like "3rd June 2026 5:19 PM" in IST. */
+export function formatIstDateTimeLong(d: Date): string {
+  const parts = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).formatToParts(d);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  const day = Number(get("day"));
+  const dayLabel = Number.isFinite(day) ? `${day}${ordinalSuffix(day)}` : get("day");
+  const dayPeriod = get("dayPeriod").toUpperCase();
+  return `${dayLabel} ${get("month")} ${get("year")} ${get("hour")}:${get("minute")} ${dayPeriod}`;
+}
+
 export function istHourFromDate(d: Date): number {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Kolkata",

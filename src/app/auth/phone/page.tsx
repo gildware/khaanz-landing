@@ -13,6 +13,11 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getFirebaseAuth, isFirebasePhoneAuthEnabled } from "@/lib/firebase-client";
+import {
+  DEMO_CUSTOMER_OTP,
+  DEMO_CUSTOMER_PHONE_DIGITS,
+  isDemoCustomerLoginEnabled,
+} from "@/lib/phone-digits";
 import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +33,7 @@ function PhoneAuthForm() {
   const [busy, setBusy] = useState(false);
 
   const firebaseEnabled = useMemo(() => isFirebasePhoneAuthEnabled(), []);
+  const demoEnabled = useMemo(() => isDemoCustomerLoginEnabled(), []);
   const auth = useMemo(() => (firebaseEnabled ? getFirebaseAuth() : null), [firebaseEnabled]);
   const recaptchaContainerId = "firebase-recaptcha-container";
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
@@ -87,13 +93,15 @@ function PhoneAuthForm() {
 
   const sendOtp = async () => {
     const digits = phone.replace(/\D/g, "").slice(0, 10);
-    if (!/^[6-9]\d{9}$/.test(digits)) {
+    const isDemo = demoEnabled && digits === DEMO_CUSTOMER_PHONE_DIGITS;
+    const validFormat = /^[6-9]\d{9}$/.test(digits) || isDemo;
+    if (!validFormat) {
       toast.error("Enter a valid 10-digit Indian mobile number.");
       return;
     }
     setBusy(true);
     try {
-      if (firebaseEnabled && auth) {
+      if (firebaseEnabled && auth && !isDemo) {
         if (!recaptchaRef.current) {
           toast.error("reCAPTCHA is not ready. Please try again.");
           return;
@@ -158,13 +166,17 @@ function PhoneAuthForm() {
 
   const verify = async () => {
     const digits = phone.replace(/\D/g, "").slice(0, 10);
-    if (!/^\d{6}$/.test(code.trim())) {
-      toast.error("Enter the 6-digit code.");
+    const isDemo = demoEnabled && digits === DEMO_CUSTOMER_PHONE_DIGITS;
+    const codeOk = isDemo
+      ? code.trim() === DEMO_CUSTOMER_OTP
+      : /^\d{6}$/.test(code.trim());
+    if (!codeOk) {
+      toast.error(isDemo ? "Enter the demo code." : "Enter the 6-digit code.");
       return;
     }
     setBusy(true);
     try {
-      if (firebaseEnabled && auth) {
+      if (firebaseEnabled && auth && !isDemo) {
         const c = confirmRef.current;
         if (!c) {
           toast.error("Please request a code again.");

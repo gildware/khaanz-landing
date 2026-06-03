@@ -22,6 +22,8 @@ export interface WhatsAppOrderPayload {
   lines: CartLine[];
   latitude: number | null;
   longitude: number | null;
+  /** Delivery fee in rupees (delivery orders only); added to the total. */
+  deliveryChargeRupees?: number;
 }
 
 export interface BuildWhatsAppMessageOptions {
@@ -57,6 +59,7 @@ export function buildWhatsAppMessage(
     lines,
     latitude,
     longitude,
+    deliveryChargeRupees,
   } = payload;
 
   const scheduledDate =
@@ -76,10 +79,13 @@ export function buildWhatsAppMessage(
         ? formatScheduleHuman(scheduleMode, scheduledDate)
         : "Scheduled (time not set)";
 
-  const grand = lines.reduce(
+  const itemsTotal = lines.reduce(
     (sum, line) => sum + line.unitPrice * line.quantity,
     0,
   );
+  const deliveryFee =
+    fulfillment === "delivery" ? Math.max(0, deliveryChargeRupees ?? 0) : 0;
+  const grand = itemsTotal + deliveryFee;
 
   const orderType =
     fulfillment === "dine_in"
@@ -149,7 +155,11 @@ Phone: +91 ${phone}${addressBlock}${notesBlock}${locationBlock}
 
 *Items*
 ${itemsBlock}
-
+${
+  deliveryFee > 0
+    ? `\n*Delivery fee*\n₹${formatCurrency(deliveryFee)}\n`
+    : ""
+}
 *Total*
 *₹${formatCurrency(grand)}*`;
   }
@@ -204,7 +214,7 @@ Phone: ${phone}${addressBlock}
 Notes: ${notes}${locationBlock}
 
 Items:
-${itemsBlock}
+${itemsBlock}${deliveryFee > 0 ? `\nDelivery fee: ₹${formatCurrency(deliveryFee)}` : ""}
 
 Total: ₹${formatCurrency(grand)}`;
 }

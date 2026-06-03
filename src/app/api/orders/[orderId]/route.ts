@@ -50,6 +50,8 @@ export async function GET(_req: Request, context: RouteContext) {
       scheduleMode: order.scheduleMode,
       scheduledAt: order.scheduledAt?.toISOString() ?? null,
       totalMinor: order.totalMinor,
+      deliveryChargeMinor: order.deliveryChargeMinor,
+      discountMinor: order.discountMinor,
       currency: order.currency,
       createdAt: order.createdAt.toISOString(),
       lines: order.lines.map((l) => ({

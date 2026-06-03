@@ -7,7 +7,10 @@ import {
 } from "@/lib/customer-auth";
 import { getPrisma } from "@/lib/prisma";
 import {
-  isIndianMobile10,
+  DEMO_CUSTOMER_OTP,
+  isDemoCustomerLoginEnabled,
+  isDemoCustomerPhone,
+  isLoginPhoneAllowed,
   normalizeIndianMobileDigits,
 } from "@/lib/phone-digits";
 
@@ -26,14 +29,38 @@ export async function POST(request: Request) {
   const raw = typeof body.phone === "string" ? body.phone.trim() : "";
   const code = typeof body.code === "string" ? body.code.trim() : "";
   const digits = normalizeIndianMobileDigits(raw);
-  if (!isIndianMobile10(digits)) {
+
+  const prisma = getPrisma();
+
+  // Dev-only demo customer: accept the fixed demo code without an OTP challenge.
+  if (isDemoCustomerLoginEnabled() && isDemoCustomerPhone(digits)) {
+    if (code !== DEMO_CUSTOMER_OTP) {
+      return NextResponse.json({ error: "Incorrect code." }, { status: 401 });
+    }
+    const customer = await prisma.customer.upsert({
+      where: { phoneDigits: digits },
+      create: { phoneDigits: digits, displayName: "Demo Customer" },
+      update: {},
+    });
+    const token = await createCustomerToken(customer.id, customer.phoneDigits);
+    const res = NextResponse.json({ ok: true, customerId: customer.id });
+    res.cookies.set(CUSTOMER_TOKEN_COOKIE, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return res;
+  }
+
+  if (!isLoginPhoneAllowed(digits)) {
     return NextResponse.json({ error: "Invalid phone number." }, { status: 400 });
   }
   if (!/^\d{6}$/.test(code)) {
     return NextResponse.json({ error: "Enter the 6-digit code." }, { status: 400 });
   }
 
-  const prisma = getPrisma();
   const now = new Date();
 
   const challenge = await prisma.otpChallenge.findFirst({
