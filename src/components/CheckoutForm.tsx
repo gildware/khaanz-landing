@@ -242,7 +242,7 @@ export function CheckoutForm() {
     setGeoError(null);
   };
 
-  const useSavedAddress = useCallback((a: SavedAddressDTO) => {
+  const selectSavedAddress = useCallback((a: SavedAddressDTO) => {
     setAddressMode("saved");
     setSelectedSavedId(a.id);
     setAddress(a.address);
@@ -288,7 +288,7 @@ export function CheckoutForm() {
         const next = prev.filter((a) => a.id !== id);
         if (selectedSavedId === id) {
           if (next[0]) {
-            useSavedAddress(next[0]);
+            selectSavedAddress(next[0]);
           } else {
             startNewAddress();
           }
@@ -296,7 +296,7 @@ export function CheckoutForm() {
         return next;
       });
     },
-    [selectedSavedId, useSavedAddress, startNewAddress],
+    [selectedSavedId, selectSavedAddress, startNewAddress],
   );
 
   const bothClosed =
@@ -415,7 +415,7 @@ export function CheckoutForm() {
         setSavedAddresses(list);
         if (list.length > 0) {
           // Default to reusing the most recently used address.
-          useSavedAddress(list[0]);
+          selectSavedAddress(list[0]);
         } else {
           setAddressMode("new");
         }
@@ -429,7 +429,7 @@ export function CheckoutForm() {
     return () => {
       cancelled = true;
     };
-  }, [customerMe, useSavedAddress]);
+  }, [customerMe, selectSavedAddress]);
 
   useEffect(() => {
     // If user is signed in but has no saved name yet, force the Contact step.
@@ -947,7 +947,7 @@ export function CheckoutForm() {
                     >
                       <button
                         type="button"
-                        onClick={() => useSavedAddress(a)}
+                        onClick={() => selectSavedAddress(a)}
                         className="flex min-w-0 flex-1 items-start gap-3 text-left"
                       >
                         <MapPinIcon

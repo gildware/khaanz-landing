@@ -37,7 +37,6 @@ import {
 import { migrateCartLine } from "@/lib/cart-line";
 import type { ScheduleMode } from "@/lib/order-schedule";
 import { SITE } from "@/lib/site";
-import { cn } from "@/lib/utils";
 import type { CartLine } from "@/types/menu";
 import type {
   FulfillmentMode,
