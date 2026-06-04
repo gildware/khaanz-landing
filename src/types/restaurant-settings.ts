@@ -28,6 +28,9 @@ export interface RestaurantSettingsPayload {
   baseDeliveryCharge: number;
   /** Charge per additional km (rupees) after the first chargeable km. */
   deliveryPerKmCharge: number;
+  /** Restaurant location for delivery distance (null = use server env vars). */
+  restaurantLatitude: number | null;
+  restaurantLongitude: number | null;
   /** Configurable payment options for POS */
   paymentMethods: PaymentMethodConfig[];
 }
@@ -40,9 +43,16 @@ export type PublicRestaurantSettings = Pick<
   | "whatsappPhoneE164"
   | "pickup"
   | "delivery"
+  | "freeDeliveryUptoKm"
+  | "baseDeliveryCharge"
+  | "deliveryPerKmCharge"
+  | "restaurantLatitude"
+  | "restaurantLongitude"
 > & {
   /** True when WhatsApp Cloud API env is set; wa.me fallback is not required for notify. */
   whatsappCloudConfigured: boolean;
+  /** Restaurant origin is set (admin or env) so checkout can compute delivery distance. */
+  deliveryDistanceConfigured: boolean;
 };
 
 export type FulfillmentMode = "pickup" | "delivery" | "dine_in";

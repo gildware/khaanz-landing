@@ -30,12 +30,16 @@ export type TravelDistanceResult = {
   meters: number;
   durationText: string;
   durationSeconds: number;
+  /** Straight-line estimate when driving distance is unavailable. */
+  estimated?: boolean;
 };
 
 export type TravelDistanceResponse = {
   /** Admin delivery pricing is available (always true when the API succeeds). */
   configured: boolean;
-  /** Google Distance Matrix + restaurant coordinates are set on the server. */
+  /** Restaurant origin is configured (admin or env). */
+  originConfigured?: boolean;
+  /** Google Distance Matrix is enabled and used for driving distance. */
   distanceMatrixReady?: boolean;
   distance: TravelDistanceResult | null;
   /** Delivery fee in rupees for this location (null when distance unknown). */
@@ -54,6 +58,7 @@ export async function fetchTravelDistance(
   if (!res.ok) {
     return {
       configured: false,
+      originConfigured: false,
       distanceMatrixReady: false,
       distance: null,
       deliveryCharge: null,
@@ -65,6 +70,7 @@ export async function fetchTravelDistance(
   const data = (await res.json()) as Partial<TravelDistanceResponse>;
   return {
     configured: data.configured !== false,
+    originConfigured: data.originConfigured !== false,
     distanceMatrixReady: data.distanceMatrixReady === true,
     distance: data.distance ?? null,
     deliveryCharge:

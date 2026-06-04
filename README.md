@@ -63,9 +63,33 @@ docker run -d \
 
 Use the same service account as in Firebase Console → Project settings → Service accounts. Keep `\n` escapes inside the quoted private key. Do **not** set `FIREBASE_ADMIN_CREDENTIALS_PATH` in production unless you mount the JSON file into the container.
 
-For CI builds, add GitHub Actions secrets: `NEXT_PUBLIC_FIREBASE_PHONE_AUTH_ENABLED`, `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`.
+For CI builds, add GitHub Actions secrets: `NEXT_PUBLIC_FIREBASE_PHONE_AUTH_ENABLED`, `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`.
 
 WhatsApp Cloud / order formatting env vars are unchanged (see `src/lib/whatsapp-cloud.ts` and related).
+
+### Delivery distance & fees on production (Docker)
+
+Locally, `.env` supplies `GOOGLE_MAPS_API_KEY`, `RESTAURANT_LATITUDE`, `RESTAURANT_LONGITUDE`, and `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`. **The production image does not include `.env`.** If these are missing on the server, checkout shows a flat base delivery fee instead of distance-based pricing.
+
+**Option A — runtime env on the host** (recommended first deploy):
+
+```bash
+docker run -d \
+  -e DATABASE_URL="…" \
+  -e GOOGLE_MAPS_API_KEY="…" \
+  -e RESTAURANT_LATITUDE="33.788755" \
+  -e RESTAURANT_LONGITUDE="75.101721" \
+  … your-image:latest
+```
+
+On the first distance request, lat/lng from env are saved into the database so they keep working even if env vars are removed later.
+
+**Option B — Admin only (no server env for coordinates):**  
+Open **Admin → Settings → Delivery charges**, set **Restaurant latitude / longitude**, save. Delivery fees use straight-line distance if `GOOGLE_MAPS_API_KEY` is unset, or driving distance when the server key is set.
+
+**Build-time (checkout map):** pass `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` as a Docker build-arg (see `.github/workflows/deploy-prod.yml`). Without it, checkout still works but uses OpenStreetMap tiles.
+
+**Google Cloud:** enable Distance Matrix API + Places API on the server key; restrict the server key by your VPS IP. Restrict the browser key by your production HTTPS origin (e.g. `https://yourdomain.com/*`).
 
 ## Scripts
 

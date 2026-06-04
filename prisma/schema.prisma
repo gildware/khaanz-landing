@@ -45,6 +45,9 @@ model RestaurantSettings {
   baseDeliveryCharge  Float    @default(0) @map("base_delivery_charge")
   /// Charge per additional km (rupees) after the first chargeable km.
   deliveryPerKmCharge Float    @default(0) @map("delivery_per_km_charge")
+  /// Restaurant map pin / distance origin (falls back to RESTAURANT_LATITUDE/LONGITUDE env).
+  restaurantLatitude  Float?  @map("restaurant_latitude")
+  restaurantLongitude Float?  @map("restaurant_longitude")
   paymentMethodsJson Json     @default("[{\"id\":\"cash\",\"name\":\"Cash\"},{\"id\":\"upi\",\"name\":\"UPI\"},{\"id\":\"mpay\",\"name\":\"Mpay\"}]") @map("payment_methods_json")
   /// POS dine-in floor plan: `{ "tables": [{ "id", "label", "xPct", "yPct", "wPct", "hPct" }] }` (percent of layout box).
   floorPlanJson      Json     @default("{\"tables\":[]}") @map("floor_plan_json")

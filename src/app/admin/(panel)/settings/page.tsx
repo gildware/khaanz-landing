@@ -43,6 +43,8 @@ export default function AdminSettingsPage() {
   const [freeDeliveryUptoKm, setFreeDeliveryUptoKm] = useState("0");
   const [baseDeliveryCharge, setBaseDeliveryCharge] = useState("0");
   const [deliveryPerKmCharge, setDeliveryPerKmCharge] = useState("0");
+  const [restaurantLatitude, setRestaurantLatitude] = useState("");
+  const [restaurantLongitude, setRestaurantLongitude] = useState("");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodConfig[]>([
     { id: "cash", name: "Cash" },
     { id: "upi", name: "UPI" },
@@ -51,6 +53,11 @@ export default function AdminSettingsPage() {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetConfirmInput, setResetConfirmInput] = useState("");
   const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [deliveryConfig, setDeliveryConfig] = useState<{
+    originConfigured: boolean;
+    googleDistanceMatrixEnabled: boolean;
+    originSource: "database" | "env" | "none";
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,7 +67,14 @@ export default function AdminSettingsPage() {
         toast.error("Could not load settings");
         return;
       }
-      const data = (await res.json()) as RestaurantSettingsPayload;
+      const data = (await res.json()) as RestaurantSettingsPayload & {
+        deliveryConfig?: {
+          originConfigured: boolean;
+          googleDistanceMatrixEnabled: boolean;
+          originSource: "database" | "env" | "none";
+        };
+      };
+      setDeliveryConfig(data.deliveryConfig ?? null);
       setDisplayName(data.displayName ?? "");
       setLogoUrl(data.logoUrl ?? "");
       setWhatsappPhoneE164(data.whatsappPhoneE164);
@@ -73,6 +87,12 @@ export default function AdminSettingsPage() {
       setFreeDeliveryUptoKm(String(data.freeDeliveryUptoKm ?? 0));
       setBaseDeliveryCharge(String(data.baseDeliveryCharge ?? 0));
       setDeliveryPerKmCharge(String(data.deliveryPerKmCharge ?? 0));
+      setRestaurantLatitude(
+        data.restaurantLatitude != null ? String(data.restaurantLatitude) : "",
+      );
+      setRestaurantLongitude(
+        data.restaurantLongitude != null ? String(data.restaurantLongitude) : "",
+      );
       if (data.paymentMethods?.length) {
         setPaymentMethods(data.paymentMethods);
       }
@@ -99,6 +119,14 @@ export default function AdminSettingsPage() {
         freeDeliveryUptoKm: Math.max(0, Number(freeDeliveryUptoKm) || 0),
         baseDeliveryCharge: Math.max(0, Number(baseDeliveryCharge) || 0),
         deliveryPerKmCharge: Math.max(0, Number(deliveryPerKmCharge) || 0),
+        restaurantLatitude:
+          restaurantLatitude.trim() === ""
+            ? null
+            : Number(restaurantLatitude),
+        restaurantLongitude:
+          restaurantLongitude.trim() === ""
+            ? null
+            : Number(restaurantLongitude),
         paymentMethods,
       };
       const res = await fetch("/api/admin/settings", {
@@ -334,13 +362,72 @@ export default function AdminSettingsPage() {
         </TabsContent>
 
         <TabsContent value="delivery-charges" className="space-y-6">
+          {deliveryConfig && !deliveryConfig.originConfigured ? (
+            <div className="flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+              <AlertTriangleIcon className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div>
+                <p className="font-medium text-amber-950 dark:text-amber-100">
+                  Delivery distance not configured on this server
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  Production does not use your local <code className="rounded bg-muted px-1">.env</code>.
+                  Set restaurant latitude and longitude below and save, or add{" "}
+                  <code className="rounded bg-muted px-1">RESTAURANT_LATITUDE</code> /{" "}
+                  <code className="rounded bg-muted px-1">RESTAURANT_LONGITUDE</code>{" "}
+                  to the running container and restart.
+                </p>
+              </div>
+            </div>
+          ) : null}
+          {deliveryConfig?.originConfigured &&
+          !deliveryConfig.googleDistanceMatrixEnabled ? (
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-muted-foreground text-xs">
+              Restaurant location is active (
+              {deliveryConfig.originSource === "database" ? "saved here" : "from server env"}).
+              Add <code className="rounded bg-muted px-1">GOOGLE_MAPS_API_KEY</code> on the
+              server for driving distance; otherwise checkout uses straight-line distance.
+            </div>
+          ) : null}
           <div className="space-y-3 rounded-xl border bg-card p-4">
             <p className="font-medium">Delivery charges</p>
             <p className="text-muted-foreground text-xs">
               Delivery is free within the free distance. The first km past it
               costs the base charge; each additional km adds the per-km charge.
-              The fee is calculated automatically from the driving distance when
-              the customer picks a delivery location at checkout.
+              The fee is calculated automatically from distance when the customer
+              picks a delivery location at checkout (driving distance when Google
+              is configured, otherwise straight-line).
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="restaurant-lat">Restaurant latitude</Label>
+                <Input
+                  id="restaurant-lat"
+                  type="number"
+                  step="any"
+                  inputMode="decimal"
+                  value={restaurantLatitude}
+                  onChange={(e) => setRestaurantLatitude(e.target.value)}
+                  placeholder="e.g. 33.788755"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="restaurant-lng">Restaurant longitude</Label>
+                <Input
+                  id="restaurant-lng"
+                  type="number"
+                  step="any"
+                  inputMode="decimal"
+                  value={restaurantLongitude}
+                  onChange={(e) => setRestaurantLongitude(e.target.value)}
+                  placeholder="e.g. 75.101721"
+                />
+              </div>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Set your restaurant pin here, or use{" "}
+              <code className="rounded bg-muted px-1">RESTAURANT_LATITUDE</code> /{" "}
+              <code className="rounded bg-muted px-1">RESTAURANT_LONGITUDE</code>{" "}
+              on the server. Both are required for distance-based fees.
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="space-y-1">
@@ -415,8 +502,9 @@ export default function AdminSettingsPage() {
                 })}
               </ul>
               <p className="mt-1">
-                Needs the restaurant coordinates and Google key configured on the
-                server.
+                Needs restaurant coordinates above (or server env). Optional:{" "}
+                <code className="rounded bg-muted px-1">GOOGLE_MAPS_API_KEY</code>{" "}
+                for driving distance instead of straight-line.
               </p>
             </div>
           </div>

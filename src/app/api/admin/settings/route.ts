@@ -9,12 +9,18 @@ import type {
 import { readFloorPlan } from "@/lib/floor-plan";
 import {
   isRestaurantSettingsPayload,
+  normalizeCoordinate,
   normalizeHHMM,
   normalizeNonNegativeNumber,
   normalizeWhatsAppPhone,
   readRestaurantSettings,
   writeRestaurantSettings,
 } from "@/lib/settings-repository";
+import {
+  clearRestaurantOriginCache,
+  isGoogleDistanceMatrixEnabled,
+  readRestaurantOrigin,
+} from "@/lib/travel-distance";
 
 function minutesFromHHMM(s: string): number | null {
   const m = /^(\d{2}):(\d{2})$/.exec(s);
@@ -56,11 +62,27 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const [payload, floorPlan] = await Promise.all([
+  const [payload, floorPlan, origin] = await Promise.all([
     readRestaurantSettings(),
     readFloorPlan(),
+    readRestaurantOrigin(),
   ]);
-  return NextResponse.json({ ...payload, floorPlan });
+  const originConfigured = origin !== null;
+  const originSource =
+    payload.restaurantLatitude != null && payload.restaurantLongitude != null
+      ? "database"
+      : originConfigured
+        ? "env"
+        : "none";
+  return NextResponse.json({
+    ...payload,
+    floorPlan,
+    deliveryConfig: {
+      originConfigured,
+      googleDistanceMatrixEnabled: isGoogleDistanceMatrixEnabled(),
+      originSource,
+    },
+  });
 }
 
 export async function PUT(request: Request) {
@@ -102,6 +124,16 @@ export async function PUT(request: Request) {
   const freeDeliveryUptoKm = normalizeNonNegativeNumber(o.freeDeliveryUptoKm);
   const baseDeliveryCharge = normalizeNonNegativeNumber(o.baseDeliveryCharge);
   const deliveryPerKmCharge = normalizeNonNegativeNumber(o.deliveryPerKmCharge);
+  const restaurantLatitude = normalizeCoordinate(o.restaurantLatitude, "lat");
+  const restaurantLongitude = normalizeCoordinate(o.restaurantLongitude, "lng");
+  if (
+    (restaurantLatitude == null) !== (restaurantLongitude == null)
+  ) {
+    return NextResponse.json(
+      { error: "Set both restaurant latitude and longitude, or leave both empty." },
+      { status: 400 },
+    );
+  }
   const pmParsed = parsePaymentMethodsBody(o.paymentMethods);
   if (!pmParsed) {
     return NextResponse.json(
@@ -127,6 +159,8 @@ export async function PUT(request: Request) {
     freeDeliveryUptoKm,
     baseDeliveryCharge,
     deliveryPerKmCharge,
+    restaurantLatitude,
+    restaurantLongitude,
     paymentMethods: pmParsed,
   };
 
@@ -154,5 +188,6 @@ export async function PUT(request: Request) {
   }
 
   await writeRestaurantSettings(normalized);
+  clearRestaurantOriginCache();
   return NextResponse.json({ ok: true });
 }

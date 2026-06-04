@@ -136,7 +136,9 @@ export async function GET(request: Request) {
   return NextResponse.json({
     date: formatIstDateInput(dayStart),
     hasMore,
-    travelDistanceConfigured: withTravel ? isTravelDistanceConfigured() : undefined,
+    travelDistanceConfigured: withTravel
+      ? await isTravelDistanceConfigured()
+      : undefined,
     orders: mapped,
   });
 }

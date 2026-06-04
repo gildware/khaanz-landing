@@ -20,6 +20,7 @@ import { toast } from "sonner";
 
 import { LocationMapPicker } from "@/components/map/location-map-picker";
 import { LocationSearch } from "@/components/map/location-search";
+import { computeDeliveryChargeRupees } from "@/lib/delivery-charge";
 import { DEFAULT_CENTER } from "@/lib/map-constants";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,8 +90,13 @@ export function CheckoutForm() {
   const [distance, setDistance] = useState<TravelDistanceResult | null>(null);
   const [distanceLoading, setDistanceLoading] = useState(false);
   const [deliveryPricingReady, setDeliveryPricingReady] = useState(true);
-  const [distanceMatrixReady, setDistanceMatrixReady] = useState(true);
-  const [deliveryCharge, setDeliveryCharge] = useState<number | null>(null);
+  const [originConfigured, setOriginConfigured] = useState(true);
+  const [distanceMatrixReady, setDistanceMatrixReady] = useState(false);
+  const [deliveryPricing, setDeliveryPricing] = useState({
+    freeDeliveryUptoKm: 0,
+    baseDeliveryCharge: 0,
+    deliveryPerKmCharge: 0,
+  });
   const [mapFlyTrigger, setMapFlyTrigger] = useState(0);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddressDTO[]>([]);
   const [savedAddressesLoaded, setSavedAddressesLoaded] = useState(false);
@@ -124,18 +130,28 @@ export function CheckoutForm() {
   const maxStepIndex = steps.length - 1;
   const currentStepLabel = steps[step] ?? steps[0];
 
-  const position = useMemo(() => {
-    const lat = latitude ?? DEFAULT_CENTER[0];
-    const lng = longitude ?? DEFAULT_CENTER[1];
-    return { lat, lng };
-  }, [latitude, longitude]);
+  const mapCenter = useMemo((): [number, number] => {
+    const lat = settings?.restaurantLatitude;
+    const lng = settings?.restaurantLongitude;
+    if (typeof lat === "number" && typeof lng === "number") {
+      return [lat, lng];
+    }
+    return DEFAULT_CENTER;
+  }, [settings?.restaurantLatitude, settings?.restaurantLongitude]);
 
-  const deliveryFee =
-    fulfillment === "delivery" &&
-    deliveryPricingReady &&
-    typeof deliveryCharge === "number"
-      ? deliveryCharge
-      : 0;
+  const position = useMemo(() => {
+    const lat = latitude ?? mapCenter[0];
+    const lng = longitude ?? mapCenter[1];
+    return { lat, lng };
+  }, [latitude, longitude, mapCenter]);
+
+  const deliveryFee = useMemo(() => {
+    if (fulfillment !== "delivery" || !deliveryPricingReady) return 0;
+    if (distance?.meters != null) {
+      return computeDeliveryChargeRupees(distance.meters, deliveryPricing);
+    }
+    return 0;
+  }, [fulfillment, deliveryPricingReady, distance, deliveryPricing]);
   const grandTotal = totalAmount + deliveryFee;
 
   const fetchAddress = useCallback(async (lat: number, lng: number) => {
@@ -178,15 +194,20 @@ export function CheckoutForm() {
         .then((r) => {
           if (cancelled) return;
           setDeliveryPricingReady(r.configured);
-          setDistanceMatrixReady(r.distanceMatrixReady !== false);
+          setOriginConfigured(r.originConfigured !== false);
+          setDistanceMatrixReady(r.distanceMatrixReady === true);
+          setDeliveryPricing({
+            freeDeliveryUptoKm: r.freeDeliveryUptoKm,
+            baseDeliveryCharge: r.baseDeliveryCharge,
+            deliveryPerKmCharge: r.deliveryPerKmCharge,
+          });
           setDistance(r.distance);
-          setDeliveryCharge(r.deliveryCharge);
         })
         .catch(() => {
           if (!cancelled) {
             setDeliveryPricingReady(false);
+            setOriginConfigured(false);
             setDistance(null);
-            setDeliveryCharge(null);
           }
         })
         .finally(() => {
@@ -324,7 +345,6 @@ export function CheckoutForm() {
     setLatitude(null);
     setLongitude(null);
     setDistance(null);
-    setDeliveryCharge(null);
     setGeoError(null);
     setLocationPermissionDenied(false);
   }, []);
@@ -717,46 +737,31 @@ export function CheckoutForm() {
           <span className="text-muted-foreground text-sm">
             Could not load delivery pricing. Refresh and try again.
           </span>
+        ) : !originConfigured ? (
+          <span className="text-muted-foreground text-sm">
+            Delivery distance is not configured yet. Ask the restaurant to set
+            their location in Admin → Settings → Delivery charges.
+          </span>
         ) : distance ? (
           <div className="min-w-0 flex-1">
             <p className="text-muted-foreground text-xs uppercase tracking-wide">
               Distance from restaurant
+              {distance.estimated ? " (approx.)" : ""}
             </p>
             <p className="font-medium text-sm">
               {distance.text}
-              {distance.durationText && (
+              {distance.durationText ? (
                 <span className="text-muted-foreground font-normal">
                   {" "}
                   · ~{distance.durationText} drive
                 </span>
-              )}
-            </p>
-            <p className="mt-1 text-sm">
-              <span className="text-muted-foreground">Delivery fee: </span>
-              {deliveryFee > 0 ? (
-                <span className="font-semibold text-primary tabular-nums">
-                  ₹{deliveryFee}
+              ) : distance.estimated ? (
+                <span className="text-muted-foreground font-normal">
+                  {" "}
+                  · straight-line estimate
                 </span>
-              ) : (
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                  Free
-                </span>
-              )}
+              ) : null}
             </p>
-          </div>
-        ) : typeof deliveryCharge === "number" ? (
-          <div className="min-w-0 flex-1">
-            {!distanceMatrixReady ? (
-              <p className="text-muted-foreground text-xs">
-                Exact distance unavailable — showing base delivery fee from your
-                restaurant settings.
-              </p>
-            ) : (
-              <p className="text-muted-foreground text-xs">
-                Distance unavailable for this pin — delivery fee estimated from
-                base charge.
-              </p>
-            )}
             <p className="mt-1 text-sm">
               <span className="text-muted-foreground">Delivery fee: </span>
               {deliveryFee > 0 ? (

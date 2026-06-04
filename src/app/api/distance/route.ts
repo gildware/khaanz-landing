@@ -4,6 +4,7 @@ import { computeDeliveryChargeRupees } from "@/lib/delivery-charge";
 import { readRestaurantSettings } from "@/lib/settings-repository";
 import {
   getTravelDistance,
+  isGoogleDistanceMatrixEnabled,
   isTravelDistanceConfigured,
 } from "@/lib/travel-distance";
 
@@ -27,16 +28,18 @@ export async function GET(request: Request) {
     baseDeliveryCharge: settings.baseDeliveryCharge,
     deliveryPerKmCharge: settings.deliveryPerKmCharge,
   };
-  const distanceMatrixReady = isTravelDistanceConfigured();
 
-  if (!distanceMatrixReady) {
-    const flatFallback =
-      pricing.baseDeliveryCharge > 0 ? pricing.baseDeliveryCharge : null;
+  const originConfigured = await isTravelDistanceConfigured();
+  const distanceMatrixReady =
+    originConfigured && isGoogleDistanceMatrixEnabled();
+
+  if (!originConfigured) {
     return NextResponse.json({
       configured: true,
+      originConfigured: false,
       distanceMatrixReady: false,
       distance: null,
-      deliveryCharge: flatFallback,
+      deliveryCharge: null,
       ...pricing,
     });
   }
@@ -45,13 +48,12 @@ export async function GET(request: Request) {
 
   const deliveryCharge = distance
     ? computeDeliveryChargeRupees(distance.meters, pricing)
-    : pricing.baseDeliveryCharge > 0
-      ? pricing.baseDeliveryCharge
-      : null;
+    : null;
 
   return NextResponse.json({
     configured: true,
-    distanceMatrixReady: true,
+    originConfigured: true,
+    distanceMatrixReady,
     distance,
     deliveryCharge,
     ...pricing,
