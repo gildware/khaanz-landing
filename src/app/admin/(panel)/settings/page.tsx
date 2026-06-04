@@ -57,6 +57,7 @@ export default function AdminSettingsPage() {
     originConfigured: boolean;
     googleDistanceMatrixEnabled: boolean;
     originSource: "database" | "env" | "none";
+    coordsMigrationApplied?: boolean;
   } | null>(null);
 
   const load = useCallback(async () => {
@@ -72,6 +73,7 @@ export default function AdminSettingsPage() {
           originConfigured: boolean;
           googleDistanceMatrixEnabled: boolean;
           originSource: "database" | "env" | "none";
+          coordsMigrationApplied?: boolean;
         };
       };
       setDeliveryConfig(data.deliveryConfig ?? null);
@@ -362,6 +364,20 @@ export default function AdminSettingsPage() {
         </TabsContent>
 
         <TabsContent value="delivery-charges" className="space-y-6">
+          {deliveryConfig?.coordsMigrationApplied === false ? (
+            <div className="flex gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
+              <AlertTriangleIcon className="mt-0.5 size-5 shrink-0 text-destructive" />
+              <div>
+                <p className="font-medium">Database update required</p>
+                <p className="mt-1 text-muted-foreground">
+                  Run{" "}
+                  <code className="rounded bg-muted px-1">npx prisma migrate deploy</code>{" "}
+                  on the production server (adds restaurant coordinate columns). Until
+                  then, other settings can be saved, but latitude/longitude cannot.
+                </p>
+              </div>
+            </div>
+          ) : null}
           {deliveryConfig && !deliveryConfig.originConfigured ? (
             <div className="flex gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
               <AlertTriangleIcon className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />

@@ -7,6 +7,8 @@
 
 import {
   readRestaurantSettings,
+  restaurantCoordsColumnsAvailable,
+  RestaurantCoordsMigrationRequiredError,
   writeRestaurantSettings,
 } from "@/lib/settings-repository";
 
@@ -44,6 +46,7 @@ async function syncEnvRestaurantCoordsToDbIfNeeded(): Promise<void> {
     return;
   }
   envCoordsSyncPromise = (async () => {
+    if (!(await restaurantCoordsColumnsAvailable())) return;
     const settings = await readRestaurantSettings();
     if (
       settings.restaurantLatitude != null &&
@@ -53,12 +56,17 @@ async function syncEnvRestaurantCoordsToDbIfNeeded(): Promise<void> {
     }
     const env = getRestaurantOriginFromEnv();
     if (!env) return;
-    await writeRestaurantSettings({
-      ...settings,
-      restaurantLatitude: env.lat,
-      restaurantLongitude: env.lng,
-    });
-    originCache = null;
+    try {
+      await writeRestaurantSettings({
+        ...settings,
+        restaurantLatitude: env.lat,
+        restaurantLongitude: env.lng,
+      });
+      originCache = null;
+    } catch (e) {
+      if (e instanceof RestaurantCoordsMigrationRequiredError) return;
+      throw e;
+    }
   })().finally(() => {
     envCoordsSyncPromise = null;
   });

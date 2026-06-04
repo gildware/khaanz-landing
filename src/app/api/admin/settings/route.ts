@@ -14,6 +14,8 @@ import {
   normalizeNonNegativeNumber,
   normalizeWhatsAppPhone,
   readRestaurantSettings,
+  restaurantCoordsColumnsAvailable,
+  RestaurantCoordsMigrationRequiredError,
   writeRestaurantSettings,
 } from "@/lib/settings-repository";
 import {
@@ -62,27 +64,37 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const [payload, floorPlan, origin] = await Promise.all([
-    readRestaurantSettings(),
-    readFloorPlan(),
-    readRestaurantOrigin(),
-  ]);
-  const originConfigured = origin !== null;
-  const originSource =
-    payload.restaurantLatitude != null && payload.restaurantLongitude != null
-      ? "database"
-      : originConfigured
-        ? "env"
-        : "none";
-  return NextResponse.json({
-    ...payload,
-    floorPlan,
-    deliveryConfig: {
-      originConfigured,
-      googleDistanceMatrixEnabled: isGoogleDistanceMatrixEnabled(),
-      originSource,
-    },
-  });
+  try {
+    const coordsMigrationApplied = await restaurantCoordsColumnsAvailable();
+    const [payload, floorPlan, origin] = await Promise.all([
+      readRestaurantSettings(),
+      readFloorPlan(),
+      readRestaurantOrigin(),
+    ]);
+    const originConfigured = origin !== null;
+    const originSource =
+      payload.restaurantLatitude != null && payload.restaurantLongitude != null
+        ? "database"
+        : originConfigured
+          ? "env"
+          : "none";
+    return NextResponse.json({
+      ...payload,
+      floorPlan,
+      deliveryConfig: {
+        originConfigured,
+        googleDistanceMatrixEnabled: isGoogleDistanceMatrixEnabled(),
+        originSource,
+        coordsMigrationApplied,
+      },
+    });
+  } catch (e) {
+    console.error("[admin/settings GET]", e);
+    return NextResponse.json(
+      { error: "Could not load settings. Check server logs." },
+      { status: 500 },
+    );
+  }
 }
 
 export async function PUT(request: Request) {
@@ -187,7 +199,15 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  await writeRestaurantSettings(normalized);
-  clearRestaurantOriginCache();
-  return NextResponse.json({ ok: true });
+  try {
+    await writeRestaurantSettings(normalized);
+    clearRestaurantOriginCache();
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    if (e instanceof RestaurantCoordsMigrationRequiredError) {
+      return NextResponse.json({ error: e.message }, { status: 503 });
+    }
+    console.error("[admin/settings PUT]", e);
+    return NextResponse.json({ error: "Save failed. Check server logs." }, { status: 500 });
+  }
 }

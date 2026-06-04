@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { getPrisma } from "@/lib/prisma";
 import type {
@@ -145,6 +145,179 @@ export function normalizeWhatsAppPhone(input: string): string {
   return input.replace(/\D/g, "");
 }
 
+/** Cached: prod 500s when migration `20260604140000_restaurant_coordinates` was not applied. */
+let restaurantCoordsColumnsKnown: boolean | null = null;
+
+function isPrismaMissingColumnError(e: unknown): boolean {
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    return e.code === "P2022";
+  }
+  const msg = e instanceof Error ? e.message : String(e);
+  return (
+    msg.includes("restaurant_latitude") ||
+    msg.includes("restaurant_longitude") ||
+    msg.includes("does not exist")
+  );
+}
+
+/** Whether `restaurant_latitude` / `restaurant_longitude` exist in PostgreSQL. */
+export async function restaurantCoordsColumnsAvailable(): Promise<boolean> {
+  if (restaurantCoordsColumnsKnown !== null) {
+    return restaurantCoordsColumnsKnown;
+  }
+  const prisma = getPrisma();
+  try {
+    const rows = await prisma.$queryRaw<{ exists: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'restaurant_settings'
+          AND column_name = 'restaurant_latitude'
+      ) AS "exists"
+    `;
+    restaurantCoordsColumnsKnown = Boolean(rows[0]?.exists);
+  } catch {
+    restaurantCoordsColumnsKnown = false;
+  }
+  return restaurantCoordsColumnsKnown;
+}
+
+export function invalidateRestaurantCoordsColumnCache(): void {
+  restaurantCoordsColumnsKnown = null;
+}
+
+type LegacySettingsRow = {
+  display_name: string;
+  logo_url: string;
+  whatsapp_phone_e164: string;
+  pickup_start: string;
+  pickup_end: string;
+  delivery_start: string;
+  delivery_end: string;
+  bill_header: string;
+  bill_footer: string;
+  free_delivery_upto_km: number;
+  base_delivery_charge: number;
+  delivery_per_km_charge: number;
+  payment_methods_json: unknown;
+};
+
+async function readRestaurantSettingsLegacy(
+  prisma: PrismaClient,
+): Promise<RestaurantSettingsPayload> {
+  const rows = await prisma.$queryRaw<LegacySettingsRow[]>`
+    SELECT
+      display_name,
+      logo_url,
+      whatsapp_phone_e164,
+      pickup_start,
+      pickup_end,
+      delivery_start,
+      delivery_end,
+      bill_header,
+      bill_footer,
+      free_delivery_upto_km,
+      base_delivery_charge,
+      delivery_per_km_charge,
+      payment_methods_json
+    FROM restaurant_settings
+    WHERE id = 'default'
+    LIMIT 1
+  `;
+  const row = rows[0];
+  if (!row) {
+    return DEFAULT_RESTAURANT_SETTINGS;
+  }
+  return rowToPayload({
+    displayName: row.display_name,
+    logoUrl: row.logo_url,
+    whatsappPhoneE164: row.whatsapp_phone_e164,
+    pickupStart: row.pickup_start,
+    pickupEnd: row.pickup_end,
+    deliveryStart: row.delivery_start,
+    deliveryEnd: row.delivery_end,
+    billHeader: row.bill_header,
+    billFooter: row.bill_footer,
+    freeDeliveryUptoKm: row.free_delivery_upto_km,
+    baseDeliveryCharge: row.base_delivery_charge,
+    deliveryPerKmCharge: row.delivery_per_km_charge,
+    restaurantLatitude: null,
+    restaurantLongitude: null,
+    paymentMethodsJson: row.payment_methods_json,
+  });
+}
+
+async function writeRestaurantSettingsLegacy(
+  prisma: PrismaClient,
+  payload: RestaurantSettingsPayload,
+): Promise<void> {
+  const whatsapp = normalizeWhatsAppPhone(payload.whatsappPhoneE164);
+  const pm = parsePaymentMethodsJson(payload.paymentMethods);
+  const displayName = payload.displayName.trim().slice(0, 120);
+  const logoUrl = payload.logoUrl.trim().slice(0, 500);
+  const freeDeliveryUptoKm = normalizeNonNegativeNumber(payload.freeDeliveryUptoKm);
+  const baseDeliveryCharge = normalizeNonNegativeNumber(payload.baseDeliveryCharge);
+  const deliveryPerKmCharge = normalizeNonNegativeNumber(
+    payload.deliveryPerKmCharge,
+  );
+  const pickupStart = normalizeHHMM(payload.pickup.start);
+  const pickupEnd = normalizeHHMM(payload.pickup.end);
+  const deliveryStart = normalizeHHMM(payload.delivery.start);
+  const deliveryEnd = normalizeHHMM(payload.delivery.end);
+  const billHeader = payload.billHeader.trim();
+  const billFooter = payload.billFooter.trim();
+  const paymentJson = JSON.stringify(pm);
+
+  await prisma.$executeRaw`
+    INSERT INTO restaurant_settings (
+      id,
+      display_name,
+      logo_url,
+      whatsapp_phone_e164,
+      pickup_start,
+      pickup_end,
+      delivery_start,
+      delivery_end,
+      bill_header,
+      bill_footer,
+      free_delivery_upto_km,
+      base_delivery_charge,
+      delivery_per_km_charge,
+      payment_methods_json
+    ) VALUES (
+      'default',
+      ${displayName},
+      ${logoUrl},
+      ${whatsapp},
+      ${pickupStart},
+      ${pickupEnd},
+      ${deliveryStart},
+      ${deliveryEnd},
+      ${billHeader},
+      ${billFooter},
+      ${freeDeliveryUptoKm},
+      ${baseDeliveryCharge},
+      ${deliveryPerKmCharge},
+      ${paymentJson}::jsonb
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      display_name = EXCLUDED.display_name,
+      logo_url = EXCLUDED.logo_url,
+      whatsapp_phone_e164 = EXCLUDED.whatsapp_phone_e164,
+      pickup_start = EXCLUDED.pickup_start,
+      pickup_end = EXCLUDED.pickup_end,
+      delivery_start = EXCLUDED.delivery_start,
+      delivery_end = EXCLUDED.delivery_end,
+      bill_header = EXCLUDED.bill_header,
+      bill_footer = EXCLUDED.bill_footer,
+      free_delivery_upto_km = EXCLUDED.free_delivery_upto_km,
+      base_delivery_charge = EXCLUDED.base_delivery_charge,
+      delivery_per_km_charge = EXCLUDED.delivery_per_km_charge,
+      payment_methods_json = EXCLUDED.payment_methods_json
+  `;
+}
+
 function rowToPayload(row: {
   displayName: string;
   logoUrl: string;
@@ -190,19 +363,49 @@ function rowToPayload(row: {
 
 export async function readRestaurantSettings(): Promise<RestaurantSettingsPayload> {
   const prisma = getPrisma();
-  const row = await prisma.restaurantSettings.findUnique({
-    where: { id: "default" },
-  });
-  if (!row) {
-    return DEFAULT_RESTAURANT_SETTINGS;
+  if (!(await restaurantCoordsColumnsAvailable())) {
+    return readRestaurantSettingsLegacy(prisma);
   }
-  return rowToPayload(row);
+  try {
+    const row = await prisma.restaurantSettings.findUnique({
+      where: { id: "default" },
+    });
+    if (!row) {
+      return DEFAULT_RESTAURANT_SETTINGS;
+    }
+    return rowToPayload(row);
+  } catch (e) {
+    if (!isPrismaMissingColumnError(e)) throw e;
+    restaurantCoordsColumnsKnown = false;
+    return readRestaurantSettingsLegacy(prisma);
+  }
+}
+
+export class RestaurantCoordsMigrationRequiredError extends Error {
+  constructor() {
+    super(
+      "Database migration required: run `npx prisma migrate deploy` on the server (adds restaurant_latitude / restaurant_longitude).",
+    );
+    this.name = "RestaurantCoordsMigrationRequiredError";
+  }
 }
 
 export async function writeRestaurantSettings(
   payload: RestaurantSettingsPayload,
 ): Promise<void> {
   const prisma = getPrisma();
+  const hasCoordsColumns = await restaurantCoordsColumnsAvailable();
+  const wantsCoords =
+    payload.restaurantLatitude != null && payload.restaurantLongitude != null;
+
+  if (!hasCoordsColumns) {
+    if (wantsCoords) {
+      throw new RestaurantCoordsMigrationRequiredError();
+    }
+    await writeRestaurantSettingsLegacy(prisma, payload);
+    return;
+  }
+
   const whatsapp = normalizeWhatsAppPhone(payload.whatsappPhoneE164);
   const pm = parsePaymentMethodsJson(payload.paymentMethods);
   const displayName = payload.displayName.trim().slice(0, 120);
@@ -218,44 +421,53 @@ export async function writeRestaurantSettings(
     payload.restaurantLongitude,
     "lng",
   );
-  await prisma.restaurantSettings.upsert({
-    where: { id: "default" },
-    create: {
-      id: "default",
-      displayName,
-      logoUrl,
-      whatsappPhoneE164: whatsapp,
-      pickupStart: normalizeHHMM(payload.pickup.start),
-      pickupEnd: normalizeHHMM(payload.pickup.end),
-      deliveryStart: normalizeHHMM(payload.delivery.start),
-      deliveryEnd: normalizeHHMM(payload.delivery.end),
-      billHeader: payload.billHeader.trim(),
-      billFooter: payload.billFooter.trim(),
-      freeDeliveryUptoKm,
-      baseDeliveryCharge,
-      deliveryPerKmCharge,
-      restaurantLatitude,
-      restaurantLongitude,
-      paymentMethodsJson: pm as unknown as Prisma.InputJsonValue,
-    },
-    update: {
-      displayName,
-      logoUrl,
-      whatsappPhoneE164: whatsapp,
-      pickupStart: normalizeHHMM(payload.pickup.start),
-      pickupEnd: normalizeHHMM(payload.pickup.end),
-      deliveryStart: normalizeHHMM(payload.delivery.start),
-      deliveryEnd: normalizeHHMM(payload.delivery.end),
-      billHeader: payload.billHeader.trim(),
-      billFooter: payload.billFooter.trim(),
-      freeDeliveryUptoKm,
-      baseDeliveryCharge,
-      deliveryPerKmCharge,
-      restaurantLatitude,
-      restaurantLongitude,
-      paymentMethodsJson: pm as unknown as Prisma.InputJsonValue,
-    },
-  });
+  try {
+    await prisma.restaurantSettings.upsert({
+      where: { id: "default" },
+      create: {
+        id: "default",
+        displayName,
+        logoUrl,
+        whatsappPhoneE164: whatsapp,
+        pickupStart: normalizeHHMM(payload.pickup.start),
+        pickupEnd: normalizeHHMM(payload.pickup.end),
+        deliveryStart: normalizeHHMM(payload.delivery.start),
+        deliveryEnd: normalizeHHMM(payload.delivery.end),
+        billHeader: payload.billHeader.trim(),
+        billFooter: payload.billFooter.trim(),
+        freeDeliveryUptoKm,
+        baseDeliveryCharge,
+        deliveryPerKmCharge,
+        restaurantLatitude,
+        restaurantLongitude,
+        paymentMethodsJson: pm as unknown as Prisma.InputJsonValue,
+      },
+      update: {
+        displayName,
+        logoUrl,
+        whatsappPhoneE164: whatsapp,
+        pickupStart: normalizeHHMM(payload.pickup.start),
+        pickupEnd: normalizeHHMM(payload.pickup.end),
+        deliveryStart: normalizeHHMM(payload.delivery.start),
+        deliveryEnd: normalizeHHMM(payload.delivery.end),
+        billHeader: payload.billHeader.trim(),
+        billFooter: payload.billFooter.trim(),
+        freeDeliveryUptoKm,
+        baseDeliveryCharge,
+        deliveryPerKmCharge,
+        restaurantLatitude,
+        restaurantLongitude,
+        paymentMethodsJson: pm as unknown as Prisma.InputJsonValue,
+      },
+    });
+  } catch (e) {
+    if (!isPrismaMissingColumnError(e)) throw e;
+    restaurantCoordsColumnsKnown = false;
+    if (wantsCoords) {
+      throw new RestaurantCoordsMigrationRequiredError();
+    }
+    await writeRestaurantSettingsLegacy(prisma, payload);
+  }
 }
 
 /** @deprecated Settings are in the database; use `npm run db:seed` for first-time setup. */
