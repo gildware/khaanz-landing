@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
+import { createSupplierOpeningBalanceInTransaction } from "@/lib/inventory/supplier-opening-balance";
 import { getPrisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -46,14 +47,43 @@ export async function POST(request: Request) {
     defaultCreditDays = Math.floor(n);
   }
 
+  let openingBalancePaise: number | undefined;
+  if (body.openingBalancePaise !== undefined && body.openingBalancePaise !== null) {
+    const n = Number(body.openingBalancePaise);
+    if (!Number.isFinite(n) || n < 0) {
+      return NextResponse.json(
+        { error: "openingBalancePaise must be a non-negative number" },
+        { status: 400 },
+      );
+    }
+    openingBalancePaise = Math.floor(n);
+  }
+  const openingBalanceNote =
+    typeof body.openingBalanceNote === "string" ? body.openingBalanceNote : undefined;
+
   const prisma = getPrisma();
-  const row = await prisma.supplier.create({
-    data: {
-      name: name.slice(0, 200),
-      phone,
-      address,
-      defaultCreditDays,
-    },
-  });
-  return NextResponse.json(row);
+  try {
+    const row = await prisma.$transaction(async (tx) => {
+      const supplier = await tx.supplier.create({
+        data: {
+          name: name.slice(0, 200),
+          phone,
+          address,
+          defaultCreditDays,
+        },
+      });
+      if (openingBalancePaise && openingBalancePaise > 0) {
+        await createSupplierOpeningBalanceInTransaction(tx, {
+          supplierId: supplier.id,
+          amountPaise: openingBalancePaise,
+          note: openingBalanceNote,
+        });
+      }
+      return supplier;
+    });
+    return NextResponse.json(row);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to create supplier";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
 }

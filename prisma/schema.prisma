@@ -315,6 +315,7 @@ enum PurchasePaymentType {
 }
 
 enum SupplierLedgerKind {
+  OPENING_BALANCE
   PURCHASE_DEBIT
   PAYMENT_CREDIT
   RETURN_CREDIT

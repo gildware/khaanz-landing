@@ -20,9 +20,25 @@ export async function GET(_request: Request, context: Ctx) {
     orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
   });
 
+  const paymentIds = entries
+    .filter((e) => e.referenceType === "supplier_payment")
+    .map((e) => e.referenceId);
+  const payments =
+    paymentIds.length > 0
+      ? await prisma.supplierPayment.findMany({
+          where: { id: { in: paymentIds } },
+          select: { id: true, reference: true, method: true },
+        })
+      : [];
+  const paymentById = new Map(payments.map((p) => [p.id, p]));
+
   let running = 0;
   const withBalance = entries.map((e) => {
     running += e.debitPaise - e.creditPaise;
+    const payment =
+      e.referenceType === "supplier_payment"
+        ? paymentById.get(e.referenceId)
+        : undefined;
     return {
       id: e.id,
       occurredAt: e.occurredAt.toISOString(),
@@ -32,6 +48,8 @@ export async function GET(_request: Request, context: Ctx) {
       referenceType: e.referenceType,
       referenceId: e.referenceId,
       note: e.note,
+      paymentReference: payment?.reference ?? "",
+      paymentMethod: payment?.method ?? "",
       balancePaise: running,
     };
   });

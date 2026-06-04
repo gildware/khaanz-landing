@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDownIcon,
+  ChevronDownIcon,
+  EyeIcon,
   HistoryIcon,
   IndianRupeeIcon,
   PencilIcon,
   PlusCircleIcon,
   PlusIcon,
+  ReceiptIcon,
   Settings2Icon,
   Trash2Icon,
   TruckIcon,
@@ -127,25 +130,50 @@ function KpiCard(props: {
   subtitle?: string;
   Icon: React.ComponentType<{ className?: string }>;
   gradientClassName: string;
+  compact?: boolean;
 }) {
-  const { title, value, subtitle, Icon, gradientClassName } = props;
+  const { title, value, subtitle, Icon, gradientClassName, compact } = props;
   return (
-    <div className="relative overflow-hidden rounded-2xl border bg-card shadow-sm">
+    <div className="relative min-w-0 overflow-hidden rounded-xl border bg-card shadow-sm">
       <div className={`absolute inset-0 opacity-70 ${gradientClassName}`} />
       <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/35 to-background/90" />
-      <div className="relative p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-muted-foreground text-sm">{title}</p>
-            <p className="mt-1 font-semibold text-2xl tabular-nums tracking-tight">
+      <div className={cx("relative", compact ? "p-2.5" : "p-4")}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p
+              className={cx(
+                "text-muted-foreground",
+                compact ? "text-[11px] leading-tight" : "text-sm",
+              )}
+            >
+              {title}
+            </p>
+            <p
+              className={cx(
+                "mt-0.5 font-semibold tabular-nums tracking-tight",
+                compact ? "truncate text-base" : "text-2xl",
+              )}
+            >
               {value}
             </p>
             {subtitle ? (
-              <p className="mt-1 text-muted-foreground text-xs">{subtitle}</p>
+              <p
+                className={cx(
+                  "mt-0.5 text-muted-foreground",
+                  compact ? "line-clamp-2 text-[10px] leading-tight" : "text-xs",
+                )}
+              >
+                {subtitle}
+              </p>
             ) : null}
           </div>
-          <div className="rounded-xl border bg-background/60 p-2 shadow-sm backdrop-blur">
-            <Icon className="size-5 text-foreground/80" />
+          <div
+            className={cx(
+              "shrink-0 rounded-lg border bg-background/60 shadow-sm backdrop-blur",
+              compact ? "p-1.5" : "rounded-xl p-2",
+            )}
+          >
+            <Icon className={cx("text-foreground/80", compact ? "size-4" : "size-5")} />
           </div>
         </div>
       </div>
@@ -306,6 +334,95 @@ type Supplier = {
   active: boolean;
 };
 
+type SupplierProfileStats = {
+  balancePaise: number;
+  totalPurchasesPaise: number;
+  purchaseCount: number;
+  totalPaidPaise: number;
+  totalReturnsPaise: number;
+  hasOpeningBalance: boolean;
+  openingBalancePaise: number;
+  openingBalanceAt: string | null;
+  openingBalanceNote: string;
+};
+
+type SupplierLedgerEntryRow = {
+  id: string;
+  occurredAt: string;
+  kind: string;
+  debitPaise: number;
+  creditPaise: number;
+  referenceType: string;
+  referenceId: string;
+  note: string;
+  paymentReference?: string;
+  paymentMethod?: string;
+  balancePaise: number;
+};
+
+const SUPPLIER_LEDGER_KIND_LABELS: Record<string, string> = {
+  OPENING_BALANCE: "Opening balance",
+  PURCHASE_DEBIT: "Purchase",
+  PAYMENT_CREDIT: "Payment",
+  RETURN_CREDIT: "Purchase return",
+};
+
+function supplierLedgerEntryLabel(entry: {
+  kind: string;
+  referenceType: string;
+}): string {
+  if (entry.referenceType === "opening_balance") return "Opening balance";
+  return SUPPLIER_LEDGER_KIND_LABELS[entry.kind] ?? entry.kind;
+}
+
+function emptySupplierProfileStats(): SupplierProfileStats {
+  return {
+    balancePaise: 0,
+    totalPurchasesPaise: 0,
+    purchaseCount: 0,
+    totalPaidPaise: 0,
+    totalReturnsPaise: 0,
+    hasOpeningBalance: false,
+    openingBalancePaise: 0,
+    openingBalanceAt: null,
+    openingBalanceNote: "",
+  };
+}
+
+function buildSupplierStats(
+  supplierId: string,
+  purchaseRows: PurchaseRow[],
+  ledgerEntries: SupplierLedgerEntryRow[],
+  summaryBalancePaise?: number,
+): SupplierProfileStats {
+  const supplierPurchases = purchaseRows.filter((p) => p.supplierId === supplierId);
+  let totalPaidPaise = 0;
+  let totalReturnsPaise = 0;
+  for (const e of ledgerEntries) {
+    if (e.kind === "PAYMENT_CREDIT") totalPaidPaise += e.creditPaise;
+    if (e.kind === "RETURN_CREDIT") totalReturnsPaise += e.creditPaise;
+  }
+  const opening = ledgerEntries.find(
+    (e) => e.kind === "OPENING_BALANCE" || e.referenceType === "opening_balance",
+  );
+  const balancePaise =
+    ledgerEntries.length > 0
+      ? ledgerEntries[ledgerEntries.length - 1]!.balancePaise
+      : (summaryBalancePaise ?? 0);
+
+  return {
+    balancePaise,
+    totalPurchasesPaise: supplierPurchases.reduce((s, p) => s + p.totalPaise, 0),
+    purchaseCount: supplierPurchases.length,
+    totalPaidPaise,
+    totalReturnsPaise,
+    hasOpeningBalance: opening !== undefined,
+    openingBalancePaise: opening?.debitPaise ?? 0,
+    openingBalanceAt: opening?.occurredAt ?? null,
+    openingBalanceNote: opening?.note ?? "",
+  };
+}
+
 type PurchaseRow = {
   id: string;
   batchRef: string;
@@ -339,7 +456,13 @@ type MovementRow = {
   note: string;
 };
 
-const emptySupplierForm = { name: "", phone: "", address: "" };
+const emptySupplierForm = {
+  name: "",
+  phone: "",
+  address: "",
+  openingBalanceRupees: "",
+  openingBalanceNote: "",
+};
 
 const emptyItemForm = {
   name: "",
@@ -807,6 +930,8 @@ export default function AdminInventoryPage() {
       name: s.name,
       phone: s.phone,
       address: s.address,
+      openingBalanceRupees: "",
+      openingBalanceNote: "",
     });
     setSupplierDialogOpen(true);
   };
@@ -830,17 +955,31 @@ export default function AdminInventoryPage() {
         });
         toast.success("Supplier updated");
       } else {
+        const openingPaise = rupeesToPaise(supplierForm.openingBalanceRupees);
         await adminFetch("/api/admin/inventory/suppliers", {
           method: "POST",
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            ...payload,
+            ...(openingPaise > 0
+              ? {
+                  openingBalancePaise: openingPaise,
+                  openingBalanceNote: supplierForm.openingBalanceNote.trim() || undefined,
+                }
+              : {}),
+          }),
         });
-        toast.success("Supplier added");
+        toast.success(
+          openingPaise > 0 ? "Supplier added with opening balance" : "Supplier added",
+        );
       }
       setSupplierDialogOpen(false);
       setEditingSupplierId(null);
       setSupplierForm(emptySupplierForm);
       await loadSuppliers();
       await loadSummary();
+      if (editingSupplierId && profileSupplier?.id === editingSupplierId) {
+        await loadSupplierProfile(editingSupplierId);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
     }
@@ -848,6 +987,188 @@ export default function AdminInventoryPage() {
 
   const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null);
   const [supplierDeleteSubmitting, setSupplierDeleteSubmitting] = useState(false);
+
+  const [profileSupplier, setProfileSupplier] = useState<Supplier | null>(null);
+  const [supplierProfileStats, setSupplierProfileStats] =
+    useState<SupplierProfileStats | null>(null);
+  const [supplierLedgerEntries, setSupplierLedgerEntries] = useState<
+    SupplierLedgerEntryRow[]
+  >([]);
+  const [supplierProfileTab, setSupplierProfileTab] = useState("purchases");
+  const [supplierProfileLoading, setSupplierProfileLoading] = useState(false);
+  const [openingBalanceRupees, setOpeningBalanceRupees] = useState("");
+  const [openingBalanceNote, setOpeningBalanceNote] = useState("");
+  const [openingBalanceSubmitting, setOpeningBalanceSubmitting] = useState(false);
+  const [openingBalanceRemoving, setOpeningBalanceRemoving] = useState(false);
+  const emptyProfilePayment = {
+    amountRupees: "",
+    method: "upi",
+    transactionId: "",
+    note: "",
+  };
+  const [profilePayment, setProfilePayment] = useState(emptyProfilePayment);
+  const [profilePaymentSubmitting, setProfilePaymentSubmitting] = useState(false);
+
+  const loadSupplierProfile = useCallback(
+    async (supplierId: string) => {
+      setSupplierProfileLoading(true);
+      const summaryBalance = summary?.supplierBalances.find(
+        (b) => b.supplierId === supplierId,
+      )?.balancePaise;
+
+      try {
+        const ledger = await adminFetch<{ entries: SupplierLedgerEntryRow[] }>(
+          `/api/admin/inventory/suppliers/${supplierId}/ledger`,
+        );
+        setSupplierLedgerEntries(ledger.entries);
+        setSupplierProfileStats(
+          buildSupplierStats(supplierId, purchases, ledger.entries, summaryBalance),
+        );
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Failed to load supplier ledger",
+        );
+      }
+
+      try {
+        const detail = await adminFetch<{
+          supplier: Supplier;
+          stats: SupplierProfileStats;
+        }>(`/api/admin/inventory/suppliers/${supplierId}`);
+        setProfileSupplier(detail.supplier);
+        setSupplierProfileStats(detail.stats);
+      } catch {
+        // Keep ledger- and purchase-derived stats when detail endpoint is unavailable.
+      } finally {
+        setSupplierProfileLoading(false);
+      }
+    },
+    [purchases, summary],
+  );
+
+  const openSupplierProfile = (s: Supplier) => {
+    setSupplierProfileTab("purchases");
+    setOpeningBalanceRupees("");
+    setOpeningBalanceNote("");
+    setProfilePayment(emptyProfilePayment);
+    setProfileSupplier(s);
+    const summaryBalance = summary?.supplierBalances.find(
+      (b) => b.supplierId === s.id,
+    )?.balancePaise;
+    setSupplierProfileStats(
+      buildSupplierStats(s.id, purchases, [], summaryBalance),
+    );
+    setSupplierLedgerEntries([]);
+    void loadSupplierProfile(s.id);
+  };
+
+  const closeSupplierProfile = () => {
+    setProfileSupplier(null);
+    setSupplierProfileStats(null);
+    setSupplierLedgerEntries([]);
+    setOpeningBalanceRupees("");
+    setOpeningBalanceNote("");
+    setProfilePayment(emptyProfilePayment);
+  };
+
+  const submitProfilePayment = async () => {
+    if (!profileSupplier) return;
+    const amountPaise = rupeesToPaise(profilePayment.amountRupees);
+    if (amountPaise <= 0) {
+      toast.error("Enter a valid payment amount");
+      return;
+    }
+    setProfilePaymentSubmitting(true);
+    try {
+      await adminFetch("/api/admin/inventory/payments", {
+        method: "POST",
+        body: JSON.stringify({
+          supplierId: profileSupplier.id,
+          amountPaise,
+          method: profilePayment.method,
+          reference: profilePayment.transactionId.trim(),
+          note: profilePayment.note.trim(),
+        }),
+      });
+      toast.success("Payment recorded");
+      setProfilePayment(emptyProfilePayment);
+      await Promise.all([
+        loadSupplierProfile(profileSupplier.id),
+        loadSummary(),
+        loadSuppliers(),
+      ]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Payment failed");
+    } finally {
+      setProfilePaymentSubmitting(false);
+    }
+  };
+
+  const submitOpeningBalance = async () => {
+    if (!profileSupplier) return;
+    const amountPaise = rupeesToPaise(openingBalanceRupees);
+    if (amountPaise <= 0) {
+      toast.error("Enter a valid opening balance amount");
+      return;
+    }
+    setOpeningBalanceSubmitting(true);
+    try {
+      await adminFetch(
+        `/api/admin/inventory/suppliers/${profileSupplier.id}/opening-balance`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            amountPaise,
+            note: openingBalanceNote.trim() || undefined,
+          }),
+        },
+      );
+      toast.success("Opening balance recorded");
+      setOpeningBalanceRupees("");
+      setOpeningBalanceNote("");
+      await Promise.all([
+        loadSupplierProfile(profileSupplier.id),
+        loadSummary(),
+        loadSuppliers(),
+      ]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to save opening balance");
+    } finally {
+      setOpeningBalanceSubmitting(false);
+    }
+  };
+
+  const removeOpeningBalance = async () => {
+    if (!profileSupplier) return;
+    setOpeningBalanceRemoving(true);
+    try {
+      await adminFetch(
+        `/api/admin/inventory/suppliers/${profileSupplier.id}/opening-balance`,
+        { method: "DELETE" },
+      );
+      toast.success("Opening balance removed");
+      setOpeningBalanceRupees("");
+      setOpeningBalanceNote("");
+      await Promise.all([
+        loadSupplierProfile(profileSupplier.id),
+        loadSummary(),
+        loadSuppliers(),
+      ]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to remove opening balance");
+    } finally {
+      setOpeningBalanceRemoving(false);
+    }
+  };
+
+  const refreshProfileIfOpen = useCallback(
+    async (supplierId?: string) => {
+      if (!profileSupplier) return;
+      if (supplierId && profileSupplier.id !== supplierId) return;
+      await loadSupplierProfile(profileSupplier.id);
+    },
+    [profileSupplier, loadSupplierProfile],
+  );
 
   const confirmDeleteSupplier = async () => {
     if (!deletingSupplier) return;
@@ -865,6 +1186,11 @@ export default function AdminInventoryPage() {
         toast.success(`"${deletingSupplier.name}" deleted`);
       }
       setDeletingSupplier(null);
+      if (profileSupplier?.id === deletingSupplier.id) {
+        setProfileSupplier(null);
+        setSupplierProfileStats(null);
+        setSupplierLedgerEntries([]);
+      }
       await loadSuppliers();
       await loadSummary();
     } catch (e) {
@@ -968,6 +1294,7 @@ export default function AdminInventoryPage() {
         loadSuppliers(),
         loadPurchases(),
         loadMovements(),
+        refreshProfileIfOpen(purchase.supplierId),
       ]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Purchase failed");
@@ -992,6 +1319,7 @@ export default function AdminInventoryPage() {
         loadSuppliers(),
         loadPurchases(),
         loadMovements(),
+        refreshProfileIfOpen(deletingPurchase.supplierId),
       ]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Delete failed");
@@ -1107,6 +1435,7 @@ export default function AdminInventoryPage() {
     paymentSupplierId: "",
     paymentAmountRupees: "",
     paymentMethod: "upi",
+    paymentReference: "",
   });
 
   const postOpening = async () => {
@@ -1166,10 +1495,20 @@ export default function AdminInventoryPage() {
           supplierId: ops.paymentSupplierId,
           amountPaise: rupeesToPaise(ops.paymentAmountRupees),
           method: ops.paymentMethod,
+          reference: ops.paymentReference.trim(),
         }),
       });
       toast.success("Payment recorded");
-      await Promise.all([loadSummary(), loadSuppliers()]);
+      setOps((x) => ({
+        ...x,
+        paymentAmountRupees: "",
+        paymentReference: "",
+      }));
+      await Promise.all([
+        loadSummary(),
+        loadSuppliers(),
+        refreshProfileIfOpen(ops.paymentSupplierId),
+      ]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
     }
@@ -1344,6 +1683,18 @@ export default function AdminInventoryPage() {
     });
     return list;
   }, [suppliers, supplierSearch, supplierStatusFilter, supplierSort]);
+
+  const profilePurchases = useMemo(() => {
+    if (!profileSupplier) return [];
+    return purchases
+      .filter((p) => p.supplierId === profileSupplier.id)
+      .sort((a, b) => b.purchasedAt.localeCompare(a.purchasedAt));
+  }, [purchases, profileSupplier]);
+
+  const activeProfileStats = useMemo(
+    () => supplierProfileStats ?? emptySupplierProfileStats(),
+    [supplierProfileStats],
+  );
 
   const filteredPurchases = useMemo(() => {
     const q = purchaseSearch.trim().toLowerCase();
@@ -2129,7 +2480,7 @@ export default function AdminInventoryPage() {
                   <TableHead>Phone</TableHead>
                   <TableHead className="min-w-[12rem]">Address</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-[7rem] text-right">Actions</TableHead>
+                  <TableHead className="w-[9rem] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -2147,7 +2498,11 @@ export default function AdminInventoryPage() {
                   </TableRow>
                 ) : (
                   filteredSuppliers.map((s) => (
-                    <TableRow key={s.id}>
+                    <TableRow
+                      key={s.id}
+                      className="cursor-pointer hover:bg-muted/40"
+                      onClick={() => openSupplierProfile(s)}
+                    >
                       <TableCell className="font-medium">{s.name}</TableCell>
                       <TableCell className="text-sm tabular-nums">
                         {s.phone.trim() || "—"}
@@ -2168,7 +2523,22 @@ export default function AdminInventoryPage() {
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => openEditSupplier(s)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openSupplierProfile(s);
+                            }}
+                          >
+                            <EyeIcon className="size-4" aria-hidden />
+                            <span className="sr-only">View {s.name}</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditSupplier(s);
+                            }}
                           >
                             <PencilIcon className="size-4" aria-hidden />
                             <span className="sr-only">Edit {s.name}</span>
@@ -2178,7 +2548,10 @@ export default function AdminInventoryPage() {
                             variant="ghost"
                             size="sm"
                             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => setDeletingSupplier(s)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingSupplier(s);
+                            }}
                           >
                             <Trash2Icon className="size-4" aria-hidden />
                             <span className="sr-only">Delete {s.name}</span>
@@ -2191,6 +2564,413 @@ export default function AdminInventoryPage() {
               </TableBody>
             </Table>
           </div>
+
+          <Dialog
+            open={profileSupplier !== null}
+            onOpenChange={(open) => {
+              if (!open) closeSupplierProfile();
+            }}
+          >
+            <DialogContent
+              className="flex h-[min(92vh,880px)] w-[min(96vw,56rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,56rem)]"
+              showCloseButton
+            >
+              {profileSupplier ? (
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <DialogHeader className="shrink-0 border-b px-5 py-4 text-left">
+                    <div className="flex flex-wrap items-start justify-between gap-3 pr-8">
+                      <div className="min-w-0 space-y-1.5">
+                        <DialogTitle className="text-xl">{profileSupplier.name}</DialogTitle>
+                        <DialogDescription render={<div className="space-y-1" />}>
+                          <p className="text-sm">
+                            {profileSupplier.phone.trim() || "No phone"}
+                          </p>
+                          {profileSupplier.address.trim() ? (
+                            <p className="text-muted-foreground text-sm">
+                              {profileSupplier.address.trim()}
+                            </p>
+                          ) : null}
+                        </DialogDescription>
+                        <Badge
+                          variant={profileSupplier.active ? "default" : "secondary"}
+                        >
+                          {profileSupplier.active ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditSupplier(profileSupplier)}
+                      >
+                        <PencilIcon className="mr-2 size-4" aria-hidden />
+                        Edit
+                      </Button>
+                    </div>
+                  </DialogHeader>
+
+                  <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+                    {supplierProfileLoading ? (
+                      <p className="text-muted-foreground text-sm">Refreshing…</p>
+                    ) : null}
+
+                    <>
+                        <div className="grid min-w-0 grid-cols-4 gap-2">
+                          <KpiCard
+                            compact
+                            title="Balance payable"
+                            value={formatRupees(activeProfileStats.balancePaise)}
+                            subtitle={
+                              activeProfileStats.balancePaise > 0
+                                ? "Owed"
+                                : activeProfileStats.balancePaise < 0
+                                  ? "Credit"
+                                  : "Settled"
+                            }
+                            Icon={IndianRupeeIcon}
+                            gradientClassName="bg-gradient-to-br from-amber-500/25 via-orange-500/15 to-rose-500/15"
+                          />
+                          <KpiCard
+                            compact
+                            title="Purchases"
+                            value={formatRupees(activeProfileStats.totalPurchasesPaise)}
+                            subtitle={`${activeProfileStats.purchaseCount} txn`}
+                            Icon={ReceiptIcon}
+                            gradientClassName="bg-gradient-to-br from-blue-500/25 via-indigo-500/15 to-violet-500/15"
+                          />
+                          <KpiCard
+                            compact
+                            title="Paid"
+                            value={formatRupees(activeProfileStats.totalPaidPaise)}
+                            subtitle="Payments"
+                            Icon={WalletIcon}
+                            gradientClassName="bg-gradient-to-br from-emerald-500/25 via-teal-500/15 to-sky-500/20"
+                          />
+                          <KpiCard
+                            compact
+                            title="Returns"
+                            value={formatRupees(activeProfileStats.totalReturnsPaise)}
+                            subtitle="Credited"
+                            Icon={TruckIcon}
+                            gradientClassName="bg-gradient-to-br from-slate-500/20 via-zinc-500/10 to-stone-500/15"
+                          />
+                        </div>
+
+                        <details className="rounded-xl border bg-card open:[&>summary_svg]:rotate-180 [&_summary::-webkit-details-marker]:hidden">
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium">
+                            <span>
+                              Opening balance
+                              {activeProfileStats.hasOpeningBalance ? (
+                                <span className="ml-2 font-normal text-muted-foreground tabular-nums">
+                                  {formatRupees(activeProfileStats.openingBalancePaise)}
+                                </span>
+                              ) : (
+                                <span className="ml-2 font-normal text-muted-foreground">
+                                  Not set
+                                </span>
+                              )}
+                            </span>
+                            <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-transform" />
+                          </summary>
+                          <div className="space-y-3 border-t px-4 py-3">
+                            {activeProfileStats.hasOpeningBalance ? (
+                              <>
+                                <p className="text-sm tabular-nums">
+                                  {formatRupees(activeProfileStats.openingBalancePaise)}
+                                  {activeProfileStats.openingBalanceAt ? (
+                                    <span className="text-muted-foreground">
+                                      {" "}
+                                      · {activeProfileStats.openingBalanceAt.slice(0, 10)}
+                                    </span>
+                                  ) : null}
+                                </p>
+                                {activeProfileStats.openingBalanceNote ? (
+                                  <p className="text-muted-foreground text-xs">
+                                    {activeProfileStats.openingBalanceNote}
+                                  </p>
+                                ) : null}
+                                <p className="text-muted-foreground text-xs">
+                                  Remove to clear this entry, then you can record a new
+                                  opening balance.
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                  disabled={
+                                    openingBalanceRemoving || openingBalanceSubmitting
+                                  }
+                                  onClick={() => void removeOpeningBalance()}
+                                >
+                                  {openingBalanceRemoving ? "Removing…" : "Remove"}
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-muted-foreground text-xs">
+                                  Amount you already owed this supplier before using
+                                  Khaanz.
+                                </p>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="supplier-opening-amount">Amount (₹)</Label>
+                                    <Input
+                                      id="supplier-opening-amount"
+                                      inputMode="decimal"
+                                      placeholder="0.00"
+                                      value={openingBalanceRupees}
+                                      onChange={(e) =>
+                                        setOpeningBalanceRupees(e.target.value)
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-2 sm:col-span-2">
+                                    <Label htmlFor="supplier-opening-note">
+                                      Note (optional)
+                                    </Label>
+                                    <Input
+                                      id="supplier-opening-note"
+                                      placeholder="e.g. Balance from previous system"
+                                      value={openingBalanceNote}
+                                      onChange={(e) =>
+                                        setOpeningBalanceNote(e.target.value)
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={openingBalanceSubmitting}
+                                  onClick={() => void submitOpeningBalance()}
+                                >
+                                  {openingBalanceSubmitting
+                                    ? "Saving…"
+                                    : "Save opening balance"}
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </details>
+
+                        <details className="rounded-xl border bg-card open:[&>summary_svg]:rotate-180 [&_summary::-webkit-details-marker]:hidden">
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium">
+                            <span>Record payment</span>
+                            <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-transform" />
+                          </summary>
+                          <div className="space-y-3 border-t px-4 py-3">
+                            <p className="text-muted-foreground text-xs">
+                              Log cash, UPI, bank, or cheque paid to this supplier. Reduces
+                              the balance payable.
+                            </p>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label htmlFor="supplier-pay-amount">Amount (₹)</Label>
+                                <Input
+                                  id="supplier-pay-amount"
+                                  inputMode="decimal"
+                                  placeholder="e.g. 5000"
+                                  value={profilePayment.amountRupees}
+                                  onChange={(e) =>
+                                    setProfilePayment({
+                                      ...profilePayment,
+                                      amountRupees: e.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="supplier-pay-method">How you paid</Label>
+                                <SearchableSelect
+                                  options={SUPPLIER_PAYMENT_METHOD_OPTIONS}
+                                  value={profilePayment.method}
+                                  onValueChange={(v) =>
+                                    setProfilePayment({ ...profilePayment, method: v })
+                                  }
+                                  placeholder="Payment method"
+                                  searchPlaceholder="Search…"
+                                />
+                              </div>
+                              <div className="space-y-2 sm:col-span-2">
+                                <Label htmlFor="supplier-pay-txn">
+                                  Transaction ID / reference
+                                </Label>
+                                <Input
+                                  id="supplier-pay-txn"
+                                  placeholder="UPI ref, cheque no., bank txn id…"
+                                  value={profilePayment.transactionId}
+                                  onChange={(e) =>
+                                    setProfilePayment({
+                                      ...profilePayment,
+                                      transactionId: e.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2 sm:col-span-2">
+                                <Label htmlFor="supplier-pay-note">Note (optional)</Label>
+                                <Input
+                                  id="supplier-pay-note"
+                                  placeholder="e.g. Partial payment for March stock"
+                                  value={profilePayment.note}
+                                  onChange={(e) =>
+                                    setProfilePayment({
+                                      ...profilePayment,
+                                      note: e.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={profilePaymentSubmitting}
+                              onClick={() => void submitProfilePayment()}
+                            >
+                              {profilePaymentSubmitting
+                                ? "Saving…"
+                                : "Record payment"}
+                            </Button>
+                          </div>
+                        </details>
+
+                        <Tabs
+                          value={supplierProfileTab}
+                          onValueChange={setSupplierProfileTab}
+                        >
+                          <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger
+                              value="purchases"
+                              className="data-[state=active]:font-semibold"
+                            >
+                              Purchases
+                            </TabsTrigger>
+                            <TabsTrigger
+                              value="ledger"
+                              className="data-[state=active]:font-semibold"
+                            >
+                              Ledger
+                            </TabsTrigger>
+                          </TabsList>
+
+                          <TabsContent value="purchases" className="mt-4 space-y-2">
+                            <div className="overflow-hidden rounded-xl border">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Batch</TableHead>
+                                    <TableHead>Payment</TableHead>
+                                    <TableHead className="text-right">Total</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {profilePurchases.length === 0 ? (
+                                    <TableRow>
+                                      <TableCell
+                                        colSpan={4}
+                                        className="py-8 text-center text-muted-foreground text-sm"
+                                      >
+                                        No purchases for this supplier yet.
+                                      </TableCell>
+                                    </TableRow>
+                                  ) : (
+                                    profilePurchases.map((p) => (
+                                      <TableRow key={p.id}>
+                                        <TableCell className="text-sm tabular-nums">
+                                          {p.purchasedAt.slice(0, 10)}
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs">
+                                          {p.batchRef}
+                                        </TableCell>
+                                        <TableCell className="text-sm">
+                                          {p.paymentType}
+                                        </TableCell>
+                                        <TableCell className="text-right text-sm tabular-nums">
+                                          {formatRupees(p.totalPaise)}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))
+                                  )}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="ledger" className="mt-4 space-y-2">
+                            <div className="overflow-hidden rounded-xl border">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead className="text-right">Debit</TableHead>
+                                    <TableHead className="text-right">Credit</TableHead>
+                                    <TableHead className="text-right">Balance</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {supplierLedgerEntries.length === 0 ? (
+                                    <TableRow>
+                                      <TableCell
+                                        colSpan={5}
+                                        className="py-8 text-center text-muted-foreground text-sm"
+                                      >
+                                        No ledger entries yet.
+                                      </TableCell>
+                                    </TableRow>
+                                  ) : (
+                                    [...supplierLedgerEntries]
+                                      .reverse()
+                                      .map((e) => (
+                                        <TableRow key={e.id}>
+                                          <TableCell className="text-sm tabular-nums">
+                                            {e.occurredAt.slice(0, 10)}
+                                          </TableCell>
+                                          <TableCell className="text-sm">
+                                            <div>
+                                              {supplierLedgerEntryLabel(e)}
+                                            </div>
+                                            {e.paymentReference ? (
+                                              <div className="font-mono text-muted-foreground text-xs">
+                                                Txn: {e.paymentReference}
+                                              </div>
+                                            ) : null}
+                                            {e.note ? (
+                                              <div className="text-muted-foreground text-xs">
+                                                {e.note}
+                                              </div>
+                                            ) : null}
+                                          </TableCell>
+                                          <TableCell className="text-right text-sm tabular-nums">
+                                            {e.debitPaise > 0
+                                              ? formatRupees(e.debitPaise)
+                                              : "—"}
+                                          </TableCell>
+                                          <TableCell className="text-right text-sm tabular-nums">
+                                            {e.creditPaise > 0
+                                              ? formatRupees(e.creditPaise)
+                                              : "—"}
+                                          </TableCell>
+                                          <TableCell className="text-right text-sm tabular-nums font-medium">
+                                            {formatRupees(e.balancePaise)}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))
+                                  )}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </TabsContent>
+                        </Tabs>
+                    </>
+                  </div>
+                </div>
+              ) : null}
+            </DialogContent>
+          </Dialog>
 
           <Dialog open={supplierDialogOpen} onOpenChange={setSupplierDialogOpen}>
             <DialogContent className="sm:max-w-md">
@@ -2233,6 +3013,49 @@ export default function AdminInventoryPage() {
                     }
                   />
                 </div>
+                {!editingSupplierId ? (
+                  <details className="rounded-lg border bg-muted/20 open:[&>summary_svg]:rotate-180 [&_summary::-webkit-details-marker]:hidden">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-sm font-medium">
+                      <span>Opening balance (optional)</span>
+                      <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-transform" />
+                    </summary>
+                    <div className="space-y-3 border-t px-3 py-3">
+                      <p className="text-muted-foreground text-xs">
+                        Amount already owed to this supplier before you record purchases
+                        here.
+                      </p>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-supplier-opening-amount">Amount (₹)</Label>
+                        <Input
+                          id="new-supplier-opening-amount"
+                          inputMode="decimal"
+                          placeholder="0.00"
+                          value={supplierForm.openingBalanceRupees}
+                          onChange={(e) =>
+                            setSupplierForm({
+                              ...supplierForm,
+                              openingBalanceRupees: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-supplier-opening-note">Note (optional)</Label>
+                        <Input
+                          id="new-supplier-opening-note"
+                          placeholder="e.g. Balance from previous system"
+                          value={supplierForm.openingBalanceNote}
+                          onChange={(e) =>
+                            setSupplierForm({
+                              ...supplierForm,
+                              openingBalanceNote: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </details>
+                ) : null}
               </div>
               <DialogFooter>
                 <Button
@@ -3264,6 +4087,16 @@ export default function AdminInventoryPage() {
                     onValueChange={(v) => setOps({ ...ops, paymentMethod: v })}
                     placeholder="Payment method"
                     searchPlaceholder="Search…"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Transaction ID / reference</Label>
+                  <Input
+                    placeholder="UPI ref, cheque no., bank txn id…"
+                    value={ops.paymentReference}
+                    onChange={(e) =>
+                      setOps({ ...ops, paymentReference: e.target.value })
+                    }
                   />
                 </div>
               </StockActionCard>

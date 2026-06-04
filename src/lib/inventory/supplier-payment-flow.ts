@@ -34,6 +34,11 @@ export async function recordSupplierPaymentInTransaction(
     },
   });
 
+  const ledgerNoteParts = [
+    pay.reference ? `Txn: ${pay.reference}` : "",
+    pay.note,
+  ].filter(Boolean);
+
   await tx.supplierLedgerEntry.create({
     data: {
       supplierId: supplier.id,
@@ -43,7 +48,7 @@ export async function recordSupplierPaymentInTransaction(
       creditPaise: pay.amountPaise,
       referenceType: "supplier_payment",
       referenceId: pay.id,
-      note: pay.note,
+      note: ledgerNoteParts.join(" · ") || `Payment (${pay.method})`,
     },
   });
 

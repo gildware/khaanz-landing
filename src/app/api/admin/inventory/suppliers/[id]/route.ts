@@ -7,6 +7,69 @@ export const runtime = "nodejs";
 
 type Ctx = { params: Promise<{ id: string }> };
 
+export async function GET(_request: Request, context: Ctx) {
+  const session = await requireAdminInventorySession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const { id } = await context.params;
+  const prisma = getPrisma();
+
+  const supplier = await prisma.supplier.findUnique({ where: { id } });
+  if (!supplier) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const [
+    ledgerAgg,
+    purchaseAgg,
+    paymentAgg,
+    returnAgg,
+    openingEntry,
+    purchaseCount,
+  ] = await Promise.all([
+    prisma.supplierLedgerEntry.aggregate({
+      where: { supplierId: id },
+      _sum: { debitPaise: true, creditPaise: true },
+    }),
+    prisma.purchase.aggregate({
+      where: { supplierId: id },
+      _sum: { totalPaise: true },
+    }),
+    prisma.supplierPayment.aggregate({
+      where: { supplierId: id },
+      _sum: { amountPaise: true },
+    }),
+    prisma.purchaseReturn.aggregate({
+      where: { supplierId: id },
+      _sum: { totalCreditPaise: true },
+    }),
+    prisma.supplierLedgerEntry.findFirst({
+      where: { supplierId: id, referenceType: "opening_balance" },
+      select: { debitPaise: true, occurredAt: true, note: true },
+    }),
+    prisma.purchase.count({ where: { supplierId: id } }),
+  ]);
+
+  const balancePaise =
+    (ledgerAgg._sum.debitPaise ?? 0) - (ledgerAgg._sum.creditPaise ?? 0);
+
+  return NextResponse.json({
+    supplier,
+    stats: {
+      balancePaise,
+      totalPurchasesPaise: purchaseAgg._sum.totalPaise ?? 0,
+      purchaseCount,
+      totalPaidPaise: paymentAgg._sum.amountPaise ?? 0,
+      totalReturnsPaise: returnAgg._sum.totalCreditPaise ?? 0,
+      hasOpeningBalance: openingEntry !== null,
+      openingBalancePaise: openingEntry?.debitPaise ?? 0,
+      openingBalanceAt: openingEntry?.occurredAt.toISOString() ?? null,
+      openingBalanceNote: openingEntry?.note ?? "",
+    },
+  });
+}
+
 export async function PATCH(request: Request, context: Ctx) {
   const session = await requireAdminInventorySession();
   if (!session) {
