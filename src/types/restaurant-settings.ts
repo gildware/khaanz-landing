@@ -28,6 +28,8 @@ export interface RestaurantSettingsPayload {
   baseDeliveryCharge: number;
   /** Charge per additional km (rupees) after the first chargeable km. */
   deliveryPerKmCharge: number;
+  /** Maximum delivery radius in km (0 = deliver anywhere distance can be calculated). */
+  maxDeliveryDistanceKm: number;
   /** Restaurant location for delivery distance (null = use server env vars). */
   restaurantLatitude: number | null;
   restaurantLongitude: number | null;
@@ -46,6 +48,7 @@ export type PublicRestaurantSettings = Pick<
   | "freeDeliveryUptoKm"
   | "baseDeliveryCharge"
   | "deliveryPerKmCharge"
+  | "maxDeliveryDistanceKm"
   | "restaurantLatitude"
   | "restaurantLongitude"
 > & {

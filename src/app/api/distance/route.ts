@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { computeDeliveryChargeRupees } from "@/lib/delivery-charge";
+import {
+  computeDeliveryChargeRupees,
+  isDeliverableDistance,
+} from "@/lib/delivery-charge";
 import { readRestaurantSettings } from "@/lib/settings-repository";
 import {
   getTravelDistance,
@@ -27,6 +30,7 @@ export async function GET(request: Request) {
     freeDeliveryUptoKm: settings.freeDeliveryUptoKm,
     baseDeliveryCharge: settings.baseDeliveryCharge,
     deliveryPerKmCharge: settings.deliveryPerKmCharge,
+    maxDeliveryDistanceKm: settings.maxDeliveryDistanceKm,
   };
 
   const originConfigured = await isTravelDistanceConfigured();
@@ -40,14 +44,19 @@ export async function GET(request: Request) {
       distanceMatrixReady: false,
       distance: null,
       deliveryCharge: null,
+      deliverable: false,
       ...pricing,
     });
   }
 
   const distance = await getTravelDistance(lat, lng);
 
-  const deliveryCharge = distance
-    ? computeDeliveryChargeRupees(distance.meters, pricing)
+  const deliverable =
+    distance != null &&
+    isDeliverableDistance(distance.meters, settings.maxDeliveryDistanceKm);
+
+  const deliveryCharge = deliverable
+    ? computeDeliveryChargeRupees(distance!.meters, pricing)
     : null;
 
   return NextResponse.json({
@@ -55,6 +64,7 @@ export async function GET(request: Request) {
     originConfigured: true,
     distanceMatrixReady,
     distance,
+    deliverable,
     deliveryCharge,
     ...pricing,
   });

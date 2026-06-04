@@ -44,9 +44,12 @@ export type TravelDistanceResponse = {
   distance: TravelDistanceResult | null;
   /** Delivery fee in rupees for this location (null when distance unknown). */
   deliveryCharge: number | null;
+  /** False when the pin is beyond max delivery distance. */
+  deliverable?: boolean;
   freeDeliveryUptoKm: number;
   baseDeliveryCharge: number;
   deliveryPerKmCharge: number;
+  maxDeliveryDistanceKm: number;
 };
 
 export async function fetchTravelDistance(
@@ -62,9 +65,11 @@ export async function fetchTravelDistance(
       distanceMatrixReady: false,
       distance: null,
       deliveryCharge: null,
+      deliverable: false,
       freeDeliveryUptoKm: 0,
       baseDeliveryCharge: 0,
       deliveryPerKmCharge: 0,
+      maxDeliveryDistanceKm: 0,
     };
   }
   const data = (await res.json()) as Partial<TravelDistanceResponse>;
@@ -73,6 +78,7 @@ export async function fetchTravelDistance(
     originConfigured: data.originConfigured !== false,
     distanceMatrixReady: data.distanceMatrixReady === true,
     distance: data.distance ?? null,
+    deliverable: data.deliverable === true,
     deliveryCharge:
       typeof data.deliveryCharge === "number" ? data.deliveryCharge : null,
     freeDeliveryUptoKm:
@@ -82,6 +88,10 @@ export async function fetchTravelDistance(
     deliveryPerKmCharge:
       typeof data.deliveryPerKmCharge === "number"
         ? data.deliveryPerKmCharge
+        : 0,
+    maxDeliveryDistanceKm:
+      typeof data.maxDeliveryDistanceKm === "number"
+        ? data.maxDeliveryDistanceKm
         : 0,
   };
 }

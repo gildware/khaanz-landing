@@ -20,6 +20,7 @@ export async function GET() {
       freeDeliveryUptoKm: full.freeDeliveryUptoKm,
       baseDeliveryCharge: full.baseDeliveryCharge,
       deliveryPerKmCharge: full.deliveryPerKmCharge,
+      maxDeliveryDistanceKm: full.maxDeliveryDistanceKm,
       restaurantLatitude: full.restaurantLatitude,
       restaurantLongitude: full.restaurantLongitude,
       deliveryDistanceConfigured,

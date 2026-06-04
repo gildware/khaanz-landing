@@ -45,6 +45,8 @@ model RestaurantSettings {
   baseDeliveryCharge  Float    @default(0) @map("base_delivery_charge")
   /// Charge per additional km (rupees) after the first chargeable km.
   deliveryPerKmCharge Float    @default(0) @map("delivery_per_km_charge")
+  /// Maximum delivery radius in km (0 = no limit).
+  maxDeliveryDistanceKm Float  @default(0) @map("max_delivery_distance_km")
   /// Restaurant map pin / distance origin (falls back to RESTAURANT_LATITUDE/LONGITUDE env).
   restaurantLatitude  Float?  @map("restaurant_latitude")
   restaurantLongitude Float?  @map("restaurant_longitude")

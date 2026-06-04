@@ -43,6 +43,7 @@ export default function AdminSettingsPage() {
   const [freeDeliveryUptoKm, setFreeDeliveryUptoKm] = useState("0");
   const [baseDeliveryCharge, setBaseDeliveryCharge] = useState("0");
   const [deliveryPerKmCharge, setDeliveryPerKmCharge] = useState("0");
+  const [maxDeliveryDistanceKm, setMaxDeliveryDistanceKm] = useState("0");
   const [restaurantLatitude, setRestaurantLatitude] = useState("");
   const [restaurantLongitude, setRestaurantLongitude] = useState("");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodConfig[]>([
@@ -89,6 +90,7 @@ export default function AdminSettingsPage() {
       setFreeDeliveryUptoKm(String(data.freeDeliveryUptoKm ?? 0));
       setBaseDeliveryCharge(String(data.baseDeliveryCharge ?? 0));
       setDeliveryPerKmCharge(String(data.deliveryPerKmCharge ?? 0));
+      setMaxDeliveryDistanceKm(String(data.maxDeliveryDistanceKm ?? 0));
       setRestaurantLatitude(
         data.restaurantLatitude != null ? String(data.restaurantLatitude) : "",
       );
@@ -107,6 +109,13 @@ export default function AdminSettingsPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") === "delivery-charges") {
+      setActiveTab("delivery");
+    }
+  }, [setActiveTab]);
+
   const save = async () => {
     setSaving(true);
     try {
@@ -121,6 +130,7 @@ export default function AdminSettingsPage() {
         freeDeliveryUptoKm: Math.max(0, Number(freeDeliveryUptoKm) || 0),
         baseDeliveryCharge: Math.max(0, Number(baseDeliveryCharge) || 0),
         deliveryPerKmCharge: Math.max(0, Number(deliveryPerKmCharge) || 0),
+        maxDeliveryDistanceKm: Math.max(0, Number(maxDeliveryDistanceKm) || 0),
         restaurantLatitude:
           restaurantLatitude.trim() === ""
             ? null
@@ -233,7 +243,7 @@ export default function AdminSettingsPage() {
         <TabsList variant="line" className="h-auto min-h-9 w-full flex-wrap justify-start gap-0">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="timing">Timing</TabsTrigger>
-          <TabsTrigger value="delivery-charges">Delivery charges</TabsTrigger>
+          <TabsTrigger value="delivery">Delivery</TabsTrigger>
           <TabsTrigger value="bill">Bill settings</TabsTrigger>
           <TabsTrigger value="payment">Payment methods</TabsTrigger>
           <TabsTrigger value="desktop">POS app</TabsTrigger>
@@ -363,7 +373,7 @@ export default function AdminSettingsPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="delivery-charges" className="space-y-6">
+        <TabsContent value="delivery" className="space-y-6">
           {deliveryConfig?.coordsMigrationApplied === false ? (
             <div className="flex gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
               <AlertTriangleIcon className="mt-0.5 size-5 shrink-0 text-destructive" />
@@ -372,8 +382,12 @@ export default function AdminSettingsPage() {
                 <p className="mt-1 text-muted-foreground">
                   Run{" "}
                   <code className="rounded bg-muted px-1">npx prisma migrate deploy</code>{" "}
-                  on the production server (adds restaurant coordinate columns). Until
-                  then, other settings can be saved, but latitude/longitude cannot.
+                  using the same <code className="rounded bg-muted px-1">DATABASE_URL</code>{" "}
+                  as this app, then refresh this page. Migrations needed:{" "}
+                  <code className="rounded bg-muted px-1">20260604140000_restaurant_coordinates</code>
+                  {" "}and{" "}
+                  <code className="rounded bg-muted px-1">20260604150000_max_delivery_distance_km</code>.
+                  Until then, latitude/longitude cannot be saved.
                 </p>
               </div>
             </div>
@@ -405,13 +419,32 @@ export default function AdminSettingsPage() {
             </div>
           ) : null}
           <div className="space-y-3 rounded-xl border bg-card p-4">
-            <p className="font-medium">Delivery charges</p>
+            <p className="font-medium">Delivery area & charges</p>
+            <p className="text-muted-foreground text-xs">
+              Set how far you deliver and how fees are calculated. Customers
+              beyond the max distance see a message that you do not deliver to
+              their area. Leave max distance at 0 for no limit.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="max-delivery-km">Max delivery distance (km)</Label>
+              <Input
+                id="max-delivery-km"
+                type="number"
+                min={0}
+                step="0.1"
+                inputMode="decimal"
+                value={maxDeliveryDistanceKm}
+                onChange={(e) => setMaxDeliveryDistanceKm(e.target.value)}
+                placeholder="0"
+              />
+              <p className="text-muted-foreground text-xs">
+                0 = no limit. Customers farther than this cannot place delivery
+                orders.
+              </p>
+            </div>
             <p className="text-muted-foreground text-xs">
               Delivery is free within the free distance. The first km past it
               costs the base charge; each additional km adds the per-km charge.
-              The fee is calculated automatically from distance when the customer
-              picks a delivery location at checkout (driving distance when Google
-              is configured, otherwise straight-line).
             </p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1">

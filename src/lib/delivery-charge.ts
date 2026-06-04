@@ -17,7 +17,31 @@ export type DeliveryChargeConfig = {
   freeDeliveryUptoKm: number;
   baseDeliveryCharge: number;
   deliveryPerKmCharge: number;
+  /** 0 = no delivery radius limit. */
+  maxDeliveryDistanceKm?: number;
 };
+
+/** Kilometres from distance in metres. */
+export function distanceKmFromMeters(distanceMeters: number): number {
+  return distanceMeters / 1000;
+}
+
+/** Whether the pin is within the configured delivery radius (0 max km = unlimited). */
+export function isDeliverableDistance(
+  distanceMeters: number | null | undefined,
+  maxDeliveryDistanceKm: number,
+): boolean {
+  const maxKm = Math.max(0, maxDeliveryDistanceKm);
+  if (maxKm <= 0) return true;
+  if (
+    typeof distanceMeters !== "number" ||
+    !Number.isFinite(distanceMeters) ||
+    distanceMeters <= 0
+  ) {
+    return false;
+  }
+  return distanceKmFromMeters(distanceMeters) <= maxKm;
+}
 
 /** Delivery fee in rupees for a driving distance (meters). Always whole rupees. */
 export function computeDeliveryChargeRupees(

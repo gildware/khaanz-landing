@@ -96,7 +96,9 @@ export function CheckoutForm() {
     freeDeliveryUptoKm: 0,
     baseDeliveryCharge: 0,
     deliveryPerKmCharge: 0,
+    maxDeliveryDistanceKm: 0,
   });
+  const [deliveryDeliverable, setDeliveryDeliverable] = useState(true);
   const [mapFlyTrigger, setMapFlyTrigger] = useState(0);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddressDTO[]>([]);
   const [savedAddressesLoaded, setSavedAddressesLoaded] = useState(false);
@@ -146,12 +148,24 @@ export function CheckoutForm() {
   }, [latitude, longitude, mapCenter]);
 
   const deliveryFee = useMemo(() => {
-    if (fulfillment !== "delivery" || !deliveryPricingReady) return 0;
+    if (
+      fulfillment !== "delivery" ||
+      !deliveryPricingReady ||
+      !deliveryDeliverable
+    ) {
+      return 0;
+    }
     if (distance?.meters != null) {
       return computeDeliveryChargeRupees(distance.meters, deliveryPricing);
     }
     return 0;
-  }, [fulfillment, deliveryPricingReady, distance, deliveryPricing]);
+  }, [
+    fulfillment,
+    deliveryPricingReady,
+    deliveryDeliverable,
+    distance,
+    deliveryPricing,
+  ]);
   const grandTotal = totalAmount + deliveryFee;
 
   const fetchAddress = useCallback(async (lat: number, lng: number) => {
@@ -200,13 +214,16 @@ export function CheckoutForm() {
             freeDeliveryUptoKm: r.freeDeliveryUptoKm,
             baseDeliveryCharge: r.baseDeliveryCharge,
             deliveryPerKmCharge: r.deliveryPerKmCharge,
+            maxDeliveryDistanceKm: r.maxDeliveryDistanceKm,
           });
+          setDeliveryDeliverable(r.deliverable !== false);
           setDistance(r.distance);
         })
         .catch(() => {
           if (!cancelled) {
             setDeliveryPricingReady(false);
             setOriginConfigured(false);
+            setDeliveryDeliverable(false);
             setDistance(null);
           }
         })
@@ -345,6 +362,7 @@ export function CheckoutForm() {
     setLatitude(null);
     setLongitude(null);
     setDistance(null);
+    setDeliveryDeliverable(true);
     setGeoError(null);
     setLocationPermissionDenied(false);
   }, []);
@@ -437,8 +455,18 @@ export function CheckoutForm() {
   const canNextFromContact =
     name.trim().length > 0 && phoneOk && accountReady && profileReady;
 
+  const locationDistanceReady =
+    !distanceLoading &&
+    deliveryPricingReady &&
+    (latitude == null ||
+      longitude == null ||
+      distance != null ||
+      !originConfigured);
+
   const canNextFromLocation =
     address.trim().length > 0 &&
+    deliveryDeliverable &&
+    locationDistanceReady &&
     (addressMode === "saved"
       ? selectedSavedId != null
       : latitude != null && longitude != null);
@@ -568,6 +596,14 @@ export function CheckoutForm() {
     if (!profileReady) {
       toast.error("Please save your name before placing an order.");
       setStep((s) => Math.min(Math.max(s, 1), maxStepIndex));
+      return;
+    }
+    if (fulfillment === "delivery" && !deliveryDeliverable) {
+      toast.error("We do not deliver to this location. Please choose a closer address.");
+      setStep((s) => {
+        const loc = (steps as readonly string[]).indexOf("Location");
+        return loc >= 0 ? loc : s;
+      });
       return;
     }
     let scheduledIso: string | null = null;
@@ -740,8 +776,26 @@ export function CheckoutForm() {
         ) : !originConfigured ? (
           <span className="text-muted-foreground text-sm">
             Delivery distance is not configured yet. Ask the restaurant to set
-            their location in Admin → Settings → Delivery charges.
+            their location in Admin → Settings → Delivery.
           </span>
+        ) : distance && !deliveryDeliverable ? (
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-destructive text-sm">
+              We do not deliver to this area
+            </p>
+            <p className="mt-1 text-muted-foreground text-sm">
+              Your location is {distance.text}
+              {deliveryPricing.maxDeliveryDistanceKm > 0 ? (
+                <>
+                  {" "}
+                  — we deliver within {deliveryPricing.maxDeliveryDistanceKm} km
+                  of the restaurant. Please pick a closer address on the map.
+                </>
+              ) : (
+                " — please pick a different address on the map."
+              )}
+            </p>
+          </div>
         ) : distance ? (
           <div className="min-w-0 flex-1">
             <p className="text-muted-foreground text-xs uppercase tracking-wide">

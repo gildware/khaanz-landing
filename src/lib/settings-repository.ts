@@ -23,6 +23,7 @@ export const DEFAULT_RESTAURANT_SETTINGS: RestaurantSettingsPayload = {
   freeDeliveryUptoKm: 0,
   baseDeliveryCharge: 0,
   deliveryPerKmCharge: 0,
+  maxDeliveryDistanceKm: 0,
   restaurantLatitude: null,
   restaurantLongitude: null,
   paymentMethods: DEFAULT_PAYMENT_METHODS,
@@ -121,7 +122,10 @@ export function isRestaurantSettingsPayload(
     o.baseDeliveryCharge < 0 ||
     typeof o.deliveryPerKmCharge !== "number" ||
     !Number.isFinite(o.deliveryPerKmCharge) ||
-    o.deliveryPerKmCharge < 0
+    o.deliveryPerKmCharge < 0 ||
+    typeof o.maxDeliveryDistanceKm !== "number" ||
+    !Number.isFinite(o.maxDeliveryDistanceKm) ||
+    o.maxDeliveryDistanceKm < 0
   ) {
     return false;
   }
@@ -145,9 +149,6 @@ export function normalizeWhatsAppPhone(input: string): string {
   return input.replace(/\D/g, "");
 }
 
-/** Cached: prod 500s when migration `20260604140000_restaurant_coordinates` was not applied. */
-let restaurantCoordsColumnsKnown: boolean | null = null;
-
 function isPrismaMissingColumnError(e: unknown): boolean {
   if (e instanceof Prisma.PrismaClientKnownRequestError) {
     return e.code === "P2022";
@@ -156,36 +157,35 @@ function isPrismaMissingColumnError(e: unknown): boolean {
   return (
     msg.includes("restaurant_latitude") ||
     msg.includes("restaurant_longitude") ||
+    msg.includes("max_delivery_distance_km") ||
     msg.includes("does not exist")
   );
 }
 
-/** Whether `restaurant_latitude` / `restaurant_longitude` exist in PostgreSQL. */
+/**
+ * Whether `restaurant_latitude` / `restaurant_longitude` exist in the DB the app
+ * uses. Probes with Prisma (no cache) so a migrate deploy is recognized without
+ * restarting the server.
+ */
 export async function restaurantCoordsColumnsAvailable(): Promise<boolean> {
-  if (restaurantCoordsColumnsKnown !== null) {
-    return restaurantCoordsColumnsKnown;
-  }
   const prisma = getPrisma();
   try {
-    const rows = await prisma.$queryRaw<{ exists: boolean }[]>`
-      SELECT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND table_name = 'restaurant_settings'
-          AND column_name = 'restaurant_latitude'
-      ) AS "exists"
-    `;
-    restaurantCoordsColumnsKnown = Boolean(rows[0]?.exists);
-  } catch {
-    restaurantCoordsColumnsKnown = false;
+    await prisma.restaurantSettings.findFirst({
+      where: { id: "default" },
+      select: {
+        restaurantLatitude: true,
+        restaurantLongitude: true,
+      },
+    });
+    return true;
+  } catch (e) {
+    if (isPrismaMissingColumnError(e)) return false;
+    throw e;
   }
-  return restaurantCoordsColumnsKnown;
 }
 
-export function invalidateRestaurantCoordsColumnCache(): void {
-  restaurantCoordsColumnsKnown = null;
-}
+/** @deprecated No-op; kept for callers after removing the old in-memory cache. */
+export function invalidateRestaurantCoordsColumnCache(): void {}
 
 type LegacySettingsRow = {
   display_name: string;
@@ -242,6 +242,7 @@ async function readRestaurantSettingsLegacy(
     freeDeliveryUptoKm: row.free_delivery_upto_km,
     baseDeliveryCharge: row.base_delivery_charge,
     deliveryPerKmCharge: row.delivery_per_km_charge,
+    maxDeliveryDistanceKm: 0,
     restaurantLatitude: null,
     restaurantLongitude: null,
     paymentMethodsJson: row.payment_methods_json,
@@ -331,6 +332,7 @@ function rowToPayload(row: {
   freeDeliveryUptoKm: number;
   baseDeliveryCharge: number;
   deliveryPerKmCharge: number;
+  maxDeliveryDistanceKm: number;
   restaurantLatitude: number | null;
   restaurantLongitude: number | null;
   paymentMethodsJson: unknown;
@@ -349,6 +351,7 @@ function rowToPayload(row: {
     freeDeliveryUptoKm: normalizeNonNegativeNumber(row.freeDeliveryUptoKm),
     baseDeliveryCharge: normalizeNonNegativeNumber(row.baseDeliveryCharge),
     deliveryPerKmCharge: normalizeNonNegativeNumber(row.deliveryPerKmCharge),
+    maxDeliveryDistanceKm: normalizeNonNegativeNumber(row.maxDeliveryDistanceKm),
     restaurantLatitude:
       row.restaurantLatitude != null
         ? normalizeCoordinate(row.restaurantLatitude, "lat")
@@ -376,7 +379,6 @@ export async function readRestaurantSettings(): Promise<RestaurantSettingsPayloa
     return rowToPayload(row);
   } catch (e) {
     if (!isPrismaMissingColumnError(e)) throw e;
-    restaurantCoordsColumnsKnown = false;
     return readRestaurantSettingsLegacy(prisma);
   }
 }
@@ -413,6 +415,9 @@ export async function writeRestaurantSettings(
   const freeDeliveryUptoKm = normalizeNonNegativeNumber(payload.freeDeliveryUptoKm);
   const baseDeliveryCharge = normalizeNonNegativeNumber(payload.baseDeliveryCharge);
   const deliveryPerKmCharge = normalizeNonNegativeNumber(payload.deliveryPerKmCharge);
+  const maxDeliveryDistanceKm = normalizeNonNegativeNumber(
+    payload.maxDeliveryDistanceKm,
+  );
   const restaurantLatitude = normalizeCoordinate(
     payload.restaurantLatitude,
     "lat",
@@ -438,6 +443,7 @@ export async function writeRestaurantSettings(
         freeDeliveryUptoKm,
         baseDeliveryCharge,
         deliveryPerKmCharge,
+        maxDeliveryDistanceKm,
         restaurantLatitude,
         restaurantLongitude,
         paymentMethodsJson: pm as unknown as Prisma.InputJsonValue,
@@ -455,6 +461,7 @@ export async function writeRestaurantSettings(
         freeDeliveryUptoKm,
         baseDeliveryCharge,
         deliveryPerKmCharge,
+        maxDeliveryDistanceKm,
         restaurantLatitude,
         restaurantLongitude,
         paymentMethodsJson: pm as unknown as Prisma.InputJsonValue,
@@ -462,7 +469,6 @@ export async function writeRestaurantSettings(
     });
   } catch (e) {
     if (!isPrismaMissingColumnError(e)) throw e;
-    restaurantCoordsColumnsKnown = false;
     if (wantsCoords) {
       throw new RestaurantCoordsMigrationRequiredError();
     }

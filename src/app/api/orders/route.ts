@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 
-import { after } from "next/server";
+import { after, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 import {
@@ -12,7 +12,10 @@ import { normalizeIndianMobileDigits } from "@/lib/phone-digits";
 import { httpResponseForOrderPersistError } from "@/lib/order-persist-errors";
 import { persistOrderToDatabase } from "@/lib/persist-order-db";
 import { parseOrderCreateBody } from "@/lib/parse-order-create-body";
-import { computeDeliveryChargeRupees } from "@/lib/delivery-charge";
+import {
+  computeDeliveryChargeRupees,
+  isDeliverableDistance,
+} from "@/lib/delivery-charge";
 import { isChannelOpenAt } from "@/lib/restaurant-hours";
 import { readRestaurantSettings } from "@/lib/settings-repository";
 import { getTravelDistance } from "@/lib/travel-distance";
@@ -96,6 +99,14 @@ export async function POST(req: Request) {
       parsed.longitude != null
     ) {
       const travel = await getTravelDistance(parsed.latitude, parsed.longitude);
+      if (
+        !isDeliverableDistance(travel?.meters ?? null, settings.maxDeliveryDistanceKm)
+      ) {
+        return NextResponse.json(
+          { error: "We do not deliver to this location." },
+          { status: 400 },
+        );
+      }
       deliveryChargeRupees = computeDeliveryChargeRupees(travel?.meters ?? null, {
         freeDeliveryUptoKm: settings.freeDeliveryUptoKm,
         baseDeliveryCharge: settings.baseDeliveryCharge,
