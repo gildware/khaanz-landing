@@ -5,7 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertTriangleIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
 
+import { BillPreviewSettingsEditor } from "@/components/admin/bill-preview-settings-editor";
 import { DesktopPosDownloadCard } from "@/components/admin/pos-desktop-download-card";
+import {
+  DEFAULT_BILL_PREVIEW_SETTINGS,
+  normalizeBillPreviewSettings,
+  type BillPreviewSettings,
+} from "@/lib/bill-preview-settings";
 import { ADMIN_RESET_CONFIRM_PHRASE } from "@/lib/admin-reset-confirm-phrase";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +46,9 @@ export default function AdminSettingsPage() {
   const [deliveryEnd, setDeliveryEnd] = useState("23:00");
   const [billHeader, setBillHeader] = useState("");
   const [billFooter, setBillFooter] = useState("");
+  const [billPreview, setBillPreview] = useState<BillPreviewSettings>(
+    DEFAULT_BILL_PREVIEW_SETTINGS,
+  );
   const [freeDeliveryUptoKm, setFreeDeliveryUptoKm] = useState("0");
   const [baseDeliveryCharge, setBaseDeliveryCharge] = useState("0");
   const [deliveryPerKmCharge, setDeliveryPerKmCharge] = useState("0");
@@ -87,6 +96,7 @@ export default function AdminSettingsPage() {
       setDeliveryEnd(data.delivery.end);
       setBillHeader(data.billHeader ?? "");
       setBillFooter(data.billFooter ?? "");
+      setBillPreview(normalizeBillPreviewSettings(data.billPreview));
       setFreeDeliveryUptoKm(String(data.freeDeliveryUptoKm ?? 0));
       setBaseDeliveryCharge(String(data.baseDeliveryCharge ?? 0));
       setDeliveryPerKmCharge(String(data.deliveryPerKmCharge ?? 0));
@@ -127,6 +137,7 @@ export default function AdminSettingsPage() {
         delivery: { start: deliveryStart, end: deliveryEnd },
         billHeader,
         billFooter,
+        billPreview: normalizeBillPreviewSettings(billPreview),
         freeDeliveryUptoKm: Math.max(0, Number(freeDeliveryUptoKm) || 0),
         baseDeliveryCharge: Math.max(0, Number(baseDeliveryCharge) || 0),
         deliveryPerKmCharge: Math.max(0, Number(deliveryPerKmCharge) || 0),
@@ -230,7 +241,7 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8">
       <div>
         <h1 className="font-semibold text-2xl">Settings</h1>
         <p className="text-muted-foreground text-sm">
@@ -588,6 +599,14 @@ export default function AdminSettingsPage() {
               />
             </div>
           </div>
+
+          <BillPreviewSettingsEditor
+            settings={billPreview}
+            onChange={setBillPreview}
+            displayName={displayName}
+            logoUrl={logoUrl}
+            whatsappPhoneE164={whatsappPhoneE164}
+          />
         </TabsContent>
 
         <TabsContent value="payment" className="space-y-6">

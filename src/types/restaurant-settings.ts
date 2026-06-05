@@ -1,3 +1,5 @@
+import type { BillPreviewSettings } from "@/lib/bill-preview-settings";
+
 /** 24h times as "HH:mm" (e.g. 11:00, 23:00) */
 export interface TimeRange {
   start: string;
@@ -22,6 +24,8 @@ export interface RestaurantSettingsPayload {
   billHeader: string;
   /** Printed below total on POS bill */
   billFooter: string;
+  /** Theme, logo layout, footer notes, and visibility toggles for POS bills. */
+  billPreview: BillPreviewSettings;
   /** Delivery is free within this many km of the restaurant (0 = no free distance). */
   freeDeliveryUptoKm: number;
   /** Flat charge (rupees) for the first km past the free radius. */

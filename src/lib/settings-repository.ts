@@ -1,5 +1,9 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 
+import {
+  DEFAULT_BILL_PREVIEW_SETTINGS,
+  normalizeBillPreviewSettings,
+} from "@/lib/bill-preview-settings";
 import { getPrisma } from "@/lib/prisma";
 import type {
   PaymentMethodConfig,
@@ -20,6 +24,7 @@ export const DEFAULT_RESTAURANT_SETTINGS: RestaurantSettingsPayload = {
   delivery: { start: "11:00", end: "23:00" },
   billHeader: "",
   billFooter: "",
+  billPreview: { ...DEFAULT_BILL_PREVIEW_SETTINGS },
   freeDeliveryUptoKm: 0,
   baseDeliveryCharge: 0,
   deliveryPerKmCharge: 0,
@@ -158,6 +163,7 @@ function isPrismaMissingColumnError(e: unknown): boolean {
     msg.includes("restaurant_latitude") ||
     msg.includes("restaurant_longitude") ||
     msg.includes("max_delivery_distance_km") ||
+    msg.includes("bill_preview_json") ||
     msg.includes("does not exist")
   );
 }
@@ -319,6 +325,11 @@ async function writeRestaurantSettingsLegacy(
   `;
 }
 
+function parseBillPreviewJson(raw: unknown) {
+  if (!raw || typeof raw !== "object") return { ...DEFAULT_BILL_PREVIEW_SETTINGS };
+  return normalizeBillPreviewSettings(raw as Record<string, unknown>);
+}
+
 function rowToPayload(row: {
   displayName: string;
   logoUrl: string;
@@ -329,6 +340,7 @@ function rowToPayload(row: {
   deliveryEnd: string;
   billHeader: string;
   billFooter: string;
+  billPreviewJson?: unknown;
   freeDeliveryUptoKm: number;
   baseDeliveryCharge: number;
   deliveryPerKmCharge: number;
@@ -348,6 +360,7 @@ function rowToPayload(row: {
     },
     billHeader: row.billHeader ?? "",
     billFooter: row.billFooter ?? "",
+    billPreview: parseBillPreviewJson(row.billPreviewJson),
     freeDeliveryUptoKm: normalizeNonNegativeNumber(row.freeDeliveryUptoKm),
     baseDeliveryCharge: normalizeNonNegativeNumber(row.baseDeliveryCharge),
     deliveryPerKmCharge: normalizeNonNegativeNumber(row.deliveryPerKmCharge),
@@ -440,6 +453,9 @@ export async function writeRestaurantSettings(
         deliveryEnd: normalizeHHMM(payload.delivery.end),
         billHeader: payload.billHeader.trim(),
         billFooter: payload.billFooter.trim(),
+        billPreviewJson: normalizeBillPreviewSettings(
+          payload.billPreview,
+        ) as unknown as Prisma.InputJsonValue,
         freeDeliveryUptoKm,
         baseDeliveryCharge,
         deliveryPerKmCharge,
@@ -458,6 +474,9 @@ export async function writeRestaurantSettings(
         deliveryEnd: normalizeHHMM(payload.delivery.end),
         billHeader: payload.billHeader.trim(),
         billFooter: payload.billFooter.trim(),
+        billPreviewJson: normalizeBillPreviewSettings(
+          payload.billPreview,
+        ) as unknown as Prisma.InputJsonValue,
         freeDeliveryUptoKm,
         baseDeliveryCharge,
         deliveryPerKmCharge,

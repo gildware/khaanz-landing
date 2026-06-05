@@ -39,6 +39,8 @@ model RestaurantSettings {
   deliveryEnd        String   @map("delivery_end")
   billHeader         String   @default("") @map("bill_header")
   billFooter         String   @default("") @map("bill_footer")
+  /// Theme, logo size, footer notes, show/hide toggles — synced to desktop POS.
+  billPreviewJson    Json     @default("{}") @map("bill_preview_json")
   /// Delivery is free within this many km of the restaurant (0 = no free distance).
   freeDeliveryUptoKm  Float    @default(0) @map("free_delivery_upto_km")
   /// Flat charge (rupees) for the first km past the free radius.

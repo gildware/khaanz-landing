@@ -43,6 +43,7 @@ import {
   getKhaanzDesktop,
   shouldQueuePosOrderOffline,
 } from "@/lib/khaanz-desktop-client";
+import { billPrintLayoutFromSettings } from "@/lib/bill-print-layout";
 import {
   cartLinesToReceiptRows,
   kotLinesFromCart,
@@ -50,6 +51,7 @@ import {
   buildKotHtmlBody,
   printPosBillThermal,
   printPosKotThermal,
+  wrapThermalPrintDocument,
   type PosBillPrintOptions,
 } from "@/lib/pos-print";
 import { SITE } from "@/lib/site";
@@ -647,6 +649,17 @@ export default function AdminPosPage() {
     [posSettings],
   );
 
+  const restaurantDisplayName = posSettings?.displayName?.trim() || SITE.name;
+
+  const billPrintLayout = useMemo(
+    () =>
+      billPrintLayoutFromSettings(
+        posSettings,
+        typeof window !== "undefined" ? window.location.origin : null,
+      ),
+    [posSettings],
+  );
+
   const buildBillOptions = useCallback(
     (args: {
       lines: ReturnType<typeof cartLinesToReceiptRows>;
@@ -666,7 +679,7 @@ export default function AdminPosPage() {
       deliveryCharge?: number;
       discount?: number;
     }): PosBillPrintOptions => ({
-      restaurantName: SITE.name,
+      restaurantName: restaurantDisplayName,
       billHeader: args.header,
       billFooter: args.footer,
       orderRef: args.orderRef,
@@ -683,8 +696,9 @@ export default function AdminPosPage() {
       itemsSubtotal: args.itemsSubtotal,
       deliveryCharge: args.deliveryCharge,
       discount: args.discount,
+      layout: billPrintLayout,
     }),
-    [],
+    [restaurantDisplayName, billPrintLayout],
   );
 
   const submitPosOrder = useCallback(
@@ -809,28 +823,26 @@ export default function AdminPosPage() {
         setDeliveryChargeInput("");
 
         if (printMode === "kot" || printMode === "both") {
+          const kotOptions = {
+            restaurantName: restaurantDisplayName,
+            billHeader: header,
+            orderRef,
+            fulfillmentLabel: fulfillLabel,
+            dineInTable: tablePrintLabel || undefined,
+            notes: notesSnap,
+            lines: snapshotKot,
+            layout: billPrintLayout,
+          };
           const desktopOk = await desktopSilentPrintOrToast({
-            html: buildKotHtmlBody({
-              restaurantName: SITE.name,
-              billHeader: header,
-              orderRef,
-              fulfillmentLabel: fulfillLabel,
-              dineInTable: tablePrintLabel || undefined,
-              notes: notesSnap,
-              lines: snapshotKot,
-            }),
+            html: wrapThermalPrintDocument(
+              buildKotHtmlBody(kotOptions),
+              "KOT",
+              billPrintLayout,
+            ),
             title: "KOT",
           });
           if (!desktopOk && !desktop?.isDesktop) {
-            await printPosKotThermal({
-              restaurantName: SITE.name,
-              billHeader: header,
-              orderRef,
-              fulfillmentLabel: fulfillLabel,
-              dineInTable: tablePrintLabel || undefined,
-              notes: notesSnap,
-              lines: snapshotKot,
-            });
+            await printPosKotThermal(kotOptions);
           }
         }
         if (printMode === "bill" || printMode === "both") {
@@ -853,7 +865,11 @@ export default function AdminPosPage() {
             discount: billTotals.discount > 0 ? billTotals.discount : undefined,
           });
           const desktopOk = await desktopSilentPrintOrToast({
-            html: buildBillHtmlBody(billOptions),
+            html: wrapThermalPrintDocument(
+              buildBillHtmlBody(billOptions),
+              "Bill",
+              billPrintLayout,
+            ),
             title: "Bill",
           });
           if (!desktopOk && !desktop?.isDesktop) {
@@ -899,28 +915,26 @@ export default function AdminPosPage() {
           void refreshOfflineCount();
 
           if (printMode === "kot" || printMode === "both") {
+            const kotOptions = {
+              restaurantName: restaurantDisplayName,
+              billHeader: header,
+              orderRef: offlineRef,
+              fulfillmentLabel: fulfillLabel,
+              dineInTable: tablePrintLabel || undefined,
+              notes: notesSnap,
+              lines: snapshotKot,
+              layout: billPrintLayout,
+            };
             const desktopOk = await desktopSilentPrintOrToast({
-              html: buildKotHtmlBody({
-                restaurantName: SITE.name,
-                billHeader: header,
-                orderRef: offlineRef,
-                fulfillmentLabel: fulfillLabel,
-                dineInTable: tablePrintLabel || undefined,
-                notes: notesSnap,
-                lines: snapshotKot,
-              }),
+              html: wrapThermalPrintDocument(
+                buildKotHtmlBody(kotOptions),
+                "KOT",
+                billPrintLayout,
+              ),
               title: "KOT",
             });
             if (!desktopOk && !getKhaanzDesktop()?.isDesktop) {
-              await printPosKotThermal({
-                restaurantName: SITE.name,
-                billHeader: header,
-                orderRef: offlineRef,
-                fulfillmentLabel: fulfillLabel,
-                dineInTable: tablePrintLabel || undefined,
-                notes: notesSnap,
-                lines: snapshotKot,
-              });
+              await printPosKotThermal(kotOptions);
             }
           }
           if (printMode === "bill" || printMode === "both") {
@@ -943,7 +957,11 @@ export default function AdminPosPage() {
               discount: billTotals.discount > 0 ? billTotals.discount : undefined,
             });
             const desktopOk = await desktopSilentPrintOrToast({
-              html: buildBillHtmlBody(billOptions),
+              html: wrapThermalPrintDocument(
+                buildBillHtmlBody(billOptions),
+                "Bill",
+                billPrintLayout,
+              ),
               title: "Bill",
             });
             if (!desktopOk && !getKhaanzDesktop()?.isDesktop) {
@@ -974,6 +992,8 @@ export default function AdminPosPage() {
       selectedTableId,
       dineInTableLabel,
       refreshOfflineCount,
+      restaurantDisplayName,
+      billPrintLayout,
     ],
   );
 

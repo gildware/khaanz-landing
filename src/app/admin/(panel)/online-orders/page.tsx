@@ -33,6 +33,7 @@ import {
   filterOrdersByStatusTab,
 } from "@/lib/order-tab-utils";
 import { POS_ANONYMOUS_PHONE_DIGITS } from "@/lib/phone-digits";
+import { billPrintLayoutFromSettings } from "@/lib/bill-print-layout";
 import {
   fulfillmentLabelFromKey,
   orderLinePayloadsToReceiptLines,
@@ -173,6 +174,18 @@ export default function AdminOnlineOrdersPage() {
   const [posSettings, setPosSettings] = useState<RestaurantSettingsPayload | null>(
     null,
   );
+
+  const restaurantDisplayName = posSettings?.displayName?.trim() || SITE.name;
+
+  const billPrintLayout = useMemo(
+    () =>
+      billPrintLayoutFromSettings(
+        posSettings,
+        typeof window !== "undefined" ? window.location.origin : null,
+      ),
+    [posSettings],
+  );
+
   const [orderDate, setOrderDate] = useState(() => formatIstDateInput(new Date()));
   const todayIst = formatIstDateInput(new Date());
   const viewingToday = orderDate === todayIst;
@@ -301,18 +314,19 @@ export default function AdminOnlineOrdersPage() {
       try {
         if (mode === "kot" || mode === "both") {
           await printPosKotThermal({
-            restaurantName: SITE.name,
+            restaurantName: restaurantDisplayName,
             billHeader: header,
             orderRef: orderRefStr,
             fulfillmentLabel: fulfill,
             dineInTable: o.dineInTable?.trim() || undefined,
             notes: "",
             lines: kotLines,
+            layout: billPrintLayout,
           });
         }
         if (mode === "bill" || mode === "both") {
           await printPosBillThermal({
-            restaurantName: SITE.name,
+            restaurantName: restaurantDisplayName,
             billHeader: header,
             billFooter: footer,
             orderRef: orderRefStr,
@@ -325,6 +339,7 @@ export default function AdminOnlineOrdersPage() {
             paymentLabel: "",
             lines: receiptLines,
             total: totalRupees,
+            layout: billPrintLayout,
             deliveryCharge:
               o.deliveryChargeMinor > 0
                 ? o.deliveryChargeMinor / 100
@@ -341,7 +356,7 @@ export default function AdminOnlineOrdersPage() {
         toast.error("Print failed.");
       }
     },
-    [posSettings],
+    [posSettings, restaurantDisplayName, billPrintLayout],
   );
 
   const sendOrderToRestaurantWhatsApp = useCallback(

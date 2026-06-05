@@ -7,6 +7,7 @@ import type {
   RestaurantSettingsPayload,
 } from "@/types/restaurant-settings";
 import { readFloorPlan } from "@/lib/floor-plan";
+import { normalizeBillPreviewSettings } from "@/lib/bill-preview-settings";
 import {
   isRestaurantSettingsPayload,
   normalizeCoordinate,
@@ -169,6 +170,11 @@ export async function PUT(request: Request) {
     },
     billHeader,
     billFooter,
+    billPreview: normalizeBillPreviewSettings(
+      o.billPreview && typeof o.billPreview === "object"
+        ? (o.billPreview as Record<string, unknown>)
+        : undefined,
+    ),
     freeDeliveryUptoKm,
     baseDeliveryCharge,
     deliveryPerKmCharge,
