@@ -37,6 +37,7 @@ import {
 import { migrateCartLine } from "@/lib/cart-line";
 import type { ScheduleMode } from "@/lib/order-schedule";
 import { SITE } from "@/lib/site";
+import { cn } from "@/lib/utils";
 import type { CartLine } from "@/types/menu";
 import type {
   FulfillmentMode,
@@ -45,10 +46,51 @@ import type {
 import { openWhatsAppOrder } from "@/utils/whatsapp";
 
 import { OrderLineView } from "@/components/orders/order-line-view";
+import { orderStatusBadgeClassName } from "@/components/orders/order-status-badge";
 
 import { EditOrderDialog } from "./edit-order-dialog";
 
 const AUTO_REFRESH_MS = 15_000;
+
+type StatusFilter = "all" | OrderStatus;
+
+const ONLINE_ORDER_STATUS_TABS: { id: StatusFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "PENDING", label: ORDER_STATUS_LABEL.PENDING },
+  { id: "ACCEPTED", label: ORDER_STATUS_LABEL.ACCEPTED },
+  { id: "OUT_FOR_DELIVERY", label: ORDER_STATUS_LABEL.OUT_FOR_DELIVERY },
+  { id: "DELIVERED", label: ORDER_STATUS_LABEL.DELIVERED },
+  { id: "CANCELLED", label: ORDER_STATUS_LABEL.CANCELLED },
+];
+
+function nextStep(
+  status: string,
+  fulfillment: string,
+): { nextStatus: OrderStatus; label: string } | null {
+  switch (status) {
+    case "PENDING":
+      return { nextStatus: "ACCEPTED", label: "Accept order" };
+    case "ACCEPTED":
+      return { nextStatus: "PREPARING", label: "Mark preparing" };
+    case "PREPARING":
+      return {
+        nextStatus: "OUT_FOR_DELIVERY",
+        label:
+          fulfillment === "delivery"
+            ? "Mark out for delivery"
+            : fulfillment === "dine_in"
+              ? "Mark ready to serve"
+              : "Mark ready for pickup",
+      };
+    case "OUT_FOR_DELIVERY":
+      return {
+        nextStatus: "DELIVERED",
+        label: fulfillment === "dine_in" ? "Mark served" : "Mark delivered",
+      };
+    default:
+      return null;
+  }
+}
 
 function orderLinesToCartLines(
   lines: { sortIndex: number; payload: unknown }[],
@@ -103,7 +145,9 @@ type OrderRow = {
 type PendingAction = {
   orderId: string;
   orderRef: string;
-  nextStatus: "ACCEPTED" | "CANCELLED";
+  currentStatusLabel?: string;
+  nextStatus: OrderStatus;
+  nextStatusLabel: string;
   actionLabel: string;
   destructive?: boolean;
 };
@@ -112,6 +156,7 @@ export default function AdminOnlineOrdersPage() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("PENDING");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [actionConfirm, setActionConfirm] = useState<PendingAction | null>(null);
@@ -126,7 +171,7 @@ export default function AdminOnlineOrdersPage() {
   ordersRef.current = orders;
 
   const fetchOnlineOrders = useCallback(async () => {
-    const res = await fetch("/api/admin/orders?view=online_pending&limit=100", {
+    const res = await fetch("/api/admin/orders?view=online&limit=100", {
       credentials: "include",
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -191,7 +236,7 @@ export default function AdminOnlineOrdersPage() {
 
   const confirmAction = async () => {
     if (!actionConfirm) return;
-    const { orderId, nextStatus } = actionConfirm;
+    const { orderId, nextStatus, nextStatusLabel } = actionConfirm;
     setUpdatingId(orderId);
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, {
@@ -205,14 +250,19 @@ export default function AdminOnlineOrdersPage() {
         toast.error(j.error ?? "Update failed");
         return;
       }
-      toast.success(
-        nextStatus === "ACCEPTED"
-          ? "Order accepted — moved to Orders"
-          : "Order cancelled",
-      );
+      toast.success(`Order marked ${nextStatusLabel.toLowerCase()}`);
       setActionConfirm(null);
-      // Accepted/cancelled orders drop out of the pending inbox.
-      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                status: nextStatus,
+                statusLabel: ORDER_STATUS_LABEL[nextStatus],
+              }
+            : o,
+        ),
+      );
     } finally {
       setUpdatingId(null);
     }
@@ -316,7 +366,23 @@ export default function AdminOnlineOrdersPage() {
     [posSettings],
   );
 
-  const pendingCount = useMemo(() => orders.length, [orders]);
+  const statusCounts = useMemo(() => {
+    const byStatus: Partial<Record<OrderStatus, number>> = {};
+    for (const o of orders) {
+      byStatus[o.status as OrderStatus] =
+        (byStatus[o.status as OrderStatus] ?? 0) + 1;
+    }
+    return { total: orders.length, byStatus };
+  }, [orders]);
+
+  const filteredOrders = useMemo(() => {
+    if (statusFilter === "all") return orders;
+    return orders.filter((o) => o.status === statusFilter);
+  }, [orders, statusFilter]);
+
+  const requestStatusChange = (action: PendingAction) => {
+    setActionConfirm(action);
+  };
 
   if (initialLoad) {
     return (
@@ -336,8 +402,8 @@ export default function AdminOnlineOrdersPage() {
             Online orders
           </h1>
           <p className="text-muted-foreground text-sm">
-            New customer orders awaiting acceptance. Accept an order to send it
-            to the kitchen and move it into Orders.
+            Manage customer website orders from acceptance through delivery.
+            Customers get WhatsApp updates when Cloud API is configured.
           </p>
         </div>
 
@@ -385,28 +451,79 @@ export default function AdminOnlineOrdersPage() {
         </div>
       ) : null}
 
+      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {ONLINE_ORDER_STATUS_TABS.map((tab) => {
+          const count =
+            tab.id === "all"
+              ? statusCounts.total
+              : (statusCounts.byStatus[tab.id] ?? 0);
+          const active = statusFilter === tab.id;
+          return (
+            <Button
+              key={tab.id}
+              type="button"
+              size="sm"
+              variant={active ? "default" : "outline"}
+              className="shrink-0 rounded-full"
+              onClick={() => setStatusFilter(tab.id)}
+            >
+              {tab.label}
+              <span
+                className={
+                  active
+                    ? "ml-1.5 rounded-full bg-primary-foreground/20 px-1.5 py-0.5 text-xs tabular-nums"
+                    : "ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground"
+                }
+              >
+                {count}
+              </span>
+            </Button>
+          );
+        })}
+      </div>
+
       <div className="space-y-4">
         {orders.length === 0 ? (
           <div className="rounded-2xl border border-dashed bg-muted/20 px-4 py-12 text-center text-muted-foreground text-sm">
-            No new online orders. Accepted orders appear under Orders.
+            No online orders yet.
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="rounded-2xl border border-dashed bg-muted/20 px-4 py-12 text-center text-muted-foreground text-sm">
+            No orders in this status.
           </div>
         ) : (
           <>
             <p className="text-muted-foreground text-sm">
-              {pendingCount} {pendingCount === 1 ? "order" : "orders"} waiting to
-              be accepted.
+              {filteredOrders.length}{" "}
+              {filteredOrders.length === 1 ? "order" : "orders"}
+              {statusFilter === "all"
+                ? " total"
+                : ` · ${ONLINE_ORDER_STATUS_TABS.find((t) => t.id === statusFilter)?.label ?? statusFilter}`}
             </p>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {orders.map((o) => {
+              {filteredOrders.map((o) => {
                 const busy = updatingId === o.id;
                 const rupee = (o.totalMinor / 100).toFixed(2);
                 const lines = o.lines ?? [];
                 const canPrintWhole =
                   orderLinePayloadsToReceiptLines(lines).length > 0;
+                const step = nextStep(o.status, o.fulfillment);
+                const isPending = o.status === "PENDING";
+                const canSendWhatsApp =
+                  o.status === "PENDING" ||
+                  o.status === "ACCEPTED" ||
+                  o.status === "OUT_FOR_DELIVERY";
+                const canCancel =
+                  o.status !== "CANCELLED" && o.status !== "DELIVERED";
                 return (
                   <article
                     key={o.id}
-                    className="flex h-[clamp(440px,min(540px,85dvh),580px)] w-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-card p-4 shadow-sm ring-1 ring-amber-500/30"
+                    className={cn(
+                      "flex h-[clamp(440px,min(540px,85dvh),580px)] w-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-card p-4 shadow-sm",
+                      isPending
+                        ? "ring-1 ring-amber-500/30"
+                        : "ring-1 ring-border/50",
+                    )}
                   >
                     <div className="flex shrink-0 gap-3 border-b border-border/70 pb-3">
                       <div className="min-w-0 flex-1 space-y-1">
@@ -416,9 +533,12 @@ export default function AdminOnlineOrdersPage() {
                           </span>
                           <Badge
                             variant="outline"
-                            className="border-amber-500/40 bg-amber-500/15 font-medium text-amber-950 dark:border-amber-400/35 dark:bg-amber-400/12 dark:text-amber-50"
+                            className={cn(
+                              "font-medium",
+                              orderStatusBadgeClassName(o.status),
+                            )}
                           >
-                            New · {o.statusLabel}
+                            {isPending ? `New · ${o.statusLabel}` : o.statusLabel}
                           </Badge>
                         </div>
                         <p className="text-muted-foreground text-xs tabular-nums">
@@ -576,66 +696,98 @@ export default function AdminOnlineOrdersPage() {
                         </Button>
                       </div>
                       <div className="flex flex-wrap justify-center gap-2 border-t border-border/60 pt-2.5">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="h-8 gap-1 text-xs"
-                          disabled={busy}
-                          onClick={() => setEditingOrder(o)}
-                        >
-                          <PencilIcon className="size-3.5" />
-                          Edit
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="default"
-                          className="h-8 text-xs"
-                          disabled={busy}
-                          onClick={() =>
-                            setActionConfirm({
-                              orderId: o.id,
-                              orderRef: o.orderRef ?? o.id.slice(0, 8),
-                              nextStatus: "ACCEPTED",
-                              actionLabel: "Accept order",
-                            })
-                          }
-                        >
-                          {busy ? "…" : "Accept order"}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="h-8 text-xs"
-                          disabled={busy}
-                          onClick={() =>
-                            setActionConfirm({
-                              orderId: o.id,
-                              orderRef: o.orderRef ?? o.id.slice(0, 8),
-                              nextStatus: "CANCELLED",
-                              actionLabel: "Cancel order",
-                              destructive: true,
-                            })
-                          }
-                        >
-                          Cancel
-                        </Button>
+                        {isPending ? (
+                          <>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-8 gap-1 text-xs"
+                              disabled={busy}
+                              onClick={() => setEditingOrder(o)}
+                            >
+                              <PencilIcon className="size-3.5" />
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="default"
+                              className="h-8 text-xs"
+                              disabled={busy}
+                              onClick={() =>
+                                requestStatusChange({
+                                  orderId: o.id,
+                                  orderRef: o.orderRef ?? o.id.slice(0, 8),
+                                  nextStatus: "ACCEPTED",
+                                  nextStatusLabel: ORDER_STATUS_LABEL.ACCEPTED,
+                                  actionLabel: "Accept order",
+                                })
+                              }
+                            >
+                              {busy ? "…" : "Accept order"}
+                            </Button>
+                          </>
+                        ) : step ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="default"
+                            className="h-8 text-xs"
+                            disabled={busy}
+                            onClick={() =>
+                              requestStatusChange({
+                                orderId: o.id,
+                                orderRef: o.orderRef ?? o.id.slice(0, 8),
+                                currentStatusLabel: o.statusLabel,
+                                nextStatus: step.nextStatus,
+                                nextStatusLabel:
+                                  ORDER_STATUS_LABEL[step.nextStatus],
+                                actionLabel: step.label,
+                              })
+                            }
+                          >
+                            {busy ? "…" : step.label}
+                          </Button>
+                        ) : null}
+                        {canCancel ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs"
+                            disabled={busy}
+                            onClick={() =>
+                              requestStatusChange({
+                                orderId: o.id,
+                                orderRef: o.orderRef ?? o.id.slice(0, 8),
+                                currentStatusLabel: o.statusLabel,
+                                nextStatus: "CANCELLED",
+                                nextStatusLabel: ORDER_STATUS_LABEL.CANCELLED,
+                                actionLabel: "Cancel order",
+                                destructive: true,
+                              })
+                            }
+                          >
+                            Cancel
+                          </Button>
+                        ) : null}
                       </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="h-9 w-full gap-2 bg-[#25D366] text-white hover:bg-[#20bd5a]"
-                        disabled={
-                          !posSettings?.whatsappPhoneE164?.trim() ||
-                          orderLinesToCartLines(lines).length === 0
-                        }
-                        onClick={() => sendOrderToRestaurantWhatsApp(o)}
-                      >
-                        <MessageCircleIcon className="size-4" />
-                        Send order to Restaurant WhatsApp
-                      </Button>
+                      {canSendWhatsApp ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-9 w-full gap-2 bg-[#25D366] text-white hover:bg-[#20bd5a]"
+                          disabled={
+                            !posSettings?.whatsappPhoneE164?.trim() ||
+                            orderLinesToCartLines(lines).length === 0
+                          }
+                          onClick={() => sendOrderToRestaurantWhatsApp(o)}
+                        >
+                          <MessageCircleIcon className="size-4" />
+                          Send order to Restaurant WhatsApp
+                        </Button>
+                      ) : null}
                     </footer>
                   </article>
                 );
@@ -677,11 +829,9 @@ export default function AdminOnlineOrdersPage() {
                   </span>{" "}
                   will be marked{" "}
                   <span className="font-medium text-foreground">
-                    {ORDER_STATUS_LABEL[actionConfirm.nextStatus as OrderStatus]}
+                    {actionConfirm.nextStatusLabel}
                   </span>
-                  {actionConfirm.nextStatus === "ACCEPTED"
-                    ? " and moved into Orders."
-                    : "."}
+                  .
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>

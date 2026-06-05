@@ -20,7 +20,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { formatIstDateInput } from "@/lib/ist-dates";
-import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
+import {
+  RESTAURANT_ORDER_STATUS_TAB_LABEL,
+  restaurantOrderStatusLabel,
+} from "@/lib/order-status-workflow";
 import { POS_ANONYMOUS_PHONE_DIGITS } from "@/lib/phone-digits";
 import {
   fulfillmentLabelFromKey,
@@ -41,12 +44,14 @@ type StatusFilter = "all" | OrderStatus;
 
 const ORDER_STATUS_TABS: { id: StatusFilter; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "PENDING", label: ORDER_STATUS_LABEL.PENDING },
-  { id: "ACCEPTED", label: ORDER_STATUS_LABEL.ACCEPTED },
-  { id: "PREPARING", label: ORDER_STATUS_LABEL.PREPARING },
-  { id: "OUT_FOR_DELIVERY", label: ORDER_STATUS_LABEL.OUT_FOR_DELIVERY },
-  { id: "DELIVERED", label: ORDER_STATUS_LABEL.DELIVERED },
-  { id: "CANCELLED", label: ORDER_STATUS_LABEL.CANCELLED },
+  { id: "ACCEPTED", label: RESTAURANT_ORDER_STATUS_TAB_LABEL.ACCEPTED },
+  { id: "PREPARING", label: RESTAURANT_ORDER_STATUS_TAB_LABEL.PREPARING },
+  {
+    id: "OUT_FOR_DELIVERY",
+    label: RESTAURANT_ORDER_STATUS_TAB_LABEL.OUT_FOR_DELIVERY,
+  },
+  { id: "DELIVERED", label: RESTAURANT_ORDER_STATUS_TAB_LABEL.DELIVERED },
+  { id: "CANCELLED", label: RESTAURANT_ORDER_STATUS_TAB_LABEL.CANCELLED },
 ];
 
 type OrderRow = {
@@ -433,8 +438,8 @@ export default function AdminOrdersPage() {
         <div className="min-w-0">
           <h1 className="font-semibold text-2xl tracking-tight">Orders</h1>
           <p className="text-muted-foreground text-sm">
-            Advance status one step at a time, or cancel. Customers get a
-            WhatsApp update when Cloud API is configured.
+            POS and in-restaurant orders. Advance kitchen status one step at a
+            time, or cancel. Website orders are managed under Online orders.
           </p>
         </div>
 
@@ -538,6 +543,10 @@ export default function AdminOrdersPage() {
               const lines = o.lines ?? [];
               const canPrintWhole =
                 orderLinePayloadsToReceiptLines(lines).length > 0;
+              const statusLabel = restaurantOrderStatusLabel(
+                o.status as OrderStatus,
+                o.fulfillment,
+              );
               return (
                 <article
                   key={o.id}
@@ -556,7 +565,7 @@ export default function AdminOrdersPage() {
                             orderStatusBadgeClassName(o.status),
                           )}
                         >
-                          {o.statusLabel}
+                          {statusLabel}
                         </Badge>
                       </div>
                       <p className="text-muted-foreground text-xs tabular-nums">
@@ -592,11 +601,13 @@ export default function AdminOrdersPage() {
                         {o.customerPhone}
                       </p>
                     </div>
-                    <div className="text-sm capitalize">
+                    <div className="text-sm">
                       <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                         Fulfillment
                       </p>
-                      <p className="mt-0.5 font-medium">{o.fulfillment}</p>
+                      <p className="mt-0.5 font-medium">
+                        {fulfillmentLabelFromKey(o.fulfillment)}
+                      </p>
                       {o.fulfillment === "dine_in" && o.dineInTable?.trim() ? (
                         <p className="mt-1 text-xs font-normal normal-case text-muted-foreground">
                           Table:{" "}
@@ -684,12 +695,12 @@ export default function AdminOrdersPage() {
                             requestStatusChange({
                               orderId: o.id,
                               orderRef: o.orderRef ?? o.id.slice(0, 8),
-                              currentStatusLabel: o.statusLabel,
+                              currentStatusLabel: statusLabel,
                               nextStatus: step.nextStatus,
-                              nextStatusLabel:
-                                ORDER_STATUS_LABEL[
-                                  step.nextStatus as OrderStatus
-                                ] ?? step.nextStatus,
+                              nextStatusLabel: restaurantOrderStatusLabel(
+                                step.nextStatus as OrderStatus,
+                                o.fulfillment,
+                              ),
                               actionLabel: step.label,
                             })
                           }
@@ -708,9 +719,9 @@ export default function AdminOrdersPage() {
                             requestStatusChange({
                               orderId: o.id,
                               orderRef: o.orderRef ?? o.id.slice(0, 8),
-                              currentStatusLabel: o.statusLabel,
+                              currentStatusLabel: statusLabel,
                               nextStatus: "CANCELLED",
-                              nextStatusLabel: ORDER_STATUS_LABEL.CANCELLED,
+                              nextStatusLabel: RESTAURANT_ORDER_STATUS_TAB_LABEL.CANCELLED,
                               actionLabel: "Cancel order",
                               destructive: true,
                             })
@@ -776,7 +787,12 @@ export default function AdminOrdersPage() {
                 Could not load this order.
               </p>
             )}
-            {!detailLoading && detail && (
+            {!detailLoading && detail && (() => {
+              const detailStatusLabel = restaurantOrderStatusLabel(
+                detail.status as OrderStatus,
+                detail.fulfillment,
+              );
+              return (
               <>
                 <div className="space-y-1 text-sm">
                   {detail.orderRef ? (
@@ -799,7 +815,7 @@ export default function AdminOrdersPage() {
                         orderStatusBadgeClassName(detail.status),
                       )}
                     >
-                      {detail.statusLabel}
+                      {detailStatusLabel}
                     </Badge>
                   </div>
                   <div>
@@ -840,9 +856,9 @@ export default function AdminOrdersPage() {
                     <span className="text-muted-foreground">Total: </span>
                     ₹{(detail.totalMinor / 100).toFixed(2)} {detail.currency}
                   </div>
-                  <div className="capitalize">
+                  <div>
                     <span className="text-muted-foreground">Fulfillment: </span>
-                    {detail.fulfillment}
+                    {fulfillmentLabelFromKey(detail.fulfillment)}
                   </div>
                   {detail.fulfillment === "dine_in" &&
                   detail.dineInTable?.trim() ? (
@@ -927,12 +943,12 @@ export default function AdminOrdersPage() {
                               requestStatusChange({
                                 orderId: detail.id,
                                 orderRef: detail.orderRef ?? detail.id.slice(0, 8),
-                                currentStatusLabel: detail.statusLabel,
+                                currentStatusLabel: detailStatusLabel,
                                 nextStatus: step.nextStatus,
-                                nextStatusLabel:
-                                  ORDER_STATUS_LABEL[
-                                    step.nextStatus as OrderStatus
-                                  ] ?? step.nextStatus,
+                                nextStatusLabel: restaurantOrderStatusLabel(
+                                  step.nextStatus as OrderStatus,
+                                  detail.fulfillment,
+                                ),
                                 actionLabel: step.label,
                               })
                             }
@@ -950,9 +966,10 @@ export default function AdminOrdersPage() {
                               requestStatusChange({
                                 orderId: detail.id,
                                 orderRef: detail.orderRef ?? detail.id.slice(0, 8),
-                                currentStatusLabel: detail.statusLabel,
+                                currentStatusLabel: detailStatusLabel,
                                 nextStatus: "CANCELLED",
-                                nextStatusLabel: ORDER_STATUS_LABEL.CANCELLED,
+                                nextStatusLabel:
+                                  RESTAURANT_ORDER_STATUS_TAB_LABEL.CANCELLED,
                                 actionLabel: "Cancel order",
                                 destructive: true,
                               })
@@ -966,7 +983,8 @@ export default function AdminOrdersPage() {
                   })()}
                 </div>
               </>
-            )}
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>

@@ -47,25 +47,28 @@ export async function GET(request: Request) {
   }
   const dayEndExclusive = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
-  // `online_pending`: new customer (website) orders awaiting acceptance — the
-  //   Online orders inbox; spans all dates so unaccepted orders are never lost.
-  // `exclude_online_pending`: the main Orders page, which only shows orders once
-  //   they have been accepted (pending website orders live in the inbox).
+  // `online`: all website orders for the Online orders admin page (no date cap).
+  // `online_pending`: pending website orders only — used by the new-order notifier.
+  // `exclude_online_pending`: POS / dine-in orders for the main Orders page
+  //   (all website orders are managed under Online orders).
   // (no view): legacy/full list used by the new-order notifier poller.
   const view = url.searchParams.get("view");
   const pendingOnlineFilter = {
     status: "PENDING" as const,
     source: "website" as const,
   };
+  const websiteFilter = { source: "website" as const };
   const where =
-    view === "online_pending"
-      ? pendingOnlineFilter
-      : view === "exclude_online_pending"
-        ? {
-            createdAt: { gte: dayStart, lt: dayEndExclusive },
-            NOT: pendingOnlineFilter,
-          }
-        : { createdAt: { gte: dayStart, lt: dayEndExclusive } };
+    view === "online"
+      ? websiteFilter
+      : view === "online_pending"
+        ? pendingOnlineFilter
+        : view === "exclude_online_pending"
+          ? {
+              createdAt: { gte: dayStart, lt: dayEndExclusive },
+              NOT: websiteFilter,
+            }
+          : { createdAt: { gte: dayStart, lt: dayEndExclusive } };
 
   const prisma = getPrisma();
   const rows = await prisma.order.findMany({
@@ -84,16 +87,15 @@ export async function GET(request: Request) {
   const hasMore = rows.length > pageSize;
   const orders = rows.slice(0, pageSize);
 
-  // Only the Online orders inbox calls Google for a driving ETA, to avoid
-  // billing the Distance Matrix API on large/paginated order lists.
-  const withTravel = view === "online_pending";
+  // Driving ETA only for pending website orders, to limit Distance Matrix usage.
+  const withTravel = view === "online_pending" || view === "online";
 
   const mapped = await Promise.all(
     orders.map(async (o) => {
       const hasCoords =
         typeof o.latitude === "number" && typeof o.longitude === "number";
       const travel =
-        withTravel && hasCoords
+        withTravel && hasCoords && o.status === "PENDING"
           ? await getTravelDistance(o.latitude, o.longitude)
           : null;
       return {

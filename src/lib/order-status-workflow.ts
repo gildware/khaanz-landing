@@ -9,6 +9,35 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   CANCELLED: "Cancelled",
 };
 
+/** Tab labels on the restaurant Orders admin page (POS / dine-in). */
+export const RESTAURANT_ORDER_STATUS_TAB_LABEL: Record<OrderStatus, string> = {
+  PENDING: "Pending",
+  ACCEPTED: "Accepted",
+  PREPARING: "Preparing",
+  OUT_FOR_DELIVERY: "Ready",
+  DELIVERED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+/** Status badge text for in-restaurant orders (fulfillment-aware). */
+export function restaurantOrderStatusLabel(
+  status: OrderStatus,
+  fulfillment: string,
+): string {
+  switch (status) {
+    case "OUT_FOR_DELIVERY":
+      if (fulfillment === "dine_in") return "Ready to serve";
+      if (fulfillment === "pickup") return "Ready for pickup";
+      return ORDER_STATUS_LABEL.OUT_FOR_DELIVERY;
+    case "DELIVERED":
+      if (fulfillment === "dine_in") return "Served";
+      if (fulfillment === "pickup") return "Picked up";
+      return ORDER_STATUS_LABEL.DELIVERED;
+    default:
+      return ORDER_STATUS_LABEL[status];
+  }
+}
+
 const LINEAR: OrderStatus[] = [
   "PENDING",
   "ACCEPTED",
