@@ -25,6 +25,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { formatIstDateInput } from "@/lib/ist-dates";
 import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
 import { POS_ANONYMOUS_PHONE_DIGITS } from "@/lib/phone-digits";
 import {
@@ -166,12 +168,20 @@ export default function AdminOnlineOrdersPage() {
   const [posSettings, setPosSettings] = useState<RestaurantSettingsPayload | null>(
     null,
   );
+  const [orderDate, setOrderDate] = useState(() => formatIstDateInput(new Date()));
+  const todayIst = formatIstDateInput(new Date());
+  const viewingToday = orderDate === todayIst;
 
   const ordersRef = useRef<OrderRow[]>([]);
   ordersRef.current = orders;
 
-  const fetchOnlineOrders = useCallback(async () => {
-    const res = await fetch("/api/admin/orders?view=online&limit=100", {
+  const fetchOnlineOrders = useCallback(async (date: string) => {
+    const params = new URLSearchParams({
+      view: "online",
+      limit: "100",
+      date,
+    });
+    const res = await fetch(`/api/admin/orders?${params.toString()}`, {
       credentials: "include",
     });
     if (!res.ok) throw new Error("fetch failed");
@@ -184,7 +194,7 @@ export default function AdminOnlineOrdersPage() {
   const loadInitial = useCallback(async () => {
     setInitialLoad(true);
     try {
-      const data = await fetchOnlineOrders();
+      const data = await fetchOnlineOrders(orderDate);
       setOrders(data.orders);
       setTravelConfigured(data.travelDistanceConfigured !== false);
     } catch {
@@ -192,12 +202,12 @@ export default function AdminOnlineOrdersPage() {
     } finally {
       setInitialLoad(false);
     }
-  }, [fetchOnlineOrders]);
+  }, [fetchOnlineOrders, orderDate]);
 
   const refreshOrders = useCallback(async () => {
     setRefreshing(true);
     try {
-      const data = await fetchOnlineOrders();
+      const data = await fetchOnlineOrders(orderDate);
       setOrders(data.orders);
       setTravelConfigured(data.travelDistanceConfigured !== false);
     } catch {
@@ -205,7 +215,7 @@ export default function AdminOnlineOrdersPage() {
     } finally {
       setRefreshing(false);
     }
-  }, [fetchOnlineOrders]);
+  }, [fetchOnlineOrders, orderDate]);
 
   useEffect(() => {
     void loadInitial();
@@ -436,6 +446,24 @@ export default function AdminOnlineOrdersPage() {
             )}
             Refresh
           </Button>
+          <Input
+            id="online-orders-date"
+            type="date"
+            value={orderDate}
+            onChange={(e) => setOrderDate(e.target.value)}
+            className="w-40"
+            aria-label="Order date"
+          />
+          {!viewingToday ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setOrderDate(todayIst)}
+            >
+              Today
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -485,11 +513,14 @@ export default function AdminOnlineOrdersPage() {
       <div className="space-y-4">
         {orders.length === 0 ? (
           <div className="rounded-2xl border border-dashed bg-muted/20 px-4 py-12 text-center text-muted-foreground text-sm">
-            No online orders yet.
+            {viewingToday
+              ? "No online orders today."
+              : `No online orders on ${orderDate}.`}
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="rounded-2xl border border-dashed bg-muted/20 px-4 py-12 text-center text-muted-foreground text-sm">
-            No orders in this status.
+            No orders in this status
+            {viewingToday ? " today" : ` on ${orderDate}`}.
           </div>
         ) : (
           <>

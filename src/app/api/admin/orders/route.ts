@@ -47,7 +47,7 @@ export async function GET(request: Request) {
   }
   const dayEndExclusive = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 
-  // `online`: all website orders for the Online orders admin page (no date cap).
+  // `online`: website orders for the Online orders admin page (date-scoped).
   // `online_pending`: pending website orders only — used by the new-order notifier.
   // `exclude_online_pending`: POS / dine-in orders for the main Orders page
   //   (all website orders are managed under Online orders).
@@ -60,7 +60,10 @@ export async function GET(request: Request) {
   const websiteFilter = { source: "website" as const };
   const where =
     view === "online"
-      ? websiteFilter
+      ? {
+          ...websiteFilter,
+          createdAt: { gte: dayStart, lt: dayEndExclusive },
+        }
       : view === "online_pending"
         ? pendingOnlineFilter
         : view === "exclude_online_pending"
