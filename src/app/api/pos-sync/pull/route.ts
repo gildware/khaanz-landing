@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     readMenuPayload(),
     prisma.order.findMany({
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 100,
+      take: 250,
       include: {
         customer: { select: { phoneDigits: true, displayName: true } },
         lines: { orderBy: { sortIndex: "asc" } },
