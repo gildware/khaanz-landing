@@ -24,6 +24,10 @@ import {
   RESTAURANT_ORDER_STATUS_TAB_LABEL,
   restaurantOrderStatusLabel,
 } from "@/lib/order-status-workflow";
+import {
+  countOrdersByStatus,
+  filterOrdersByStatusTab,
+} from "@/lib/order-tab-utils";
 import { POS_ANONYMOUS_PHONE_DIGITS } from "@/lib/phone-digits";
 import {
   fulfillmentLabelFromKey,
@@ -44,6 +48,7 @@ type StatusFilter = "all" | OrderStatus;
 
 const ORDER_STATUS_TABS: { id: StatusFilter; label: string }[] = [
   { id: "all", label: "All" },
+  { id: "PENDING", label: RESTAURANT_ORDER_STATUS_TAB_LABEL.PENDING },
   { id: "ACCEPTED", label: RESTAURANT_ORDER_STATUS_TAB_LABEL.ACCEPTED },
   { id: "PREPARING", label: RESTAURANT_ORDER_STATUS_TAB_LABEL.PREPARING },
   {
@@ -409,19 +414,15 @@ export default function AdminOrdersPage() {
     void fetchOrderDetail(orderId);
   }
 
-  const statusCounts = useMemo(() => {
-    const byStatus: Partial<Record<OrderStatus, number>> = {};
-    for (const o of orders) {
-      byStatus[o.status as OrderStatus] =
-        (byStatus[o.status as OrderStatus] ?? 0) + 1;
-    }
-    return { total: orders.length, byStatus };
-  }, [orders]);
+  const statusCounts = useMemo(
+    () => countOrdersByStatus(orders),
+    [orders],
+  );
 
-  const filteredOrders = useMemo(() => {
-    if (statusFilter === "all") return orders;
-    return orders.filter((o) => o.status === statusFilter);
-  }, [orders, statusFilter]);
+  const filteredOrders = useMemo(
+    () => filterOrdersByStatusTab(orders, statusFilter),
+    [orders, statusFilter],
+  );
 
   if (initialLoad) {
     return (

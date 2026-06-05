@@ -28,6 +28,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { formatIstDateInput } from "@/lib/ist-dates";
 import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
+import {
+  countOrdersByStatus,
+  filterOrdersByStatusTab,
+} from "@/lib/order-tab-utils";
 import { POS_ANONYMOUS_PHONE_DIGITS } from "@/lib/phone-digits";
 import {
   fulfillmentLabelFromKey,
@@ -60,6 +64,7 @@ const ONLINE_ORDER_STATUS_TABS: { id: StatusFilter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "PENDING", label: ORDER_STATUS_LABEL.PENDING },
   { id: "ACCEPTED", label: ORDER_STATUS_LABEL.ACCEPTED },
+  { id: "PREPARING", label: ORDER_STATUS_LABEL.PREPARING },
   { id: "OUT_FOR_DELIVERY", label: ORDER_STATUS_LABEL.OUT_FOR_DELIVERY },
   { id: "DELIVERED", label: ORDER_STATUS_LABEL.DELIVERED },
   { id: "CANCELLED", label: ORDER_STATUS_LABEL.CANCELLED },
@@ -158,7 +163,7 @@ export default function AdminOnlineOrdersPage() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("PENDING");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [actionConfirm, setActionConfirm] = useState<PendingAction | null>(null);
@@ -376,19 +381,15 @@ export default function AdminOnlineOrdersPage() {
     [posSettings],
   );
 
-  const statusCounts = useMemo(() => {
-    const byStatus: Partial<Record<OrderStatus, number>> = {};
-    for (const o of orders) {
-      byStatus[o.status as OrderStatus] =
-        (byStatus[o.status as OrderStatus] ?? 0) + 1;
-    }
-    return { total: orders.length, byStatus };
-  }, [orders]);
+  const statusCounts = useMemo(
+    () => countOrdersByStatus(orders),
+    [orders],
+  );
 
-  const filteredOrders = useMemo(() => {
-    if (statusFilter === "all") return orders;
-    return orders.filter((o) => o.status === statusFilter);
-  }, [orders, statusFilter]);
+  const filteredOrders = useMemo(
+    () => filterOrdersByStatusTab(orders, statusFilter),
+    [orders, statusFilter],
+  );
 
   const requestStatusChange = (action: PendingAction) => {
     setActionConfirm(action);
