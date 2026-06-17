@@ -1,12 +1,16 @@
-import type { Prisma } from "@prisma/client";
+import type { OrderStatus, Prisma } from "@prisma/client";
 
 import {
   InventoryInsufficientError,
   reapplyOrderInventoryForEdit,
 } from "@/lib/inventory/apply-order-inventory";
 import { computeOrderTotalMinor } from "@/lib/order-total";
+import type { OrderCreateParsed } from "@/lib/parse-order-create-body";
+import { normalizeIndianMobileDigits } from "@/lib/phone-digits";
 import { getPrisma } from "@/lib/prisma";
 import type { CartLine } from "@/types/menu";
+
+const TERMINAL_ORDER_STATUSES = new Set<OrderStatus>(["DELIVERED", "CANCELLED"]);
 
 export type EditOrderInput = {
   lines: CartLine[];
@@ -18,6 +22,7 @@ export type EditOrderResult =
   | {
       ok: true;
       id: string;
+      orderRef: string | null;
       totalMinor: number;
       deliveryChargeMinor: number;
       discountMinor: number;
@@ -99,6 +104,127 @@ export async function editOnlineOrder(
     return {
       ok: true,
       id: updated.id,
+      orderRef: updated.orderRef,
+      totalMinor: updated.totalMinor,
+      deliveryChargeMinor: updated.deliveryChargeMinor,
+      discountMinor: updated.discountMinor,
+    };
+  } catch (err) {
+    if (err instanceof InventoryInsufficientError) {
+      return {
+        ok: false,
+        error: "Not enough ingredient stock for the edited items.",
+        status: 409,
+        shortages: err.shortages,
+      };
+    }
+    throw err;
+  }
+}
+
+export type EditPosOrderOptions = {
+  paymentMethodKey?: string;
+  dineInTable?: string;
+  adminUserId?: string | null;
+};
+
+/** Edit an existing order from the POS desktop (lines, charges, customer, fulfillment). */
+export async function editPosOrder(
+  orderId: string,
+  parsed: OrderCreateParsed,
+  options?: EditPosOrderOptions,
+): Promise<EditOrderResult> {
+  const prisma = getPrisma();
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { id: true, status: true, source: true, orderRef: true },
+  });
+
+  if (!order) {
+    return { ok: false, error: "Order not found", status: 404 };
+  }
+
+  if (TERMINAL_ORDER_STATUSES.has(order.status)) {
+    return {
+      ok: false,
+      error: "Completed or cancelled orders cannot be edited.",
+      status: 409,
+    };
+  }
+
+  if (parsed.lines.length === 0) {
+    return { ok: false, error: "An order must have at least one item.", status: 400 };
+  }
+
+  const deliveryChargeMinor = Math.max(0, Math.round(parsed.deliveryChargeMinor ?? 0));
+  const discountMinor = Math.max(0, Math.round(parsed.discountMinor ?? 0));
+  const totalMinor = computeOrderTotalMinor({
+    lines: parsed.lines,
+    deliveryChargeMinor,
+    discountMinor,
+  });
+  const digits = normalizeIndianMobileDigits(parsed.phone);
+  const paymentKey = (options?.paymentMethodKey ?? "").trim().slice(0, 64);
+  const dineInTable = (options?.dineInTable ?? "").trim().slice(0, 80);
+  const scheduledAt =
+    parsed.scheduleMode === "scheduled" && parsed.scheduledAt
+      ? new Date(parsed.scheduledAt)
+      : null;
+
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      const customer = await tx.customer.upsert({
+        where: { phoneDigits: digits },
+        create: {
+          phoneDigits: digits,
+          displayName: parsed.customerName,
+        },
+        update: { displayName: parsed.customerName },
+      });
+
+      await reapplyOrderInventoryForEdit(
+        tx,
+        orderId,
+        { lines: parsed.lines },
+        options?.adminUserId ?? null,
+        new Date(),
+      );
+
+      await tx.orderLine.deleteMany({ where: { orderId } });
+
+      const u = await tx.order.update({
+        where: { id: orderId },
+        data: {
+          customerId: customer.id,
+          fulfillment: parsed.fulfillment,
+          scheduleMode: parsed.scheduleMode,
+          scheduledAt,
+          address: parsed.address,
+          landmark: parsed.landmark,
+          notes: parsed.notes,
+          latitude: parsed.latitude,
+          longitude: parsed.longitude,
+          totalMinor,
+          deliveryChargeMinor,
+          discountMinor,
+          paymentMethod: paymentKey,
+          dineInTable,
+          lines: {
+            create: parsed.lines.map((line, sortIndex) => ({
+              sortIndex,
+              payload: line as unknown as Prisma.InputJsonValue,
+            })),
+          },
+        },
+      });
+
+      return u;
+    });
+
+    return {
+      ok: true,
+      id: updated.id,
+      orderRef: updated.orderRef,
       totalMinor: updated.totalMinor,
       deliveryChargeMinor: updated.deliveryChargeMinor,
       discountMinor: updated.discountMinor,
