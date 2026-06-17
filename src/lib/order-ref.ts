@@ -34,6 +34,19 @@ export function buildOrderDisplayRef(ddMMyy: string, seq: number): string {
 }
 
 /**
+ * Daily bill number for printed receipts (1, 2, 3… resets each IST day).
+ * Parses the sequence suffix from refs like KH-200426001 → "1".
+ */
+export function parseDailyBillNumberFromOrderRef(orderRef: string | null): string | null {
+  if (!orderRef) return null;
+  const m = orderRef.trim().match(/^KH-\d{6}(\d+)$/i);
+  if (!m) return null;
+  const n = Number.parseInt(m[1]!, 10);
+  if (!Number.isFinite(n) || n < 1) return null;
+  return String(n);
+}
+
+/**
  * Atomically increments the IST-day counter and returns the new sequence (1-based).
  */
 export async function allocateNextOrderSequence(

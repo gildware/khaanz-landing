@@ -275,7 +275,7 @@ function buildThermalStyle(layout?: BillPrintLayout): string {
   const align = layout?.headerAlign ?? "center";
   const r = ".thermal-receipt-root";
   return `
-  @page { size: 80mm auto; margin: 3mm; }
+  @page { size: 80mm auto; margin: 0; }
   html { color-scheme: light only; }
   body.thermal-print-body { margin: 0; padding: 0; background: #fff; }
   ${r} {
@@ -285,8 +285,9 @@ function buildThermalStyle(layout?: BillPrintLayout): string {
     font-weight: ${weight};
     line-height: ${lineHeight};
     margin: 0;
-    padding: ${pad}px;
-    max-width: 72mm;
+    padding: 0 2px ${pad + 28}px;
+    width: 100%;
+    max-width: 80mm;
     background: #fff;
     color: #000;
     -webkit-print-color-adjust: exact;
@@ -299,11 +300,18 @@ function buildThermalStyle(layout?: BillPrintLayout): string {
     print-color-adjust: exact;
   }
   ${r} .bill-receipt { width: 100%; }
-  ${r} .logo-wrap { text-align: center; margin: 0 auto 4px; width: 100%; }
+  ${r} .logo-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    margin: 0 auto 4px;
+    width: 100%;
+    line-height: 0;
+  }
   ${r} .logo-wrap img.logo {
     display: block;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 0 auto;
     max-width: ${logoW}mm;
     max-height: ${logoH}mm;
     width: auto;
@@ -324,14 +332,70 @@ function buildThermalStyle(layout?: BillPrintLayout): string {
   ${r} .meta-row .fulfill { font-weight: ${weightNum + 100}; font-size: 12px; }
   ${r} .time-line { font-size: 11px; margin: 0 0 4px; }
   ${r} .pre { white-space: pre-wrap; font-size: 11px; margin: 4px 0; text-align: center; }
+  ${r} .footer-notes { margin: 16px 0 22px; }
+  ${r} .footer-note { white-space: pre-wrap; font-size: 11px; margin: 3px 0; text-align: center; }
   ${r} .muted { font-size: 11px; margin: 3px 0; }
-  ${r} table { width: 100%; border-collapse: collapse; margin: 6px 0; }
-  ${r} th, ${r} td { padding: 2px 0; text-align: left; vertical-align: top; font-size: 11px; }
-  ${r} th { border-bottom: 1px solid #000; font-weight: ${weightNum}; }
-  ${r} .right { text-align: right; white-space: nowrap; }
+  ${r} table { width: 100%; margin: 8px 0 10px; }
+  ${r} table.item-table,
+  ${r} table.kot-table {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+    font-weight: 400;
+  }
+  ${r} table.item-table col.col-item { width: 44%; }
+  ${r} table.item-table col.col-qty { width: 12%; }
+  ${r} table.item-table col.col-price { width: 22%; }
+  ${r} table.item-table col.col-amt { width: 22%; }
+  ${r} table.kot-table col.col-item { width: 76%; }
+  ${r} table.kot-table col.col-qty { width: 24%; }
+  ${r} table.item-table thead th.col-head,
+  ${r} table.kot-table thead th.col-head {
+    font-weight: 800;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+    vertical-align: bottom;
+    padding: 0 0 8px;
+    border-bottom: 1.5px solid #000;
+    text-align: left;
+  }
+  ${r} table.item-table thead th.col-head.right,
+  ${r} table.kot-table thead th.col-head.right,
+  ${r} table.item-table tbody td.col-qty,
+  ${r} table.item-table tbody td.col-price,
+  ${r} table.item-table tbody td.col-amt,
+  ${r} table.kot-table tbody td.col-qty {
+    text-align: right;
+    white-space: nowrap;
+    vertical-align: top;
+  }
+  ${r} table.item-table tbody td.col-item,
+  ${r} table.kot-table tbody td.col-item {
+    text-align: left;
+    vertical-align: top;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    padding-right: 4px;
+  }
+  ${r} table.item-table tbody td,
+  ${r} table.kot-table tbody td {
+    padding: 0;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.45;
+  }
+  ${r} table.item-table tbody tr.item-line td,
+  ${r} table.kot-table tbody tr.item-line td {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
   ${r} .totals-row { display: flex; justify-content: space-between; font-size: 11px; margin: 4px 0; }
-  ${r} .grand-total { display: flex; justify-content: space-between; align-items: baseline; font-size: ${grandSize}px; font-weight: ${weightNum + 100}; margin: 8px 0 4px; }
+  ${r} .grand-total { display: flex; justify-content: space-between; align-items: baseline; font-size: ${grandSize}px; font-weight: 700; margin: 8px 0 4px; white-space: nowrap; }
+  ${r} .grand-total span { white-space: nowrap; font-weight: 700; }
   ${r} .payment-status { font-size: 11px; margin: 4px 0; }
+  ${r} .receipt-tail { height: 24px; }
   ${r} tr.addon-line td { font-size: 10px; line-height: 1.3; }
   ${r} tr.addon-line .iname { padding-left: 8px; }
   ${r} h1 { font-size: 16px; margin: 0 0 8px; text-align: center; }
@@ -368,10 +432,13 @@ export function formatBillDateTime(d: Date): string {
 
 export const BILL_PREVIEW_SAMPLE_AT = new Date(2026, 5, 3, 23, 20);
 
+import { parseDailyBillNumberFromOrderRef } from "@/lib/order-ref";
+
 function extractBillNumber(orderRef: string | null): string {
+  const daily = parseDailyBillNumberFromOrderRef(orderRef);
+  if (daily) return daily;
   if (!orderRef) return "—";
-  const m = orderRef.match(/(\d+)\s*$/);
-  return m ? m[1]! : orderRef;
+  return orderRef;
 }
 
 function formatOrderIdForBill(orderRef: string | null, layout?: BillPrintLayout): string {
@@ -465,14 +532,14 @@ export function buildBillHtmlBody(o: PosBillPrintOptions): string {
   const now = o.printedAt ?? new Date();
   const rows = o.lines
     .flatMap((r) => {
-      const main = `<tr><td>${escapeHtml(r.label)}</td><td class="right">${r.qty}</td><td class="right">${r.unit.toFixed(
+      const main = `<tr class="item-line"><td class="col-item">${escapeHtml(r.label)}</td><td class="col-qty">${r.qty}</td><td class="col-price">${r.unit.toFixed(
         2,
-      )}</td><td class="right">${r.subtotal.toFixed(2)}</td></tr>`;
+      )}</td><td class="col-amt">${r.subtotal.toFixed(2)}</td></tr>`;
       const subs = (r.addonRows ?? []).map(
         (a) =>
-          `<tr class="addon-line"><td class="iname">+ ${escapeHtml(a.name)}</td><td class="right">${a.qty}</td><td class="right">${a.unit.toFixed(
+          `<tr class="addon-line"><td class="col-item iname">+ ${escapeHtml(a.name)}</td><td class="col-qty">${a.qty}</td><td class="col-price">${a.unit.toFixed(
             2,
-          )}</td><td class="right">${a.subtotal.toFixed(2)}</td></tr>`,
+          )}</td><td class="col-amt">${a.subtotal.toFixed(2)}</td></tr>`,
       );
       return [main, ...subs];
     })
@@ -492,9 +559,12 @@ export function buildBillHtmlBody(o: PosBillPrintOptions): string {
   const headerHtml = headerLines.map((l) => `<div class="pre">${escapeHtml(l)}</div>`).join("");
   const customFooterHtml =
     layout?.showFooterNotes !== false
-      ? splitLines(layout?.footerNotes ?? "")
-          .map((l) => `<div class="pre">${escapeHtml(l)}</div>`)
-          .join("")
+      ? (() => {
+          const notes = splitLines(layout?.footerNotes ?? "")
+            .map((l) => `<div class="footer-note">${escapeHtml(l)}</div>`)
+            .join("");
+          return notes ? `<div class="footer-notes">${notes}</div>` : "";
+        })()
       : "";
 
   const logoSrc = layout?.logoSrc?.trim() ?? "";
@@ -561,8 +631,14 @@ ${metaOrderHtml}
 <div class="time-line">${escapeHtml(formatBillDateTime(now))}</div>
 ${proformaLine}
 <hr class="${rule}"/>
-<table>
-<thead><tr><th>Item</th><th class="right">Qty.</th><th class="right">Price</th><th class="right">Amount</th></tr></thead>
+<table class="item-table">
+<colgroup>
+<col class="col-item" />
+<col class="col-qty" />
+<col class="col-price" />
+<col class="col-amt" />
+</colgroup>
+<thead><tr><th class="col-head">Item</th><th class="col-head right">Qty</th><th class="col-head right">Price</th><th class="col-head right">Amt</th></tr></thead>
 <tbody>${rows}</tbody>
 </table>
 <hr class="${rule}"/>
@@ -573,6 +649,7 @@ ${extraTotals.join("")}
 <div class="payment-status">${escapeHtml(payStatus)}</div>
 ${customFooterHtml}
 ${o.notes.trim() ? `<div class="muted">Note: ${escapeHtml(o.notes.trim())}</div>` : ""}
+<div class="receipt-tail" aria-hidden="true"></div>
 </div>
 `;
 }
@@ -588,12 +665,12 @@ export function buildKotHtmlBody(o: PosKotPrintOptions): string {
   const headerHtml = headerLines.map((l) => `<div class="pre">${escapeHtml(l)}</div>`).join("");
   const rows = o.lines
     .flatMap((r) => {
-      const main = `<tr><td>${escapeHtml(r.label)}</td><td class="right">${r.qty}</td></tr>`;
+      const main = `<tr class="item-line"><td class="col-item">${escapeHtml(r.label)}</td><td class="col-qty">${r.qty}</td></tr>`;
       const subs = (r.addonRows ?? []).map(
         (a) =>
-          `<tr class="addon-line"><td class="iname">+ ${escapeHtml(
+          `<tr class="addon-line"><td class="col-item iname">+ ${escapeHtml(
             a.name,
-          )}</td><td class="right">${a.qty}</td></tr>`,
+          )}</td><td class="col-qty">${a.qty}</td></tr>`,
       );
       return [main, ...subs];
     })
@@ -610,7 +687,7 @@ ${o.dineInTable?.trim() ? `<div class="muted">Table: ${escapeHtml(o.dineInTable.
 <div class="muted">${escapeHtml(formatBillDateTime(new Date()))}</div>
 ${o.notes.trim() ? `<div class="muted">Note: ${escapeHtml(o.notes.trim())}</div>` : ""}
 <table>
-<thead><tr><th>Item</th><th class="right">Qty</th></tr></thead>
+<thead><tr><th class="col-head">Item</th><th class="col-head right">Qty</th></tr></thead>
 <tbody>${rows}</tbody>
 </table>
 `;
@@ -626,6 +703,17 @@ async function tryDesktopSilentPrint(html: string, title: string): Promise<boole
   if (!d?.printSilentHtml) return false;
   const r = await d.printSilentHtml(html, title);
   return r.ok;
+}
+
+/** Pulse the cash drawer on the receipt printer — best effort, never throws. */
+export async function openCashDrawerIfAvailable(): Promise<void> {
+  const d = getKhaanzDesktop();
+  if (!d?.openCashDrawer) return;
+  try {
+    await d.openCashDrawer();
+  } catch {
+    /* Drawer kick is optional — don't block checkout. */
+  }
 }
 
 /** Bill: silent print in Khaanz Desktop, otherwise browser print dialog. */
@@ -675,7 +763,7 @@ export function buildBillPreviewSampleOptions(
     restaurantName: layout.restaurantDisplayName.trim() || restaurantName.trim() || "Khaanz",
     billHeader: "",
     billFooter: "",
-    orderRef: "ORD-3516",
+    orderRef: "KH-030625016",
     proforma: false,
     notes: "",
     paymentLabel: "",
@@ -722,7 +810,7 @@ export function buildKotPreviewSampleOptions(
   return {
     restaurantName: bill.restaurantName,
     billHeader: bill.billHeader,
-    orderRef: bill.orderRef ?? "3516",
+    orderRef: bill.orderRef ?? "KH-030625016",
     fulfillmentLabel: bill.fulfillmentLabel,
     dineInTable: bill.dineInTable,
     notes: "Sample kitchen note",

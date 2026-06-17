@@ -51,6 +51,7 @@ import {
   buildKotHtmlBody,
   printPosBillThermal,
   printPosKotThermal,
+  openCashDrawerIfAvailable,
   wrapThermalPrintDocument,
   type PosBillPrintOptions,
 } from "@/lib/pos-print";
@@ -875,6 +876,7 @@ export default function AdminPosPage() {
           if (!desktopOk && !desktop?.isDesktop) {
             await printPosBillThermal(billOptions);
           }
+          await openCashDrawerIfAvailable();
         }
       } catch (err) {
         const desktop = getKhaanzDesktop();
@@ -890,7 +892,11 @@ export default function AdminPosPage() {
             toast.error(out.error ?? "Could not save offline.");
             return;
           }
-          const offlineRef = `OFF-${clientOrderId.replace(/-/g, "").slice(0, 10).toUpperCase()}`;
+          const offlineRef = out.orderRef?.trim();
+          if (!offlineRef) {
+            toast.error("Order saved offline without a bill number.");
+            return;
+          }
           setLastBill({
             orderRef: offlineRef,
             lines: snapshotLines,
@@ -967,6 +973,7 @@ export default function AdminPosPage() {
             if (!desktopOk && !getKhaanzDesktop()?.isDesktop) {
               await printPosBillThermal(billOptions);
             }
+            await openCashDrawerIfAvailable();
           }
         } else {
           toast.error("Network error.");

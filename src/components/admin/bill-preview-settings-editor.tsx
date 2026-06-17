@@ -121,7 +121,7 @@ function ReceiptPreviewFrame({ title, srcDoc }: { title: string; srcDoc: string 
       <div className="mx-auto w-full max-w-[300px] overflow-hidden rounded-md border-2 border-neutral-400 bg-white shadow-sm">
         <iframe
           title={title}
-          className="block h-[min(300px,36vh)] w-full border-0 bg-white grayscale contrast-125"
+          className="block h-[min(420px,48vh)] w-full border-0 bg-white"
           srcDoc={srcDoc}
         />
       </div>

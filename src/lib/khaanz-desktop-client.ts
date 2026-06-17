@@ -15,13 +15,14 @@ export type KhaanzDesktopApi = {
     html: string,
     title?: string,
   ): Promise<{ ok: boolean; error?: string }>;
+  openCashDrawer?(deviceName?: string): Promise<{ ok: boolean; error?: string }>;
   listPrinters(): Promise<{ name: string; isDefault?: boolean }[]>;
   getSilentPrinter(): Promise<{ deviceName: string }>;
   setSilentPrinter(deviceName: string): Promise<{ ok: boolean; error?: string }>;
   enqueueOfflineOrder(row: {
     clientOrderId: string;
     body: Record<string, unknown>;
-  }): Promise<{ ok: boolean; error?: string }>;
+  }): Promise<{ ok: boolean; orderRef?: string; error?: string }>;
   getOfflineQueue(): Promise<KhaanzDesktopOfflineRow[]>;
   removeOfflineOrder(clientOrderId: string): Promise<{ ok: boolean }>;
 };
