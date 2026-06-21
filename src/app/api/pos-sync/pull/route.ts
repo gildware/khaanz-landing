@@ -52,6 +52,8 @@ export async function GET(req: Request) {
         createdAt: o.createdAt.toISOString(),
         customerPhone: o.customer.phoneDigits,
         customerName: o.customer.displayName,
+        address: o.address,
+        landmark: o.landmark,
         source: o.source,
         dineInTable: o.dineInTable,
         paymentMethod: o.paymentMethod,

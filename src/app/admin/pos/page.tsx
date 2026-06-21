@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PosDeliveryCustomerPhoneInput } from "@/components/admin/pos-delivery-customer-phone-input";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -1299,14 +1300,29 @@ export default function AdminPosPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="pos-phone">Phone</Label>
-                <Input
-                  id="pos-phone"
-                  inputMode="numeric"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Optional — 10-digit Indian mobile"
-                  autoComplete="tel"
-                />
+                {fulfillment === "delivery" ? (
+                  <PosDeliveryCustomerPhoneInput
+                    id="pos-phone"
+                    phone={phone}
+                    enabled={fulfillment === "delivery"}
+                    onPhoneChange={setPhone}
+                    onSelectCustomer={(c) => {
+                      setPhone(c.phoneDigits);
+                      setCustomerName(c.displayName);
+                      if (c.address) setAddress(c.address);
+                      if (c.landmark) setLandmark(c.landmark);
+                    }}
+                  />
+                ) : (
+                  <Input
+                    id="pos-phone"
+                    inputMode="numeric"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Optional — 10-digit Indian mobile"
+                    autoComplete="tel"
+                  />
+                )}
               </div>
               {fulfillment === "delivery" ? (
                 <>

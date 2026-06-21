@@ -183,6 +183,15 @@ export async function persistPosOrderToDatabase(
       now,
     );
 
+    if (parsed.fulfillment === "delivery" && parsed.address.trim().length > 0) {
+      await upsertCustomerAddress(tx, customer.id, {
+        address: parsed.address,
+        landmark: parsed.landmark,
+        latitude: parsed.latitude,
+        longitude: parsed.longitude,
+      });
+    }
+
     return { orderRef };
   });
 }
