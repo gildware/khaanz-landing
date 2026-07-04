@@ -442,6 +442,7 @@ type RecipeRow = {
   variationId: string | null;
   effectiveFrom: string;
   label: string;
+  version: number;
   ingredients: { inventoryItemId: string; qtyBase: string }[];
 };
 
@@ -1344,6 +1345,11 @@ export default function AdminInventoryPage() {
   ]);
 
   const [recipeDialogOpen, setRecipeDialogOpen] = useState(false);
+  const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
+  const [editingRecipeVersion, setEditingRecipeVersion] = useState<number | null>(
+    null,
+  );
+  const [recipeSubmitting, setRecipeSubmitting] = useState(false);
 
   const resetRecipeForm = () => {
     setRecipe({
@@ -1354,6 +1360,8 @@ export default function AdminInventoryPage() {
     setRecipeIngredients([
       { id: crypto.randomUUID(), inventoryItemId: "", qtyBase: "" },
     ]);
+    setEditingRecipeId(null);
+    setEditingRecipeVersion(null);
   };
 
   const openNewRecipe = () => {
@@ -1362,6 +1370,8 @@ export default function AdminInventoryPage() {
   };
 
   const openEditRecipe = (row: RecipeRow) => {
+    setEditingRecipeId(row.id);
+    setEditingRecipeVersion(row.version);
     setRecipe({
       menuItemId: row.menuItemId,
       variationId: row.variationId ?? "",
@@ -1379,28 +1389,46 @@ export default function AdminInventoryPage() {
     setRecipeDialogOpen(true);
   };
 
-  const submitRecipe = async () => {
+  const recipePayload = () => ({
+    menuItemId: recipe.menuItemId,
+    variationId: recipe.variationId || null,
+    effectiveFrom: new Date(recipe.effectiveFrom).toISOString(),
+    ingredients: recipeIngredients
+      .filter((x) => x.inventoryItemId && x.qtyBase)
+      .map((x) => ({
+        inventoryItemId: x.inventoryItemId,
+        qtyBase: x.qtyBase,
+      })),
+  });
+
+  const submitRecipe = async (mode: "update" | "new") => {
+    if (recipeSubmitting) return;
+    setRecipeSubmitting(true);
     try {
-      await adminFetch("/api/admin/inventory/recipes", {
-        method: "POST",
-        body: JSON.stringify({
-          menuItemId: recipe.menuItemId,
-          variationId: recipe.variationId || null,
-          effectiveFrom: new Date(recipe.effectiveFrom).toISOString(),
-          ingredients: recipeIngredients
-            .filter((x) => x.inventoryItemId && x.qtyBase)
-            .map((x) => ({
-              inventoryItemId: x.inventoryItemId,
-              qtyBase: x.qtyBase,
-            })),
-        }),
-      });
-      toast.success("Recipe version saved");
+      if (mode === "update") {
+        if (!editingRecipeId) {
+          toast.error("No recipe selected to update");
+          return;
+        }
+        await adminFetch(`/api/admin/inventory/recipes/${editingRecipeId}`, {
+          method: "PATCH",
+          body: JSON.stringify(recipePayload()),
+        });
+        toast.success("Recipe version updated");
+      } else {
+        await adminFetch("/api/admin/inventory/recipes", {
+          method: "POST",
+          body: JSON.stringify(recipePayload()),
+        });
+        toast.success("New recipe version saved");
+      }
       setRecipeDialogOpen(false);
       resetRecipeForm();
       await loadRecipesList();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Recipe save failed");
+    } finally {
+      setRecipeSubmitting(false);
     }
   };
 
@@ -1742,7 +1770,8 @@ export default function AdminInventoryPage() {
       if (recipeMenuFilter !== "all" && r.menuItemId !== recipeMenuFilter) return false;
       if (!q) return true;
       const varLabel = recipeVariationLabel(r.menuItemId, r.variationId);
-      const hay = `${r.menuItemName} ${varLabel} ${r.label}`.toLowerCase();
+      const hay =
+        `${r.menuItemName} ${varLabel} ${r.label} v${r.version}`.toLowerCase();
       return hay.includes(q);
     });
 
@@ -3603,6 +3632,7 @@ export default function AdminInventoryPage() {
                 <TableRow>
                   <TableHead>Menu item</TableHead>
                   <TableHead>Variation</TableHead>
+                  <TableHead>Version</TableHead>
                   <TableHead>Effective from</TableHead>
                   <TableHead className="text-right">Ingredients</TableHead>
                   <TableHead className="w-[7rem] text-right">Actions</TableHead>
@@ -3611,13 +3641,13 @@ export default function AdminInventoryPage() {
               <TableBody>
                 {recipesList.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                       No recipe versions yet.
                     </TableCell>
                   </TableRow>
                 ) : filteredRecipes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                       No recipes match your search or filters.
                     </TableCell>
                   </TableRow>
@@ -3628,6 +3658,7 @@ export default function AdminInventoryPage() {
                       <TableCell className="text-muted-foreground text-sm">
                         {recipeVariationLabel(r.menuItemId, r.variationId)}
                       </TableCell>
+                      <TableCell className="tabular-nums">v{r.version}</TableCell>
                       <TableCell className="text-sm tabular-nums">
                         {r.effectiveFrom.slice(0, 16).replace("T", " ")}
                       </TableCell>
@@ -3666,10 +3697,23 @@ export default function AdminInventoryPage() {
             </Table>
           </div>
 
-          <Dialog open={recipeDialogOpen} onOpenChange={setRecipeDialogOpen}>
-            <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+          <Dialog
+            open={recipeDialogOpen}
+            onOpenChange={(open) => {
+              setRecipeDialogOpen(open);
+              if (!open && !recipeSubmitting) resetRecipeForm();
+            }}
+          >
+            <DialogContent
+              className="max-h-[90vh] max-w-lg overflow-y-auto"
+              showCloseButton={!recipeSubmitting}
+            >
               <DialogHeader>
-                <DialogTitle>Recipe version</DialogTitle>
+                <DialogTitle>
+                  {editingRecipeId
+                    ? `Edit recipe · v${editingRecipeVersion ?? "?"}`
+                    : "New recipe version"}
+                </DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-2">
                 <div className="space-y-2">
@@ -3777,17 +3821,42 @@ export default function AdminInventoryPage() {
                   </div>
                 </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
                 <Button
                   type="button"
                   variant="secondary"
+                  disabled={recipeSubmitting}
                   onClick={() => setRecipeDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button type="button" onClick={() => void submitRecipe()}>
-                  Save version
-                </Button>
+                {editingRecipeId ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={recipeSubmitting}
+                      onClick={() => void submitRecipe("new")}
+                    >
+                      Save as new version
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={recipeSubmitting}
+                      onClick={() => void submitRecipe("update")}
+                    >
+                      Save
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="button"
+                    disabled={recipeSubmitting}
+                    onClick={() => void submitRecipe("new")}
+                  >
+                    Save as new version
+                  </Button>
+                )}
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -3807,7 +3876,11 @@ export default function AdminInventoryPage() {
                 <DialogDescription render={<div />}>
                   <div className="space-y-3 text-sm">
                     <p>
-                      You are about to delete the recipe version for{" "}
+                      You are about to delete{" "}
+                      <span className="font-medium text-foreground">
+                        v{deletingRecipe?.version}
+                      </span>{" "}
+                      for{" "}
                       <span className="font-medium text-foreground">
                         {deletingRecipe?.menuItemName}
                       </span>

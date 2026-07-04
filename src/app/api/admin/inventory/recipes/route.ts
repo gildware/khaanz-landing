@@ -40,6 +40,24 @@ export async function GET(request: Request) {
     take: menuItemId ? 50 : 200,
   });
 
+  // Version numbers are chronological per menu item + variation (v1 = oldest).
+  const versionById = new Map<string, number>();
+  const byKey = new Map<string, typeof rows>();
+  for (const r of rows) {
+    const key = `${r.menuItemId}\0${r.variationId ?? ""}`;
+    const list = byKey.get(key) ?? [];
+    list.push(r);
+    byKey.set(key, list);
+  }
+  for (const list of byKey.values()) {
+    list.sort((a, b) => {
+      const t = a.effectiveFrom.getTime() - b.effectiveFrom.getTime();
+      if (t !== 0) return t;
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    });
+    list.forEach((r, i) => versionById.set(r.id, i + 1));
+  }
+
   return NextResponse.json({
     recipes: rows.map((r) => ({
       id: r.id,
@@ -48,6 +66,7 @@ export async function GET(request: Request) {
       variationId: r.variationId,
       effectiveFrom: r.effectiveFrom.toISOString(),
       label: r.label,
+      version: versionById.get(r.id) ?? 1,
       ingredients: r.ingredients.map((i) => ({
         inventoryItemId: i.inventoryItemId,
         qtyBase: i.qtyBase.toString(),
