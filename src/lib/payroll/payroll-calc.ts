@@ -32,8 +32,6 @@ export type PayrollComputed = {
   workedOnLeaveDays: number;
   /** @deprecated use extraLeaveDays */
   unusedLeaveDays: number;
-  /** @deprecated use excessLeaveDays */
-  excessLeaveDays: number;
   /** @deprecated */
   effectiveWorkedDays: number;
   /** @deprecated */
