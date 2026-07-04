@@ -248,6 +248,71 @@ async function main() {
   } else {
     console.log("Inventory already present — skipping inventory seed.");
   }
+
+  // -----------------------------------------------------------------------
+  // Payroll sample employees
+  // -----------------------------------------------------------------------
+  const hasEmployees = (await prisma.employee.count()) > 0;
+
+  if (!hasEmployees) {
+    const sampleEmployees = [
+      {
+        code: "EMP001",
+        name: "Rajesh Kumar",
+        phone: "9876500001",
+        address: "Near Main Road, Sector 12",
+        monthlySalaryPaise: 2500000,
+        dailyRatePaise: 83300,
+        paidLeavesPerMonth: 4,
+        joinedAt: new Date("2024-03-15"),
+      },
+      {
+        code: "EMP002",
+        name: "Priya Sharma",
+        phone: "9876500002",
+        address: "Green Park Colony",
+        monthlySalaryPaise: 1200000,
+        dailyRatePaise: 40000,
+        paidLeavesPerMonth: 4,
+        joinedAt: new Date("2024-06-01"),
+      },
+      {
+        code: "EMP003",
+        name: "Amit Singh",
+        phone: "9876500003",
+        address: "Model Town",
+        monthlySalaryPaise: 1800000,
+        dailyRatePaise: 60000,
+        paidLeavesPerMonth: 4,
+        joinedAt: new Date("2024-08-10"),
+      },
+      {
+        code: "EMP004",
+        name: "Sunita Devi",
+        phone: "9876500004",
+        address: "Old City",
+        monthlySalaryPaise: 1000000,
+        dailyRatePaise: 33300,
+        paidLeavesPerMonth: 4,
+        joinedAt: new Date("2025-01-20"),
+      },
+      {
+        code: "EMP005",
+        name: "Vikram Patel",
+        phone: "9876500005",
+        address: "Civil Lines",
+        monthlySalaryPaise: 3500000,
+        dailyRatePaise: 116700,
+        paidLeavesPerMonth: 4,
+        joinedAt: new Date("2023-11-01"),
+      },
+    ];
+
+    await prisma.employee.createMany({ data: sampleEmployees });
+    console.log(`Payroll seeded (${sampleEmployees.length} employees).`);
+  } else {
+    console.log("Employees already present — skipping employee seed.");
+  }
 }
 
 main()

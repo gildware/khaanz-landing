@@ -50,6 +50,12 @@ import type {
   FulfillmentMode,
   RestaurantSettingsPayload,
 } from "@/types/restaurant-settings";
+import {
+  buildCustomerMapUrl,
+  formatTravelDistanceLabel,
+  parseCoordinates,
+  straightLineDistance,
+} from "@/lib/travel-distance";
 import { openWhatsAppOrder } from "@/utils/whatsapp";
 
 import { OrderLineView } from "@/components/orders/order-line-view";
@@ -121,7 +127,107 @@ type TravelDistance = {
   meters: number;
   durationText: string;
   durationSeconds: number;
+  estimated?: boolean;
 };
+
+function resolveCustomerMapUrl(o: OrderRow): string | null {
+  if (o.locationUrl?.trim()) return o.locationUrl.trim();
+  const coords = parseCoordinates(o.latitude, o.longitude);
+  if (coords) return buildCustomerMapUrl(coords.lat, coords.lng);
+  const address = o.address?.trim();
+  if (address) {
+    const params = new URLSearchParams({ api: "1", query: address });
+    return `https://www.google.com/maps/search/?${params.toString()}`;
+  }
+  return null;
+}
+
+async function hydrateOrderDistance(
+  o: OrderRow,
+  restaurantOrigin: { lat: number; lng: number } | null,
+): Promise<OrderRow> {
+  if (o.distance || o.fulfillment !== "delivery") return o;
+  const coords = parseCoordinates(o.latitude, o.longitude);
+  if (!coords) return o;
+  try {
+    const res = await fetch(
+      `/api/distance?lat=${coords.lat}&lng=${coords.lng}`,
+      { credentials: "include" },
+    );
+    if (res.ok) {
+      const data = (await res.json()) as {
+        distance?: TravelDistance | null;
+        originConfigured?: boolean;
+      };
+      if (data.distance) {
+        return {
+          ...o,
+          latitude: coords.lat,
+          longitude: coords.lng,
+          distance: data.distance,
+        };
+      }
+      if (!data.originConfigured && restaurantOrigin) {
+        return {
+          ...o,
+          latitude: coords.lat,
+          longitude: coords.lng,
+          distance: straightLineDistance(
+            restaurantOrigin,
+            coords.lat,
+            coords.lng,
+          ),
+        };
+      }
+    }
+  } catch {
+    /* fall through */
+  }
+  if (restaurantOrigin) {
+    return {
+      ...o,
+      latitude: coords.lat,
+      longitude: coords.lng,
+      distance: straightLineDistance(restaurantOrigin, coords.lat, coords.lng),
+    };
+  }
+  return o;
+}
+
+async function hydrateOrdersWithDistance(
+  orders: OrderRow[],
+  restaurantOrigin: { lat: number; lng: number } | null,
+): Promise<OrderRow[]> {
+  return Promise.all(
+    orders.map((o) => hydrateOrderDistance(o, restaurantOrigin)),
+  );
+}
+
+function restaurantOriginFromSettings(
+  settings: RestaurantSettingsPayload | null,
+): { lat: number; lng: number } | null {
+  if (!settings) return null;
+  const coords = parseCoordinates(
+    settings.restaurantLatitude,
+    settings.restaurantLongitude,
+  );
+  return coords;
+}
+
+async function loadRestaurantOrigin(
+  cached: RestaurantSettingsPayload | null,
+): Promise<{ lat: number; lng: number } | null> {
+  const fromCache = restaurantOriginFromSettings(cached);
+  if (fromCache) return fromCache;
+  try {
+    const res = await fetch("/api/admin/settings", { credentials: "include" });
+    if (!res.ok) return null;
+    const settings = (await res.json()) as RestaurantSettingsPayload;
+    return restaurantOriginFromSettings(settings);
+  } catch {
+    return null;
+  }
+}
 
 type OrderRow = {
   id: string;
@@ -213,27 +319,35 @@ export default function AdminOnlineOrdersPage() {
     setInitialLoad(true);
     try {
       const data = await fetchOnlineOrders(orderDate);
-      setOrders(data.orders);
-      setTravelConfigured(data.travelDistanceConfigured !== false);
+      const origin = await loadRestaurantOrigin(posSettings);
+      const hydrated = await hydrateOrdersWithDistance(data.orders, origin);
+      setOrders(hydrated);
+      setTravelConfigured(
+        data.travelDistanceConfigured !== false || origin !== null,
+      );
     } catch {
       toast.error("Could not load online orders");
     } finally {
       setInitialLoad(false);
     }
-  }, [fetchOnlineOrders, orderDate]);
+  }, [fetchOnlineOrders, orderDate, posSettings]);
 
   const refreshOrders = useCallback(async () => {
     setRefreshing(true);
     try {
       const data = await fetchOnlineOrders(orderDate);
-      setOrders(data.orders);
-      setTravelConfigured(data.travelDistanceConfigured !== false);
+      const origin = await loadRestaurantOrigin(posSettings);
+      const hydrated = await hydrateOrdersWithDistance(data.orders, origin);
+      setOrders(hydrated);
+      setTravelConfigured(
+        data.travelDistanceConfigured !== false || origin !== null,
+      );
     } catch {
       toast.error("Could not refresh online orders");
     } finally {
       setRefreshing(false);
     }
-  }, [fetchOnlineOrders, orderDate]);
+  }, [fetchOnlineOrders, orderDate, posSettings]);
 
   useEffect(() => {
     void loadInitial();
@@ -666,16 +780,17 @@ export default function AdminOnlineOrdersPage() {
                               className="gap-1 border-sky-600/40 bg-sky-500/12 font-medium text-sky-950 dark:border-sky-400/35 dark:bg-sky-400/12 dark:text-sky-50"
                             >
                               <NavigationIcon className="size-3" />
-                              {o.distance.text} · {o.distance.durationText} drive
+                              {formatTravelDistanceLabel(o.distance)}
                             </Badge>
-                          ) : o.latitude != null && travelConfigured ? (
+                          ) : parseCoordinates(o.latitude, o.longitude) &&
+                            travelConfigured ? (
                             <span className="text-muted-foreground text-xs">
                               Distance unavailable
                             </span>
                           ) : null}
-                          {o.mapUrl ? (
+                          {resolveCustomerMapUrl(o) ? (
                             <a
-                              href={o.mapUrl}
+                              href={resolveCustomerMapUrl(o)!}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 text-xs font-medium text-primary underline-offset-2 hover:underline"

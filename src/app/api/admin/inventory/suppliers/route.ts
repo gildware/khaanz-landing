@@ -13,7 +13,49 @@ export async function GET() {
   }
   const prisma = getPrisma();
   const rows = await prisma.supplier.findMany({ orderBy: { name: "asc" } });
-  return NextResponse.json({ suppliers: rows });
+  const supplierIds = rows.map((s) => s.id);
+  const [ledgerAgg, purchaseAgg] = await Promise.all([
+    supplierIds.length > 0
+      ? prisma.supplierLedgerEntry.groupBy({
+          by: ["supplierId"],
+          where: { supplierId: { in: supplierIds } },
+          _sum: { debitPaise: true, creditPaise: true },
+        })
+      : [],
+    supplierIds.length > 0
+      ? prisma.purchase.groupBy({
+          by: ["supplierId"],
+          where: { supplierId: { in: supplierIds } },
+          _sum: { totalPaise: true },
+          _count: { id: true },
+        })
+      : [],
+  ]);
+  const balanceById = new Map(
+    ledgerAgg.map((g) => [
+      g.supplierId,
+      (g._sum.debitPaise ?? 0) - (g._sum.creditPaise ?? 0),
+    ]),
+  );
+  const purchasesById = new Map(
+    purchaseAgg.map((g) => [
+      g.supplierId,
+      {
+        totalPurchasesPaise: g._sum.totalPaise ?? 0,
+        purchaseCount: g._count.id,
+      },
+    ]),
+  );
+  const suppliers = rows.map((s) => {
+    const purchases = purchasesById.get(s.id);
+    return {
+      ...s,
+      balancePaise: balanceById.get(s.id) ?? 0,
+      purchaseCount: purchases?.purchaseCount ?? 0,
+      totalPurchasesPaise: purchases?.totalPurchasesPaise ?? 0,
+    };
+  });
+  return NextResponse.json({ suppliers });
 }
 
 export async function POST(request: Request) {

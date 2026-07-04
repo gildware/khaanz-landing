@@ -849,6 +849,7 @@ enum EmployeeDocumentKind {
 enum AttendanceKind {
   WORKED
   LEAVE
+  HALF_DAY_LEAVE
   ABSENT
   WORKED_ON_LEAVE
 }
@@ -1024,7 +1025,9 @@ model PayrollEmployeeLine {
   monthlySalaryPaise Int      @map("monthly_salary_paise")
   dailyRatePaise     Int      @map("daily_rate_paise")
   paidLeavesAllowed  Int      @map("paid_leaves_allowed")
+  totalDays          Int      @default(0) @map("total_days")
   workedDays         Int      @map("worked_days")
+  halfLeaveDays      Int      @default(0) @map("half_leave_days")
   leaveDays          Int      @map("leave_days")
   absentDays         Int      @map("absent_days")
   workedOnLeaveDays  Int      @map("worked_on_leave_days")

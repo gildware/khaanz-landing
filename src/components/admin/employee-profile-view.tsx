@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AttendanceKind } from "@prisma/client";
+import { formatLeaveDays } from "@/lib/payroll/payroll-calc";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -71,9 +72,12 @@ export type EmployeeProfile = {
       projected: boolean;
       workedDays: number;
       leaveDays: number;
-      absentDays: number;
-      workedOnLeaveDays: number;
+      halfLeaveDays: number;
+      fullLeaveDays: number;
+      totalDays: number;
+      extraLeaveDays: number;
       paidLeavesAllowed: number;
+      unusedLeaveDays: number;
       unpaidLeaveDays: number;
       extrasPaise: number;
       deductionsPaise: number;
@@ -149,13 +153,15 @@ function KpiCard(props: {
 function attendanceKindLabel(kind: AttendanceKind): string {
   switch (kind) {
     case "WORKED":
-      return "Worked";
+      return "Present";
     case "LEAVE":
       return "Leave";
+    case "HALF_DAY_LEAVE":
+      return "Half leave";
     case "ABSENT":
-      return "Absent";
+      return "Leave";
     case "WORKED_ON_LEAVE":
-      return "Worked on leave";
+      return "Present";
     default:
       return kind;
   }
@@ -166,15 +172,27 @@ function attendanceBadgeVariant(
 ): "default" | "secondary" | "destructive" | "outline" {
   switch (kind) {
     case "WORKED":
+    case "WORKED_ON_LEAVE":
       return "default";
     case "LEAVE":
-      return "secondary";
     case "ABSENT":
-      return "destructive";
-    case "WORKED_ON_LEAVE":
+      return "secondary";
+    case "HALF_DAY_LEAVE":
       return "outline";
     default:
       return "outline";
+  }
+}
+
+function attendanceBadgeShort(kind: AttendanceKind): string {
+  switch (kind) {
+    case "LEAVE":
+    case "ABSENT":
+      return "L";
+    case "HALF_DAY_LEAVE":
+      return "½L";
+    default:
+      return "P";
   }
 }
 
@@ -481,14 +499,19 @@ export function EmployeeProfileView(props: {
       <div className="rounded-2xl border bg-card p-4 shadow-sm">
         <p className="font-medium">{formatMonthKey(summary.currentMonthKey)} — attendance</p>
         <p className="text-muted-foreground text-xs">
-          {summary.currentMonth.paidLeavesAllowed} paid leaves allowed per month
+          Up to {summary.currentMonth.paidLeavesAllowed} paid leaves/month. Unused leaves add extra
+          pay; leave days beyond the allowance are deducted.
         </p>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
           {[
-            { label: "Worked", value: summary.currentMonth.workedDays },
-            { label: "Leave", value: summary.currentMonth.leaveDays },
-            { label: "Absent", value: summary.currentMonth.absentDays },
-            { label: "Worked on leave", value: summary.currentMonth.workedOnLeaveDays },
+            { label: "Total days", value: summary.currentMonth.totalDays },
+            { label: "Worked", value: formatLeaveDays(summary.currentMonth.workedDays) },
+            { label: "Extra days", value: formatLeaveDays(summary.currentMonth.extraLeaveDays) },
+            { label: "Leaves", value: formatLeaveDays(summary.currentMonth.leaveDays) },
+            {
+              label: "Half leaves",
+              value: summary.currentMonth.halfLeaveDays,
+            },
           ].map((x) => (
             <div key={x.label} className="rounded-xl border bg-muted/30 px-3 py-2">
               <p className="text-muted-foreground text-xs">{x.label}</p>
@@ -497,13 +520,20 @@ export function EmployeeProfileView(props: {
           ))}
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
+          {summary.currentMonth.extraLeaveDays > 0 ? (
+            <Badge variant="secondary">
+              {formatLeaveDays(summary.currentMonth.extraLeaveDays)} extra day
+              {summary.currentMonth.extraLeaveDays === 1 ? "" : "s"} bonus
+            </Badge>
+          ) : null}
           <Badge variant="outline">Extras +{formatRupees(summary.currentMonth.extrasPaise)}</Badge>
           <Badge variant="outline">
             Deductions −{formatRupees(summary.currentMonth.deductionsPaise)}
           </Badge>
           {summary.currentMonth.unpaidLeaveDays > 0 ? (
             <Badge variant="destructive">
-              {summary.currentMonth.unpaidLeaveDays} unpaid leave days
+              {summary.currentMonth.unpaidLeaveDays} extra leave
+              {summary.currentMonth.unpaidLeaveDays === 1 ? "" : "s"}
             </Badge>
           ) : null}
         </div>
@@ -741,13 +771,7 @@ export function EmployeeProfileView(props: {
                         variant={attendanceBadgeVariant(d.kind)}
                         className="h-5 px-1.5 text-[10px]"
                       >
-                        {d.kind === "WORKED"
-                          ? "W"
-                          : d.kind === "LEAVE"
-                            ? "L"
-                            : d.kind === "ABSENT"
-                              ? "A"
-                              : "WL"}
+                        {attendanceBadgeShort(d.kind)}
                       </Badge>
                     </span>
                   ))

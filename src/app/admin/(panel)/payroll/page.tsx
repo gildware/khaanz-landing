@@ -27,6 +27,8 @@ import {
   paiseToRupeesInput,
   rupeesToPaise,
 } from "@/lib/payroll/payroll-utils";
+import { formatLeaveDays } from "@/lib/payroll/payroll-calc";
+import { cn } from "@/lib/utils";
 
 type EmployeeRow = {
   id: string;
@@ -67,6 +69,117 @@ function dayKeyLocal(y: number, m0: number, day: number): string {
   const mm = String(m0 + 1).padStart(2, "0");
   const dd = String(day).padStart(2, "0");
   return `${y}-${mm}-${dd}`;
+}
+
+function weekdayShortLocal(y: number, m0: number, day: number): string {
+  return new Date(y, m0, day).toLocaleDateString("en-IN", { weekday: "short" });
+}
+
+function attendancePillLabel(kind: AttendanceKind): string {
+  switch (kind) {
+    case "LEAVE":
+      return "Leave";
+    case "HALF_DAY_LEAVE":
+      return "Half leave";
+    case "ABSENT":
+      return "Leave";
+    case "WORKED_ON_LEAVE":
+      return "Present";
+    default:
+      return "Present";
+  }
+}
+
+function attendancePillClass(kind: AttendanceKind): string {
+  switch (kind) {
+    case "LEAVE":
+    case "ABSENT":
+      return "bg-amber-500/12 text-amber-900 hover:bg-amber-500/18 dark:text-amber-300";
+    case "HALF_DAY_LEAVE":
+      return "bg-sky-500/12 text-sky-900 hover:bg-sky-500/18 dark:text-sky-300";
+    default:
+      return "bg-emerald-500/12 text-emerald-800 hover:bg-emerald-500/18 dark:text-emerald-300";
+  }
+}
+
+function normalizeAttendanceKind(kind: AttendanceKind): AttendanceKind {
+  if (kind === "ABSENT") return "LEAVE";
+  if (kind === "WORKED_ON_LEAVE") return "WORKED";
+  return kind;
+}
+
+function AttendanceDayPill({
+  kind,
+  dirty,
+  disabled,
+  onChange,
+}: {
+  kind: AttendanceKind;
+  dirty?: boolean;
+  disabled: boolean;
+  onChange: (kind: AttendanceKind) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const pick = (next: AttendanceKind) => {
+    setOpen(false);
+    if (next !== kind) onChange(next);
+  };
+
+  const options: { value: AttendanceKind; label: string }[] = [
+    { value: "WORKED", label: "Present" },
+    { value: "LEAVE", label: "Leave" },
+    { value: "HALF_DAY_LEAVE", label: "Half leave" },
+  ];
+
+  return (
+    <div className="relative inline-flex">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "inline-flex h-7 min-w-[4.25rem] items-center justify-center rounded-full px-2 text-[10px] font-medium transition-colors",
+          attendancePillClass(normalizeAttendanceKind(kind)),
+          dirty && "ring-2 ring-primary/40 ring-offset-1",
+          disabled && "pointer-events-none opacity-50",
+        )}
+      >
+        {attendancePillLabel(normalizeAttendanceKind(kind))}
+      </button>
+      {open ? (
+        <>
+          <button
+            type="button"
+            aria-label="Close attendance edit"
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute left-1/2 top-full z-50 mt-1 flex -translate-x-1/2 gap-0.5 rounded-full border bg-background p-0.5 shadow-md">
+            {options.map((opt, idx) => (
+              <span key={opt.value} className="flex items-center">
+                {idx > 0 ? (
+                  <span className="text-muted-foreground/40 self-center px-0.5 text-[10px]">|</span>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => pick(opt.value)}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors",
+                    normalizeAttendanceKind(kind) === opt.value
+                      ? attendancePillClass(opt.value)
+                      : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              </span>
+            ))}
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
 }
 
 function AdminPayrollPageContent() {
@@ -151,7 +264,7 @@ function AdminPayrollPageContent() {
         </TabsContent>
 
         <TabsContent value="payrun" className="space-y-4">
-          <PayrunTab monthKey={monthKey} />
+          <PayrunTab />
         </TabsContent>
       </Tabs>
     </div>
@@ -515,8 +628,9 @@ function AttendanceTab({
   month: Date;
   setMonth: (d: Date) => void;
 }) {
-  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [savedRows, setSavedRows] = useState<Record<string, AttendanceKind>>({});
   const [rows, setRows] = useState<Record<string, AttendanceKind>>({});
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("name-asc");
   const monthKey = useMemo(() => monthKeyFromDate(month), [month]);
@@ -537,31 +651,62 @@ function AttendanceTab({
       next[`${r.employeeId}:${r.dayKey}`] = r.kind;
     }
     setRows(next);
+    setSavedRows(next);
   }, [monthKey]);
 
   useEffect(() => {
     void load().catch((e) => toast.error(e instanceof Error ? e.message : "Load failed"));
   }, [load]);
 
-  const setKind = async (employeeId: string, dayKey: string, kind: AttendanceKind) => {
-    const k = `${employeeId}:${dayKey}`;
-    setSavingKey(k);
-    try {
-      const res = await fetch("/api/admin/payroll/attendance", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ employeeId, dayKey, kind }),
-      });
-      if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(j.error || "Save failed");
+  const effectiveKind = useCallback(
+    (map: Record<string, AttendanceKind>, employeeId: string, dayKey: string): AttendanceKind =>
+      map[`${employeeId}:${dayKey}`] ?? "WORKED",
+    [],
+  );
+
+  const dirtyChanges = useMemo(() => {
+    const changes: { employeeId: string; dayKey: string; kind: AttendanceKind }[] = [];
+    for (const e of employees) {
+      for (let dayNum = 1; dayNum <= days; dayNum++) {
+        const dayKey = dayKeyLocal(y, m0, dayNum);
+        const draft = effectiveKind(rows, e.id, dayKey);
+        const saved = effectiveKind(savedRows, e.id, dayKey);
+        if (draft !== saved) {
+          changes.push({ employeeId: e.id, dayKey, kind: draft });
+        }
       }
-      setRows((r) => ({ ...r, [k]: kind }));
+    }
+    return changes;
+  }, [days, effectiveKind, employees, m0, rows, savedRows, y]);
+
+  const updateKind = (employeeId: string, dayKey: string, kind: AttendanceKind) => {
+    const k = `${employeeId}:${dayKey}`;
+    setRows((r) => ({ ...r, [k]: kind }));
+  };
+
+  const saveAll = async () => {
+    if (dirtyChanges.length === 0) return;
+    const count = dirtyChanges.length;
+    setSaving(true);
+    try {
+      for (const change of dirtyChanges) {
+        const res = await fetch("/api/admin/payroll/attendance", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(change),
+        });
+        if (!res.ok) {
+          const j = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(j.error || "Save failed");
+        }
+      }
+      setSavedRows({ ...rows });
+      toast.success(count === 1 ? "Attendance saved." : `Saved ${count} attendance updates.`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
     } finally {
-      setSavingKey(null);
+      setSaving(false);
     }
   };
 
@@ -584,22 +729,41 @@ function AttendanceTab({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-1">
-          <Label>Month</Label>
-          <Input
-            type="month"
-            value={monthKey}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (!/^\d{4}-\d{2}$/.test(v)) return;
-              const [yy, mm] = v.split("-");
-              setMonth(new Date(Number(yy), Number(mm) - 1, 1));
-            }}
-            className="w-40 font-mono"
-          />
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label>Month</Label>
+            <Input
+              type="month"
+              value={monthKey}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (!/^\d{4}-\d{2}$/.test(v)) return;
+                const [yy, mm] = v.split("-");
+                setMonth(new Date(Number(yy), Number(mm) - 1, 1));
+              }}
+              className="w-40 font-mono"
+            />
+          </div>
+          <Button
+            type="button"
+            disabled={saving || dirtyChanges.length === 0}
+            onClick={() => void saveAll()}
+          >
+            {saving ? <Loader2Icon className="size-4 animate-spin" /> : null}
+            Save attendance
+            {dirtyChanges.length > 0 ? (
+              <Badge variant="secondary" className="ml-1.5 rounded-full px-1.5 tabular-nums">
+                {dirtyChanges.length}
+              </Badge>
+            ) : null}
+          </Button>
         </div>
         <p className="text-muted-foreground text-xs">
-          Set per-day status. Use <span className="font-mono">WORKED_ON_LEAVE</span> when they worked on a leave day (extra pay).
+          Mark <span className="font-medium text-foreground">Present</span>,{" "}
+          <span className="font-medium text-foreground">Leave</span>, or{" "}
+          <span className="font-medium text-foreground">Half leave</span>, then click{" "}
+          <span className="font-medium text-foreground">Save attendance</span>. Unused paid leaves
+          (up to 4/month) add extra pay; extra leave days are deducted.
         </p>
       </div>
 
@@ -623,11 +787,32 @@ function AttendanceTab({
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-44">Employee</TableHead>
-              {Array.from({ length: days }).map((_, idx) => (
-                <TableHead key={idx} className="w-14 text-center font-mono text-xs">
-                  {idx + 1}
-                </TableHead>
-              ))}
+              {Array.from({ length: days }).map((_, idx) => {
+                const dayNum = idx + 1;
+                const weekday = weekdayShortLocal(y, m0, dayNum);
+                const isWeekend = weekday === "Sat" || weekday === "Sun";
+                return (
+                  <TableHead
+                    key={idx}
+                    className={cn(
+                      "w-[4.5rem] px-1 text-center",
+                      isWeekend && "bg-muted/40",
+                    )}
+                  >
+                    <div className="flex flex-col items-center leading-tight">
+                      <span
+                        className={cn(
+                          "text-[10px] font-medium",
+                          isWeekend ? "text-muted-foreground" : "text-muted-foreground/80",
+                        )}
+                      >
+                        {weekday}
+                      </span>
+                      <span className="font-mono text-xs tabular-nums">{dayNum}</span>
+                    </div>
+                  </TableHead>
+                );
+              })}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -648,26 +833,23 @@ function AttendanceTab({
                   <p className="text-muted-foreground font-mono text-xs">{e.code || e.id.slice(0, 6)}</p>
                 </TableCell>
                 {Array.from({ length: days }).map((_, idx) => {
-                  const dayKey = dayKeyLocal(y, m0, idx + 1);
-                  const k = `${e.id}:${dayKey}`;
-                  const v = rows[k] ?? "WORKED";
-                  const disabled = savingKey === k;
+                  const dayNum = idx + 1;
+                  const dayKey = dayKeyLocal(y, m0, dayNum);
+                  const weekday = weekdayShortLocal(y, m0, dayNum);
+                  const isWeekend = weekday === "Sat" || weekday === "Sun";
+                  const v = rows[`${e.id}:${dayKey}`] ?? "WORKED";
+                  const saved = savedRows[`${e.id}:${dayKey}`] ?? "WORKED";
+                  const isDirty = v !== saved;
                   return (
-                    <TableCell key={dayKey} className="p-1 text-center">
-                      <SearchableSelect
-                        options={[
-                          { value: "WORKED", label: "W", searchText: "Worked" },
-                          { value: "LEAVE", label: "L", searchText: "Leave" },
-                          { value: "ABSENT", label: "A", searchText: "Absent" },
-                          { value: "WORKED_ON_LEAVE", label: "WL", searchText: "Worked on leave" },
-                        ]}
-                        value={v}
-                        onValueChange={(nv) =>
-                          void setKind(e.id, dayKey, nv as AttendanceKind)
-                        }
-                        disabled={disabled}
-                        triggerClassName="h-8 min-w-[3.5rem] px-1 text-xs"
-                        searchPlaceholder="W / L / A…"
+                    <TableCell
+                      key={dayKey}
+                      className={cn("p-1 text-center", isWeekend && "bg-muted/20")}
+                    >
+                      <AttendanceDayPill
+                        kind={v}
+                        dirty={isDirty}
+                        disabled={saving}
+                        onChange={(kind) => updateKind(e.id, dayKey, kind)}
                       />
                     </TableCell>
                   );
@@ -936,13 +1118,29 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
   );
 }
 
-function PayrunTab({ monthKey }: { monthKey: string }) {
+function formatMonthLabel(monthKey: string): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(monthKey);
+  if (!m) return monthKey;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, 1);
+  return d.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+}
+
+function PayrunTab() {
+  const [month, setMonth] = useState(() => startOfMonthLocal(new Date()));
+  const monthKey = useMemo(() => monthKeyFromDate(month), [month]);
+
   const [loading, setLoading] = useState(true);
+  const [loadingRuns, setLoadingRuns] = useState(true);
   const [creating, setCreating] = useState(false);
   type PayrollLine = {
     id: string;
     employeeId: string;
     monthlySalaryPaise: number;
+    totalDays: number;
+    workedDays: number;
+    halfLeaveDays: number;
+    leaveDays: number;
+    paidLeavesAllowed: number;
     extrasPaise: number;
     deductionsPaise: number;
     advancesPaise: number;
@@ -955,9 +1153,23 @@ function PayrunTab({ monthKey }: { monthKey: string }) {
     createdAt: string;
     lines: PayrollLine[];
   };
+  type RunSummary = { id: string; monthKey: string; createdAt: string };
   const [run, setRun] = useState<PayrollRun | null>(null);
+  const [pastRuns, setPastRuns] = useState<RunSummary[]>([]);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("net-desc");
+
+  const loadPastRuns = useCallback(async () => {
+    setLoadingRuns(true);
+    try {
+      const res = await fetch("/api/admin/payroll/runs", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load payroll history");
+      const j = (await res.json()) as { runs: RunSummary[] };
+      setPastRuns(j.runs ?? []);
+    } finally {
+      setLoadingRuns(false);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -972,6 +1184,10 @@ function PayrunTab({ monthKey }: { monthKey: string }) {
       setLoading(false);
     }
   }, [monthKey]);
+
+  useEffect(() => {
+    void loadPastRuns().catch((e) => toast.error(e instanceof Error ? e.message : "Load failed"));
+  }, [loadPastRuns]);
 
   useEffect(() => {
     void load().catch((e) => toast.error(e instanceof Error ? e.message : "Load failed"));
@@ -1002,21 +1218,42 @@ function PayrunTab({ monthKey }: { monthKey: string }) {
     return list;
   }, [run?.lines, search, sort]);
 
-  const create = async () => {
+  const totalNetPay = useMemo(
+    () => (run?.lines ?? []).reduce((sum, l) => sum + l.netPayPaise, 0),
+    [run?.lines],
+  );
+
+  const runLineCount = run?.lines?.length ?? 0;
+  const isRunIncomplete = Boolean(run && runLineCount === 0);
+  const hasCompleteRun = Boolean(run && runLineCount > 0);
+
+  const create = async (regenerate = false) => {
+    if (regenerate && !isRunIncomplete) {
+      const label = formatMonthLabel(monthKey);
+      if (!confirm(`Regenerate payroll for ${label}? This replaces the existing run with fresh calculations.`)) {
+        return;
+      }
+    }
     setCreating(true);
     try {
       const res = await fetch("/api/admin/payroll/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ monthKey }),
+        body: JSON.stringify({ monthKey, regenerate }),
       });
+      const j = (await res.json().catch(() => ({}))) as { error?: string; repaired?: boolean };
       if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(j.error || "Create failed");
       }
-      toast.success("Payroll run generated");
-      await load();
+      toast.success(
+        regenerate
+          ? "Payroll regenerated"
+          : j.repaired
+            ? "Payroll repaired and generated"
+            : "Payroll run generated",
+      );
+      await Promise.all([load(), loadPastRuns()]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Create failed");
     } finally {
@@ -1024,95 +1261,220 @@ function PayrunTab({ monthKey }: { monthKey: string }) {
     }
   };
 
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <p className="text-muted-foreground text-sm">Month: <span className="font-mono">{monthKey}</span></p>
-          <p className="text-muted-foreground text-xs">
-            Net pay = monthly salary + (worked on leave days × daily rate) − (unpaid absences/leaves × daily rate) − advances
-          </p>
-        </div>
-        <Button type="button" onClick={() => void create()} disabled={creating || Boolean(run)}>
-          {creating ? (
-            <>
-              <Loader2Icon className="mr-2 size-4 animate-spin" />
-              Generating…
-            </>
-          ) : run ? (
-            "Already generated"
-          ) : (
-            "Generate payroll"
-          )}
-        </Button>
-      </div>
+  const selectMonthKey = (key: string) => {
+    const m = /^(\d{4})-(\d{2})$/.exec(key);
+    if (!m) return;
+    setMonth(new Date(Number(m[1]), Number(m[2]) - 1, 1));
+  };
 
-      {loading ? (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2Icon className="size-5 animate-spin" />
-          Loading…
-        </div>
-      ) : !run ? (
-        <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
-          No payroll run yet for this month. Generate it after entering attendance and advances.
-        </div>
-      ) : (
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,16rem)_1fr]">
         <div className="space-y-3">
-          <div className="rounded-xl border bg-card p-4">
-            <p className="font-medium">Run created</p>
-            <p className="text-muted-foreground text-xs">
-              {String(run.createdAt).replace("T", " ").slice(0, 19)}
-            </p>
+          <div>
+            <h2 className="font-medium">Payroll history</h2>
+            <p className="text-muted-foreground text-xs">Select a month to view or regenerate.</p>
           </div>
-          <DataTableToolbar
-            search={search}
-            onSearchChange={setSearch}
-            searchPlaceholder="Search employee…"
-            sort={sort}
-            onSortChange={setSort}
-            sortOptions={[
-              { value: "net-desc", label: "Net pay (high–low)" },
-              { value: "net-asc", label: "Net pay (low–high)" },
-              { value: "salary-desc", label: "Salary (high–low)" },
-              { value: "name-asc", label: "Employee (A–Z)" },
-            ]}
-            filteredCount={filteredLines.length}
-            totalCount={run.lines?.length ?? 0}
-            showStatusFilter={false}
-          />
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead className="text-right">Monthly</TableHead>
-                <TableHead className="text-right">Extras</TableHead>
-                <TableHead className="text-right">Deductions</TableHead>
-                <TableHead className="text-right">Advances</TableHead>
-                <TableHead className="text-right">Net pay</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLines.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                    No lines match your search or filters.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-              {filteredLines.map((l) => (
-                <TableRow key={l.id}>
-                  <TableCell className="font-medium">{l.employee?.name ?? l.employeeId}</TableCell>
-                  <TableCell className="text-right">{formatRupees(l.monthlySalaryPaise)}</TableCell>
-                  <TableCell className="text-right">{formatRupees(l.extrasPaise)}</TableCell>
-                  <TableCell className="text-right">{formatRupees(l.deductionsPaise)}</TableCell>
-                  <TableCell className="text-right">{formatRupees(l.advancesPaise)}</TableCell>
-                  <TableCell className="text-right font-semibold">{formatRupees(l.netPayPaise)}</TableCell>
-                </TableRow>
+          {loadingRuns ? (
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Loader2Icon className="size-4 animate-spin" />
+              Loading…
+            </div>
+          ) : pastRuns.length === 0 ? (
+            <div className="rounded-xl border bg-card p-3 text-muted-foreground text-sm">
+              No payroll runs yet.
+            </div>
+          ) : (
+            <div className="max-h-72 space-y-1 overflow-y-auto rounded-xl border bg-card p-1">
+              {pastRuns.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => selectMonthKey(r.monthKey)}
+                  className={cn(
+                    "flex w-full flex-col rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-muted/60",
+                    r.monthKey === monthKey && "bg-primary/10 ring-1 ring-primary/20",
+                  )}
+                >
+                  <span className="font-medium">{formatMonthLabel(r.monthKey)}</span>
+                  <span className="text-muted-foreground font-mono text-xs">
+                    {String(r.createdAt).replace("T", " ").slice(0, 16)}
+                  </span>
+                </button>
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="space-y-1">
+                <Label>Month</Label>
+                <Input
+                  type="month"
+                  value={monthKey}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (!/^\d{4}-\d{2}$/.test(v)) return;
+                    selectMonthKey(v);
+                  }}
+                  className="w-40 font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <p className="text-muted-foreground text-xs">Selected</p>
+                <p className="font-medium text-sm">{formatMonthLabel(monthKey)}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {hasCompleteRun ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void create(true)}
+                  disabled={creating}
+                >
+                  {creating ? (
+                    <>
+                      <Loader2Icon className="mr-2 size-4 animate-spin" />
+                      Regenerating…
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCcwIcon className="mr-2 size-4" />
+                      Regenerate
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button type="button" onClick={() => void create(false)} disabled={creating}>
+                  {creating ? (
+                    <>
+                      <Loader2Icon className="mr-2 size-4 animate-spin" />
+                      Generating…
+                    </>
+                  ) : isRunIncomplete ? (
+                    "Repair payroll"
+                  ) : (
+                    "Run payroll"
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <p className="text-muted-foreground text-xs">
+            Net pay = monthly salary + (unused paid leaves × daily rate) − (extra leave days × daily
+            rate) − advances. Full month with no leave → 4 extra days pay (if 4 leaves/month).
+          </p>
+
+          {loading ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2Icon className="size-5 animate-spin" />
+              Loading…
+            </div>
+          ) : !run || isRunIncomplete ? (
+            <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+              {isRunIncomplete ? (
+                <>
+                  Payroll for {formatMonthLabel(monthKey)} was created but has no employee lines — likely
+                  from an interrupted run. Click{" "}
+                  <span className="font-medium text-foreground">Repair payroll</span> to generate it.
+                </>
+              ) : (
+                <>
+                  No payroll run for {formatMonthLabel(monthKey)}. Enter attendance and advances for this
+                  month, then click <span className="font-medium text-foreground">Run payroll</span>.
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
+                <div>
+                  <p className="font-medium">Payroll run</p>
+                  <p className="text-muted-foreground text-xs">
+                    Generated {String(run.createdAt).replace("T", " ").slice(0, 19)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-muted-foreground text-xs">Total net pay</p>
+                  <p className="font-semibold text-lg tabular-nums">{formatRupees(totalNetPay)}</p>
+                </div>
+              </div>
+              <DataTableToolbar
+                search={search}
+                onSearchChange={setSearch}
+                searchPlaceholder="Search employee…"
+                sort={sort}
+                onSortChange={setSort}
+                sortOptions={[
+                  { value: "net-desc", label: "Net pay (high–low)" },
+                  { value: "net-asc", label: "Net pay (low–high)" },
+                  { value: "salary-desc", label: "Salary (high–low)" },
+                  { value: "name-asc", label: "Employee (A–Z)" },
+                ]}
+                filteredCount={filteredLines.length}
+                totalCount={run.lines?.length ?? 0}
+                showStatusFilter={false}
+              />
+              <div className="overflow-auto rounded-xl border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-36">Employee</TableHead>
+                      <TableHead className="text-right">Total days</TableHead>
+                      <TableHead className="text-right">Worked</TableHead>
+                      <TableHead className="text-right">Extra days</TableHead>
+                      <TableHead className="text-right">Leaves</TableHead>
+                      <TableHead className="text-right">Monthly</TableHead>
+                      <TableHead className="text-right">Extras</TableHead>
+                      <TableHead className="text-right">Deductions</TableHead>
+                      <TableHead className="text-right">Advances</TableHead>
+                      <TableHead className="text-right">Net pay</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredLines.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={10} className="py-10 text-center text-muted-foreground">
+                          No lines match your search or filters.
+                        </TableCell>
+                      </TableRow>
+                    ) : null}
+                    {filteredLines.map((l) => {
+                      const leaveTotal = l.leaveDays + l.halfLeaveDays * 0.5;
+                      const workedTotal = l.workedDays + l.halfLeaveDays * 0.5;
+                      const extraDays = Math.max(0, l.paidLeavesAllowed - leaveTotal);
+                      return (
+                        <TableRow key={l.id}>
+                          <TableCell className="font-medium">{l.employee?.name ?? l.employeeId}</TableCell>
+                          <TableCell className="text-right tabular-nums">{l.totalDays || "—"}</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatLeaveDays(workedTotal)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatLeaveDays(extraDays)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatLeaveDays(leaveTotal)}
+                          </TableCell>
+                          <TableCell className="text-right">{formatRupees(l.monthlySalaryPaise)}</TableCell>
+                          <TableCell className="text-right">{formatRupees(l.extrasPaise)}</TableCell>
+                          <TableCell className="text-right">{formatRupees(l.deductionsPaise)}</TableCell>
+                          <TableCell className="text-right">{formatRupees(l.advancesPaise)}</TableCell>
+                          <TableCell className="text-right font-semibold">{formatRupees(l.netPayPaise)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

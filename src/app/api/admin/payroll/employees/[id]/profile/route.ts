@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import type { AttendanceKind } from "@prisma/client";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
-import { computePayroll } from "@/lib/payroll/payroll-calc";
+import { computePayroll, buildPayrollAttendance } from "@/lib/payroll/payroll-calc";
 import { monthKeyFromDate, monthStartEnd } from "@/lib/payroll/payroll-utils";
 import { getPrisma } from "@/lib/prisma";
 
@@ -90,7 +90,7 @@ export async function GET(
   const leaveHistory = await prisma.attendanceDay.findMany({
     where: {
       employeeId: id,
-      kind: { in: ["LEAVE", "ABSENT", "WORKED_ON_LEAVE"] },
+      kind: { in: ["LEAVE", "HALF_DAY_LEAVE", "ABSENT", "WORKED_ON_LEAVE"] },
     },
     orderBy: [{ dayKey: "desc" }],
     take: 60,
@@ -105,10 +105,14 @@ export async function GET(
   );
 
   const currentMonthComputed = computePayroll({
+    monthKey: currentMonthKey,
     monthlySalaryPaise: employee.monthlySalaryPaise,
     dailyRatePaise: employee.dailyRatePaise,
     paidLeavesAllowed: employee.paidLeavesPerMonth,
-    attendance: currentAttendance.map((a) => ({ kind: a.kind as AttendanceKind })),
+    attendance: buildPayrollAttendance(
+      currentMonthKey,
+      currentAttendance.map((a) => ({ dayKey: a.dayKey, kind: a.kind as AttendanceKind })),
+    ),
     advancesPaise: currentMonthAdvancesPaise,
   });
 
@@ -147,15 +151,15 @@ export async function GET(
         hasPayrollRun: Boolean(currentMonthPayrollLine),
         netPayPaise: currentMonthPayrollLine?.netPayPaise ?? currentMonthComputed.netPayPaise,
         projected: !currentMonthPayrollLine,
-        workedDays: currentMonthComputed.workedDays,
-        leaveDays: currentMonthComputed.leaveDays,
-        absentDays: currentMonthComputed.absentDays,
-        workedOnLeaveDays: currentMonthComputed.workedOnLeaveDays,
+        workedDays: currentMonthComputed.workedDaysTotal,
+        leaveDays: currentMonthComputed.leaveDaysTotal,
+        halfLeaveDays: currentMonthComputed.halfLeaveDays,
+        fullLeaveDays: currentMonthComputed.fullLeaveDays,
+        totalDays: currentMonthComputed.totalDays,
+        extraLeaveDays: currentMonthComputed.extraLeaveDays,
         paidLeavesAllowed: employee.paidLeavesPerMonth,
-        unpaidLeaveDays: Math.max(
-          0,
-          currentMonthComputed.leaveDays - employee.paidLeavesPerMonth,
-        ),
+        unpaidLeaveDays: currentMonthComputed.excessLeaveDays,
+        unusedLeaveDays: currentMonthComputed.extraLeaveDays,
         extrasPaise: currentMonthComputed.extrasPaise,
         deductionsPaise: currentMonthComputed.deductionsPaise,
         advancesPaise: currentMonthAdvancesPaise,

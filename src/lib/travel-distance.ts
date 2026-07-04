@@ -14,6 +14,21 @@ import {
 
 export type RestaurantOrigin = { lat: number; lng: number };
 
+export function parseCoordinates(
+  lat: unknown,
+  lng: unknown,
+): { lat: number; lng: number } | null {
+  const la = Number(lat);
+  const ln = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(ln)) return null;
+  return { lat: la, lng: ln };
+}
+
+/** Opens Google Maps pinned on the customer's delivery location. */
+export function buildCustomerMapUrl(destLat: number, destLng: number): string {
+  return `https://www.google.com/maps?q=${destLat},${destLng}`;
+}
+
 export type TravelDistance = {
   /** e.g. "5.2 km" */
   text: string;
@@ -128,11 +143,7 @@ export function buildDirectionsUrl(
 
 /** Google Maps URL that just drops a pin on the customer location. */
 export function buildLocationUrl(destLat: number, destLng: number): string {
-  const params = new URLSearchParams({
-    api: "1",
-    query: `${destLat},${destLng}`,
-  });
-  return `https://www.google.com/maps/search/?${params.toString()}`;
+  return buildCustomerMapUrl(destLat, destLng);
 }
 
 function cacheKey(o: RestaurantOrigin, dLat: number, dLng: number): string {
@@ -270,6 +281,17 @@ export async function getTravelDistance(
 
   inFlight.set(key, promise);
   return promise;
+}
+
+/** Human-readable distance for order cards and checkout. */
+export function formatTravelDistanceLabel(distance: TravelDistance): string {
+  if (distance.durationText) {
+    return `${distance.text} · ${distance.durationText} drive`;
+  }
+  if (distance.estimated) {
+    return `${distance.text} (straight line)`;
+  }
+  return distance.text;
 }
 
 /** Clear cached restaurant origin (after admin saves coordinates). */

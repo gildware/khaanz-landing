@@ -332,6 +332,9 @@ type Supplier = {
   phone: string;
   address: string;
   active: boolean;
+  balancePaise: number;
+  purchaseCount: number;
+  totalPurchasesPaise: number;
 };
 
 type SupplierProfileStats = {
@@ -2488,7 +2491,7 @@ export default function AdminInventoryPage() {
           <DataTableToolbar
             search={supplierSearch}
             onSearchChange={setSupplierSearch}
-            searchPlaceholder="Search name, phone, address…"
+            searchPlaceholder="Search name, phone…"
             statusFilter={supplierStatusFilter}
             onStatusFilterChange={setSupplierStatusFilter}
             sort={supplierSort}
@@ -2502,26 +2505,35 @@ export default function AdminInventoryPage() {
           />
 
           <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-            <Table>
+            <Table className="table-fixed">
+              <colgroup>
+                <col className="w-[24%]" />
+                <col className="w-[16%]" />
+                <col className="w-[16%]" />
+                <col className="w-[16%]" />
+                <col className="w-[12%]" />
+                <col className="w-[16%]" />
+              </colgroup>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead className="min-w-[12rem]">Address</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[9rem] text-right">Actions</TableHead>
+                  <TableHead className="px-4">Name</TableHead>
+                  <TableHead className="px-4">Phone</TableHead>
+                  <TableHead className="px-4 text-right">Purchases</TableHead>
+                  <TableHead className="px-4 text-right">Balance</TableHead>
+                  <TableHead className="px-4">Status</TableHead>
+                  <TableHead className="px-4 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {suppliers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                       No suppliers yet. Add one to record purchases.
                     </TableCell>
                   </TableRow>
                 ) : filteredSuppliers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                       No suppliers match your search or filters.
                     </TableCell>
                   </TableRow>
@@ -2532,22 +2544,37 @@ export default function AdminInventoryPage() {
                       className="cursor-pointer hover:bg-muted/40"
                       onClick={() => openSupplierProfile(s)}
                     >
-                      <TableCell className="font-medium">{s.name}</TableCell>
-                      <TableCell className="text-sm tabular-nums">
+                      <TableCell className="px-4 font-medium">{s.name}</TableCell>
+                      <TableCell className="px-4 text-sm tabular-nums">
                         {s.phone.trim() || "—"}
                       </TableCell>
-                      <TableCell className="max-w-xs text-muted-foreground text-sm">
-                        <span className="line-clamp-2" title={s.address.trim() || undefined}>
-                          {s.address.trim() || "—"}
-                        </span>
+                      <TableCell
+                        className={cx(
+                          "max-w-0 overflow-hidden px-4 text-right text-sm tabular-nums",
+                          s.totalPurchasesPaise > 0
+                            ? "font-medium"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        <span className="block truncate">{formatRupees(s.totalPurchasesPaise)}</span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell
+                        className={cx(
+                          "max-w-0 overflow-hidden px-4 text-right text-sm tabular-nums",
+                          s.balancePaise > 0
+                            ? "font-medium"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        <span className="block truncate">{formatRupees(s.balancePaise)}</span>
+                      </TableCell>
+                      <TableCell className="px-4">
                         <Badge variant={s.active ? "default" : "secondary"}>
                           {s.active ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
+                      <TableCell className="px-2 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center justify-end gap-0.5">
                           <Button
                             type="button"
                             variant="ghost"

@@ -3,6 +3,13 @@ import { NextResponse } from "next/server";
 import { formatIstDateInput, parseIstDateInput } from "@/lib/ist-dates";
 import { getPrisma } from "@/lib/prisma";
 import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
+import {
+  buildCustomerMapUrl,
+  buildDirectionsUrl,
+  getTravelDistance,
+  isTravelDistanceConfigured,
+  parseCoordinates,
+} from "@/lib/travel-distance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -68,16 +75,24 @@ export async function GET(req: Request) {
     },
   });
 
-  return NextResponse.json(
-    {
-      ok: true,
-      date: formatIstDateInput(dayStart),
-      orders: rows.map((o) => ({
+  const withTravel = view === "online";
+
+  const mapped = await Promise.all(
+    rows.map(async (o) => {
+      const coords = parseCoordinates(o.latitude, o.longitude);
+      const hasCoords = coords !== null;
+      const travel =
+        withTravel && hasCoords && o.fulfillment === "delivery"
+          ? await getTravelDistance(coords.lat, coords.lng)
+          : null;
+      return {
         id: o.id,
         orderRef: o.orderRef,
         status: o.status,
         statusLabel: ORDER_STATUS_LABEL[o.status],
         fulfillment: o.fulfillment,
+        scheduleMode: o.scheduleMode,
+        scheduledAt: o.scheduledAt?.toISOString() ?? null,
         totalMinor: o.totalMinor,
         deliveryChargeMinor: o.deliveryChargeMinor,
         discountMinor: o.discountMinor,
@@ -89,11 +104,32 @@ export async function GET(req: Request) {
         dineInTable: o.dineInTable,
         address: o.address,
         landmark: o.landmark,
+        notes: o.notes,
+        latitude: coords?.lat ?? o.latitude,
+        longitude: coords?.lng ?? o.longitude,
+        mapUrl: hasCoords
+          ? buildDirectionsUrl(coords!.lat, coords!.lng)
+          : null,
+        locationUrl: hasCoords
+          ? buildCustomerMapUrl(coords!.lat, coords!.lng)
+          : null,
+        distance: travel,
         lines: o.lines.map((l) => ({
           sortIndex: l.sortIndex,
           payload: l.payload,
         })),
-      })),
+      };
+    }),
+  );
+
+  return NextResponse.json(
+    {
+      ok: true,
+      date: formatIstDateInput(dayStart),
+      travelDistanceConfigured: withTravel
+        ? await isTravelDistanceConfigured()
+        : undefined,
+      orders: mapped,
     },
     { headers: { "Cache-Control": "no-store, must-revalidate" } },
   );

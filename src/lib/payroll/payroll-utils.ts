@@ -97,6 +97,18 @@ export function monthStartEnd(monthKey: string): { start: Date; endExclusive: Da
   return { start, endExclusive };
 }
 
+export function daysInMonthFromKey(monthKey: string): number {
+  const m = /^(\d{4})-(\d{2})$/.exec(monthKey);
+  if (!m) throw new Error("Invalid month key (expected YYYY-MM)");
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  return new Date(y, mo, 0).getDate();
+}
+
+export function dayKeyFromMonthDay(monthKey: string, day: number): string {
+  return `${monthKey}-${String(day).padStart(2, "0")}`;
+}
+
 export function dayKeyUTC(d: Date): string {
   // Store day keys as YYYY-MM-DD (local policy), but server runs in UTC.
   // We accept that "dayKey" is a stable string input by the UI.

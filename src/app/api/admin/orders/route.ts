@@ -6,10 +6,12 @@ import { formatIstDateInput, parseIstDateInput } from "@/lib/ist-dates";
 import { getPrisma } from "@/lib/prisma";
 import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
 import {
+  buildCustomerMapUrl,
   buildDirectionsUrl,
   buildLocationUrl,
   getTravelDistance,
   isTravelDistanceConfigured,
+  parseCoordinates,
 } from "@/lib/travel-distance";
 
 export const runtime = "nodejs";
@@ -90,16 +92,15 @@ export async function GET(request: Request) {
   const hasMore = rows.length > pageSize;
   const orders = rows.slice(0, pageSize);
 
-  // Driving ETA only for pending website orders, to limit Distance Matrix usage.
   const withTravel = view === "online_pending" || view === "online";
 
   const mapped = await Promise.all(
     orders.map(async (o) => {
-      const hasCoords =
-        typeof o.latitude === "number" && typeof o.longitude === "number";
+      const coords = parseCoordinates(o.latitude, o.longitude);
+      const hasCoords = coords !== null;
       const travel =
-        withTravel && hasCoords && o.status === "PENDING"
-          ? await getTravelDistance(o.latitude, o.longitude)
+        withTravel && hasCoords && o.fulfillment === "delivery"
+          ? await getTravelDistance(coords.lat, coords.lng)
           : null;
       return {
         id: o.id,
@@ -121,13 +122,13 @@ export async function GET(request: Request) {
         address: o.address,
         landmark: o.landmark,
         notes: o.notes,
-        latitude: o.latitude,
-        longitude: o.longitude,
+        latitude: coords?.lat ?? o.latitude,
+        longitude: coords?.lng ?? o.longitude,
         mapUrl: hasCoords
-          ? buildDirectionsUrl(o.latitude as number, o.longitude as number)
+          ? buildDirectionsUrl(coords!.lat, coords!.lng)
           : null,
         locationUrl: hasCoords
-          ? buildLocationUrl(o.latitude as number, o.longitude as number)
+          ? buildCustomerMapUrl(coords!.lat, coords!.lng)
           : null,
         distance: travel,
         lines: o.lines.map((l) => ({

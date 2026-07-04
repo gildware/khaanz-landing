@@ -7,6 +7,7 @@ import {
   IndianRupeeIcon,
   PlusIcon,
   Trash2Icon,
+  XIcon,
 } from "lucide-react";
 import {
   Bar,
@@ -388,13 +389,26 @@ export default function AdminVendorsPage() {
 
   const sellableMenuItems = useMemo(() => {
     const allowed = new Set(sellableMenuItemIds);
-    return (menu?.items ?? []).filter((it) => allowed.has(it.id));
+    return (menu?.items ?? [])
+      .filter((it) => allowed.has(it.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [menu?.items, sellableMenuItemIds]);
 
-  const toggleSellable = (menuItemId: string) => {
-    setSellableMenuItemIds((prev) =>
-      prev.includes(menuItemId) ? prev.filter((x) => x !== menuItemId) : [...prev, menuItemId],
-    );
+  const addableMenuOptions = useMemo(() => {
+    const added = new Set(sellableMenuItemIds);
+    return (menu?.items ?? [])
+      .filter((it) => !added.has(it.id))
+      .map((it) => ({ value: it.id, label: it.name }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [menu?.items, sellableMenuItemIds]);
+
+  const addSellable = (menuItemId: string) => {
+    if (!menuItemId || sellableMenuItemIds.includes(menuItemId)) return;
+    setSellableMenuItemIds((prev) => [...prev, menuItemId]);
+  };
+
+  const removeSellable = (menuItemId: string) => {
+    setSellableMenuItemIds((prev) => prev.filter((x) => x !== menuItemId));
   };
 
   const saveSellable = async () => {
@@ -472,10 +486,6 @@ export default function AdminVendorsPage() {
   const [vendorStatusFilter, setVendorStatusFilter] = useState<ActiveFilter>("all");
   const [vendorSort, setVendorSort] = useState("name-asc");
 
-  const [sellableSearch, setSellableSearch] = useState("");
-  const [sellableFilter, setSellableFilter] = useState<"all" | "sellable" | "not">("all");
-  const [sellableSort, setSellableSort] = useState("name-asc");
-
   const [saleSearch, setSaleSearch] = useState("");
   const [salePaymentFilter, setSalePaymentFilter] = useState("all");
   const [saleVendorFilter, setSaleVendorFilter] = useState("all");
@@ -496,22 +506,6 @@ export default function AdminVendorsPage() {
     });
     return list;
   }, [vendors, vendorSearch, vendorStatusFilter, vendorSort]);
-
-  const filteredSellableItems = useMemo(() => {
-    const q = sellableSearch.trim().toLowerCase();
-    let list = (menu?.items ?? []).filter((it) => {
-      const isSellable = sellableMenuItemIds.includes(it.id);
-      if (sellableFilter === "sellable" && !isSellable) return false;
-      if (sellableFilter === "not" && isSellable) return false;
-      if (!q) return true;
-      return it.name.toLowerCase().includes(q);
-    });
-    list = [...list].sort((a, b) => {
-      if (sellableSort === "name-desc") return b.name.localeCompare(a.name);
-      return a.name.localeCompare(b.name);
-    });
-    return list;
-  }, [menu?.items, sellableMenuItemIds, sellableSearch, sellableFilter, sellableSort]);
 
   const filteredSales = useMemo(() => {
     const q = saleSearch.trim().toLowerCase();
@@ -852,7 +846,7 @@ export default function AdminVendorsPage() {
             <div>
               <h2 className="font-medium">Items to sell</h2>
               <p className="text-muted-foreground text-sm">
-                Choose menu items available for vendor sales.
+                Add menu items available for vendor sales.
               </p>
             </div>
             <Button type="button" onClick={() => void saveSellable()}>
@@ -860,85 +854,57 @@ export default function AdminVendorsPage() {
             </Button>
           </div>
 
-          <DataTableToolbar
-            search={sellableSearch}
-            onSearchChange={setSellableSearch}
-            searchPlaceholder="Search menu items…"
-            sort={sellableSort}
-            onSortChange={setSellableSort}
-            sortOptions={[
-              { value: "name-asc", label: "Name (A–Z)" },
-              { value: "name-desc", label: "Name (Z–A)" },
-            ]}
-            filteredCount={filteredSellableItems.length}
-            totalCount={menu?.items.length ?? 0}
-            showStatusFilter={false}
-          >
-            <div className="space-y-1">
-              <Label className="text-muted-foreground text-xs">Sellable</Label>
+          <div className="rounded-2xl border bg-card p-5 shadow-sm">
+            <div className="space-y-2">
+              <Label htmlFor="sellable-add">Add menu item</Label>
               <SearchableSelect
+                id="sellable-add"
                 triggerClassName={selectControlClassName}
-                options={[
-                  { value: "all", label: "All items" },
-                  { value: "sellable", label: "Sellable only" },
-                  { value: "not", label: "Not sellable" },
-                ]}
-                value={sellableFilter}
-                onValueChange={(v) => setSellableFilter(v as "all" | "sellable" | "not")}
-                placeholder="Filter"
-                searchPlaceholder="Search…"
+                options={addableMenuOptions}
+                value=""
+                onValueChange={(id) => addSellable(id)}
+                placeholder="Search and add menu items…"
+                searchPlaceholder="Search menu items…"
+                emptyMessage={
+                  (menu?.items ?? []).length === 0
+                    ? "No menu items found"
+                    : addableMenuOptions.length === 0
+                      ? "All menu items are already added"
+                      : "No match"
+                }
               />
             </div>
-          </DataTableToolbar>
 
-          <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[5rem]">Sell</TableHead>
-                  <TableHead>Menu item</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(menu?.items ?? []).length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="py-10 text-center text-muted-foreground">
-                      No menu items found.
-                    </TableCell>
-                  </TableRow>
-                ) : filteredSellableItems.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="py-10 text-center text-muted-foreground">
-                      No items match your search or filters.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredSellableItems.map((it) => {
-                    const isSellable = sellableMenuItemIds.includes(it.id);
-                    return (
-                      <TableRow key={it.id}>
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            className="size-4 rounded border"
-                            checked={isSellable}
-                            onChange={() => toggleSellable(it.id)}
-                            aria-label={`Sell ${it.name} to vendors`}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{it.name}</TableCell>
-                        <TableCell>
-                          <Badge variant={isSellable ? "default" : "secondary"}>
-                            {isSellable ? "Sellable" : "Not sellable"}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+            <div className="mt-5 space-y-2">
+              <p className="text-muted-foreground text-xs">
+                {sellableMenuItems.length} item{sellableMenuItems.length === 1 ? "" : "s"} added
+              </p>
+              {sellableMenuItems.length === 0 ? (
+                <p className="rounded-lg border border-dashed px-3 py-6 text-center text-muted-foreground text-sm">
+                  No items added yet. Search above to add menu items.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {sellableMenuItems.map((it) => (
+                    <Badge
+                      key={it.id}
+                      variant="secondary"
+                      className="h-7 gap-1 pr-1 pl-2.5 text-sm"
+                    >
+                      {it.name}
+                      <button
+                        type="button"
+                        className="rounded-full p-0.5 text-muted-foreground transition-colors hover:bg-muted-foreground/15 hover:text-foreground"
+                        onClick={() => removeSellable(it.id)}
+                        aria-label={`Remove ${it.name}`}
+                      >
+                        <XIcon className="size-3.5" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </TabsContent>
 

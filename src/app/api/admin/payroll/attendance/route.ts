@@ -27,6 +27,7 @@ function isAttendanceKind(x: unknown): x is AttendanceKind {
   return (
     x === "WORKED" ||
     x === "LEAVE" ||
+    x === "HALF_DAY_LEAVE" ||
     x === "ABSENT" ||
     x === "WORKED_ON_LEAVE"
   );
