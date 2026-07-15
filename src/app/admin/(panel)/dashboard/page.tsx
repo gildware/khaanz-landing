@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import useSWR from "swr";
 import {
   AlertCircleIcon,
   BanknoteIcon,
+  CoinsIcon,
   CreditCardIcon,
   HandshakeIcon,
   IndianRupeeIcon,
@@ -18,6 +20,7 @@ import {
 } from "@/components/admin/pill-rank-chart";
 import { formatRupees } from "@/lib/payroll/payroll-utils";
 import { useMenuData } from "@/contexts/menu-data-context";
+import { cn } from "@/lib/utils";
 
 type SalesRankRow = { key: string; label: string; qty: number };
 type StockValueRankRow = { key: string; label: string; valuePaise: number };
@@ -25,6 +28,7 @@ type VendorValueRankRow = { key: string; label: string; valuePaise: number };
 
 type DashboardSummary = {
   kpis: {
+    cashAvailablePaise: number;
     todaySalesPaise: number;
     monthSalesPaise: number;
     todayExpensesPaise: number;
@@ -84,17 +88,25 @@ function KpiCard(props: {
   subtitle?: string;
   Icon: React.ComponentType<{ className?: string }>;
   gradientClassName: string;
+  valueClassName?: string;
+  href?: string;
 }) {
-  const { title, value, subtitle, Icon, gradientClassName } = props;
-  return (
-    <div className="relative overflow-hidden rounded-2xl border bg-card shadow-sm">
+  const { title, value, subtitle, Icon, gradientClassName, valueClassName, href } =
+    props;
+  const body = (
+    <div className="relative overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md">
       <div className={`absolute inset-0 opacity-70 ${gradientClassName}`} />
       <div className="absolute inset-0 bg-gradient-to-b from-background/10 via-background/35 to-background/90" />
       <div className="relative p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-muted-foreground text-sm">{title}</p>
-            <p className="mt-1 font-semibold text-2xl tabular-nums tracking-tight">
+            <p
+              className={cn(
+                "mt-1 font-semibold text-2xl tabular-nums tracking-tight",
+                valueClassName,
+              )}
+            >
               {value}
             </p>
             {subtitle ? (
@@ -108,6 +120,14 @@ function KpiCard(props: {
       </div>
     </div>
   );
+  if (href) {
+    return (
+      <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl">
+        {body}
+      </Link>
+    );
+  }
+  return body;
 }
 
 export default function AdminDashboardPage() {
@@ -141,7 +161,28 @@ export default function AdminDashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <KpiCard
+          title="Cash available"
+          value={
+            summary
+              ? formatRupees(summary.kpis.cashAvailablePaise)
+              : isLoading
+                ? "…"
+                : "—"
+          }
+          subtitle="Cash + bank/UPI · tap for details"
+          Icon={CoinsIcon}
+          gradientClassName="bg-gradient-to-br from-emerald-600/30 via-green-500/15 to-teal-500/20"
+          valueClassName={
+            summary && summary.kpis.cashAvailablePaise < 0
+              ? "text-rose-600"
+              : summary
+                ? "text-emerald-700"
+                : undefined
+          }
+          href="/admin/cash"
+        />
         <KpiCard
           title="Today’s sale"
           value={summary ? formatRupees(summary.kpis.todaySalesPaise) : isLoading ? "…" : "—"}

@@ -4,6 +4,10 @@ import { Prisma } from "@prisma/client";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import { migrateCartLine } from "@/lib/cart-line";
+import {
+  cashBalanceBefore,
+  ensureCashPoolSettings,
+} from "@/lib/cash/cash-pool";
 import { d } from "@/lib/inventory/decimal-utils";
 import { planOrderConsumption } from "@/lib/inventory/plan-order-consumption";
 import {
@@ -385,6 +389,13 @@ export async function GET(request: Request) {
   const { topVendorsBySales, bottomVendorsBySales, topVendorItemsByQty, bottomVendorItemsByQty } =
     await buildVendorChartRows(monthStart, monthEndExclusive);
 
+  const cashOpening = await ensureCashPoolSettings(prisma);
+  const cashAvailablePaise = await cashBalanceBefore(
+    prisma,
+    tomorrowStart,
+    cashOpening,
+  );
+
   return NextResponse.json({
     at: at.toISOString(),
     ranges: {
@@ -395,6 +406,7 @@ export async function GET(request: Request) {
       monthKey,
     },
     kpis: {
+      cashAvailablePaise,
       todaySalesPaise: todaySalesAgg._sum.totalMinor ?? 0,
       monthSalesPaise: monthSalesMinor,
       todayExpensesPaise: todayExpenseAgg._sum.amountPaise ?? 0,
