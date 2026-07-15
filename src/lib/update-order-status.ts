@@ -72,48 +72,70 @@ export async function updateOrderStatus(
     };
   }
 
-  const updated = await prisma.$transaction(async (tx) => {
-    const u = await tx.order.update({
-      where: { id: orderId },
-      data: { status: nextStatus },
-    });
+  let updated;
+  try {
+    updated = await prisma.$transaction(async (tx) => {
+      const u = await tx.order.update({
+        where: { id: orderId },
+        data: { status: nextStatus },
+      });
 
-    if (
-      nextStatus === "CANCELLED" &&
-      order.inventoryDeductedAt &&
-      !order.inventoryRestoredAt
-    ) {
-      const inv = await ensureInventorySettings(tx);
-      if (inv.restoreStockOnCancel) {
-        const lines = order.lines.map((l) =>
-          migrateCartLine(l.payload as unknown as CartLine),
-        );
-        await applyOrderInventoryRestore(
-          tx,
-          orderId,
-          { lines },
-          options?.adminUserId ?? null,
-          new Date(),
-        );
+      if (
+        nextStatus === "CANCELLED" &&
+        order.inventoryDeductedAt &&
+        !order.inventoryRestoredAt
+      ) {
+        const inv = await ensureInventorySettings(tx);
+        if (inv.restoreStockOnCancel) {
+          const lines = order.lines.map((l) =>
+            migrateCartLine(l.payload as unknown as CartLine),
+          );
+          await applyOrderInventoryRestore(
+            tx,
+            orderId,
+            { lines },
+            options?.adminUserId ?? null,
+            new Date(),
+          );
+        }
       }
-    }
 
-    await recordOrderEvent(tx, {
-      orderId,
-      action: "STATUS_CHANGED",
-      actorType: options?.adminUserId
-        ? "USER"
-        : options && options.adminUserId === null
-          ? "POS_SYNC"
-          : "SYSTEM",
-      actorUserId: options?.adminUserId ?? null,
-      summary: `Status: ${ORDER_STATUS_LABEL[order.status]} → ${ORDER_STATUS_LABEL[nextStatus]}`,
-      before: { status: order.status },
-      after: { status: nextStatus },
+      await recordOrderEvent(tx, {
+        orderId,
+        action: "STATUS_CHANGED",
+        actorType: options?.adminUserId
+          ? "USER"
+          : options && options.adminUserId === null
+            ? "POS_SYNC"
+            : "SYSTEM",
+        actorUserId: options?.adminUserId ?? null,
+        summary: `Status: ${ORDER_STATUS_LABEL[order.status]} → ${ORDER_STATUS_LABEL[nextStatus]}`,
+        before: { status: order.status },
+        after: { status: nextStatus },
+      });
+
+      return u;
     });
-
-    return u;
-  });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("updateOrderStatus failed:", message);
+    if (
+      nextStatus === "TABLE_CLEARED" &&
+      /TABLE_CLEARED|invalid input value for enum/i.test(message)
+    ) {
+      return {
+        ok: false,
+        error:
+          "Database is missing TABLE_CLEARED. Run `npx prisma migrate deploy` on the server.",
+        status: 500,
+      };
+    }
+    return {
+      ok: false,
+      error: "Could not update order status.",
+      status: 500,
+    };
+  }
 
   if (order.status !== nextStatus) {
     try {
