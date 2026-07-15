@@ -5,6 +5,7 @@ import {
   ArrowUpDownIcon,
   ChevronDownIcon,
   EyeIcon,
+  FlameIcon,
   HistoryIcon,
   IndianRupeeIcon,
   PencilIcon,
@@ -60,6 +61,7 @@ import { PillRankChartCard } from "@/components/admin/pill-rank-chart";
 import {
   chartTooltipRupeePair,
   formatRupees,
+  paiseToRupeesInput,
   paiseToRupeesNumber,
   rupeesToPaise,
 } from "@/lib/payroll/payroll-utils";
@@ -323,8 +325,23 @@ type InvItem = {
   baseUnitsPerPurchaseUnit: string;
   stockOnHandBase: string;
   minStockBase: string;
+  avgCostPaisePerBase: string;
+  lastPurchasePaisePerBase: string;
   active: boolean;
 };
+
+/** Convert stored paise-per-base cost → ₹ input for 1 purchase unit. */
+function avgCostToRateRupeesInput(
+  avgCostPaisePerBase: string,
+  baseUnitsPerPurchaseUnit: string,
+): string {
+  const cost = Number(avgCostPaisePerBase);
+  const conv = Number(baseUnitsPerPurchaseUnit);
+  if (!Number.isFinite(cost) || !Number.isFinite(conv) || conv <= 0 || cost <= 0) {
+    return "";
+  }
+  return paiseToRupeesInput(Math.round(cost * conv));
+}
 
 type Supplier = {
   id: string;
@@ -475,6 +492,7 @@ const emptyItemForm = {
   purchaseUnit: "kg",
   baseUnitsPerPurchaseUnit: "1000",
   minStockBase: "0",
+  unitCostRupees: "",
 };
 
 const STOCK_FILTER_OPTIONS: SearchableSelectOption[] = [
@@ -516,7 +534,13 @@ const SUPPLIER_PAYMENT_METHOD_OPTIONS: SearchableSelectOption[] = [
   { value: "other", label: "Other" },
 ];
 
-type OpsMenuId = "opening" | "adjustment" | "payment" | "activity" | "settings";
+type OpsMenuId =
+  | "opening"
+  | "kitchen"
+  | "adjustment"
+  | "payment"
+  | "activity"
+  | "settings";
 
 const OPS_MENU_SECTIONS: {
   group: string;
@@ -530,6 +554,7 @@ const OPS_MENU_SECTIONS: {
     group: "Change stock",
     items: [
       { id: "opening", label: "Add opening / extra stock", Icon: PlusCircleIcon },
+      { id: "kitchen", label: "Record kitchen use", Icon: FlameIcon },
       { id: "adjustment", label: "Fix stock count", Icon: ArrowUpDownIcon },
     ],
   },
@@ -852,6 +877,10 @@ export default function AdminInventoryPage() {
       purchaseUnit: item.purchaseUnit,
       baseUnitsPerPurchaseUnit: item.baseUnitsPerPurchaseUnit,
       minStockBase: item.minStockBase,
+      unitCostRupees: avgCostToRateRupeesInput(
+        item.avgCostPaisePerBase,
+        item.baseUnitsPerPurchaseUnit,
+      ),
     });
     setItemDialogOpen(true);
   };
@@ -866,17 +895,22 @@ export default function AdminInventoryPage() {
       toast.error("Base unit and purchase unit are required");
       return;
     }
+    const { unitCostRupees, ...itemFields } = itemForm;
+    const payload: Record<string, unknown> = { ...itemFields };
+    if (unitCostRupees.trim() !== "") {
+      payload.ratePaisePerPurchaseUnit = rupeesToPaise(unitCostRupees);
+    }
     try {
       if (editingItemId) {
         await adminFetch(`/api/admin/inventory/items/${editingItemId}`, {
           method: "PATCH",
-          body: JSON.stringify(itemForm),
+          body: JSON.stringify(payload),
         });
         toast.success("Item updated");
       } else {
         await adminFetch("/api/admin/inventory/items", {
           method: "POST",
-          body: JSON.stringify(itemForm),
+          body: JSON.stringify(payload),
         });
         toast.success("Item added");
       }
@@ -1459,6 +1493,12 @@ export default function AdminInventoryPage() {
     openingItemId: "",
     openingQty: "",
     openingQtyUnit: "purchase" as QtyEntryUnit,
+    openingUnitCostRupees: "",
+    kitchenItemId: "",
+    kitchenQty: "",
+    kitchenQtyUnit: "purchase" as QtyEntryUnit,
+    kitchenNote: "",
+    kitchenUsedAt: "",
     adjustmentItemId: "",
     adjustmentQty: "",
     adjustmentDirection: "down",
@@ -1484,16 +1524,55 @@ export default function AdminInventoryPage() {
       toast.error("Enter a valid quantity");
       return;
     }
+    const body: Record<string, unknown> = {
+      inventoryItemId: ops.openingItemId,
+      qtyBase,
+    };
+    if (ops.openingUnitCostRupees.trim() !== "") {
+      body.ratePaisePerPurchaseUnit = rupeesToPaise(ops.openingUnitCostRupees);
+    }
     try {
       await adminFetch("/api/admin/inventory/opening", {
         method: "POST",
-        body: JSON.stringify({
-          inventoryItemId: ops.openingItemId,
-          qtyBase,
-        }),
+        body: JSON.stringify(body),
       });
       toast.success("Opening stock applied");
-      setOps((x) => ({ ...x, openingQty: "" }));
+      setOps((x) => ({ ...x, openingQty: "", openingUnitCostRupees: "" }));
+      await Promise.all([loadItems(), loadSummary(), loadMovements()]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  };
+
+  const postKitchenUse = async () => {
+    const item = items.find((i) => i.id === ops.kitchenItemId);
+    if (!item) {
+      toast.error("Select an item");
+      return;
+    }
+    const qtyBase = convertQtyToBaseUnits(
+      ops.kitchenQty,
+      ops.kitchenQtyUnit,
+      item.baseUnitsPerPurchaseUnit,
+    );
+    if (!qtyBase) {
+      toast.error("Enter a valid quantity");
+      return;
+    }
+    try {
+      await adminFetch("/api/admin/inventory/kitchen-use", {
+        method: "POST",
+        body: JSON.stringify({
+          inventoryItemId: ops.kitchenItemId,
+          qtyBase,
+          note: ops.kitchenNote.trim(),
+          ...(ops.kitchenUsedAt
+            ? { usedAt: new Date(ops.kitchenUsedAt).toISOString() }
+            : {}),
+        }),
+      });
+      toast.success("Kitchen use recorded — stock reduced and cost hits profit");
+      setOps((x) => ({ ...x, kitchenQty: "", kitchenNote: "" }));
       await Promise.all([loadItems(), loadSummary(), loadMovements()]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
@@ -2382,6 +2461,32 @@ export default function AdminInventoryPage() {
                     value={itemForm.minStockBase}
                     onChange={(e) =>
                       setItemForm({ ...itemForm, minStockBase: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <InventoryFieldLabel
+                    htmlFor="inv-item-dialog-unit-cost"
+                    label={`Unit cost (₹ / ${itemForm.purchaseUnit || "purchase unit"}) — optional`}
+                    hint={
+                      <>
+                        <span className="font-medium text-foreground">What to enter:</span> Typical
+                        purchase price for 1 {itemForm.purchaseUnit || "purchase unit"} (same as a
+                        purchase rate).
+                        <br />
+                        <span className="font-medium text-foreground">Used in:</span> Inventory
+                        value, recipe costing, and wastage worth. Leave blank if you will set cost
+                        later via a purchase or opening stock.
+                      </>
+                    }
+                  />
+                  <Input
+                    id="inv-item-dialog-unit-cost"
+                    inputMode="decimal"
+                    placeholder="e.g. 450"
+                    value={itemForm.unitCostRupees}
+                    onChange={(e) =>
+                      setItemForm({ ...itemForm, unitCostRupees: e.target.value })
                     }
                   />
                 </div>
@@ -4071,9 +4176,131 @@ export default function AdminInventoryPage() {
                           to stock
                         </p>
                       ) : null}
+                      <div className="space-y-2 pt-2">
+                        <Label htmlFor="opening-unit-cost">
+                          Unit cost (₹ / {openingItem?.purchaseUnit ?? "purchase unit"})
+                        </Label>
+                        <Input
+                          id="opening-unit-cost"
+                          inputMode="decimal"
+                          placeholder="e.g. 450"
+                          value={ops.openingUnitCostRupees}
+                          onChange={(e) =>
+                            setOps({ ...ops, openingUnitCostRupees: e.target.value })
+                          }
+                          disabled={!openingItem}
+                        />
+                        <p className="text-muted-foreground text-xs">
+                          Needed for inventory value. Same rate you would enter on a purchase.
+                          Leave blank only if cost is already set and you are adding qty only.
+                        </p>
+                      </div>
                     </div>
                   );
                 })()}
+              </StockActionCard>
+              ) : null}
+
+              {opsMenu === "kitchen" ? (
+              <StockActionCard
+                title="Record kitchen use"
+                description="Reduce stock for oil, gas, petrol, and other consumables that are not on recipes. Cost is counted in profit (stock used)."
+                whenToUse="Fryer oil finished, gas cylinder empty, generator petrol used — anything used in operations but not tied to a dish recipe."
+                action={
+                  <Button type="button" onClick={() => void postKitchenUse()}>
+                    Save kitchen use
+                  </Button>
+                }
+              >
+                <div className="space-y-2">
+                  <Label>Item</Label>
+                  <InventoryItemSelect
+                    value={ops.kitchenItemId}
+                    onChange={(v) => setOps({ ...ops, kitchenItemId: v })}
+                    items={items}
+                  />
+                  <ItemOnHandHint
+                    item={items.find((i) => i.id === ops.kitchenItemId)}
+                  />
+                </div>
+                {(() => {
+                  const kitchenItem = items.find((i) => i.id === ops.kitchenItemId);
+                  const previewBase = kitchenItem
+                    ? convertQtyToBaseUnits(
+                        ops.kitchenQty,
+                        ops.kitchenQtyUnit,
+                        kitchenItem.baseUnitsPerPurchaseUnit,
+                      )
+                    : null;
+                  return (
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label>Unit</Label>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={ops.kitchenQtyUnit === "purchase" ? "default" : "outline"}
+                            disabled={!kitchenItem}
+                            onClick={() =>
+                              setOps({ ...ops, kitchenQtyUnit: "purchase" })
+                            }
+                          >
+                            {kitchenItem?.purchaseUnit || "Purchase unit"}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={ops.kitchenQtyUnit === "base" ? "default" : "outline"}
+                            disabled={!kitchenItem}
+                            onClick={() => setOps({ ...ops, kitchenQtyUnit: "base" })}
+                          >
+                            {kitchenItem?.baseUnit || "Base unit"}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Quantity used</Label>
+                        <Input
+                          inputMode="decimal"
+                          placeholder={
+                            ops.kitchenQtyUnit === "purchase" ? "e.g. 1" : "e.g. 5"
+                          }
+                          value={ops.kitchenQty}
+                          onChange={(e) =>
+                            setOps({ ...ops, kitchenQty: e.target.value })
+                          }
+                          disabled={!kitchenItem}
+                        />
+                        {previewBase && kitchenItem && ops.kitchenQtyUnit === "purchase" ? (
+                          <p className="text-muted-foreground text-xs">
+                            = {previewBase} {kitchenItem.baseUnit}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })()}
+                <div className="space-y-2">
+                  <Label>Used at (optional)</Label>
+                  <Input
+                    type="datetime-local"
+                    value={ops.kitchenUsedAt}
+                    onChange={(e) =>
+                      setOps({ ...ops, kitchenUsedAt: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Note (optional)</Label>
+                  <Input
+                    placeholder="e.g. Changed fryer oil"
+                    value={ops.kitchenNote}
+                    onChange={(e) =>
+                      setOps({ ...ops, kitchenNote: e.target.value })
+                    }
+                  />
+                </div>
               </StockActionCard>
               ) : null}
 

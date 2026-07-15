@@ -16,9 +16,7 @@ import {
   PillRankChartCard,
   type PillRankSourceRow,
 } from "@/components/admin/pill-rank-chart";
-import { ReportInsightsPanel } from "@/components/admin/report-insights-panel";
 import { formatRupees } from "@/lib/payroll/payroll-utils";
-import type { ReportInsight } from "@/lib/reports/build-insights";
 import { useMenuData } from "@/contexts/menu-data-context";
 
 type SalesRankRow = { key: string; label: string; qty: number };
@@ -31,8 +29,13 @@ type DashboardSummary = {
     monthSalesPaise: number;
     todayExpensesPaise: number;
     monthExpensesPaise: number;
+    capitalExpensesPaise?: number;
+    capitalExpenseEntryCount?: number;
     salariesPaise: number;
     stockCostUsedPaise: number;
+    recipeStockCostPaise?: number;
+    kitchenUseCostPaise?: number;
+    kitchenUseEntryCount?: number;
     grossMarginPaise: number;
     netProfitPaise: number;
     todayOrdersCount: number;
@@ -55,7 +58,6 @@ type DashboardSummary = {
     topVendorItemsByQty: SalesRankRow[];
     bottomVendorItemsByQty: SalesRankRow[];
   };
-  insights: ReportInsight[];
 };
 
 const fetcher = async (url: string) => {
@@ -139,12 +141,6 @@ export default function AdminDashboardPage() {
         </p>
       </div>
 
-      <ReportInsightsPanel
-        insights={summary?.insights ?? []}
-        isLoading={isLoading && !summary}
-        periodLabel="This month"
-      />
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           title="Today’s sale"
@@ -163,12 +159,18 @@ export default function AdminDashboardPage() {
         <KpiCard
           title="Today’s expenses"
           value={summary ? formatRupees(summary.kpis.todayExpensesPaise) : isLoading ? "…" : "—"}
+          subtitle="Operating cost"
           Icon={ReceiptIndianRupeeIcon}
           gradientClassName="bg-gradient-to-br from-amber-500/25 via-orange-500/15 to-rose-500/15"
         />
         <KpiCard
           title="This month expenses"
           value={summary ? formatRupees(summary.kpis.monthExpensesPaise) : isLoading ? "…" : "—"}
+          subtitle={
+            summary?.kpis.capitalExpensesPaise
+              ? `Operating cost · renovation ${formatRupees(summary.kpis.capitalExpensesPaise)} excluded`
+              : "Operating cost"
+          }
           Icon={CreditCardIcon}
           gradientClassName="bg-gradient-to-br from-slate-500/20 via-zinc-500/10 to-stone-500/15"
         />
@@ -180,7 +182,11 @@ export default function AdminDashboardPage() {
           value={summary ? formatRupees(summary.kpis.grossMarginPaise) : isLoading ? "…" : "—"}
           subtitle={
             summary
-              ? `Sale − stock used: ${formatRupees(summary.kpis.monthSalesPaise)} − ${formatRupees(summary.kpis.stockCostUsedPaise)}`
+              ? `Sales − stock used${
+                  summary.kpis.kitchenUseCostPaise
+                    ? ` (recipe ${formatRupees(summary.kpis.recipeStockCostPaise ?? 0)} + kitchen ${formatRupees(summary.kpis.kitchenUseCostPaise)})`
+                    : `: ${formatRupees(summary.kpis.monthSalesPaise)} − ${formatRupees(summary.kpis.stockCostUsedPaise)}`
+                }`
               : undefined
           }
           Icon={LineChartIcon}
@@ -196,7 +202,11 @@ export default function AdminDashboardPage() {
         <KpiCard
           title="Net profit (month)"
           value={summary ? formatRupees(summary.kpis.netProfitPaise) : isLoading ? "…" : "—"}
-          subtitle={summary ? "Gross margin − expenses − salaries" : undefined}
+          subtitle={
+            summary
+              ? "Gross − operating cost − salaries"
+              : undefined
+          }
           Icon={TrendingUpIcon}
           gradientClassName="bg-gradient-to-br from-emerald-500/20 via-lime-500/10 to-amber-500/15"
         />

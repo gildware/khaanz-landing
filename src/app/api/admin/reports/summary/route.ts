@@ -25,7 +25,7 @@ import {
 } from "@/lib/ist-dates";
 import { readMenuPayload } from "@/lib/menu-repository";
 import { getPrisma } from "@/lib/prisma";
-import { buildReportInsights } from "@/lib/reports/build-insights";
+import { computeDaySalariesPaise } from "@/lib/reports/day-salaries";
 import { readRestaurantSettings } from "@/lib/settings-repository";
 import type { CartLine } from "@/types/menu";
 
@@ -86,7 +86,6 @@ function splitTopBottom(rows: SalesRow[]) {
     top: withSales.slice(0, CHART_ITEMS_LIMIT),
     bottom: [...withSales].reverse().slice(0, CHART_ITEMS_LIMIT),
     zeroSales: zeroSalesAll.slice(0, CHART_ITEMS_LIMIT),
-    zeroSalesTotalCount: zeroSalesAll.length,
   };
 }
 
@@ -106,6 +105,16 @@ function resolveRange(url: URL): { from: Date; toExclusive: Date; label: string 
     return { from, toExclusive, label: "Last month" };
   }
 
+  if (preset === "day") {
+    const dateStr = url.searchParams.get("date") ?? formatIstDateInput(now);
+    const from = parseIstDateInput(dateStr);
+    if (!from) {
+      return { error: "Invalid date (YYYY-MM-DD)" };
+    }
+    const toExclusive = new Date(from.getTime() + 24 * 60 * 60 * 1000);
+    return { from, toExclusive, label: istDateLabel(from) };
+  }
+
   if (preset === "custom") {
     const fromStr = url.searchParams.get("from");
     const toStr = url.searchParams.get("to");
@@ -121,14 +130,20 @@ function resolveRange(url: URL): { from: Date; toExclusive: Date; label: string 
     if (toExclusive <= from) {
       return { error: "to must be on or after from" };
     }
-    return {
-      from,
-      toExclusive,
-      label: `${formatIstDateInput(from)} – ${formatIstDateInput(toStart)}`,
-    };
+    const label =
+      formatIstDateInput(from) === formatIstDateInput(toStart)
+        ? istDateLabel(from)
+        : `${formatIstDateInput(from)} – ${formatIstDateInput(toStart)}`;
+    return { from, toExclusive, label };
   }
 
-  return { error: "Invalid preset. Use this_month, last_month, or custom." };
+  return { error: "Invalid preset. Use this_month, last_month, day, or custom." };
+}
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function isSingleDayRange(from: Date, toExclusive: Date): boolean {
+  return toExclusive.getTime() - from.getTime() === MS_PER_DAY;
 }
 
 async function buildMenuCatalogRows(): Promise<SalesRow[]> {
@@ -193,6 +208,8 @@ export async function GET(request: Request) {
   const [
     salesAgg,
     expenseAgg,
+    capitalExpenseAgg,
+    kitchenUseAgg,
     vendorSalesAgg,
     vendorPaymentsAgg,
     expenseEntries,
@@ -210,8 +227,24 @@ export async function GET(request: Request) {
       _count: { _all: true },
     }),
     prisma.expenseEntry.aggregate({
-      where: { occurredAt: { gte: from, lt: toExclusive } },
+      where: {
+        occurredAt: { gte: from, lt: toExclusive },
+        kind: "OPERATING",
+      },
       _sum: { amountPaise: true },
+      _count: { _all: true },
+    }),
+    prisma.expenseEntry.aggregate({
+      where: {
+        occurredAt: { gte: from, lt: toExclusive },
+        kind: "CAPITAL",
+      },
+      _sum: { amountPaise: true },
+      _count: { _all: true },
+    }),
+    prisma.kitchenUseEntry.aggregate({
+      where: { usedAt: { gte: from, lt: toExclusive } },
+      _sum: { costPaise: true },
       _count: { _all: true },
     }),
     prisma.vendorSale.aggregate({
@@ -224,7 +257,10 @@ export async function GET(request: Request) {
       _sum: { amountPaise: true },
     }),
     prisma.expenseEntry.findMany({
-      where: { occurredAt: { gte: from, lt: toExclusive } },
+      where: {
+        occurredAt: { gte: from, lt: toExclusive },
+        kind: "OPERATING",
+      },
       select: {
         amountPaise: true,
         occurredAt: true,
@@ -272,18 +308,29 @@ export async function GET(request: Request) {
     readRestaurantSettings(),
   ]);
 
-  const monthKeys = istMonthKeysInRange(from, toExclusive);
-  const payrollRuns =
-    monthKeys.length > 0
-      ? await prisma.payrollRun.findMany({
-          where: { monthKey: { in: monthKeys } },
-          select: { lines: { select: { netPayPaise: true } } },
-        })
-      : [];
-  const salariesPaise = payrollRuns.reduce(
-    (sum, run) => sum + run.lines.reduce((s, l) => s + l.netPayPaise, 0),
-    0,
-  );
+  let salariesPaise = 0;
+  let salariesSubtitle: "day_rates" | "payroll_runs" = "payroll_runs";
+  let salariesStaffCount: number | null = null;
+
+  if (isSingleDayRange(from, toExclusive)) {
+    const daySalary = await computeDaySalariesPaise(prisma, istDayKey(from));
+    salariesPaise = daySalary.salariesPaise;
+    salariesSubtitle = "day_rates";
+    salariesStaffCount = daySalary.chargedStaffCount;
+  } else {
+    const monthKeys = istMonthKeysInRange(from, toExclusive);
+    const payrollRuns =
+      monthKeys.length > 0
+        ? await prisma.payrollRun.findMany({
+            where: { monthKey: { in: monthKeys } },
+            select: { lines: { select: { netPayPaise: true } } },
+          })
+        : [];
+    salariesPaise = payrollRuns.reduce(
+      (sum, run) => sum + run.lines.reduce((s, l) => s + l.netPayPaise, 0),
+      0,
+    );
+  }
 
   const orders = await prisma.order.findMany({
     where: {
@@ -412,11 +459,15 @@ export async function GET(request: Request) {
     stockCostPaise = stockCostPaise.add(qtyBase.mul(rate));
   }
   const stockCostPaiseInt = Math.round(Number(stockCostPaise.toString()));
+  const kitchenUseCostPaise = kitchenUseAgg._sum.costPaise ?? 0;
+  const recipeStockCostPaise = stockCostPaiseInt;
+  const totalStockCostUsedPaise = recipeStockCostPaise + kitchenUseCostPaise;
 
   const salesPaise = salesAgg._sum.totalMinor ?? 0;
   const orderCount = salesAgg._count._all ?? 0;
   const expensesPaise = expenseAgg._sum.amountPaise ?? 0;
-  const grossMarginPaise = salesPaise - stockCostPaiseInt;
+  const capitalExpensesPaise = capitalExpenseAgg._sum.amountPaise ?? 0;
+  const grossMarginPaise = salesPaise - totalStockCostUsedPaise;
   const netProfitPaise = grossMarginPaise - expensesPaise - salariesPaise;
 
   const personalByKind = new Map<
@@ -607,29 +658,13 @@ export async function GET(request: Request) {
 
   const catalog = await buildMenuCatalogRows();
   const soldRows = mergeSalesIntoCatalog(catalog, soldByKey);
-  const { top: topSelling, bottom: leastSelling, zeroSales, zeroSalesTotalCount } =
-    splitTopBottom(soldRows);
+  const { top: topSelling, bottom: leastSelling, zeroSales } = splitTopBottom(soldRows);
 
   const dailySales = [...dailyMap.values()].sort((a, b) => a.date.localeCompare(b.date));
   const hourlySales = [...hourlyMap.values()].sort((a, b) => a.hour - b.hour);
   const paymentMethods = [...paymentMap.values()].sort((a, b) => b.salesPaise - a.salesPaise);
 
   const averageTicketPaise = orderCount > 0 ? Math.round(salesPaise / orderCount) : 0;
-
-  const insights = buildReportInsights({
-    netProfitPaise,
-    grossMarginPaise,
-    salesPaise,
-    expensesPaise,
-    salariesPaise,
-    wastageCostPaise,
-    personalUsePaise,
-    topSelling,
-    zeroSalesTotalCount,
-    orderCount,
-    topExpenseCategory: expenseCategoryRows[0] ?? null,
-    topWastageType: wastageTypeRows[0] ?? null,
-  });
 
   return NextResponse.json({
     range: {
@@ -645,7 +680,14 @@ export async function GET(request: Request) {
       expensesPaise,
       expenseEntryCount: expenseAgg._count._all ?? 0,
       salariesPaise,
-      stockCostUsedPaise: stockCostPaiseInt,
+      salariesSource: salariesSubtitle,
+      salariesStaffCount,
+      stockCostUsedPaise: totalStockCostUsedPaise,
+      recipeStockCostPaise,
+      kitchenUseCostPaise,
+      kitchenUseEntryCount: kitchenUseAgg._count._all ?? 0,
+      capitalExpensesPaise,
+      capitalExpenseEntryCount: capitalExpenseAgg._count._all ?? 0,
       grossMarginPaise,
       netProfitPaise,
       wastageCostPaise,
@@ -679,6 +721,5 @@ export async function GET(request: Request) {
       menuWastageDishes: menuWastageRows.slice(0, WASTAGE_ITEMS_LIMIT),
       paymentMethods,
     },
-    insights,
   });
 }

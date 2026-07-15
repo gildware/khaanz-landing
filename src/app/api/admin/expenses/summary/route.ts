@@ -32,6 +32,8 @@ export async function GET(request: Request) {
 
   const [
     expenseAgg,
+    operatingAgg,
+    capitalAgg,
     personalCashAgg,
     personalStockCount,
     personalOrderCount,
@@ -41,6 +43,16 @@ export async function GET(request: Request) {
   ] = await prisma.$transaction([
     prisma.expenseEntry.aggregate({
       where,
+      _sum: { amountPaise: true },
+      _count: { _all: true },
+    }),
+    prisma.expenseEntry.aggregate({
+      where: { ...where, kind: "OPERATING" },
+      _sum: { amountPaise: true },
+      _count: { _all: true },
+    }),
+    prisma.expenseEntry.aggregate({
+      where: { ...where, kind: "CAPITAL" },
       _sum: { amountPaise: true },
       _count: { _all: true },
     }),
@@ -87,6 +99,10 @@ export async function GET(request: Request) {
     business: {
       count: expenseAgg._count._all,
       totalPaise: expenseAgg._sum.amountPaise ?? 0,
+      operatingCount: operatingAgg._count._all,
+      operatingPaise: operatingAgg._sum.amountPaise ?? 0,
+      capitalCount: capitalAgg._count._all,
+      capitalPaise: capitalAgg._sum.amountPaise ?? 0,
     },
     personal: {
       cashCount: personalCashAgg._count._all,

@@ -2,6 +2,11 @@ import type { AdjustmentReason, Prisma, WastageType } from "@prisma/client";
 
 import { D0, d } from "@/lib/inventory/decimal-utils";
 import { consumeFromBatchesFifo, createInboundBatch } from "@/lib/inventory/batch-ops";
+import {
+  costPaisePerBaseFromPurchaseRate,
+  nextCostsAfterInbound,
+} from "@/lib/inventory/inventory-costing";
+import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 
 export async function recordOpeningOrAdjustment(
   tx: Prisma.TransactionClient,
@@ -99,6 +104,8 @@ export async function recordOpeningStock(
     occurredAt: Date;
     note?: string;
     createdByUserId?: string | null;
+    /** Optional purchase-unit rate in paise; when set, updates item unit cost. */
+    ratePaisePerPurchaseUnit?: number | null;
   },
 ): Promise<void> {
   const item = await tx.inventoryItem.findFirst({
@@ -108,9 +115,37 @@ export async function recordOpeningStock(
   const qty = input.qtyBase.abs();
   if (qty.equals(D0)) return;
 
+  const rate =
+    input.ratePaisePerPurchaseUnit != null &&
+    Number.isFinite(input.ratePaisePerPurchaseUnit) &&
+    input.ratePaisePerPurchaseUnit >= 0
+      ? Math.floor(input.ratePaisePerPurchaseUnit)
+      : null;
+
+  const stockData: Prisma.InventoryItemUpdateInput = {
+    stockOnHandBase: item.stockOnHandBase.add(qty),
+  };
+
+  if (rate != null) {
+    const settings = await ensureInventorySettings(tx);
+    const costPerBase = costPaisePerBaseFromPurchaseRate(
+      rate,
+      item.baseUnitsPerPurchaseUnit,
+    );
+    const next = nextCostsAfterInbound({
+      costingMethod: settings.costingMethod,
+      oldStockBase: item.stockOnHandBase,
+      oldAvgPaisePerBase: item.avgCostPaisePerBase,
+      inboundQtyBase: qty,
+      inboundCostPaisePerBase: costPerBase,
+    });
+    stockData.avgCostPaisePerBase = next.avgCostPaisePerBase;
+    stockData.lastPurchasePaisePerBase = next.lastPurchasePaisePerBase;
+  }
+
   await tx.inventoryItem.update({
     where: { id: item.id },
-    data: { stockOnHandBase: item.stockOnHandBase.add(qty) },
+    data: stockData,
   });
 
   await tx.inventoryMovement.create({
@@ -202,6 +237,73 @@ export async function recordWastage(
   });
 
   return { id: row.id };
+}
+
+export async function recordKitchenUse(
+  tx: Prisma.TransactionClient,
+  input: {
+    inventoryItemId: string;
+    qtyBase: Prisma.Decimal;
+    usedAt: Date;
+    note?: string;
+    createdByUserId?: string | null;
+    allowNegativeStock: boolean;
+  },
+): Promise<{ id: string; costPaise: number }> {
+  const item = await tx.inventoryItem.findFirst({
+    where: { id: input.inventoryItemId, active: true },
+  });
+  if (!item) throw new Error("INVENTORY_ITEM_NOT_FOUND");
+  const qty = input.qtyBase.abs();
+  if (qty.equals(D0)) throw new Error("KITCHEN_USE_QTY_ZERO");
+
+  const costPaise = Math.max(
+    0,
+    Math.round(Number(qty.mul(item.avgCostPaisePerBase).toString())),
+  );
+
+  const delta = d(0).sub(qty);
+  await tx.inventoryItem.update({
+    where: { id: item.id },
+    data: { stockOnHandBase: item.stockOnHandBase.add(delta) },
+  });
+
+  const row = await tx.kitchenUseEntry.create({
+    data: {
+      inventoryItemId: item.id,
+      usedAt: input.usedAt,
+      qtyBase: qty,
+      costPaise,
+      note: (input.note ?? "").slice(0, 500),
+      createdByUserId: input.createdByUserId ?? null,
+    },
+  });
+
+  await consumeFromBatchesFifo(tx, {
+    inventoryItemId: item.id,
+    qtyBase: qty,
+    occurredAt: input.usedAt,
+    referenceType: "kitchen_use",
+    referenceId: row.id,
+    orderId: null,
+    createdByUserId: input.createdByUserId ?? null,
+    allowNegative: input.allowNegativeStock,
+  });
+
+  await tx.inventoryMovement.create({
+    data: {
+      inventoryItemId: item.id,
+      occurredAt: input.usedAt,
+      type: "KITCHEN_USE",
+      qtyDeltaBase: delta,
+      referenceType: "kitchen_use",
+      referenceId: row.id,
+      note: (input.note ?? "Kitchen use").slice(0, 500),
+      createdByUserId: input.createdByUserId ?? null,
+    },
+  });
+
+  return { id: row.id, costPaise };
 }
 
 export type AuditLineInput = {

@@ -395,6 +395,8 @@ enum InventoryMovementType {
   AUDIT_SURPLUS
   AUDIT_SHORTAGE
   WASTAGE
+  /// Oil, gas, petrol, and other consumables used in kitchen (hits P&L).
+  KITCHEN_USE
 }
 
 enum InventoryBatchSourceType {
@@ -454,6 +456,7 @@ model InventoryItem {
   batchConsumptions  InventoryBatchConsumption[]
   recipeIngredients  RecipeIngredient[]
   wastageRows        WastageEntry[]
+  kitchenUseRows     KitchenUseEntry[]
   stockAdjustments   StockAdjustment[]
   stockAuditLines    StockAuditLine[]
   personalUseEntries PersonalUseEntry[]
@@ -824,6 +827,25 @@ model WastageEntry {
   @@map("wastage_entries")
 }
 
+/// Consumables used in operations (oil, gas, petrol) — reduces stock and hits P&L.
+model KitchenUseEntry {
+  id              String   @id @default(cuid())
+  inventoryItemId String   @map("inventory_item_id")
+  usedAt          DateTime @map("used_at")
+  qtyBase         Decimal  @map("qty_base") @db.Decimal(24, 8)
+  /// Snapshot of qty × avg cost at record time (paise).
+  costPaise       Int      @map("cost_paise")
+  note            String   @default("") @db.VarChar(500)
+  createdByUserId String?  @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  item InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@index([inventoryItemId, usedAt])
+  @@index([usedAt])
+  @@map("kitchen_use_entries")
+}
+
 /// Prepared menu dish wasted (deducts ingredients via recipe).
 model MenuWastageEntry {
   id              String      @id @default(cuid())
@@ -915,6 +937,12 @@ enum ExpenseCategoryGroup {
   OTHER
 }
 
+/// OPERATING = operating cost (hits P&L); CAPITAL = renovation cost (tracked, excluded from P&L).
+enum ExpenseKind {
+  OPERATING
+  CAPITAL
+}
+
 enum PersonalUseKind {
   CASH
   STOCK
@@ -937,17 +965,19 @@ model ExpenseCategory {
 }
 
 model ExpenseEntry {
-  id          String   @id @default(cuid())
-  categoryId  String   @map("category_id")
-  occurredAt  DateTime @map("occurred_at")
-  amountPaise Int      @map("amount_paise")
-  note        String   @default("") @db.VarChar(500)
-  createdById String?  @map("created_by_user_id")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id          String      @id @default(cuid())
+  categoryId  String      @map("category_id")
+  kind        ExpenseKind @default(OPERATING)
+  occurredAt  DateTime    @map("occurred_at")
+  amountPaise Int         @map("amount_paise")
+  note        String      @default("") @db.VarChar(500)
+  createdById String?     @map("created_by_user_id")
+  createdAt   DateTime    @default(now()) @map("created_at")
 
   category ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   @@index([occurredAt])
+  @@index([kind, occurredAt])
   @@index([categoryId, occurredAt])
   @@map("expense_entries")
 }
@@ -1088,4 +1118,35 @@ model PayrollEmployeeLine {
   @@unique([payrollRunId, employeeId])
   @@index([employeeId])
   @@map("payroll_employee_lines")
+}
+
+// ---------------------------------------------------------------------------
+// Money available (cash in hand + bank/UPI as one pool)
+// ---------------------------------------------------------------------------
+
+/// Singleton opening balance for the unified money pool (id = `default`).
+model CashPoolSettings {
+  id                  String   @id @default("default")
+  openingBalancePaise Int      @default(0) @map("opening_balance_paise")
+  /// IST midnight from which opening applies; movements before this are ignored.
+  openingEffectiveAt  DateTime @map("opening_effective_at")
+  note                String   @default("") @db.VarChar(500)
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("cash_pool_settings")
+}
+
+/// Manual +/- correction to the money pool (deposits, corrections, untracked outs).
+model CashAdjustment {
+  id          String   @id @default(cuid())
+  occurredAt  DateTime @map("occurred_at")
+  /// Positive = money in, negative = money out (paise).
+  amountPaise Int      @map("amount_paise")
+  note        String   @default("") @db.VarChar(500)
+  createdById String?  @map("created_by_user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([occurredAt])
+  @@map("cash_adjustments")
 }

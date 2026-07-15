@@ -19,9 +19,11 @@ import {
   HandshakeIcon,
   Trash2Icon,
   BarChart3Icon,
+  CalendarDaysIcon,
   LayoutTemplateIcon,
   SmartphoneIcon,
   KeyRoundIcon,
+  WalletIcon,
 } from "lucide-react";
 
 import { useAdminSession } from "@/components/admin/admin-session-provider";
@@ -40,6 +42,8 @@ const links: {
 }[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboardIcon, permission: "dashboard" },
   { href: "/admin/reports", label: "Reports", icon: BarChart3Icon, permission: "reports" },
+  { href: "/admin/daily-report", label: "Daily report", icon: CalendarDaysIcon, permission: "reports" },
+  { href: "/admin/cash", label: "Money available", icon: WalletIcon, permission: "reports" },
   { href: "/admin/online-orders", label: "Online orders", icon: ShoppingBagIcon, permission: "online_orders" },
   { href: "/admin/orders", label: "Orders", icon: ClipboardListIcon, permission: "orders" },
   { href: "/admin/inventory", label: "Inventory", icon: WarehouseIcon, permission: "inventory" },

@@ -8,7 +8,8 @@ const DEFAULT_PAYMENT_METHODS_JSON = [
 
 /**
  * Deletes all tenant/business data and restores single-tenant config rows to
- * defaults. Preserves `User` rows (admin logins).
+ * defaults. Preserves `User` rows (admin logins) and `InventoryItem` catalog
+ * rows (stock/cost fields are zeroed; history and suppliers are removed).
  */
 export async function resetAllTenantData(
   prisma: PrismaClient | Prisma.TransactionClient,
@@ -39,6 +40,7 @@ export async function resetAllTenantData(
   await tx.stockAudit.deleteMany({});
   await tx.menuWastageEntry.deleteMany({});
   await tx.wastageEntry.deleteMany({});
+  await tx.kitchenUseEntry.deleteMany({});
   await tx.stockAdjustment.deleteMany({});
   await tx.inventoryBatchConsumption.deleteMany({});
   await tx.inventoryMovement.deleteMany({});
@@ -67,7 +69,14 @@ export async function resetAllTenantData(
   }
   await tx.category.deleteMany({});
 
-  await tx.inventoryItem.deleteMany({});
+  // Keep inventory item definitions; clear on-hand qty and cost fields only.
+  await tx.inventoryItem.updateMany({
+    data: {
+      stockOnHandBase: 0,
+      avgCostPaisePerBase: 0,
+      lastPurchasePaisePerBase: 0,
+    },
+  });
   await tx.supplier.deleteMany({});
 
   await tx.purchaseCounterDay.deleteMany({});

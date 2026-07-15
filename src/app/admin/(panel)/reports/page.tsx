@@ -8,6 +8,7 @@ import {
   BarChart3Icon,
   CalendarIcon,
   CreditCardIcon,
+  FlameIcon,
   IndianRupeeIcon,
   LineChartIcon,
   ReceiptIndianRupeeIcon,
@@ -15,6 +16,7 @@ import {
   TrendingDownIcon,
   TrendingUpIcon,
   WalletIcon,
+  WarehouseIcon,
 } from "lucide-react";
 import {
   Bar,
@@ -36,14 +38,12 @@ import {
   PillRankChartCard,
   type PillRankSourceRow,
 } from "@/components/admin/pill-rank-chart";
-import { ReportInsightsPanel } from "@/components/admin/report-insights-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTabParam } from "@/hooks/use-tab-param";
 import { formatIstDateInput, istStartOfMonth } from "@/lib/ist-dates";
-import type { ReportInsight } from "@/lib/reports/build-insights";
 import {
   chartTooltipRupeePair,
   chartYAxisRupeeTick,
@@ -89,8 +89,13 @@ type ReportsSummary = {
     averageTicketPaise: number;
     expensesPaise: number;
     expenseEntryCount: number;
+    capitalExpensesPaise?: number;
+    capitalExpenseEntryCount?: number;
     salariesPaise: number;
     stockCostUsedPaise: number;
+    recipeStockCostPaise?: number;
+    kitchenUseCostPaise?: number;
+    kitchenUseEntryCount?: number;
     grossMarginPaise: number;
     netProfitPaise: number;
     wastageCostPaise: number;
@@ -121,7 +126,6 @@ type ReportsSummary = {
     menuWastageDishes: MenuWastageRow[];
     paymentMethods: PaymentRow[];
   };
-  insights: ReportInsight[];
 };
 
 const GROUP_LABELS: Record<string, string> = {
@@ -367,12 +371,6 @@ export default function AdminReportsPage() {
         </div>
       ) : null}
 
-      <ReportInsightsPanel
-        insights={summary?.insights ?? []}
-        isLoading={isLoading && !summary}
-        periodLabel={summary?.range.label}
-      />
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           title="Total sales"
@@ -390,7 +388,11 @@ export default function AdminReportsPage() {
           value={summary ? formatRupees(summary.kpis.grossMarginPaise) : isLoading ? "…" : "—"}
           subtitle={
             summary
-              ? `Sales − stock used (${formatRupees(summary.kpis.stockCostUsedPaise)})`
+              ? `Sales − stock used (${formatRupees(summary.kpis.stockCostUsedPaise)}${
+                  summary.kpis.kitchenUseCostPaise
+                    ? ` incl. kitchen ${formatRupees(summary.kpis.kitchenUseCostPaise)}`
+                    : ""
+                })`
               : undefined
           }
           Icon={LineChartIcon}
@@ -399,7 +401,7 @@ export default function AdminReportsPage() {
         <KpiCard
           title="Net profit"
           value={summary ? formatRupees(summary.kpis.netProfitPaise) : isLoading ? "…" : "—"}
-          subtitle={summary ? "After expenses & salaries" : undefined}
+          subtitle={summary ? "After operating cost & salaries" : undefined}
           Icon={netProfitNegative ? TrendingDownIcon : TrendingUpIcon}
           gradientClassName={
             netProfitNegative
@@ -409,10 +411,15 @@ export default function AdminReportsPage() {
           valueClassName={netProfitNegative ? "text-rose-600" : undefined}
         />
         <KpiCard
-          title="Expenses"
+          title="Operating cost"
           value={summary ? formatRupees(summary.kpis.expensesPaise) : isLoading ? "…" : "—"}
           subtitle={
-            summary ? `${summary.kpis.expenseEntryCount} entries recorded` : undefined
+            summary
+              ? `${summary.kpis.expenseEntryCount} entries` +
+                (summary.kpis.capitalExpensesPaise
+                  ? ` · renovation ${formatRupees(summary.kpis.capitalExpensesPaise)} excluded`
+                  : "")
+              : undefined
           }
           Icon={ReceiptIndianRupeeIcon}
           gradientClassName="bg-gradient-to-br from-amber-500/25 via-orange-500/15 to-rose-500/15"
@@ -420,6 +427,49 @@ export default function AdminReportsPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          title="Kitchen use"
+          value={
+            summary ? formatRupees(summary.kpis.kitchenUseCostPaise ?? 0) : isLoading ? "…" : "—"
+          }
+          subtitle={
+            summary
+              ? `${summary.kpis.kitchenUseEntryCount ?? 0} entries · oil, gas, petrol, etc.`
+              : undefined
+          }
+          Icon={FlameIcon}
+          gradientClassName="bg-gradient-to-br from-orange-500/25 via-amber-500/15 to-yellow-500/15"
+        />
+        <KpiCard
+          title="Renovation cost"
+          value={
+            summary ? formatRupees(summary.kpis.capitalExpensesPaise ?? 0) : isLoading ? "…" : "—"
+          }
+          subtitle={
+            summary
+              ? `${summary.kpis.capitalExpenseEntryCount ?? 0} entries · not in net profit`
+              : undefined
+          }
+          Icon={WarehouseIcon}
+          gradientClassName="bg-gradient-to-br from-slate-500/25 via-zinc-500/15 to-stone-500/15"
+        />
+        <KpiCard
+          title="Recipe stock used"
+          value={
+            summary
+              ? formatRupees(
+                  summary.kpis.recipeStockCostPaise ??
+                    summary.kpis.stockCostUsedPaise -
+                      (summary.kpis.kitchenUseCostPaise ?? 0),
+                )
+              : isLoading
+                ? "…"
+                : "—"
+          }
+          subtitle="From dish recipes on sales"
+          Icon={LineChartIcon}
+          gradientClassName="bg-gradient-to-br from-teal-500/20 via-cyan-500/10 to-sky-500/15"
+        />
         <KpiCard
           title="Wastage cost"
           value={summary ? formatRupees(summary.kpis.wastageCostPaise) : isLoading ? "…" : "—"}
@@ -431,6 +481,9 @@ export default function AdminReportsPage() {
           Icon={Trash2Icon}
           gradientClassName="bg-gradient-to-br from-rose-500/20 via-red-500/10 to-orange-500/15"
         />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
           title="Salaries"
           value={summary ? formatRupees(summary.kpis.salariesPaise) : isLoading ? "…" : "—"}
@@ -643,9 +696,45 @@ export default function AdminReportsPage() {
                   </dd>
                 </div>
                 <div className="flex justify-between border-b pb-2">
-                  <dt className="text-muted-foreground">Stock cost used</dt>
+                  <dt className="text-muted-foreground">Recipe stock used</dt>
+                  <dd className="font-medium tabular-nums">
+                    {summary
+                      ? formatRupees(
+                          summary.kpis.recipeStockCostPaise ??
+                            summary.kpis.stockCostUsedPaise -
+                              (summary.kpis.kitchenUseCostPaise ?? 0),
+                        )
+                      : "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <dt className="text-muted-foreground">Kitchen use</dt>
+                  <dd className="font-medium tabular-nums">
+                    {summary ? formatRupees(summary.kpis.kitchenUseCostPaise ?? 0) : "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <dt className="text-muted-foreground">Stock cost used (total)</dt>
                   <dd className="font-medium tabular-nums">
                     {summary ? formatRupees(summary.kpis.stockCostUsedPaise) : "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <dt className="text-muted-foreground">Operating cost</dt>
+                  <dd className="font-medium tabular-nums">
+                    {summary ? formatRupees(summary.kpis.expensesPaise) : "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <dt className="text-muted-foreground">Renovation cost</dt>
+                  <dd className="font-medium tabular-nums">
+                    {summary ? formatRupees(summary.kpis.capitalExpensesPaise ?? 0) : "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <dt className="text-muted-foreground">Net profit</dt>
+                  <dd className="font-medium tabular-nums">
+                    {summary ? formatRupees(summary.kpis.netProfitPaise) : "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between border-b pb-2">

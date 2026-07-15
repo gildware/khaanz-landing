@@ -41,6 +41,7 @@ import {
 import { formatRupees, rupeesToPaise } from "@/lib/payroll/payroll-utils";
 
 type ExpenseCategoryGroup = "RAW_MATERIAL" | "BILLS" | "OTHER";
+type ExpenseKind = "OPERATING" | "CAPITAL";
 type PersonalUseKind = "CASH" | "STOCK" | "ORDER" | "OTHER";
 
 type ExpenseCategory = {
@@ -53,6 +54,7 @@ type ExpenseCategory = {
 type ExpenseEntry = {
   id: string;
   categoryId: string;
+  kind: ExpenseKind;
   occurredAt: string;
   amountPaise: number;
   note: string;
@@ -234,12 +236,14 @@ function resetPersonalDraft(kind: PersonalUseKind): {
 
 function resetBusinessDraft(): {
   categoryId: string;
+  kind: ExpenseKind;
   amountRupees: string;
   occurredAt: string;
   note: string;
 } {
   return {
     categoryId: "",
+    kind: "OPERATING",
     amountRupees: "",
     occurredAt: toLocalInputValue(new Date()),
     note: "",
@@ -254,7 +258,14 @@ export default function AdminExpensesPage() {
   const [invItems, setInvItems] = useState<InvItem[]>([]);
   const [menu, setMenu] = useState<MenuPayload | null>(null);
   const [summary, setSummary] = useState<{
-    business: { count: number; totalPaise: number };
+    business: {
+      count: number;
+      totalPaise: number;
+      operatingCount: number;
+      operatingPaise: number;
+      capitalCount: number;
+      capitalPaise: number;
+    };
     personal: {
       cashCount: number;
       cashTotalPaise: number;
@@ -296,7 +307,14 @@ export default function AdminExpensesPage() {
 
   const loadSummary = useCallback(async () => {
     const r = await adminFetch<{
-      business: { count: number; totalPaise: number };
+      business: {
+        count: number;
+        totalPaise: number;
+        operatingCount: number;
+        operatingPaise: number;
+        capitalCount: number;
+        capitalPaise: number;
+      };
       personal: {
         cashCount: number;
         cashTotalPaise: number;
@@ -355,6 +373,7 @@ export default function AdminExpensesPage() {
 
   const [businessSearch, setBusinessSearch] = useState("");
   const [businessGroupFilter, setBusinessGroupFilter] = useState<"all" | ExpenseCategoryGroup>("all");
+  const [businessKindFilter, setBusinessKindFilter] = useState<"all" | ExpenseKind>("all");
   const [businessSort, setBusinessSort] = useState("date-desc");
   const [personalSearch, setPersonalSearch] = useState("");
   const [personalSort, setPersonalSort] = useState("date-desc");
@@ -398,6 +417,7 @@ export default function AdminExpensesPage() {
         method: "POST",
         body: JSON.stringify({
           categoryId: newExpense.categoryId,
+          kind: newExpense.kind,
           amountPaise: rupeesToPaise(newExpense.amountRupees),
           occurredAt: new Date(newExpense.occurredAt).toISOString(),
           note: newExpense.note,
@@ -451,8 +471,11 @@ export default function AdminExpensesPage() {
         if (businessGroupFilter !== "all" && e.category.group !== businessGroupFilter) {
           return false;
         }
+        if (businessKindFilter !== "all" && e.kind !== businessKindFilter) {
+          return false;
+        }
         if (!q) return true;
-        const hay = `${e.category.name} ${e.category.group} ${e.note}`.toLowerCase();
+        const hay = `${e.category.name} ${e.category.group} ${e.kind} ${e.note}`.toLowerCase();
         return hay.includes(q);
       });
       filtered = [...filtered].sort((a, b) => {
@@ -474,7 +497,7 @@ export default function AdminExpensesPage() {
       });
       return filtered;
     },
-    [businessSearch, businessGroupFilter, businessSort],
+    [businessSearch, businessGroupFilter, businessKindFilter, businessSort],
   );
 
   const filteredBusinessExpenses = useMemo(
@@ -566,7 +589,8 @@ export default function AdminExpensesPage() {
       <div>
         <h1 className="font-semibold text-2xl">Expenses</h1>
         <p className="text-muted-foreground text-sm">
-          Track business expenses by category and personal use (cash, stock, orders).
+          Operating cost hits profit. Renovation cost (lights, décor, fitting-out) is tracked but
+          not deducted. Oil, gas, and petrol used from inventory go under Inventory → Kitchen use.
         </p>
       </div>
 
@@ -583,11 +607,18 @@ export default function AdminExpensesPage() {
         <TabsContent value="business" className="space-y-4 pt-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
-              title="Total business expenses"
-              value={formatRupees(summary?.business.totalPaise ?? 0)}
-              subtitle={`${summary?.business.count ?? 0} entries`}
+              title="Operating cost"
+              value={formatRupees(summary?.business.operatingPaise ?? 0)}
+              subtitle={`${summary?.business.operatingCount ?? 0} entries · hits profit`}
               Icon={IndianRupeeIcon}
               gradientClassName="bg-gradient-to-br from-blue-500/25 via-blue-400/10 to-transparent"
+            />
+            <KpiCard
+              title="Renovation cost"
+              value={formatRupees(summary?.business.capitalPaise ?? 0)}
+              subtitle={`${summary?.business.capitalCount ?? 0} entries · not in P&L`}
+              Icon={WarehouseIcon}
+              gradientClassName="bg-gradient-to-br from-slate-500/25 via-slate-400/10 to-transparent"
             />
             {BUSINESS_GROUPS.map((group) => {
               const Icon = BUSINESS_GROUP_ICONS[group];
@@ -655,6 +686,21 @@ export default function AdminExpensesPage() {
                 searchPlaceholder="Search…"
               />
             </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Type</Label>
+              <SearchableSelect
+                triggerClassName={selectControlClassName}
+                options={[
+                  { value: "all", label: "All types" },
+                  { value: "OPERATING", label: "Operating cost" },
+                  { value: "CAPITAL", label: "Renovation cost" },
+                ]}
+                value={businessKindFilter}
+                onValueChange={(v) => setBusinessKindFilter(v as "all" | ExpenseKind)}
+                placeholder="Type"
+                searchPlaceholder="Search…"
+              />
+            </div>
           </DataTableToolbar>
 
           <div className="rounded-xl border bg-card shadow-sm">
@@ -663,6 +709,7 @@ export default function AdminExpensesPage() {
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Note</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
@@ -670,13 +717,13 @@ export default function AdminExpensesPage() {
               <TableBody>
                 {expenseEntries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                       No business expenses yet.
                     </TableCell>
                   </TableRow>
                 ) : filteredBusinessExpenses.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
                       No expenses match your search or filters.
                     </TableCell>
                   </TableRow>
@@ -692,6 +739,9 @@ export default function AdminExpensesPage() {
                           {" "}
                           ({e.category.group})
                         </span>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {e.kind === "CAPITAL" ? "Renovation cost" : "Operating cost"}
                       </TableCell>
                       <TableCell className="max-w-[14rem] truncate text-muted-foreground text-xs">
                         {e.note || "—"}
@@ -713,6 +763,22 @@ export default function AdminExpensesPage() {
               </DialogHeader>
 
               <div className="grid gap-4 py-2">
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <SearchableSelect
+                    options={[
+                      { value: "OPERATING", label: "Operating cost — hits profit" },
+                      { value: "CAPITAL", label: "Renovation cost — décor / fitting-out (not in P&L)" },
+                    ]}
+                    value={newExpense.kind}
+                    onValueChange={(v) =>
+                      setNewExpense((x) => ({ ...x, kind: v as ExpenseKind }))
+                    }
+                    placeholder="Choose type…"
+                    searchPlaceholder="Search…"
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label>Category</Label>
                   <SearchableSelect

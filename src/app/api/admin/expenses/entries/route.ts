@@ -2,8 +2,15 @@ import { NextResponse } from "next/server";
 
 import { requireAdminSession } from "@/lib/admin-session";
 import { getPrisma } from "@/lib/prisma";
+import type { ExpenseKind } from "@prisma/client";
 
 export const runtime = "nodejs";
+
+const KINDS: ExpenseKind[] = ["OPERATING", "CAPITAL"];
+
+function isExpenseKind(x: unknown): x is ExpenseKind {
+  return typeof x === "string" && KINDS.includes(x as ExpenseKind);
+}
 
 function parseIntPaise(x: unknown, field: string): { ok: true; value: number } | { ok: false; error: string } {
   const n = typeof x === "number" ? x : typeof x === "string" ? Number(x) : NaN;
@@ -21,6 +28,8 @@ export async function GET(request: Request) {
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
   const categoryId = (url.searchParams.get("categoryId") ?? "").trim();
+  const kindParam = (url.searchParams.get("kind") ?? "").trim();
+  const kindFilter = isExpenseKind(kindParam) ? kindParam : undefined;
 
   const occurredAt: { gte?: Date; lt?: Date } = {};
   if (from) {
@@ -37,12 +46,14 @@ export async function GET(request: Request) {
     where: {
       ...(Object.keys(occurredAt).length ? { occurredAt } : {}),
       ...(categoryId ? { categoryId } : {}),
+      ...(kindFilter ? { kind: kindFilter } : {}),
     },
     orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
     take: 200,
     select: {
       id: true,
       categoryId: true,
+      kind: true,
       occurredAt: true,
       amountPaise: true,
       note: true,
@@ -68,6 +79,8 @@ export async function POST(request: Request) {
   const categoryId = typeof body.categoryId === "string" ? body.categoryId.trim() : "";
   if (!categoryId) return NextResponse.json({ error: "categoryId required" }, { status: 400 });
 
+  const kind: ExpenseKind = isExpenseKind(body.kind) ? body.kind : "OPERATING";
+
   const amount = parseIntPaise(body.amountPaise, "amountPaise");
   if (!amount.ok) return NextResponse.json({ error: amount.error }, { status: 400 });
   if (amount.value <= 0) return NextResponse.json({ error: "amountPaise must be > 0" }, { status: 400 });
@@ -87,6 +100,7 @@ export async function POST(request: Request) {
     const entry = await prisma.expenseEntry.create({
       data: {
         categoryId,
+        kind,
         occurredAt,
         amountPaise: amount.value,
         note: note.slice(0, 500),
@@ -95,6 +109,7 @@ export async function POST(request: Request) {
       select: {
         id: true,
         categoryId: true,
+        kind: true,
         occurredAt: true,
         amountPaise: true,
         note: true,

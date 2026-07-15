@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
+import { costPaisePerBaseFromPurchaseRate } from "@/lib/inventory/inventory-costing";
 import { parseDecimalQty } from "@/lib/inventory/parse-quantity";
 import { getPrisma } from "@/lib/prisma";
 
@@ -62,11 +63,37 @@ export async function PATCH(request: Request, context: Ctx) {
     data.active = body.active;
   }
 
+  const prisma = getPrisma();
+
+  if (
+    body.ratePaisePerPurchaseUnit !== undefined &&
+    body.ratePaisePerPurchaseUnit !== null &&
+    body.ratePaisePerPurchaseUnit !== ""
+  ) {
+    const rate = Number(body.ratePaisePerPurchaseUnit);
+    if (!Number.isFinite(rate) || rate < 0) {
+      return NextResponse.json(
+        { error: "ratePaisePerPurchaseUnit must be a non-negative number" },
+        { status: 400 },
+      );
+    }
+    const existing = await prisma.inventoryItem.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+    }
+    const conv =
+      data.baseUnitsPerPurchaseUnit !== undefined
+        ? (data.baseUnitsPerPurchaseUnit as typeof existing.baseUnitsPerPurchaseUnit)
+        : existing.baseUnitsPerPurchaseUnit;
+    const unitCost = costPaisePerBaseFromPurchaseRate(Math.floor(rate), conv);
+    data.avgCostPaisePerBase = unitCost;
+    data.lastPurchasePaisePerBase = unitCost;
+  }
+
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "No changes" }, { status: 400 });
   }
 
-  const prisma = getPrisma();
   try {
     const row = await prisma.inventoryItem.update({
       where: { id },
@@ -81,6 +108,8 @@ export async function PATCH(request: Request, context: Ctx) {
       baseUnitsPerPurchaseUnit: row.baseUnitsPerPurchaseUnit.toString(),
       stockOnHandBase: row.stockOnHandBase.toString(),
       minStockBase: row.minStockBase.toString(),
+      avgCostPaisePerBase: row.avgCostPaisePerBase.toString(),
+      lastPurchasePaisePerBase: row.lastPurchasePaisePerBase.toString(),
       active: row.active,
     });
   } catch {

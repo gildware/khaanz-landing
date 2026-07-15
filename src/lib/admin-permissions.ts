@@ -128,6 +128,8 @@ export function permissionForAdminPagePath(
   const rules: { prefix: string; permission: AdminPermission }[] = [
     { prefix: "/admin/dashboard", permission: "dashboard" },
     { prefix: "/admin/reports", permission: "reports" },
+    { prefix: "/admin/daily-report", permission: "reports" },
+    { prefix: "/admin/cash", permission: "reports" },
     { prefix: "/admin/online-orders", permission: "online_orders" },
     { prefix: "/admin/orders", permission: "orders" },
     { prefix: "/admin/inventory", permission: "inventory" },
@@ -191,6 +193,7 @@ export function permissionsForAdminApiPath(
     { prefix: "/api/admin/reset-data", permissions: ["settings"] },
     { prefix: "/api/admin/dashboard", permissions: ["dashboard"] },
     { prefix: "/api/admin/reports", permissions: ["reports"] },
+    { prefix: "/api/admin/cash", permissions: ["reports"] },
   ];
 
   for (const rule of rules) {
@@ -206,6 +209,8 @@ export function permissionsForAdminApiPath(
 export const ADMIN_NAV_PERMISSION: Record<string, AdminPermission> = {
   "/admin/dashboard": "dashboard",
   "/admin/reports": "reports",
+  "/admin/daily-report": "reports",
+  "/admin/cash": "reports",
   "/admin/online-orders": "online_orders",
   "/admin/orders": "orders",
   "/admin/inventory": "inventory",

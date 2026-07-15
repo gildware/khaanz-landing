@@ -12,7 +12,6 @@ import {
 } from "@/lib/inventory/stock-value-charts";
 import { readMenuPayload } from "@/lib/menu-repository";
 import { getPrisma } from "@/lib/prisma";
-import { buildReportInsights } from "@/lib/reports/build-insights";
 import type { CartLine } from "@/types/menu";
 
 type SalesRow = { key: string; label: string; qty: number };
@@ -226,7 +225,7 @@ export async function GET(request: Request) {
 
   const prisma = getPrisma();
 
-  const [todaySalesAgg, monthSalesAgg, todayExpenseAgg, monthExpenseAgg, payroll, todayVendorSalesAgg, monthVendorSalesAgg, monthVendorPaymentsAgg, overdueVendorSalesCount] =
+  const [todaySalesAgg, monthSalesAgg, todayExpenseAgg, monthExpenseAgg, monthCapitalExpenseAgg, monthKitchenUseAgg, payroll, todayVendorSalesAgg, monthVendorSalesAgg, monthVendorPaymentsAgg, overdueVendorSalesCount] =
     await prisma.$transaction([
       prisma.order.aggregate({
         where: {
@@ -245,12 +244,31 @@ export async function GET(request: Request) {
         _count: { _all: true },
       }),
       prisma.expenseEntry.aggregate({
-        where: { occurredAt: { gte: todayStart, lt: tomorrowStart } },
+        where: {
+          occurredAt: { gte: todayStart, lt: tomorrowStart },
+          kind: "OPERATING",
+        },
         _sum: { amountPaise: true },
       }),
       prisma.expenseEntry.aggregate({
-        where: { occurredAt: { gte: monthStart, lt: monthEndExclusive } },
+        where: {
+          occurredAt: { gte: monthStart, lt: monthEndExclusive },
+          kind: "OPERATING",
+        },
         _sum: { amountPaise: true },
+      }),
+      prisma.expenseEntry.aggregate({
+        where: {
+          occurredAt: { gte: monthStart, lt: monthEndExclusive },
+          kind: "CAPITAL",
+        },
+        _sum: { amountPaise: true },
+        _count: { _all: true },
+      }),
+      prisma.kitchenUseEntry.aggregate({
+        where: { usedAt: { gte: monthStart, lt: monthEndExclusive } },
+        _sum: { costPaise: true },
+        _count: { _all: true },
       }),
       prisma.payrollRun.findUnique({
         where: { monthKey },
@@ -346,43 +364,19 @@ export async function GET(request: Request) {
     stockCostPaise = stockCostPaise.add(qtyBase.mul(rate));
   }
   const stockCostPaiseInt = Math.round(Number(stockCostPaise.toString()));
+  const kitchenUseCostPaise = monthKitchenUseAgg._sum.costPaise ?? 0;
+  const recipeStockCostPaise = stockCostPaiseInt;
+  const totalStockCostUsedPaise = recipeStockCostPaise + kitchenUseCostPaise;
+  const capitalExpensesPaise = monthCapitalExpenseAgg._sum.amountPaise ?? 0;
 
   const monthSalesMinor = monthSalesAgg._sum.totalMinor ?? 0;
-  const grossMarginPaise = monthSalesMinor - stockCostPaiseInt;
+  const grossMarginPaise = monthSalesMinor - totalStockCostUsedPaise;
   const monthExpensesPaise = monthExpenseAgg._sum.amountPaise ?? 0;
   const netProfitPaise = grossMarginPaise - monthExpensesPaise - salariesPaise;
 
   const catalog = await buildMenuCatalogRows();
   const soldRows = mergeSalesIntoCatalog(catalog, soldByKey);
   const { top: topSelling, bottom: leastSelling } = splitTopBottom(soldRows);
-  const zeroSalesTotalCount = soldRows.filter((r) => r.qty === 0).length;
-
-  const wastageEntries = await prisma.wastageEntry.findMany({
-    where: { wastedAt: { gte: monthStart, lt: monthEndExclusive } },
-    select: {
-      qtyBase: true,
-      item: { select: { avgCostPaisePerBase: true } },
-    },
-  });
-  let wastageCostPaise = 0;
-  for (const w of wastageEntries) {
-    wastageCostPaise += Math.round(Number(w.qtyBase.mul(w.item.avgCostPaisePerBase).toString()));
-  }
-
-  const insights = buildReportInsights({
-    netProfitPaise,
-    grossMarginPaise,
-    salesPaise: monthSalesMinor,
-    expensesPaise: monthExpensesPaise,
-    salariesPaise,
-    wastageCostPaise,
-    personalUsePaise: 0,
-    topSelling,
-    zeroSalesTotalCount,
-    orderCount: monthSalesAgg._count._all ?? 0,
-    topExpenseCategory: null,
-    topWastageType: null,
-  });
 
   const stockValueRows = await loadStockValueRankRows();
   const { topByValue: topStockValue, lowestByValue: lowestStockValue } =
@@ -405,8 +399,13 @@ export async function GET(request: Request) {
       monthSalesPaise: monthSalesMinor,
       todayExpensesPaise: todayExpenseAgg._sum.amountPaise ?? 0,
       monthExpensesPaise,
+      capitalExpensesPaise,
+      capitalExpenseEntryCount: monthCapitalExpenseAgg._count._all ?? 0,
       salariesPaise,
-      stockCostUsedPaise: stockCostPaiseInt,
+      stockCostUsedPaise: totalStockCostUsedPaise,
+      recipeStockCostPaise,
+      kitchenUseCostPaise,
+      kitchenUseEntryCount: monthKitchenUseAgg._count._all ?? 0,
       grossMarginPaise,
       netProfitPaise,
       todayOrdersCount: todaySalesAgg._count._all ?? 0,
@@ -429,7 +428,6 @@ export async function GET(request: Request) {
       topVendorItemsByQty,
       bottomVendorItemsByQty,
     },
-    insights,
   });
 }
 

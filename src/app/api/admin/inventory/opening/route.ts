@@ -37,6 +37,22 @@ export async function POST(request: Request) {
   }
   const note = typeof body.note === "string" ? body.note : "";
 
+  let ratePaisePerPurchaseUnit: number | null = null;
+  if (
+    body.ratePaisePerPurchaseUnit !== undefined &&
+    body.ratePaisePerPurchaseUnit !== null &&
+    body.ratePaisePerPurchaseUnit !== ""
+  ) {
+    const rate = Number(body.ratePaisePerPurchaseUnit);
+    if (!Number.isFinite(rate) || rate < 0) {
+      return NextResponse.json(
+        { error: "ratePaisePerPurchaseUnit must be a non-negative number" },
+        { status: 400 },
+      );
+    }
+    ratePaisePerPurchaseUnit = Math.floor(rate);
+  }
+
   const prisma = getPrisma();
   try {
     await prisma.$transaction((tx) =>
@@ -46,6 +62,7 @@ export async function POST(request: Request) {
         occurredAt,
         note,
         createdByUserId: session.userId,
+        ratePaisePerPurchaseUnit,
       }),
     );
     return NextResponse.json({ ok: true });

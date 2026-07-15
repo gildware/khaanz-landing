@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
+import { costPaisePerBaseFromPurchaseRate } from "@/lib/inventory/inventory-costing";
 import { parseDecimalQty } from "@/lib/inventory/parse-quantity";
 import { getPrisma } from "@/lib/prisma";
 
@@ -80,6 +81,23 @@ export async function POST(request: Request) {
   const category =
     typeof body.category === "string" ? body.category.trim().slice(0, 120) : "";
 
+  let unitCostPaisePerBase: ReturnType<typeof costPaisePerBaseFromPurchaseRate> | null =
+    null;
+  if (
+    body.ratePaisePerPurchaseUnit !== undefined &&
+    body.ratePaisePerPurchaseUnit !== null &&
+    body.ratePaisePerPurchaseUnit !== ""
+  ) {
+    const rate = Number(body.ratePaisePerPurchaseUnit);
+    if (!Number.isFinite(rate) || rate < 0) {
+      return NextResponse.json(
+        { error: "ratePaisePerPurchaseUnit must be a non-negative number" },
+        { status: 400 },
+      );
+    }
+    unitCostPaisePerBase = costPaisePerBaseFromPurchaseRate(Math.floor(rate), conv);
+  }
+
   const prisma = getPrisma();
   const row = await prisma.inventoryItem.create({
     data: {
@@ -89,6 +107,12 @@ export async function POST(request: Request) {
       purchaseUnit,
       baseUnitsPerPurchaseUnit: conv,
       minStockBase: minB,
+      ...(unitCostPaisePerBase !== null
+        ? {
+            avgCostPaisePerBase: unitCostPaisePerBase,
+            lastPurchasePaisePerBase: unitCostPaisePerBase,
+          }
+        : {}),
     },
   });
 
@@ -101,5 +125,7 @@ export async function POST(request: Request) {
     baseUnitsPerPurchaseUnit: row.baseUnitsPerPurchaseUnit.toString(),
     stockOnHandBase: row.stockOnHandBase.toString(),
     minStockBase: row.minStockBase.toString(),
+    avgCostPaisePerBase: row.avgCostPaisePerBase.toString(),
+    lastPurchasePaisePerBase: row.lastPurchasePaisePerBase.toString(),
   });
 }

@@ -17,6 +17,7 @@ const MOVEMENT_LABELS: Record<string, string> = {
   AUDIT_SURPLUS: "Audit surplus",
   AUDIT_SHORTAGE: "Audit shortage",
   WASTAGE: "Wastage",
+  KITCHEN_USE: "Kitchen use",
 };
 
 export async function GET(request: Request) {

@@ -136,6 +136,7 @@ export async function GET(request: Request) {
     AUDIT_SURPLUS: "Audit surplus",
     AUDIT_SHORTAGE: "Audit shortage",
     WASTAGE: "Wastage",
+    KITCHEN_USE: "Kitchen use",
   };
 
   const movementsLast30Days = movementAgg

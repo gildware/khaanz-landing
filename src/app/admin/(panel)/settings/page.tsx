@@ -218,7 +218,7 @@ export default function AdminSettingsPage() {
         return;
       }
       toast.success(
-        "All business data was removed. Default menu and settings were restored.",
+        "All business data was removed. Inventory items were kept. Default menu and settings were restored.",
       );
       setResetDialogOpen(false);
       setResetConfirmInput("");
@@ -675,10 +675,12 @@ export default function AdminSettingsPage() {
                 <p className="font-medium text-destructive">Reset all data</p>
                 <p className="text-muted-foreground text-xs leading-relaxed">
                   Permanently deletes orders, customers, the current menu,
-                  inventory, vendors, payroll, expenses, and all related records.
-                  Admin logins are kept. Afterwards the bundled default menu is
-                  written again, and restaurant and inventory settings match a
-                  fresh install (including an empty floor plan).
+                  inventory stock and history, suppliers, vendors, payroll,
+                  expenses, and all related records. Inventory item definitions
+                  are kept (quantities and costs reset to zero). Admin logins
+                  are kept. Afterwards the bundled default menu is written again,
+                  and restaurant and inventory settings match a fresh install
+                  (including an empty floor plan).
                 </p>
                 <Button
                   type="button"
