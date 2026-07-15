@@ -4,7 +4,11 @@ import { NextResponse } from "next/server";
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import { getDefaultMenuPayload } from "@/data/menu";
 import { ADMIN_RESET_CONFIRM_PHRASE } from "@/lib/admin-reset-confirm-phrase";
-import { resetAllTenantData } from "@/lib/admin-reset-all-data";
+import { resetTenantData } from "@/lib/admin-reset-all-data";
+import {
+  hasAnyAdminResetSelection,
+  parseAdminResetScopes,
+} from "@/lib/admin-reset-scopes";
 import { writeMenuPayload } from "@/lib/menu-repository";
 import { getPrisma } from "@/lib/prisma";
 
@@ -25,6 +29,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
+
   const phrase =
     body &&
     typeof body === "object" &&
@@ -40,15 +45,35 @@ export async function POST(request: Request) {
     );
   }
 
+  const scopes = parseAdminResetScopes(
+    body && typeof body === "object"
+      ? (body as { scopes?: unknown }).scopes
+      : undefined,
+  );
+  if (!scopes) {
+    return NextResponse.json(
+      { error: "Invalid or missing scopes object." },
+      { status: 400 },
+    );
+  }
+  if (!hasAnyAdminResetSelection(scopes)) {
+    return NextResponse.json(
+      { error: "Select at least one data category to delete." },
+      { status: 400 },
+    );
+  }
+
   const prisma = getPrisma();
   try {
     await prisma.$transaction(
       async (tx) => {
-        await resetAllTenantData(tx);
+        await resetTenantData(tx, scopes);
       },
       { timeout: 120_000 },
     );
-    await writeMenuPayload(getDefaultMenuPayload());
+    if (scopes.restoreDefaultMenu) {
+      await writeMenuPayload(getDefaultMenuPayload());
+    }
   } catch (e) {
     console.error("reset-data failed", e);
     return NextResponse.json(
@@ -57,5 +82,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, scopes });
 }

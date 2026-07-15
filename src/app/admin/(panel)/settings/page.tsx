@@ -13,7 +13,16 @@ import {
   type BillPreviewSettings,
 } from "@/lib/bill-preview-settings";
 import { ADMIN_RESET_CONFIRM_PHRASE } from "@/lib/admin-reset-confirm-phrase";
+import {
+  ADMIN_RESET_SCOPE_META,
+  allAdminResetScopes,
+  emptyAdminResetScopes,
+  hasAnyAdminResetSelection,
+  type AdminResetScopeKey,
+  type AdminResetScopes,
+} from "@/lib/admin-reset-scopes";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -63,6 +72,9 @@ export default function AdminSettingsPage() {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetConfirmInput, setResetConfirmInput] = useState("");
   const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [resetScopes, setResetScopes] = useState<AdminResetScopes>(
+    emptyAdminResetScopes,
+  );
   const [deliveryConfig, setDeliveryConfig] = useState<{
     originConfigured: boolean;
     googleDistanceMatrixEnabled: boolean;
@@ -196,15 +208,35 @@ export default function AdminSettingsPage() {
     ]);
   };
 
-  const runResetAllData = async () => {
+  const toggleResetScope = (key: AdminResetScopeKey, checked: boolean) => {
+    setResetScopes((prev) => {
+      const next = { ...prev, [key]: checked };
+      if (key === "menu" && !checked) {
+        next.restoreDefaultMenu = false;
+      }
+      if (key === "menu" && checked && !prev.menu) {
+        next.restoreDefaultMenu = true;
+      }
+      return next;
+    });
+  };
+
+  const runResetSelectedData = async () => {
     if (resetConfirmInput.trim() !== ADMIN_RESET_CONFIRM_PHRASE) return;
+    if (!hasAnyAdminResetSelection(resetScopes)) {
+      toast.error("Select at least one category to delete.");
+      return;
+    }
     setResetSubmitting(true);
     try {
       const res = await fetch("/api/admin/reset-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ confirmPhrase: resetConfirmInput.trim() }),
+        body: JSON.stringify({
+          confirmPhrase: resetConfirmInput.trim(),
+          scopes: resetScopes,
+        }),
       });
       if (!res.ok) {
         let msg = "Reset failed";
@@ -217,11 +249,17 @@ export default function AdminSettingsPage() {
         toast.error(msg);
         return;
       }
+      const labels = ADMIN_RESET_SCOPE_META.filter(
+        (m) => resetScopes[m.key] && m.key !== "restoreDefaultMenu",
+      ).map((m) => m.label);
       toast.success(
-        "All business data was removed. Inventory items were kept. Default menu and settings were restored.",
+        labels.length
+          ? `Deleted: ${labels.join(", ")}.`
+          : "Selected data was deleted.",
       );
       setResetDialogOpen(false);
       setResetConfirmInput("");
+      setResetScopes(emptyAdminResetScopes());
       await load();
     } finally {
       setResetSubmitting(false);
@@ -672,15 +710,12 @@ export default function AdminSettingsPage() {
             <div className="flex items-start gap-2">
               <AlertTriangleIcon className="mt-0.5 size-5 shrink-0 text-destructive" />
               <div className="min-w-0 space-y-2">
-                <p className="font-medium text-destructive">Reset all data</p>
+                <p className="font-medium text-destructive">Delete selected data</p>
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  Permanently deletes orders, customers, the current menu,
-                  inventory stock and history, suppliers, vendors, payroll,
-                  expenses, and all related records. Inventory item definitions
-                  are kept (quantities and costs reset to zero). Admin logins
-                  are kept. Afterwards the bundled default menu is written again,
-                  and restaurant and inventory settings match a fresh install
-                  (including an empty floor plan).
+                  Choose exactly what to remove — orders, menu, stock values,
+                  inventory history, suppliers, vendors, payroll, expenses, and
+                  more. Inventory item definitions and admin logins are always
+                  kept. Unchecked categories are left alone.
                 </p>
                 <Button
                   type="button"
@@ -688,10 +723,11 @@ export default function AdminSettingsPage() {
                   size="sm"
                   onClick={() => {
                     setResetConfirmInput("");
+                    setResetScopes(emptyAdminResetScopes());
                     setResetDialogOpen(true);
                   }}
                 >
-                  Reset all data…
+                  Choose data to delete…
                 </Button>
               </div>
             </div>
@@ -705,28 +741,86 @@ export default function AdminSettingsPage() {
           if (!resetSubmitting) setResetDialogOpen(open);
         }}
       >
-        <DialogContent className="sm:max-w-md" showCloseButton={!resetSubmitting}>
+        <DialogContent
+          className="sm:max-w-lg"
+          showCloseButton={!resetSubmitting}
+        >
           <DialogHeader>
-            <DialogTitle>Reset all data?</DialogTitle>
+            <DialogTitle>Delete selected data?</DialogTitle>
             <DialogDescription>
-              This cannot be undone. Type{" "}
+              This cannot be undone. Pick the categories to remove, then type{" "}
               <span className="font-mono font-medium text-foreground">
                 {ADMIN_RESET_CONFIRM_PHRASE}
               </span>{" "}
               to confirm.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="reset-confirm">Confirmation phrase</Label>
-            <Input
-              id="reset-confirm"
-              value={resetConfirmInput}
-              onChange={(e) => setResetConfirmInput(e.target.value)}
-              placeholder={ADMIN_RESET_CONFIRM_PHRASE}
-              autoComplete="off"
-              disabled={resetSubmitting}
-              className="font-mono text-sm"
-            />
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={resetSubmitting}
+                onClick={() => setResetScopes(allAdminResetScopes())}
+              >
+                Select all
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={resetSubmitting}
+                onClick={() => setResetScopes(emptyAdminResetScopes())}
+              >
+                Clear
+              </Button>
+            </div>
+            <div className="max-h-[min(50vh,22rem)] space-y-1 overflow-y-auto rounded-lg border p-3">
+              {ADMIN_RESET_SCOPE_META.map((item) => {
+                const nested = Boolean(item.dependsOn);
+                const parentOff =
+                  item.dependsOn != null && !resetScopes[item.dependsOn];
+                const disabled = resetSubmitting || parentOff;
+                return (
+                  <label
+                    key={item.key}
+                    className={`flex cursor-pointer gap-3 rounded-md px-2 py-2 hover:bg-muted/60 ${
+                      nested ? "ml-6" : ""
+                    } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+                  >
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={resetScopes[item.key]}
+                      disabled={disabled}
+                      onCheckedChange={(v) =>
+                        toggleResetScope(item.key, v === true)
+                      }
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium leading-snug">
+                        {item.label}
+                      </span>
+                      <span className="text-muted-foreground text-xs leading-relaxed">
+                        {item.description}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reset-confirm">Confirmation phrase</Label>
+              <Input
+                id="reset-confirm"
+                value={resetConfirmInput}
+                onChange={(e) => setResetConfirmInput(e.target.value)}
+                placeholder={ADMIN_RESET_CONFIRM_PHRASE}
+                autoComplete="off"
+                disabled={resetSubmitting}
+                className="font-mono text-sm"
+              />
+            </div>
           </div>
           <DialogFooter className="border-0 bg-transparent p-0 sm:justify-end">
             <Button
@@ -742,17 +836,18 @@ export default function AdminSettingsPage() {
               variant="destructive"
               disabled={
                 resetSubmitting ||
+                !hasAnyAdminResetSelection(resetScopes) ||
                 resetConfirmInput.trim() !== ADMIN_RESET_CONFIRM_PHRASE
               }
-              onClick={() => void runResetAllData()}
+              onClick={() => void runResetSelectedData()}
             >
               {resetSubmitting ? (
                 <>
                   <Loader2Icon className="mr-2 size-4 animate-spin" />
-                  Resetting…
+                  Deleting…
                 </>
               ) : (
-                "Erase everything"
+                "Delete selected"
               )}
             </Button>
           </DialogFooter>
