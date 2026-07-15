@@ -36,24 +36,31 @@ export function ItemCustomizeSheet({
   const addItem = useCartStore((s) => s.addItem);
   const { data: menuData } = useMenuData();
 
+  // Keep last item while the sheet closes so Root is not unmounted mid-open
+  // (abrupt unmount can leave Base UI's inert backdrop blocking all clicks).
+  const [cachedItem, setCachedItem] = useState<MenuItem | null>(item);
   const [variation, setVariation] = useState<MenuVariation | null>(null);
   const [selectedAddonIds, setSelectedAddonIds] = useState<Set<string>>(
     () => new Set(),
   );
 
+  useEffect(() => {
+    if (item) setCachedItem(item);
+  }, [item]);
+
   const addons = useMemo(() => {
-    if (!item || !menuData) return [];
-    return getAddonsForItem(item, menuData.globalAddons);
-  }, [item, menuData]);
+    if (!cachedItem || !menuData) return [];
+    return getAddonsForItem(cachedItem, menuData.globalAddons);
+  }, [cachedItem, menuData]);
 
   useEffect(() => {
-    if (item && item.variations.length > 0) {
-      setVariation(item.variations[0]!);
+    if (cachedItem && cachedItem.variations.length > 0) {
+      setVariation(cachedItem.variations[0]!);
     } else {
       setVariation(null);
     }
     setSelectedAddonIds(new Set());
-  }, [item]);
+  }, [cachedItem]);
 
   const selectedAddons = useMemo(() => {
     return addons.filter((a) => selectedAddonIds.has(a.id));
@@ -77,20 +84,20 @@ export function ItemCustomizeSheet({
   };
 
   const handleAdd = () => {
-    if (!item || !variation) return;
-    if (!isMenuItemAvailable(item)) {
+    if (!cachedItem || !variation) return;
+    if (!isMenuItemAvailable(cachedItem)) {
       toast.error("This item is not available to order right now.");
       return;
     }
     const addonsWithQty = selectedAddons.map((a) => ({ ...a, quantity: 1 }));
-    addItem({ item, variation, addons: addonsWithQty });
-    toast.success(`${item.name} added to cart`, {
+    addItem({ item: cachedItem, variation, addons: addonsWithQty });
+    toast.success(`${cachedItem.name} added to cart`, {
       description: `${variation.name} · ₹${unitPrice}`,
     });
     onOpenChange(false);
   };
 
-  if (!item) return null;
+  if (!cachedItem) return null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -103,7 +110,7 @@ export function ItemCustomizeSheet({
         <div className="flex gap-3 border-b border-border/70 p-4">
           <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl ring-1 ring-border">
             <MenuItemImage
-              src={item.image}
+              src={cachedItem.image}
               alt=""
               fill
               className="object-cover"
@@ -111,19 +118,19 @@ export function ItemCustomizeSheet({
             />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-heading font-semibold leading-tight">{item.name}</p>
+            <p className="font-heading font-semibold leading-tight">{cachedItem.name}</p>
             <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
-              {item.description}
+              {cachedItem.description}
             </p>
             <span
               className={cn(
                 "mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-                item.isVeg
+                cachedItem.isVeg
                   ? "bg-emerald-500/15 text-emerald-400"
                   : "bg-rose-500/15 text-rose-400",
               )}
             >
-              {item.isVeg ? "Veg" : "Non-Veg"}
+              {cachedItem.isVeg ? "Veg" : "Non-Veg"}
             </span>
           </div>
         </div>
@@ -133,7 +140,7 @@ export function ItemCustomizeSheet({
             <div>
               <p className="mb-2 font-medium text-sm">Size / Portion</p>
               <div className="flex flex-wrap gap-2">
-                {item.variations.map((v) => (
+                {cachedItem.variations.map((v) => (
                   <Button
                     key={v.id}
                     type="button"
@@ -189,7 +196,7 @@ export function ItemCustomizeSheet({
               size="lg"
               className="bg-cta-gradient min-w-[10rem] rounded-full font-semibold text-primary-foreground shadow-lg shadow-cta"
               onClick={handleAdd}
-              disabled={!variation || !isMenuItemAvailable(item)}
+              disabled={!variation || !isMenuItemAvailable(cachedItem)}
             >
               Add to cart
             </Button>

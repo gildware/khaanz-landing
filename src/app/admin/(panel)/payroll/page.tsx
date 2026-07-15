@@ -121,6 +121,19 @@ function AttendanceDayPill({
 }) {
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
+
   const pick = (next: AttendanceKind) => {
     setOpen(false);
     if (next !== kind) onChange(next);
@@ -152,7 +165,7 @@ function AttendanceDayPill({
           <button
             type="button"
             aria-label="Close attendance edit"
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-40 cursor-default bg-transparent"
             onClick={() => setOpen(false)}
           />
           <div className="absolute left-1/2 top-full z-50 mt-1 flex -translate-x-1/2 gap-0.5 rounded-full border bg-background p-0.5 shadow-md">

@@ -169,6 +169,18 @@ async function sumVendorReceivablePaise(): Promise<number> {
   }, 0);
 }
 
+async function sumSupplierPayablePaise(): Promise<number> {
+  const prisma = getPrisma();
+  const ledgerAgg = await prisma.supplierLedgerEntry.groupBy({
+    by: ["supplierId"],
+    _sum: { debitPaise: true, creditPaise: true },
+  });
+  return ledgerAgg.reduce((sum, g) => {
+    const balance = (g._sum.debitPaise ?? 0) - (g._sum.creditPaise ?? 0);
+    return sum + (balance > 0 ? balance : 0);
+  }, 0);
+}
+
 async function buildMenuCatalogRows(): Promise<SalesRow[]> {
   const menu = await readMenuPayload();
   const rows: SalesRow[] = [];
@@ -229,7 +241,7 @@ export async function GET(request: Request) {
 
   const prisma = getPrisma();
 
-  const [todaySalesAgg, monthSalesAgg, todayExpenseAgg, monthExpenseAgg, monthCapitalExpenseAgg, monthKitchenUseAgg, payroll, todayVendorSalesAgg, monthVendorSalesAgg, monthVendorPaymentsAgg, overdueVendorSalesCount] =
+  const [todaySalesAgg, monthSalesAgg, todayExpenseAgg, monthExpenseAgg, monthCapitalExpenseAgg, monthKitchenUseAgg, payroll, todayVendorSalesAgg, monthVendorSalesAgg, monthVendorPaymentsAgg, overdueVendorSalesCount, todayPurchasesAgg, monthPurchasesAgg, monthSupplierPaymentsAgg, overduePurchasesCount] =
     await prisma.$transaction([
       prisma.order.aggregate({
         where: {
@@ -293,6 +305,23 @@ export async function GET(request: Request) {
         _sum: { amountPaise: true },
       }),
       prisma.vendorSale.count({
+        where: { paymentType: "CREDIT", dueAt: { lt: at } },
+      }),
+      prisma.purchase.aggregate({
+        where: { purchasedAt: { gte: todayStart, lt: tomorrowStart } },
+        _sum: { totalPaise: true },
+        _count: { _all: true },
+      }),
+      prisma.purchase.aggregate({
+        where: { purchasedAt: { gte: monthStart, lt: monthEndExclusive } },
+        _sum: { totalPaise: true },
+        _count: { _all: true },
+      }),
+      prisma.supplierPayment.aggregate({
+        where: { paidAt: { gte: monthStart, lt: monthEndExclusive } },
+        _sum: { amountPaise: true },
+      }),
+      prisma.purchase.count({
         where: { paymentType: "CREDIT", dueAt: { lt: at } },
       }),
     ]);
@@ -386,6 +415,7 @@ export async function GET(request: Request) {
   const { topByValue: topStockValue, lowestByValue: lowestStockValue } =
     splitStockValueRanks(stockValueRows);
   const vendorReceivablePaise = await sumVendorReceivablePaise();
+  const supplierPayablePaise = await sumSupplierPayablePaise();
   const { topVendorsBySales, bottomVendorsBySales, topVendorItemsByQty, bottomVendorItemsByQty } =
     await buildVendorChartRows(monthStart, monthEndExclusive);
 
@@ -429,6 +459,13 @@ export async function GET(request: Request) {
       vendorReceivablePaise,
       overdueVendorSalesCount,
       monthVendorPaymentsPaise: monthVendorPaymentsAgg._sum.amountPaise ?? 0,
+      todayPurchasesPaise: todayPurchasesAgg._sum.totalPaise ?? 0,
+      todayPurchasesCount: todayPurchasesAgg._count._all ?? 0,
+      monthPurchasesPaise: monthPurchasesAgg._sum.totalPaise ?? 0,
+      monthPurchasesCount: monthPurchasesAgg._count._all ?? 0,
+      supplierPayablePaise,
+      overduePurchasesCount,
+      monthSupplierPaymentsPaise: monthSupplierPaymentsAgg._sum.amountPaise ?? 0,
     },
     charts: {
       topSelling,

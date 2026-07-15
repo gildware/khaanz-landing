@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangleIcon } from "lucide-react";
 
@@ -16,6 +17,15 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { playAdminNewOrderRingtone } from "@/lib/admin-new-order-sound";
+
+function hasOtherOpenModal(): boolean {
+  if (typeof document === "undefined") return false;
+  return Boolean(
+    document.querySelector(
+      '[data-slot="dialog-overlay"][data-open], [data-slot="sheet-overlay"]:not([data-ending-style])[data-open], [data-slot="dialog-content"][data-open], [data-slot="sheet-content"][data-open]',
+    ),
+  );
+}
 
 const POLL_MS = 5_000;
 const RING_INTERVAL_MS = 2_700;
@@ -51,6 +61,7 @@ function mergeNewOrders(
 }
 
 export function AdminNewOrderNotifier() {
+  const pathname = usePathname();
   const session = useOptionalAdminSession();
   const canWatchOnline =
     !session ||
@@ -62,6 +73,8 @@ export function AdminNewOrderNotifier() {
   const seenIdsRef = useRef<Set<string>>(new Set());
   /** Order ids in the current new-order alert; ringing stops when all are no longer PENDING. */
   const ringingIdsRef = useRef<Set<string>>(new Set());
+  /** Open the alert once another dialog/sheet is dismissed. */
+  const pendingOpenRef = useRef(false);
 
   const soundLoopRef = useRef<number | null>(null);
   const loopActiveRef = useRef(false);
@@ -90,9 +103,20 @@ export function AdminNewOrderNotifier() {
   const dismissModal = useCallback(() => {
     stopSoundLoop();
     ringingIdsRef.current.clear();
+    pendingOpenRef.current = false;
     setOpen(false);
     setOrders([]);
   }, [stopSoundLoop]);
+
+  const tryOpenModal = useCallback(() => {
+    if (open) return;
+    if (hasOtherOpenModal()) {
+      pendingOpenRef.current = true;
+      return;
+    }
+    pendingOpenRef.current = false;
+    setOpen(true);
+  }, [open]);
 
   const poll = useCallback(async () => {
     if (!canWatchOnline) return;
@@ -152,13 +176,13 @@ export function AdminNewOrderNotifier() {
       });
 
       if (websiteNewOnes.length > 0) {
-        setOpen(true);
         startSoundLoop();
+        tryOpenModal();
       }
     } catch {
       // ignore network errors
     }
-  }, [canWatchOnline, startSoundLoop, stopSoundLoop]);
+  }, [canWatchOnline, startSoundLoop, stopSoundLoop, tryOpenModal]);
 
   useEffect(() => {
     if (!canWatchOnline) return;
@@ -169,6 +193,24 @@ export function AdminNewOrderNotifier() {
       stopSoundLoop();
     };
   }, [canWatchOnline, poll, stopSoundLoop]);
+
+  // Close on navigation so we never leave a modal layered across routes.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // If open was deferred because another dialog was visible, retry shortly.
+  useEffect(() => {
+    if (open || orders.length === 0) return;
+    pendingOpenRef.current = true;
+    const id = window.setInterval(() => {
+      if (!pendingOpenRef.current) return;
+      if (hasOtherOpenModal()) return;
+      pendingOpenRef.current = false;
+      setOpen(true);
+    }, 400);
+    return () => window.clearInterval(id);
+  }, [open, orders.length, pathname]);
 
   /** Prime Web Audio after first gesture so alerts can play reliably. */
   useEffect(() => {

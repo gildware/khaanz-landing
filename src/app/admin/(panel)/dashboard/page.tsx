@@ -12,6 +12,7 @@ import {
   LineChartIcon,
   ReceiptIndianRupeeIcon,
   TrendingUpIcon,
+  TruckIcon,
   WalletIcon,
 } from "lucide-react";
 import {
@@ -44,6 +45,13 @@ type DashboardSummary = {
     netProfitPaise: number;
     todayOrdersCount: number;
     monthOrdersCount: number;
+    todayPurchasesPaise: number;
+    todayPurchasesCount: number;
+    monthPurchasesPaise: number;
+    monthPurchasesCount: number;
+    supplierPayablePaise: number;
+    overduePurchasesCount: number;
+    monthSupplierPaymentsPaise: number;
     todayVendorSalesPaise: number;
     todayVendorSalesCount: number;
     monthVendorSalesPaise: number;
@@ -157,7 +165,7 @@ export default function AdminDashboardPage() {
       <div>
         <h1 className="font-semibold text-2xl tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-sm">
-          Sales, expenses, vendor sales, and performance overview.
+          Sales, expenses, suppliers, vendor sales, and performance overview.
         </p>
       </div>
 
@@ -250,6 +258,80 @@ export default function AdminDashboardPage() {
           }
           Icon={TrendingUpIcon}
           gradientClassName="bg-gradient-to-br from-emerald-500/20 via-lime-500/10 to-amber-500/15"
+        />
+      </div>
+
+      <div>
+        <h2 className="font-medium text-base">Suppliers</h2>
+        <p className="text-muted-foreground text-sm">
+          Purchases, payables, and payments to suppliers this month.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          title="Today’s purchases"
+          value={
+            summary
+              ? formatRupees(summary.kpis.todayPurchasesPaise)
+              : isLoading
+                ? "…"
+                : "—"
+          }
+          subtitle={
+            summary ? `${summary.kpis.todayPurchasesCount} purchases posted` : undefined
+          }
+          Icon={TruckIcon}
+          gradientClassName="bg-gradient-to-br from-sky-500/25 via-blue-500/15 to-indigo-500/15"
+          href="/admin/inventory"
+        />
+        <KpiCard
+          title="This month purchases"
+          value={
+            summary
+              ? formatRupees(summary.kpis.monthPurchasesPaise)
+              : isLoading
+                ? "…"
+                : "—"
+          }
+          subtitle={
+            summary ? `${summary.kpis.monthPurchasesCount} purchases posted` : undefined
+          }
+          Icon={TrendingUpIcon}
+          gradientClassName="bg-gradient-to-br from-teal-500/25 via-cyan-500/15 to-sky-500/15"
+          href="/admin/inventory"
+        />
+        <KpiCard
+          title="Supplier payable"
+          value={
+            summary
+              ? formatRupees(summary.kpis.supplierPayablePaise)
+              : isLoading
+                ? "…"
+                : "—"
+          }
+          subtitle="Total outstanding balance owed to suppliers"
+          Icon={IndianRupeeIcon}
+          gradientClassName="bg-gradient-to-br from-amber-500/25 via-orange-500/15 to-rose-500/15"
+          href="/admin/inventory"
+        />
+        <KpiCard
+          title="Overdue / payments"
+          value={
+            summary
+              ? `${summary.kpis.overduePurchasesCount} overdue`
+              : isLoading
+                ? "…"
+                : "—"
+          }
+          subtitle={
+            summary
+              ? `${formatRupees(summary.kpis.monthSupplierPaymentsPaise)} paid this month`
+              : undefined
+          }
+          Icon={AlertCircleIcon}
+          gradientClassName="bg-gradient-to-br from-rose-500/20 via-red-500/10 to-orange-500/15"
+          href="/admin/inventory"
         />
       </div>
 
