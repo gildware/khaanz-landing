@@ -598,10 +598,10 @@ export default function AdminOrdersPage() {
                         {o.createdByLabel?.trim() ? (
                           <Badge
                             variant="outline"
-                            className="max-w-[12rem] truncate border-sky-300 bg-sky-50 font-medium text-sky-900 dark:border-sky-500/40 dark:bg-sky-500/15 dark:text-sky-100"
-                            title={o.createdByLabel.trim()}
+                            className="max-w-[14rem] truncate border-sky-300 bg-sky-50 font-medium text-sky-900 dark:border-sky-500/40 dark:bg-sky-500/15 dark:text-sky-100"
+                            title={`Taken by ${o.createdByLabel.trim()}`}
                           >
-                            {o.createdByLabel.trim()}
+                            By {o.createdByLabel.trim()}
                           </Badge>
                         ) : null}
                       </div>
@@ -626,7 +626,7 @@ export default function AdminOrdersPage() {
                     </div>
                   </div>
 
-                  <div className="grid shrink-0 gap-3 border-b border-border/70 py-3 sm:grid-cols-2">
+                  <div className="grid shrink-0 gap-3 border-b border-border/70 py-3 sm:grid-cols-3">
                     <div className="text-sm">
                       <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                         Customer
@@ -653,6 +653,14 @@ export default function AdminOrdersPage() {
                           </span>
                         </p>
                       ) : null}
+                    </div>
+                    <div className="text-sm">
+                      <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                        Taken by
+                      </p>
+                      <p className="mt-0.5 font-medium">
+                        {o.createdByLabel?.trim() || "—"}
+                      </p>
                     </div>
                   </div>
 
