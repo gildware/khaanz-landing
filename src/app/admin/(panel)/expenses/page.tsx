@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -431,6 +432,26 @@ export default function AdminExpensesPage() {
     }
   };
 
+  const [deletingExpense, setDeletingExpense] = useState<ExpenseEntry | null>(null);
+  const [expenseDeleteSubmitting, setExpenseDeleteSubmitting] = useState(false);
+
+  const confirmDeleteExpense = async () => {
+    if (!deletingExpense) return;
+    setExpenseDeleteSubmitting(true);
+    try {
+      await adminFetch(`/api/admin/expenses/entries/${deletingExpense.id}`, {
+        method: "DELETE",
+      });
+      toast.success("Expense deleted");
+      setDeletingExpense(null);
+      await Promise.all([loadExpenses(), loadSummary()]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setExpenseDeleteSubmitting(false);
+    }
+  };
+
   const menuItems = useMemo(
     () => (menu?.items ?? []).filter((it) => it.available !== false),
     [menu],
@@ -584,6 +605,30 @@ export default function AdminExpensesPage() {
     }
   };
 
+  const [deletingPersonal, setDeletingPersonal] = useState<PersonalUseEntry | null>(null);
+  const [personalDeleteSubmitting, setPersonalDeleteSubmitting] = useState(false);
+
+  const confirmDeletePersonal = async () => {
+    if (!deletingPersonal) return;
+    setPersonalDeleteSubmitting(true);
+    try {
+      await adminFetch(`/api/admin/expenses/personal/${deletingPersonal.id}`, {
+        method: "DELETE",
+      });
+      toast.success(
+        deletingPersonal.kind === "STOCK" || deletingPersonal.kind === "ORDER"
+          ? "Personal use deleted and stock restored"
+          : "Personal use deleted",
+      );
+      setDeletingPersonal(null);
+      await Promise.all([loadPersonal(), loadSummary(), loadInventoryItems()]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setPersonalDeleteSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -712,18 +757,21 @@ export default function AdminExpensesPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>Note</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="w-12 text-right">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {expenseEntries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                       No business expenses yet.
                     </TableCell>
                   </TableRow>
                 ) : filteredBusinessExpenses.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                       No expenses match your search or filters.
                     </TableCell>
                   </TableRow>
@@ -749,12 +797,68 @@ export default function AdminExpensesPage() {
                       <TableCell className="text-right font-medium tabular-nums">
                         {formatRupees(e.amountPaise)}
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setDeletingExpense(e)}
+                        >
+                          <Trash2Icon className="size-4" aria-hidden />
+                          <span className="sr-only">Delete expense</span>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
           </div>
+
+          <Dialog
+            open={deletingExpense !== null}
+            onOpenChange={(open) => {
+              if (!open && !expenseDeleteSubmitting) setDeletingExpense(null);
+            }}
+          >
+            <DialogContent
+              className="sm:max-w-md"
+              showCloseButton={!expenseDeleteSubmitting}
+            >
+              <DialogHeader>
+                <DialogTitle>Delete expense?</DialogTitle>
+                <DialogDescription>
+                  Delete{" "}
+                  <span className="font-medium text-foreground">
+                    {deletingExpense?.category.name ?? "this expense"}
+                  </span>
+                  {deletingExpense
+                    ? ` (${formatRupees(deletingExpense.amountPaise)})`
+                    : ""}
+                  ? This cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={expenseDeleteSubmitting}
+                  onClick={() => setDeletingExpense(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={expenseDeleteSubmitting}
+                  onClick={() => void confirmDeleteExpense()}
+                >
+                  {expenseDeleteSubmitting ? "Deleting…" : "Delete"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <Dialog open={businessModalOpen} onOpenChange={setBusinessModalOpen}>
             <DialogContent className="sm:max-w-lg">
@@ -934,13 +1038,16 @@ export default function AdminExpensesPage() {
                         ) : (
                           <TableHead>Note</TableHead>
                         )}
+                        <TableHead className="w-12 text-right">
+                          <span className="sr-only">Actions</span>
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {personalByKind[kind].length === 0 ? (
                         <TableRow>
                           <TableCell
-                            colSpan={kind === "CASH" ? 3 : 3}
+                            colSpan={4}
                             className="py-10 text-center text-muted-foreground"
                           >
                             No {PERSONAL_KIND_LABELS[kind].toLowerCase()} entries yet.
@@ -949,7 +1056,7 @@ export default function AdminExpensesPage() {
                       ) : filterPersonalList(personalByKind[kind]).length === 0 ? (
                         <TableRow>
                           <TableCell
-                            colSpan={kind === "CASH" ? 3 : 3}
+                            colSpan={4}
                             className="py-10 text-center text-muted-foreground"
                           >
                             No entries match your search or filters.
@@ -971,6 +1078,18 @@ export default function AdminExpensesPage() {
                                 {p.note || "—"}
                               </TableCell>
                             )}
+                            <TableCell className="text-right">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() => setDeletingPersonal(p)}
+                              >
+                                <Trash2Icon className="size-4" aria-hidden />
+                                <span className="sr-only">Delete personal use entry</span>
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))
                       )}
@@ -980,6 +1099,68 @@ export default function AdminExpensesPage() {
               </TabsContent>
             ))}
           </Tabs>
+
+          <Dialog
+            open={deletingPersonal !== null}
+            onOpenChange={(open) => {
+              if (!open && !personalDeleteSubmitting) setDeletingPersonal(null);
+            }}
+          >
+            <DialogContent
+              className="sm:max-w-md"
+              showCloseButton={!personalDeleteSubmitting}
+            >
+              <DialogHeader>
+                <DialogTitle>Delete personal use?</DialogTitle>
+                <DialogDescription>
+                  {deletingPersonal?.kind === "STOCK" ||
+                  deletingPersonal?.kind === "ORDER" ? (
+                    <>
+                      Delete{" "}
+                      <span className="font-medium text-foreground">
+                        {deletingPersonal
+                          ? formatPersonalDetails(deletingPersonal)
+                          : "this entry"}
+                      </span>
+                      ? Linked inventory deductions will be restored. This cannot be
+                      undone.
+                    </>
+                  ) : (
+                    <>
+                      Delete{" "}
+                      <span className="font-medium text-foreground">
+                        {deletingPersonal
+                          ? formatPersonalDetails(deletingPersonal)
+                          : "this entry"}
+                      </span>
+                      {deletingPersonal?.kind === "CASH"
+                        ? ` (${formatRupees(deletingPersonal.cashAmountPaise)})`
+                        : ""}
+                      ? This cannot be undone.
+                    </>
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={personalDeleteSubmitting}
+                  onClick={() => setDeletingPersonal(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={personalDeleteSubmitting}
+                  onClick={() => void confirmDeletePersonal()}
+                >
+                  {personalDeleteSubmitting ? "Deleting…" : "Delete"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <Dialog open={personalModalOpen} onOpenChange={setPersonalModalOpen}>
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
