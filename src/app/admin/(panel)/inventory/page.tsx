@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDownIcon,
   ChevronDownIcon,
+  CopyIcon,
   EyeIcon,
   FlameIcon,
   HistoryIcon,
@@ -860,18 +861,39 @@ export default function AdminInventoryPage() {
 
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [duplicatingItem, setDuplicatingItem] = useState(false);
   const [itemForm, setItemForm] = useState(emptyItemForm);
 
   const openAddItem = () => {
     setEditingItemId(null);
+    setDuplicatingItem(false);
     setItemForm(emptyItemForm);
     setItemDialogOpen(true);
   };
 
   const openEditItem = (item: InvItem) => {
     setEditingItemId(item.id);
+    setDuplicatingItem(false);
     setItemForm({
       name: item.name,
+      category: item.category,
+      baseUnit: item.baseUnit,
+      purchaseUnit: item.purchaseUnit,
+      baseUnitsPerPurchaseUnit: item.baseUnitsPerPurchaseUnit,
+      minStockBase: item.minStockBase,
+      unitCostRupees: avgCostToRateRupeesInput(
+        item.avgCostPaisePerBase,
+        item.baseUnitsPerPurchaseUnit,
+      ),
+    });
+    setItemDialogOpen(true);
+  };
+
+  const openDuplicateItem = (item: InvItem) => {
+    setEditingItemId(null);
+    setDuplicatingItem(true);
+    setItemForm({
+      name: `${item.name} (copy)`,
       category: item.category,
       baseUnit: item.baseUnit,
       purchaseUnit: item.purchaseUnit,
@@ -912,10 +934,11 @@ export default function AdminInventoryPage() {
           method: "POST",
           body: JSON.stringify(payload),
         });
-        toast.success("Item added");
+        toast.success(duplicatingItem ? "Item duplicated" : "Item added");
       }
       setItemDialogOpen(false);
       setEditingItemId(null);
+      setDuplicatingItem(false);
       setItemForm(emptyItemForm);
       await loadItems();
       await loadSummary();
@@ -2255,7 +2278,7 @@ export default function AdminInventoryPage() {
                   <TableHead>Units</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-[7rem] text-right">Actions</TableHead>
+                  <TableHead className="w-[9rem] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -2309,6 +2332,16 @@ export default function AdminInventoryPage() {
                             type="button"
                             variant="ghost"
                             size="sm"
+                            title="Duplicate item"
+                            onClick={() => openDuplicateItem(r)}
+                          >
+                            <CopyIcon className="size-4" aria-hidden />
+                            <span className="sr-only">Duplicate {r.name}</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
                             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                             onClick={() => setDeletingItem(r)}
                           >
@@ -2324,10 +2357,26 @@ export default function AdminInventoryPage() {
             </Table>
           </div>
 
-          <Dialog open={itemDialogOpen} onOpenChange={setItemDialogOpen}>
+          <Dialog
+            open={itemDialogOpen}
+            onOpenChange={(open) => {
+              setItemDialogOpen(open);
+              if (!open) {
+                setEditingItemId(null);
+                setDuplicatingItem(false);
+                setItemForm(emptyItemForm);
+              }
+            }}
+          >
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>{editingItemId ? "Edit item" : "Add item"}</DialogTitle>
+                <DialogTitle>
+                  {editingItemId
+                    ? "Edit item"
+                    : duplicatingItem
+                      ? "Duplicate item"
+                      : "Add item"}
+                </DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-2">
                 <div className="space-y-2">
@@ -2500,7 +2549,11 @@ export default function AdminInventoryPage() {
                   Cancel
                 </Button>
                 <Button type="button" onClick={() => void saveItem()}>
-                  {editingItemId ? "Save changes" : "Add item"}
+                  {editingItemId
+                    ? "Save changes"
+                    : duplicatingItem
+                      ? "Create copy"
+                      : "Add item"}
                 </Button>
               </DialogFooter>
             </DialogContent>
