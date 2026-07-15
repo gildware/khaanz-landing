@@ -21,6 +21,13 @@ const PICKUP_STEPS: OrderStatus[] = [
   "DELIVERED",
 ];
 
+const DINE_IN_STEPS: OrderStatus[] = [
+  "PENDING",
+  "ACCEPTED",
+  "DELIVERED",
+  "TABLE_CLEARED",
+];
+
 type OrderStatusTimelineProps = {
   status: string;
   fulfillment: string;
@@ -36,7 +43,11 @@ export function OrderStatusTimeline({ status, fulfillment }: OrderStatusTimeline
   }
 
   const steps =
-    fulfillment === "delivery" ? DELIVERY_STEPS : PICKUP_STEPS;
+    fulfillment === "delivery"
+      ? DELIVERY_STEPS
+      : fulfillment === "dine_in"
+        ? DINE_IN_STEPS
+        : PICKUP_STEPS;
   const current = isOrderStatus(status) ? status : "PENDING";
   const currentIndex = Math.max(0, steps.indexOf(current));
 

@@ -27,7 +27,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { formatIstDateInput } from "@/lib/ist-dates";
-import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
+import { ORDER_STATUS_LABEL, nextOrderStatusStep } from "@/lib/order-status-workflow";
 import {
   countOrdersByStatus,
   filterOrdersByStatusTab,
@@ -72,39 +72,10 @@ const ONLINE_ORDER_STATUS_TABS: { id: StatusFilter; label: string }[] = [
   { id: "PENDING", label: ORDER_STATUS_LABEL.PENDING },
   { id: "ACCEPTED", label: ORDER_STATUS_LABEL.ACCEPTED },
   { id: "PREPARING", label: ORDER_STATUS_LABEL.PREPARING },
-  { id: "OUT_FOR_DELIVERY", label: ORDER_STATUS_LABEL.OUT_FOR_DELIVERY },
+  { id: "OUT_FOR_DELIVERY", label: "Sent for delivery" },
   { id: "DELIVERED", label: ORDER_STATUS_LABEL.DELIVERED },
   { id: "CANCELLED", label: ORDER_STATUS_LABEL.CANCELLED },
 ];
-
-function nextStep(
-  status: string,
-  fulfillment: string,
-): { nextStatus: OrderStatus; label: string } | null {
-  switch (status) {
-    case "PENDING":
-      return { nextStatus: "ACCEPTED", label: "Accept order" };
-    case "ACCEPTED":
-      return { nextStatus: "PREPARING", label: "Mark preparing" };
-    case "PREPARING":
-      return {
-        nextStatus: "OUT_FOR_DELIVERY",
-        label:
-          fulfillment === "delivery"
-            ? "Mark out for delivery"
-            : fulfillment === "dine_in"
-              ? "Mark ready to serve"
-              : "Mark ready for pickup",
-      };
-    case "OUT_FOR_DELIVERY":
-      return {
-        nextStatus: "DELIVERED",
-        label: fulfillment === "dine_in" ? "Mark served" : "Mark delivered",
-      };
-    default:
-      return null;
-  }
-}
 
 function orderLinesToCartLines(
   lines: { sortIndex: number; payload: unknown }[],
@@ -668,7 +639,7 @@ export default function AdminOnlineOrdersPage() {
                 const lines = o.lines ?? [];
                 const canPrintWhole =
                   orderLinePayloadsToReceiptLines(lines).length > 0;
-                const step = nextStep(o.status, o.fulfillment);
+                const step = nextOrderStatusStep(o.status, o.fulfillment);
                 const isPending = o.status === "PENDING";
                 const canSendWhatsApp =
                   o.status === "PENDING" ||

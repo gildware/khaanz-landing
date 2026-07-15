@@ -8,6 +8,7 @@ import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 import {
   canAdminSetOrderStatus,
   ORDER_STATUS_LABEL,
+  restaurantOrderStatusLabel,
 } from "@/lib/order-status-workflow";
 import { recordOrderEvent } from "@/lib/order-events";
 import { getPrisma } from "@/lib/prisma";
@@ -19,6 +20,7 @@ const ALL_STATUSES: OrderStatus[] = [
   "PREPARING",
   "OUT_FOR_DELIVERY",
   "DELIVERED",
+  "TABLE_CLEARED",
   "CANCELLED",
 ];
 
@@ -58,14 +60,14 @@ export async function updateOrderStatus(
       ok: true,
       id: order.id,
       status: order.status,
-      statusLabel: ORDER_STATUS_LABEL[order.status],
+      statusLabel: restaurantOrderStatusLabel(order.status, order.fulfillment),
     };
   }
 
-  if (!canAdminSetOrderStatus(order.status, nextStatus)) {
+  if (!canAdminSetOrderStatus(order.status, nextStatus, order.fulfillment)) {
     return {
       ok: false,
-      error: `Cannot change status from ${ORDER_STATUS_LABEL[order.status]} to ${ORDER_STATUS_LABEL[nextStatus]}.`,
+      error: `Cannot change status from ${restaurantOrderStatusLabel(order.status, order.fulfillment)} to ${restaurantOrderStatusLabel(nextStatus, order.fulfillment)}.`,
       status: 400,
     };
   }
@@ -114,24 +116,29 @@ export async function updateOrderStatus(
   });
 
   if (order.status !== nextStatus) {
-    after(async () => {
-      try {
-        await notifyCustomerOrderStatusChange({
-          orderRef: updated.orderRef,
-          orderId: updated.id,
-          phoneDigits10: order.customer.phoneDigits,
-          status: nextStatus,
-        });
-      } catch (e) {
-        console.error("Customer status notify failed:", e);
-      }
-    });
+    try {
+      after(async () => {
+        try {
+          await notifyCustomerOrderStatusChange({
+            orderRef: updated.orderRef,
+            orderId: updated.id,
+            phoneDigits10: order.customer.phoneDigits,
+            status: nextStatus,
+          });
+        } catch (e) {
+          console.error("Customer status notify failed:", e);
+        }
+      });
+    } catch (e) {
+      // `after` only works inside a Next.js request; never fail the status write.
+      console.error("Deferred customer status notify skipped:", e);
+    }
   }
 
   return {
     ok: true,
     id: updated.id,
     status: updated.status,
-    statusLabel: ORDER_STATUS_LABEL[updated.status],
+    statusLabel: restaurantOrderStatusLabel(updated.status, order.fulfillment),
   };
 }

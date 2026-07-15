@@ -361,14 +361,17 @@ export function useAdminPosRegister() {
   }, []);
 
   useEffect(() => {
-    if (!pendingTableLabel || floorPlan.tables.length === 0) return;
+    if (!pendingTableLabel) return;
+    if (floorPlan.tables.length === 0) return;
+    const want = pendingTableLabel.trim().replace(/\s+/g, " ").toLowerCase();
     const match = floorPlan.tables.find(
-      (t) => t.label.trim() === pendingTableLabel,
+      (t) => t.label.trim().replace(/\s+/g, " ").toLowerCase() === want,
     );
     if (match) {
       setSelectedTableId(match.id);
-      setPendingTableLabel(null);
     }
+    // Floor plan is loaded — stop waiting even if the label no longer matches.
+    setPendingTableLabel(null);
   }, [floorPlan.tables, pendingTableLabel]);
 
   const cancelEditingOrder = useCallback(() => {
@@ -414,7 +417,9 @@ export function useAdminPosRegister() {
   const needsTablePick =
     fulfillment === "dine_in" && floorPlan.tables.length > 0;
   const canAddItems = !needsTablePick || selectedTableId != null;
-  const tablePickModalOpen = needsTablePick && !selectedTableId;
+  // Keep the picker closed while we restore a table label from an edited order.
+  const tablePickModalOpen =
+    needsTablePick && !selectedTableId && pendingTableLabel == null;
 
   useEffect(() => {
     if (!tablePickModalOpen) return;

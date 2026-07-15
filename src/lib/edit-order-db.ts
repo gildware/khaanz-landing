@@ -8,13 +8,12 @@ import {
   orderSnapshotForAudit,
   recordOrderEvent,
 } from "@/lib/order-events";
+import { canEditPosOrder } from "@/lib/order-status-workflow";
 import { computeOrderTotalMinor } from "@/lib/order-total";
 import type { OrderCreateParsed } from "@/lib/parse-order-create-body";
 import { normalizeIndianMobileDigits } from "@/lib/phone-digits";
 import { getPrisma } from "@/lib/prisma";
 import type { CartLine } from "@/types/menu";
-
-const TERMINAL_ORDER_STATUSES = new Set<OrderStatus>(["DELIVERED", "CANCELLED"]);
 
 export type EditOrderInput = {
   lines: CartLine[];
@@ -203,10 +202,13 @@ export async function editPosOrder(
     return { ok: false, error: "Order not found", status: 404 };
   }
 
-  if (TERMINAL_ORDER_STATUSES.has(order.status)) {
+  if (!canEditPosOrder(order.status, order.fulfillment)) {
     return {
       ok: false,
-      error: "Completed or cancelled orders cannot be edited.",
+      error:
+        order.fulfillment === "dine_in"
+          ? "Cleared or cancelled dine-in orders cannot be edited."
+          : "Completed or cancelled orders cannot be edited.",
       status: 409,
     };
   }

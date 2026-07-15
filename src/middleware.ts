@@ -9,6 +9,7 @@ import {
   hasAnyPermission,
   type AdminPermission,
 } from "@/lib/admin-permissions";
+import { isMobileUserAgent } from "@/lib/is-mobile";
 
 /** POS register needs read access to settings / menu / floor plan. */
 function apiPermissionsForRequest(
@@ -81,32 +82,47 @@ export async function middleware(request: NextRequest) {
 
   const token = request.cookies.get("admin_token")?.value;
   const session = await verifyAdminToken(token);
+  const preferMobile = isMobileUserAgent(request.headers.get("user-agent"));
+  const bearer = session
+    ? { role: session.role, permissions: session.permissions }
+    : null;
+  const onMobilePos = pathname.startsWith("/admin/pos/mobile");
 
   if (pathname === "/admin" || pathname === "/admin/") {
-    if (!session) {
+    if (!session || !bearer) {
       const login = new URL("/admin/login", request.url);
       login.searchParams.set("from", "/admin");
       return NextResponse.redirect(login);
     }
-    const home = defaultAdminHomePath({
-      role: session.role,
-      permissions: session.permissions,
-    });
+    const home = defaultAdminHomePath(bearer, { preferMobile });
     return NextResponse.redirect(new URL(home, request.url));
   }
 
   if (!session) {
     const login = new URL("/admin/login", request.url);
-    login.searchParams.set("from", pathname);
+    // Mobile: after login always land on POS Mobile, not deep panel links.
+    login.searchParams.set(
+      "from",
+      preferMobile ? "/admin/pos/mobile" : pathname,
+    );
     return NextResponse.redirect(login);
+  }
+
+  // Mobile phones: every /admin link → POS Mobile (except login + mobile POS itself).
+  if (
+    preferMobile &&
+    !onMobilePos &&
+    sessionHasPermission(session, "pos")
+  ) {
+    return NextResponse.redirect(new URL("/admin/pos/mobile", request.url));
   }
 
   const required = permissionForAdminPagePath(pathname);
   if (required && !sessionHasPermission(session, required)) {
-    const home = defaultAdminHomePath({
-      role: session.role,
-      permissions: session.permissions,
-    });
+    const home = defaultAdminHomePath(
+      { role: session.role, permissions: session.permissions },
+      { preferMobile },
+    );
     if (home === pathname || home === "/admin/login") {
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }

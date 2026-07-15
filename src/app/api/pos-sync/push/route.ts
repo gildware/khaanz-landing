@@ -6,6 +6,7 @@ import { readFloorPlan } from "@/lib/floor-plan";
 import { httpResponseForOrderPersistError } from "@/lib/order-persist-errors";
 import { persistPosOrderToDatabase } from "@/lib/persist-order-db";
 import { parseOrderCreateBody } from "@/lib/parse-order-create-body";
+import { findOccupyingOrderForTable } from "@/lib/pos-occupied-tables";
 import { getPrisma } from "@/lib/prisma";
 import { readRestaurantSettings } from "@/lib/settings-repository";
 
@@ -90,6 +91,14 @@ async function persistPosOrderPayload(payload: unknown): Promise<PersistSyncResu
       };
     }
     dineInTable = t.label.trim().slice(0, 80);
+    const occupying = await findOccupyingOrderForTable(getPrisma(), dineInTable);
+    if (occupying) {
+      return {
+        ok: false,
+        retry: false,
+        error: `Table ${dineInTable} is occupied (${occupying.orderRef ?? "open order"}). Clear the table or update that order.`,
+      };
+    }
   }
 
   const clientOrderId =

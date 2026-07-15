@@ -93,7 +93,11 @@ export function hasAnyPermission(
 /** First panel home the user can open after login. */
 export function defaultAdminHomePath(
   bearer: PermissionBearer,
+  options?: { preferMobile?: boolean },
 ): string {
+  if (options?.preferMobile && hasPermission(bearer, "pos")) {
+    return "/admin/pos/mobile";
+  }
   const order: { permission: AdminPermission; href: string }[] = [
     { permission: "dashboard", href: "/admin/dashboard" },
     { permission: "online_orders", href: "/admin/online-orders" },

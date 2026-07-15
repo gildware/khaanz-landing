@@ -1,3 +1,4 @@
+import { AdminMobilePosRedirect } from "@/components/admin/admin-mobile-pos-redirect";
 import { AdminNewOrderNotifier } from "@/components/admin/admin-new-order-notifier";
 import { AdminSessionProvider } from "@/components/admin/admin-session-provider";
 
@@ -12,10 +13,12 @@ export default function AdminPosStandaloneLayout({
 }) {
   return (
     <AdminSessionProvider>
-      <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
-        <AdminNewOrderNotifier />
-        {children}
-      </div>
+      <AdminMobilePosRedirect>
+        <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
+          <AdminNewOrderNotifier />
+          {children}
+        </div>
+      </AdminMobilePosRedirect>
     </AdminSessionProvider>
   );
 }

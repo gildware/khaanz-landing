@@ -8,7 +8,19 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  defaultAdminHomePath,
+  hasPermission,
+  type AdminPermission,
+  type PermissionBearer,
+} from "@/lib/admin-permissions";
+import { isMobileView } from "@/lib/is-mobile";
 import { SITE } from "@/lib/site";
+
+type LoginUser = {
+  role: PermissionBearer["role"];
+  permissions: AdminPermission[];
+};
 
 function AdminLoginForm() {
   const router = useRouter();
@@ -35,9 +47,37 @@ function AdminLoginForm() {
       toast.error(msg);
       return;
     }
+
+    let user: LoginUser | null = null;
+    try {
+      const j = (await res.json()) as { user?: LoginUser };
+      if (j.user) user = j.user;
+    } catch {
+      /* ignore */
+    }
+
     toast.success("Welcome back");
-    const from = searchParams.get("from") ?? "/admin/dashboard";
-    router.push(from.startsWith("/admin") ? from : "/admin/dashboard");
+
+    const bearer: PermissionBearer | null = user
+      ? { role: user.role, permissions: user.permissions }
+      : null;
+    const mobile = isMobileView();
+
+    // Mobile view: skip the admin panel and open POS Mobile directly.
+    if (mobile && bearer && hasPermission(bearer, "pos")) {
+      router.push("/admin/pos/mobile");
+      router.refresh();
+      return;
+    }
+
+    const from = searchParams.get("from");
+    if (from?.startsWith("/admin") && from !== "/admin" && from !== "/admin/") {
+      router.push(from);
+    } else if (bearer) {
+      router.push(defaultAdminHomePath(bearer, { preferMobile: mobile }));
+    } else {
+      router.push("/admin/dashboard");
+    }
     router.refresh();
   };
 

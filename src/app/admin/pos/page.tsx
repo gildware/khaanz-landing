@@ -30,6 +30,7 @@ import {
   formatMoney,
   useAdminPosRegister,
 } from "@/hooks/use-admin-pos-register";
+import { floorTableBoxStyle } from "@/types/floor-plan";
 import { getKhaanzDesktop } from "@/lib/khaanz-desktop-client";
 import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -785,23 +786,18 @@ export default function AdminPosPage() {
               one.
             </DialogDescription>
           </DialogHeader>
-          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-md border bg-muted/50">
+          <div className="relative aspect-[5/4] w-full overflow-hidden rounded-md border bg-muted/50">
             {floorPlan.tables.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 className={cn(
-                  "absolute flex items-center justify-center rounded border px-0.5 text-[10px] font-semibold leading-tight shadow-sm transition-colors",
+                  "absolute flex items-center justify-center rounded-md border px-1 text-xs font-semibold leading-tight shadow-sm transition-colors",
                   selectedTableId === t.id
                     ? "border-primary bg-primary text-primary-foreground ring-2 ring-primary/25"
                     : "border-border bg-card text-foreground hover:bg-muted/80",
                 )}
-                style={{
-                  left: `${t.xPct}%`,
-                  top: `${t.yPct}%`,
-                  width: `${t.widthPct}%`,
-                  height: `${t.heightPct}%`,
-                }}
+                style={floorTableBoxStyle(t)}
                 onClick={() => setSelectedTableId(t.id)}
               >
                 {t.label}

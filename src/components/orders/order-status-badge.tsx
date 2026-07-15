@@ -15,6 +15,8 @@ export function orderStatusBadgeClassName(status: string): string {
       return "border-cyan-600/40 bg-cyan-500/14 text-cyan-950 dark:border-cyan-400/35 dark:bg-cyan-400/12 dark:text-cyan-50";
     case "DELIVERED":
       return "border-emerald-600/40 bg-emerald-500/14 text-emerald-950 dark:border-emerald-400/35 dark:bg-emerald-400/12 dark:text-emerald-50";
+    case "TABLE_CLEARED":
+      return "border-stone-500/40 bg-stone-500/12 text-stone-950 dark:border-stone-400/35 dark:bg-stone-400/12 dark:text-stone-50";
     case "CANCELLED":
       return "border-red-600/45 bg-red-500/12 text-red-950 dark:border-red-400/40 dark:bg-red-500/18 dark:text-red-50";
     default:
@@ -50,6 +52,7 @@ export function isOrderStatus(value: string): value is OrderStatus {
     value === "PREPARING" ||
     value === "OUT_FOR_DELIVERY" ||
     value === "DELIVERED" ||
+    value === "TABLE_CLEARED" ||
     value === "CANCELLED"
   );
 }

@@ -22,6 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatIstDateInput } from "@/lib/ist-dates";
 import {
   RESTAURANT_ORDER_STATUS_TAB_LABEL,
+  nextOrderStatusStep,
   restaurantOrderStatusLabel,
 } from "@/lib/order-status-workflow";
 import {
@@ -57,6 +58,10 @@ const ORDER_STATUS_TABS: { id: StatusFilter; label: string }[] = [
     label: RESTAURANT_ORDER_STATUS_TAB_LABEL.OUT_FOR_DELIVERY,
   },
   { id: "DELIVERED", label: RESTAURANT_ORDER_STATUS_TAB_LABEL.DELIVERED },
+  {
+    id: "TABLE_CLEARED",
+    label: RESTAURANT_ORDER_STATUS_TAB_LABEL.TABLE_CLEARED,
+  },
   { id: "CANCELLED", label: RESTAURANT_ORDER_STATUS_TAB_LABEL.CANCELLED },
 ];
 
@@ -138,39 +143,12 @@ function orderStatusBadgeClassName(status: string): string {
       return "border-cyan-600/40 bg-cyan-500/14 text-cyan-950 dark:border-cyan-400/35 dark:bg-cyan-400/12 dark:text-cyan-50";
     case "DELIVERED":
       return "border-emerald-600/40 bg-emerald-500/14 text-emerald-950 dark:border-emerald-400/35 dark:bg-emerald-400/12 dark:text-emerald-50";
+    case "TABLE_CLEARED":
+      return "border-stone-500/40 bg-stone-500/12 text-stone-950 dark:border-stone-400/35 dark:bg-stone-400/12 dark:text-stone-50";
     case "CANCELLED":
       return "border-red-600/45 bg-red-500/12 text-red-950 dark:border-red-400/40 dark:bg-red-500/18 dark:text-red-50";
     default:
       return "border-border bg-muted text-muted-foreground";
-  }
-}
-
-function nextStep(
-  status: string,
-  fulfillment: string,
-): { nextStatus: string; label: string } | null {
-  switch (status) {
-    case "PENDING":
-      return { nextStatus: "ACCEPTED", label: "Accept order" };
-    case "ACCEPTED":
-      return { nextStatus: "PREPARING", label: "Mark preparing" };
-    case "PREPARING":
-      return {
-        nextStatus: "OUT_FOR_DELIVERY",
-        label:
-          fulfillment === "delivery"
-            ? "Mark out for delivery"
-            : fulfillment === "dine_in"
-              ? "Mark ready to serve"
-              : "Mark ready for pickup",
-      };
-    case "OUT_FOR_DELIVERY":
-      return {
-        nextStatus: "DELIVERED",
-        label: fulfillment === "dine_in" ? "Mark served" : "Mark delivered",
-      };
-    default:
-      return null;
   }
 }
 
@@ -563,11 +541,13 @@ export default function AdminOrdersPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredOrders.map((o) => {
-              const step = nextStep(o.status, o.fulfillment);
+              const step = nextOrderStatusStep(o.status, o.fulfillment);
               const busy = updatingId === o.id;
               const rupee = (o.totalMinor / 100).toFixed(2);
               const canCancel =
-                o.status !== "CANCELLED" && o.status !== "DELIVERED";
+                o.status !== "CANCELLED" &&
+                o.status !== "DELIVERED" &&
+                o.status !== "TABLE_CLEARED";
               const lines = o.lines ?? [];
               const canPrintWhole =
                 orderLinePayloadsToReceiptLines(lines).length > 0;
@@ -1001,11 +981,12 @@ export default function AdminOrdersPage() {
 
                 <div className="flex flex-wrap gap-2 pt-2">
                   {(() => {
-                    const step = nextStep(detail.status, detail.fulfillment);
+                    const step = nextOrderStatusStep(detail.status, detail.fulfillment);
                     const busy = updatingId === detail.id;
                     const canCancel =
                       detail.status !== "CANCELLED" &&
-                      detail.status !== "DELIVERED";
+                      detail.status !== "DELIVERED" &&
+                      detail.status !== "TABLE_CLEARED";
                     return (
                       <>
                         {step && (

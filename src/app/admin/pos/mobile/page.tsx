@@ -1,25 +1,24 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import {
   ChevronDownIcon,
   ClipboardListIcon,
-  HistoryIcon,
+  HomeIcon,
   ImageIcon,
   Loader2Icon,
   LogOutIcon,
   MinusIcon,
   PlusIcon,
-  ShoppingBagIcon,
   StoreIcon,
-  UtensilsCrossedIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PosDeliveryCustomerPhoneInput } from "@/components/admin/pos-delivery-customer-phone-input";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { PosMobileOrderHistory } from "@/components/admin/pos-mobile-order-history";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -39,13 +38,33 @@ import {
   useAdminPosRegister,
 } from "@/hooks/use-admin-pos-register";
 import { getKhaanzDesktop } from "@/lib/khaanz-desktop-client";
+import { writePosMobileEditDraft } from "@/lib/pos-mobile-edit-draft";
 import { SITE } from "@/lib/site";
+import { floorTableBoxStyle } from "@/types/floor-plan";
 import { cn } from "@/lib/utils";
 import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
+import type { FulfillmentMode } from "@/types/restaurant-settings";
 
-type MobileTab = "menu" | "cart" | "checkout";
+type MainTab = "home" | "orders";
+type RegisterStep = "type" | "menu" | "cart" | "checkout";
 
 export default function AdminPosMobilePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
+          <Loader2Icon className="size-4 animate-spin" />
+          Loading…
+        </div>
+      }
+    >
+      <AdminPosMobilePageInner />
+    </Suspense>
+  );
+}
+
+function AdminPosMobilePageInner() {
+  const searchParams = useSearchParams();
   const pos = useAdminPosRegister();
   const {
     isLoading,
@@ -122,26 +141,179 @@ export default function AdminPosMobilePage() {
     filteredCombos,
     submitPosOrder,
     canAddItems,
-    tablePickModalOpen,
     editingOrderId,
     editingOrderRef,
     editDraftLoaded,
     cancelEditingOrder,
   } = pos;
 
-  const [tab, setTab] = useState<MobileTab>("menu");
+  const [mainTab, setMainTab] = useState<MainTab>(() =>
+    searchParams.get("tab") === "orders" ? "orders" : "home",
+  );
+  const [registerStep, setRegisterStep] = useState<RegisterStep | null>(null);
+  const [selectedType, setSelectedType] = useState<
+    "dine_in" | "pickup" | "delivery" | null
+  >(null);
+  const [occupiedByLabel, setOccupiedByLabel] = useState<
+    Record<string, { orderId: string; orderRef: string | null }>
+  >({});
+  const [occupiedLoadingId, setOccupiedLoadingId] = useState<string | null>(
+    null,
+  );
   const cartCount = cart.reduce((n, l) => n + l.quantity, 0);
   const isEditing = Boolean(editingOrderId);
+  const inOrderWorkspace =
+    mainTab === "home" &&
+    (registerStep === "menu" ||
+      registerStep === "cart" ||
+      registerStep === "checkout");
+  const showHomeChooser =
+    mainTab === "home" &&
+    (registerStep == null || registerStep === "type");
+
+  const loadOccupiedTables = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/pos/occupied-tables", {
+        credentials: "include",
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        tables?: { label: string; orderId: string; orderRef: string | null }[];
+      };
+      const map: Record<string, { orderId: string; orderRef: string | null }> =
+        {};
+      for (const t of data.tables ?? []) {
+        const label = t.label.trim();
+        if (!label) continue;
+        map[label] = { orderId: t.orderId, orderRef: t.orderRef };
+      }
+      setOccupiedByLabel(map);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
-    if (editDraftLoaded && cart.length > 0) setTab("cart");
+    if (searchParams.get("tab") === "orders") setMainTab("orders");
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (selectedType === "dine_in" && showHomeChooser) {
+      void loadOccupiedTables();
+    }
+  }, [selectedType, showHomeChooser, loadOccupiedTables]);
+
+  useEffect(() => {
+    if (editDraftLoaded && cart.length > 0) {
+      setSelectedType(null);
+      setRegisterStep("cart");
+      setMainTab("home");
+    }
   }, [editDraftLoaded, cart.length]);
 
   useEffect(() => {
-    if (cart.length === 0 && !isEditing && (tab === "cart" || tab === "checkout")) {
-      setTab("menu");
+    if (cart.length === 0 && !isEditing && registerStep != null) {
+      if (registerStep === "cart" || registerStep === "checkout") {
+        setRegisterStep(null);
+        setSelectedType(null);
+        setMainTab("home");
+      }
     }
-  }, [cart.length, tab, isEditing]);
+  }, [cart.length, isEditing, registerStep]);
+
+  const goHomeChooser = () => {
+    setRegisterStep(null);
+    setSelectedType(null);
+    setMainTab("home");
+  };
+
+  const selectOrderType = (mode: "dine_in" | "pickup" | "delivery") => {
+    setSelectedType(mode);
+    setFulfillment(mode);
+    if (mode === "dine_in" && floorPlan.tables.length > 0) {
+      setRegisterStep("type");
+      return;
+    }
+    setRegisterStep("menu");
+  };
+
+  const openOccupiedOrder = async (orderId: string) => {
+    setOccupiedLoadingId(orderId);
+    try {
+      const res = await fetch(`/api/admin/pos/orders/${orderId}`, {
+        credentials: "include",
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        id?: string;
+        orderRef?: string | null;
+        fulfillment?: string;
+        customerName?: string | null;
+        customerPhone?: string;
+        address?: string;
+        landmark?: string;
+        notes?: string;
+        paymentMethod?: string;
+        dineInTable?: string;
+        deliveryChargeMinor?: number;
+        discountMinor?: number;
+        lines?: { sortIndex: number; payload: unknown }[];
+      };
+      if (!res.ok || !data.id) {
+        toast.error(data.error ?? "Could not open occupied table order.");
+        return;
+      }
+      if (!data.lines?.length) {
+        toast.error("This order has no items to edit.");
+        return;
+      }
+      const fulfillment = (
+        ["dine_in", "pickup", "delivery"].includes(data.fulfillment ?? "")
+          ? data.fulfillment
+          : "dine_in"
+      ) as FulfillmentMode;
+      writePosMobileEditDraft({
+        orderId: data.id,
+        orderRef: data.orderRef ?? null,
+        fulfillment,
+        customerName: data.customerName ?? "",
+        phone: data.customerPhone ?? "",
+        address: data.address ?? "",
+        landmark: data.landmark ?? "",
+        notes: data.notes ?? "",
+        paymentMethod: data.paymentMethod ?? "",
+        dineInTable: data.dineInTable ?? "",
+        deliveryChargeMinor: data.deliveryChargeMinor ?? 0,
+        discountMinor: data.discountMinor ?? 0,
+        lines: data.lines,
+      });
+      window.location.assign("/admin/pos/mobile");
+    } catch {
+      toast.error("Network error opening order.");
+    } finally {
+      setOccupiedLoadingId(null);
+    }
+  };
+
+  const pickTable = (tableId: string) => {
+    const table = floorPlan.tables.find((t) => t.id === tableId);
+    const label = table?.label.trim() ?? "";
+    const occ = label ? occupiedByLabel[label] : undefined;
+    if (occ && !(isEditing && occ.orderId === editingOrderId)) {
+      void openOccupiedOrder(occ.orderId);
+      return;
+    }
+    setSelectedTableId(tableId);
+    setRegisterStep("menu");
+  };
+
+  const changeTable = () => {
+    setSelectedTableId(null);
+    setSelectedType("dine_in");
+    setFulfillment("dine_in");
+    setRegisterStep("type");
+    setMainTab("home");
+  };
 
   if (isLoading) {
     return (
@@ -196,16 +368,6 @@ export default function AdminPosMobilePage() {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-0.5">
-            <Link
-              href="/admin/pos/mobile/history"
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "!h-10 gap-1.5 px-2.5 text-xs font-medium",
-              )}
-            >
-              <HistoryIcon className="size-4" />
-              History
-            </Link>
             {getKhaanzDesktop()?.isDesktop ? (
               <Button
                 type="button"
@@ -243,7 +405,7 @@ export default function AdminPosMobilePage() {
             className="!h-9 shrink-0 px-3 text-xs"
             onClick={() => {
               cancelEditingOrder();
-              setTab("menu");
+              goHomeChooser();
             }}
           >
             Discard
@@ -253,7 +415,166 @@ export default function AdminPosMobilePage() {
 
       {/* Main */}
       <main className="min-h-0 flex-1 overflow-hidden">
-        {tab === "menu" ? (
+        {mainTab === "orders" ? (
+          <PosMobileOrderHistory
+            onEditDraftReady={() => window.location.assign("/admin/pos/mobile")}
+            onStatusUpdated={() => {
+              void loadOccupiedTables();
+            }}
+          />
+        ) : null}
+
+        {mainTab === "home" && showHomeChooser ? (
+          <div className="flex h-full min-h-0 flex-col">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 [-webkit-overflow-scrolling:touch]">
+              <p className="font-semibold text-lg">Order type</p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Choose dine-in, pickup, or delivery to start.
+              </p>
+              <div className="mt-5 grid gap-3">
+                {(
+                  [
+                    ["dine_in", "Dine-in"],
+                    ["pickup", "Pickup"],
+                    ["delivery", "Delivery"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <Button
+                    key={key}
+                    type="button"
+                    size="lg"
+                    className="h-14 w-full text-base"
+                    variant={selectedType === key ? "default" : "outline"}
+                    onClick={() => selectOrderType(key)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+
+              {selectedType === "dine_in" && floorPlan.tables.length > 0 ? (
+                <div className="mt-6 space-y-3">
+                  <div>
+                    <p className="font-semibold text-sm">Choose a table</p>
+                    <p className="text-muted-foreground mt-0.5 text-xs">
+                      Tap an occupied table to edit that order. Free tables start
+                      a new order.
+                    </p>
+                  </div>
+                  <div className="relative aspect-[5/4] w-full overflow-hidden rounded-xl border bg-muted/50">
+                    {floorPlan.tables.map((t) => {
+                      const label = t.label.trim();
+                      const occ = label ? occupiedByLabel[label] : undefined;
+                      const occupied =
+                        Boolean(occ) &&
+                        !(isEditing && occ?.orderId === editingOrderId);
+                      const loadingThis =
+                        occupied &&
+                        Boolean(occ) &&
+                        occupiedLoadingId === occ?.orderId;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          disabled={Boolean(occupiedLoadingId)}
+                          className={cn(
+                            "absolute flex flex-col items-center justify-center rounded-md border px-1 text-center text-[10px] font-semibold leading-tight shadow-sm",
+                            occupied
+                              ? "border-amber-400 bg-amber-100 text-amber-950 active:bg-amber-200"
+                              : selectedTableId === t.id
+                                ? "border-primary bg-primary text-primary-foreground ring-2 ring-primary/25"
+                                : "border-border bg-card text-foreground active:bg-muted/80",
+                          )}
+                          style={floorTableBoxStyle(t)}
+                          onClick={() => pickTable(t.id)}
+                        >
+                          <span>{t.label}</span>
+                          {occupied ? (
+                            <span className="mt-0.5 text-[8px] font-medium uppercase tracking-wide">
+                              {loadingThis ? "Opening…" : "Occupied · Edit"}
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedTableId ? (
+                    <Button
+                      type="button"
+                      className="h-12 w-full text-base"
+                      onClick={() => setRegisterStep("menu")}
+                    >
+                      Continue to menu · {dineInTableLabel || "Table"}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {inOrderWorkspace ? (
+          <div className="flex h-full min-h-0 flex-col">
+            <div
+              className="shrink-0 grid grid-cols-4 border-b bg-muted/20"
+              role="tablist"
+              aria-label="Order steps"
+            >
+              {(
+                [
+                  { id: "type" as const, label: "Type" },
+                  { id: "menu" as const, label: "Menu" },
+                  { id: "cart" as const, label: "Cart" },
+                  { id: "checkout" as const, label: "Pay" },
+                ] as const
+              ).map(({ id, label }) => {
+                const active = registerStep === id;
+                const disabled =
+                  (id === "cart" || id === "checkout") &&
+                  cart.length === 0 &&
+                  !active;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    disabled={disabled}
+                    className={cn(
+                      "relative py-2.5 text-xs font-medium transition-colors disabled:opacity-40",
+                      active ? "text-foreground" : "text-muted-foreground",
+                    )}
+                    onClick={() => {
+                      if (id === "type") {
+                        setSelectedType(
+                          fulfillment === "dine_in" ||
+                            fulfillment === "pickup" ||
+                            fulfillment === "delivery"
+                            ? fulfillment
+                            : null,
+                        );
+                        setRegisterStep("type");
+                        return;
+                      }
+                      setRegisterStep(id);
+                    }}
+                  >
+                    {label}
+                    {id === "cart" && cartCount > 0 ? (
+                      <span className="ml-1 tabular-nums text-[10px]">
+                        ({cartCount > 99 ? "99+" : cartCount})
+                      </span>
+                    ) : null}
+                    {active ? (
+                      <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-foreground" />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-hidden">
+              {registerStep === "menu" ? (
           <div className="flex h-full min-h-0 flex-col">
             <div className="shrink-0 space-y-2 border-b bg-muted/20 px-3 py-2.5">
               <Input
@@ -292,7 +613,7 @@ export default function AdminPosMobilePage() {
                 <button
                   type="button"
                   className="flex w-full items-center justify-between rounded-lg border bg-background px-3 py-2 text-sm"
-                  onClick={() => setSelectedTableId(null)}
+                  onClick={changeTable}
                 >
                   <span className="text-muted-foreground">
                     Table{" "}
@@ -323,15 +644,15 @@ export default function AdminPosMobilePage() {
                   </Button>
                 </div>
               ) : categoryKey === CAT_COMBOS ? (
-                <div className="grid grid-cols-2 gap-2 p-3">
+                <div className="grid grid-cols-3 gap-1.5 p-2">
                   {filteredCombos.map((combo) => (
                     <button
                       key={combo.id}
                       type="button"
                       onClick={() => addComboLine(combo)}
-                      className="flex flex-col rounded-xl border bg-background p-2.5 text-left active:bg-muted/60"
+                      className="flex flex-col rounded-lg border bg-background p-1.5 text-left active:bg-muted/60"
                     >
-                      <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-lg bg-muted">
+                      <div className="relative mb-1 aspect-square w-full overflow-hidden rounded-md bg-muted">
                         {combo.image ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -343,33 +664,33 @@ export default function AdminPosMobilePage() {
                           />
                         ) : null}
                       </div>
-                      <p className="line-clamp-2 text-sm font-medium leading-snug">
+                      <p className="line-clamp-2 text-[11px] font-medium leading-snug">
                         {combo.name}
                       </p>
-                      <p className="mt-0.5 text-muted-foreground text-xs tabular-nums">
+                      <p className="mt-0.5 text-muted-foreground text-[10px] tabular-nums">
                         {formatMoney(combo.price)}
                       </p>
                     </button>
                   ))}
                   {filteredCombos.length === 0 ? (
-                    <p className="text-muted-foreground col-span-2 py-8 text-center text-sm">
+                    <p className="text-muted-foreground col-span-3 py-8 text-center text-sm">
                       No combos match your search.
                     </p>
                   ) : null}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2 p-3">
+                <div className="grid grid-cols-3 gap-1.5 p-2">
                   {filteredItems.map((item) => (
                     <button
                       key={item.id}
                       type="button"
                       onClick={() => openConfigure(item)}
                       className={cn(
-                        "flex flex-col rounded-xl border bg-background p-2.5 text-left active:bg-muted/60",
+                        "flex flex-col rounded-lg border bg-background p-1.5 text-left active:bg-muted/60",
                         item.available === false && "opacity-50",
                       )}
                     >
-                      <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-lg bg-muted">
+                      <div className="relative mb-1 aspect-square w-full overflow-hidden rounded-md bg-muted">
                         {item.image ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -381,10 +702,10 @@ export default function AdminPosMobilePage() {
                           />
                         ) : null}
                       </div>
-                      <p className="line-clamp-2 text-sm font-medium leading-snug">
+                      <p className="line-clamp-2 text-[11px] font-medium leading-snug">
                         {item.name}
                       </p>
-                      <p className="mt-0.5 text-muted-foreground text-xs tabular-nums">
+                      <p className="mt-0.5 text-muted-foreground text-[10px] tabular-nums">
                         from{" "}
                         {formatMoney(
                           item.variations.length
@@ -395,7 +716,7 @@ export default function AdminPosMobilePage() {
                     </button>
                   ))}
                   {filteredItems.length === 0 ? (
-                    <p className="text-muted-foreground col-span-2 py-8 text-center text-sm">
+                    <p className="text-muted-foreground col-span-3 py-8 text-center text-sm">
                       No items in this category.
                     </p>
                   ) : null}
@@ -405,7 +726,7 @@ export default function AdminPosMobilePage() {
           </div>
         ) : null}
 
-        {tab === "cart" ? (
+              {registerStep === "cart" ? (
           <div className="flex h-full min-h-0 flex-col">
             <div className="shrink-0 border-b px-3 py-3">
               <p className="font-semibold text-base">Cart</p>
@@ -419,7 +740,7 @@ export default function AdminPosMobilePage() {
                   Cart is empty. Add items from the menu.
                 </p>
               ) : (
-                <ul className="space-y-2.5">
+                <ul className="space-y-1.5">
                   {cart.map((line) => {
                     const label = isCartComboLine(line)
                       ? `${line.name} (Combo)`
@@ -430,25 +751,25 @@ export default function AdminPosMobilePage() {
                     return (
                       <li
                         key={line.lineId}
-                        className="rounded-xl border bg-card p-3"
+                        className="rounded-lg border bg-card px-2.5 py-2"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
-                            <p className="font-medium text-sm leading-snug">
+                            <p className="font-medium text-xs leading-snug">
                               {label}
                             </p>
-                            <p className="mt-0.5 text-muted-foreground text-xs tabular-nums">
+                            <p className="mt-0.5 text-muted-foreground text-[10px] tabular-nums">
                               {formatMoney(line.unitPrice)} each
                             </p>
                             {isCartItemLine(line) &&
                             line.addons.some((a) => a.quantity > 0) ? (
-                              <ul className="mt-1 space-y-0.5">
+                              <ul className="mt-0.5 space-y-0">
                                 {line.addons
                                   .filter((a) => a.quantity > 0)
                                   .map((a) => (
                                     <li
                                       key={a.id}
-                                      className="text-muted-foreground text-[11px]"
+                                      className="text-muted-foreground text-[10px]"
                                     >
                                       + {a.name} ×{a.quantity}
                                     </li>
@@ -456,45 +777,45 @@ export default function AdminPosMobilePage() {
                               </ul>
                             ) : null}
                             {isCartComboLine(line) && line.componentSummary ? (
-                              <p className="text-muted-foreground mt-1 text-[11px]">
+                              <p className="text-muted-foreground mt-0.5 text-[10px]">
                                 {line.componentSummary}
                               </p>
                             ) : null}
                           </div>
-                          <p className="shrink-0 font-semibold text-sm tabular-nums">
+                          <p className="shrink-0 font-semibold text-xs tabular-nums">
                             {formatMoney(sub)}
                           </p>
                         </div>
-                        <div className="mt-3 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
+                        <div className="mt-1.5 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
                             <Button
                               type="button"
                               size="icon"
                               variant="outline"
-                              className="size-11"
+                              className="size-8"
                               onClick={() => bumpQty(line.lineId, -1)}
                               aria-label="Decrease quantity"
                             >
-                              <MinusIcon className="size-4" />
+                              <MinusIcon className="size-3.5" />
                             </Button>
-                            <span className="w-8 text-center text-base tabular-nums font-medium">
+                            <span className="w-6 text-center text-sm tabular-nums font-medium">
                               {line.quantity}
                             </span>
                             <Button
                               type="button"
                               size="icon"
                               variant="outline"
-                              className="size-11"
+                              className="size-8"
                               onClick={() => bumpQty(line.lineId, 1)}
                               aria-label="Increase quantity"
                             >
-                              <PlusIcon className="size-4" />
+                              <PlusIcon className="size-3.5" />
                             </Button>
                           </div>
                           <Button
                             type="button"
                             variant="ghost"
-                            className="h-11 text-destructive"
+                            className="h-8 px-2 text-xs text-destructive"
                             onClick={() => removeLine(line.lineId)}
                           >
                             Remove
@@ -514,19 +835,29 @@ export default function AdminPosMobilePage() {
                     {formatMoney(billTotals.itemsTotal)}
                   </span>
                 </div>
-                <Button
-                  type="button"
-                  className="h-12 w-full text-base"
-                  onClick={() => setTab("checkout")}
-                >
-                  Checkout · {formatMoney(total)}
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-12 text-sm"
+                    onClick={() => setRegisterStep("menu")}
+                  >
+                    Add more items
+                  </Button>
+                  <Button
+                    type="button"
+                    className="h-12 text-sm"
+                    onClick={() => setRegisterStep("checkout")}
+                  >
+                    Checkout · {formatMoney(total)}
+                  </Button>
+                </div>
               </div>
             ) : null}
           </div>
         ) : null}
 
-        {tab === "checkout" ? (
+              {registerStep === "checkout" ? (
           <div className="flex h-full min-h-0 flex-col">
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 [-webkit-overflow-scrolling:touch]">
               <section className="space-y-2">
@@ -557,7 +888,7 @@ export default function AdminPosMobilePage() {
                   <button
                     type="button"
                     className="flex w-full items-center justify-between rounded-lg border bg-background px-3 py-2.5 text-sm"
-                    onClick={() => setSelectedTableId(null)}
+                    onClick={changeTable}
                   >
                     <span className="text-muted-foreground">
                       Table{" "}
@@ -793,7 +1124,7 @@ export default function AdminPosMobilePage() {
               </section>
             </div>
 
-            <div className="shrink-0 space-y-2 border-t bg-background p-3">
+            <div className="shrink-0 border-t bg-background p-3">
               <Button
                 type="button"
                 className="h-12 w-full text-base"
@@ -808,41 +1139,10 @@ export default function AdminPosMobilePage() {
                   `Save · ${formatMoney(total)}`
                 )}
               </Button>
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 px-1 text-xs"
-                  disabled={placing || cart.length === 0}
-                  onClick={() => ensurePrinterOrSubmit("kot")}
-                >
-                  {getKhaanzDesktop()?.isDesktop && !printerConnected
-                    ? "Printer"
-                    : "KOT"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 px-1 text-xs"
-                  disabled={placing || cart.length === 0}
-                  onClick={() => ensurePrinterOrSubmit("bill")}
-                >
-                  {getKhaanzDesktop()?.isDesktop && !printerConnected
-                    ? "Printer"
-                    : "Bill"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 px-1 text-xs"
-                  disabled={placing || cart.length === 0}
-                  onClick={() => ensurePrinterOrSubmit("both")}
-                >
-                  {getKhaanzDesktop()?.isDesktop && !printerConnected
-                    ? "Printer"
-                    : "Print"}
-                </Button>
-              </div>
+            </div>
+          </div>
+        ) : null}
+
             </div>
           </div>
         ) : null}
@@ -853,35 +1153,25 @@ export default function AdminPosMobilePage() {
         className="shrink-0 border-t bg-background pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
         aria-label="POS navigation"
       >
-        <div className="grid grid-cols-3">
+        <div className="grid grid-cols-2">
           {(
             [
-              { id: "menu" as const, label: "Menu", icon: UtensilsCrossedIcon },
-              { id: "cart" as const, label: "Cart", icon: ShoppingBagIcon },
-              { id: "checkout" as const, label: "Pay", icon: ClipboardListIcon },
+              { id: "home" as const, label: "Home", icon: HomeIcon },
+              { id: "orders" as const, label: "Orders", icon: ClipboardListIcon },
             ] as const
           ).map(({ id, label, icon: Icon }) => {
-            const active = tab === id;
-            const disabled = id !== "menu" && cart.length === 0 && tab !== id;
+            const active = mainTab === id;
             return (
               <button
                 key={id}
                 type="button"
-                disabled={disabled}
                 className={cn(
-                  "relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors disabled:opacity-40",
+                  "relative flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors",
                   active ? "text-foreground" : "text-muted-foreground",
                 )}
-                onClick={() => setTab(id)}
+                onClick={() => setMainTab(id)}
               >
-                <span className="relative">
-                  <Icon className={cn("size-5", active && "stroke-[2.25]")} />
-                  {id === "cart" && cartCount > 0 ? (
-                    <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[9px] font-semibold text-background">
-                      {cartCount > 99 ? "99+" : cartCount}
-                    </span>
-                  ) : null}
-                </span>
+                <Icon className={cn("size-5", active && "stroke-[2.25]")} />
                 {label}
               </button>
             );
@@ -889,74 +1179,7 @@ export default function AdminPosMobilePage() {
         </div>
       </nav>
 
-      {/* Dialogs (shared behaviour with desktop POS) */}
-      <Dialog
-        open={tablePickModalOpen}
-        onOpenChange={() => {
-          /* Block dismiss until a table is chosen */
-        }}
-      >
-        <DialogContent
-          className="max-h-[min(92dvh,100%)] w-[calc(100%-1.5rem)] max-w-lg overflow-y-auto"
-          showCloseButton={false}
-        >
-          <DialogHeader>
-            <DialogTitle>Choose a table</DialogTitle>
-            <DialogDescription>
-              Tap the table for this order. The menu stays locked until you pick
-              one.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="relative aspect-[16/10] w-full overflow-hidden rounded-md border bg-muted/50">
-            {floorPlan.tables.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                className={cn(
-                  "absolute flex items-center justify-center rounded border px-0.5 text-[10px] font-semibold leading-tight shadow-sm",
-                  selectedTableId === t.id
-                    ? "border-primary bg-primary text-primary-foreground ring-2 ring-primary/25"
-                    : "border-border bg-card text-foreground active:bg-muted/80",
-                )}
-                style={{
-                  left: `${t.xPct}%`,
-                  top: `${t.yPct}%`,
-                  width: `${t.widthPct}%`,
-                  height: `${t.heightPct}%`,
-                }}
-                onClick={() => setSelectedTableId(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <DialogFooter className="flex-col items-stretch gap-3 border-t pt-2 sm:flex-col">
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              Not dining in? Switch order type — the menu unlocks without a
-              table.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setFulfillment("pickup")}
-              >
-                Pickup
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setFulfillment("delivery")}
-              >
-                Delivery
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+      {/* Dialogs */}
       <Dialog
         open={openItemModalOpen}
         onOpenChange={(o) => {
@@ -1003,7 +1226,7 @@ export default function AdminPosMobilePage() {
               className="!h-12 w-full text-base"
               onClick={() => {
                 addOpenLine();
-                setTab("cart");
+                setRegisterStep("cart");
               }}
             >
               Add to order
@@ -1162,10 +1385,10 @@ export default function AdminPosMobilePage() {
                     </div>
                   </div>
                   {dialogItem.addons.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <Label id="pos-m-addons-label">Add-ons</Label>
                       <div
-                        className="grid grid-cols-3 gap-2"
+                        className="grid grid-cols-3 gap-1.5"
                         role="group"
                         aria-labelledby="pos-m-addons-label"
                       >
@@ -1185,7 +1408,7 @@ export default function AdminPosMobilePage() {
                             <div
                               key={a.id}
                               className={cn(
-                                "flex flex-col overflow-hidden rounded-xl border bg-background",
+                                "flex flex-col overflow-hidden rounded-lg border bg-background",
                                 selected
                                   ? "border-primary ring-1 ring-primary"
                                   : "border-border",
@@ -1199,7 +1422,7 @@ export default function AdminPosMobilePage() {
                                 }}
                                 aria-label={`Add ${a.name}`}
                               >
-                                <div className="relative aspect-square w-full bg-muted">
+                                <div className="relative aspect-[4/3] w-full bg-muted">
                                   {a.image ? (
                                     // eslint-disable-next-line @next/next/no-img-element
                                     <img
@@ -1209,43 +1432,43 @@ export default function AdminPosMobilePage() {
                                     />
                                   ) : (
                                     <div className="flex size-full items-center justify-center text-muted-foreground">
-                                      <ImageIcon className="size-4 opacity-60" />
+                                      <ImageIcon className="size-3.5 opacity-60" />
                                     </div>
                                   )}
                                 </div>
-                                <div className="px-1.5 py-1.5">
-                                  <p className="line-clamp-2 text-[11px] font-medium leading-tight">
+                                <div className="px-1 py-1">
+                                  <p className="line-clamp-2 text-[10px] font-medium leading-tight">
                                     {a.name}
                                   </p>
-                                  <p className="text-muted-foreground text-[10px] tabular-nums">
+                                  <p className="text-muted-foreground text-[9px] tabular-nums">
                                     {formatMoney(a.price)}
                                   </p>
                                 </div>
                               </button>
                               {q > 0 ? (
-                                <div className="flex items-center justify-center gap-1 border-t p-1">
+                                <div className="flex items-center justify-center gap-0.5 border-t p-0.5">
                                   <Button
                                     type="button"
                                     size="icon"
                                     variant="outline"
-                                    className="size-8"
+                                    className="size-7"
                                     onClick={() => bump(-1)}
                                     aria-label="Decrease add-on"
                                   >
-                                    <MinusIcon className="size-3.5" />
+                                    <MinusIcon className="size-3" />
                                   </Button>
-                                  <span className="w-5 text-center text-xs tabular-nums">
+                                  <span className="w-4 text-center text-[11px] tabular-nums">
                                     {q}
                                   </span>
                                   <Button
                                     type="button"
                                     size="icon"
                                     variant="outline"
-                                    className="size-8"
+                                    className="size-7"
                                     onClick={() => bump(1)}
                                     aria-label="Increase add-on"
                                   >
-                                    <PlusIcon className="size-3.5" />
+                                    <PlusIcon className="size-3" />
                                   </Button>
                                 </div>
                               ) : null}
@@ -1272,7 +1495,7 @@ export default function AdminPosMobilePage() {
                     className="!h-12 w-full text-base"
                     onClick={() => {
                       confirmConfigure();
-                      setTab("cart");
+                      setRegisterStep("cart");
                     }}
                   >
                     Add to order

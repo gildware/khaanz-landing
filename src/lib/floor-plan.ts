@@ -25,8 +25,8 @@ function normalizeTable(row: unknown): FloorPlanTable | null {
   const yPct = clampPct(Number(o.yPct));
   let widthPct = Number(o.widthPct);
   let heightPct = Number(o.heightPct);
-  if (!Number.isFinite(widthPct) || widthPct <= 0) widthPct = 11;
-  if (!Number.isFinite(heightPct) || heightPct <= 0) heightPct = 9;
+  if (!Number.isFinite(widthPct) || widthPct <= 0) widthPct = 16;
+  if (!Number.isFinite(heightPct) || heightPct <= 0) heightPct = 13;
   widthPct = clampPct(widthPct, 40);
   heightPct = clampPct(heightPct, 40);
   return { id, label, xPct, yPct, widthPct, heightPct };

@@ -115,10 +115,10 @@ export default function AdminFloorPlanPage() {
     const t: FloorPlanTable = {
       id,
       label: `Table ${n}`,
-      xPct: clamp(12 + (n % 5) * 14, 0, 100 - 11),
-      yPct: clamp(10 + Math.floor(n / 5) * 12, 0, 100 - 9),
-      widthPct: 11,
-      heightPct: 9,
+      xPct: clamp(10 + (n % 4) * 22, 0, 100 - 16),
+      yPct: clamp(8 + Math.floor((n - 1) / 4) * 28, 0, 100 - 13),
+      widthPct: 16,
+      heightPct: 13,
     };
     setTables((prev) => [...prev, t]);
     setSelectedId(id);
