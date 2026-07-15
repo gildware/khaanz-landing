@@ -94,6 +94,27 @@ export async function GET(request: Request) {
 
   const withTravel = view === "online_pending" || view === "online";
 
+  const creatorIds = [
+    ...new Set(
+      orders
+        .map((o) => o.createdByUserId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const creators =
+    creatorIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: creatorIds } },
+          select: { id: true, displayName: true, email: true },
+        })
+      : [];
+  const creatorLabelById = new Map(
+    creators.map((u) => [
+      u.id,
+      u.displayName?.trim() || u.email || "Staff",
+    ]),
+  );
+
   const mapped = await Promise.all(
     orders.map(async (o) => {
       const coords = parseCoordinates(o.latitude, o.longitude);
@@ -122,6 +143,10 @@ export async function GET(request: Request) {
         address: o.address,
         landmark: o.landmark,
         notes: o.notes,
+        createdByUserId: o.createdByUserId,
+        createdByLabel: o.createdByUserId
+          ? (creatorLabelById.get(o.createdByUserId) ?? "Staff")
+          : null,
         latitude: coords?.lat ?? o.latitude,
         longitude: coords?.lng ?? o.longitude,
         mapUrl: hasCoords

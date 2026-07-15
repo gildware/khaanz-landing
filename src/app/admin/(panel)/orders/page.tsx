@@ -74,6 +74,8 @@ type OrderRow = {
   createdAt: string;
   customerPhone: string;
   customerName: string | null;
+  createdByUserId?: string | null;
+  createdByLabel?: string | null;
   lines: { sortIndex: number; payload: unknown }[];
 };
 
@@ -593,6 +595,15 @@ export default function AdminOrdersPage() {
                         >
                           {statusLabel}
                         </Badge>
+                        {o.createdByLabel?.trim() ? (
+                          <Badge
+                            variant="outline"
+                            className="max-w-[12rem] truncate border-sky-300 bg-sky-50 font-medium text-sky-900 dark:border-sky-500/40 dark:bg-sky-500/15 dark:text-sky-100"
+                            title={o.createdByLabel.trim()}
+                          >
+                            {o.createdByLabel.trim()}
+                          </Badge>
+                        ) : null}
                       </div>
                       <p className="text-muted-foreground text-xs tabular-nums">
                         {new Date(o.createdAt).toLocaleString()}
