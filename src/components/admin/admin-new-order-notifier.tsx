@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangleIcon } from "lucide-react";
 
+import { useOptionalAdminSession } from "@/components/admin/admin-session-provider";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -50,6 +51,13 @@ function mergeNewOrders(
 }
 
 export function AdminNewOrderNotifier() {
+  const session = useOptionalAdminSession();
+  const canWatchOnline =
+    !session ||
+    session.loading ||
+    session.can("online_orders") ||
+    session.can("orders");
+
   const seededRef = useRef(false);
   const seenIdsRef = useRef<Set<string>>(new Set());
   /** Order ids in the current new-order alert; ringing stops when all are no longer PENDING. */
@@ -87,6 +95,7 @@ export function AdminNewOrderNotifier() {
   }, [stopSoundLoop]);
 
   const poll = useCallback(async () => {
+    if (!canWatchOnline) return;
     try {
       const res = await fetch("/api/admin/orders?limit=100&offset=0", {
         credentials: "include",
@@ -149,16 +158,17 @@ export function AdminNewOrderNotifier() {
     } catch {
       // ignore network errors
     }
-  }, [startSoundLoop, stopSoundLoop]);
+  }, [canWatchOnline, startSoundLoop, stopSoundLoop]);
 
   useEffect(() => {
+    if (!canWatchOnline) return;
     void poll();
     const id = window.setInterval(() => void poll(), POLL_MS);
     return () => {
       window.clearInterval(id);
       stopSoundLoop();
     };
-  }, [poll, stopSoundLoop]);
+  }, [canWatchOnline, poll, stopSoundLoop]);
 
   /** Prime Web Audio after first gesture so alerts can play reliably. */
   useEffect(() => {

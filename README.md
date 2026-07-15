@@ -120,7 +120,9 @@ Open **Admin → Settings → Delivery charges**, set **Restaurant latitude / lo
 ## Admin auth
 
 - Admin login is **email + password** against the **`users`** table (bcrypt hashes).
-- Roles: **`SUPER_ADMIN`** (full system; seed creates this) and **`ADMIN`** (same admin UI for now; you can add more `ADMIN` rows via Prisma Studio or a future API).
+- Roles: **`SUPER_ADMIN`** (full access), **`ADMIN`**, and **`STAFF`** with per-module permissions (Inventory, Wastage, POS, Orders, etc.).
+- Create staff logins and assign modules at **`/admin/staff`**.
+- Order create / edit / status changes are recorded on each order’s activity trail.
 
 ## API routes (selected)
 

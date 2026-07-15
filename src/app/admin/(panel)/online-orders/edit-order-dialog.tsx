@@ -38,6 +38,9 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
+  /** Defaults to admin online-order PUT. */
+  saveUrl?: (orderId: string) => string;
+  description?: string;
 };
 
 function payloadToLine(payload: unknown): CartLine | null {
@@ -53,7 +56,14 @@ function lineKey(line: CartLine, index: number): string {
   return `${line.lineId ?? line.kind}-${index}`;
 }
 
-export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
+export function EditOrderDialog({
+  order,
+  open,
+  onOpenChange,
+  onSaved,
+  saveUrl = (id) => `/api/admin/orders/${id}`,
+  description = "Change items, delivery charge, and discount. Ingredient stock is adjusted automatically. Available for new online orders only.",
+}: Props) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [deliveryRupees, setDeliveryRupees] = useState("0");
   const [discountRupees, setDiscountRupees] = useState("0");
@@ -174,7 +184,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
     }
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/orders/${order.id}`, {
+      const res = await fetch(saveUrl(order.id), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -195,7 +205,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
     } finally {
       setSaving(false);
     }
-  }, [order, lines, deliveryMinor, discountMinor, onOpenChange, onSaved]);
+  }, [order, lines, deliveryMinor, discountMinor, onOpenChange, onSaved, saveUrl]);
 
   return (
     <Dialog
@@ -208,10 +218,7 @@ export function EditOrderDialog({ order, open, onOpenChange, onSaved }: Props) {
       <DialogContent className="flex max-h-[92dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="border-b border-border/70 p-5 pb-4">
           <DialogTitle>Edit order {order?.orderRef ?? ""}</DialogTitle>
-          <DialogDescription>
-            Change items, delivery charge, and discount. Ingredient stock is
-            adjusted automatically. Available for new online orders only.
-          </DialogDescription>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">

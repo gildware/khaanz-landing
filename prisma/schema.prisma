@@ -12,6 +12,8 @@ datasource db {
 enum UserRole {
   SUPER_ADMIN
   ADMIN
+  /// Staff login with module permissions (inventory, POS, orders, etc.).
+  STAFF
 }
 
 model User {
@@ -21,8 +23,12 @@ model User {
   displayName  String?  @map("display_name")
   role         UserRole @default(ADMIN)
   active       Boolean  @default(true)
+  /// Module permission keys (see `admin-permissions.ts`). SUPER_ADMIN ignores this.
+  permissions  Json     @default("[]") @map("permissions")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+
+  orderEvents OrderEvent[]
 
   @@map("users")
 }
@@ -276,11 +282,14 @@ model Order {
   paymentMethod          String          @default("") @map("payment_method")
   /// Dine-in table label at order time (POS); empty for pickup/delivery or legacy dine-in.
   dineInTable            String          @default("") @map("dine_in_table") @db.VarChar(80)
+  /// Staff user who created the order (POS); null for customer website orders.
+  createdByUserId        String?         @map("created_by_user_id")
   createdAt              DateTime        @default(now()) @map("created_at")
   updatedAt              DateTime        @updatedAt @map("updated_at")
 
   customer            Customer                    @relation(fields: [customerId], references: [id], onDelete: Restrict)
   lines               OrderLine[]
+  events              OrderEvent[]
   inventoryMovements  InventoryMovement[]
   batchConsumptions   InventoryBatchConsumption[]
   personalUseEntries  PersonalUseEntry[]
@@ -291,7 +300,43 @@ model Order {
 
   @@index([customerId])
   @@index([createdAt])
+  @@index([createdByUserId])
   @@map("orders")
+}
+
+enum OrderEventAction {
+  CREATED
+  STATUS_CHANGED
+  EDITED
+}
+
+enum OrderEventActorType {
+  USER
+  CUSTOMER
+  POS_SYNC
+  SYSTEM
+}
+
+/// Audit trail for order create / status / edits.
+model OrderEvent {
+  id          String              @id @default(cuid())
+  orderId     String              @map("order_id")
+  action      OrderEventAction
+  actorType   OrderEventActorType @map("actor_type")
+  actorUserId String?             @map("actor_user_id")
+  /// Snapshot of who acted (email / display name / "Customer" / "POS sync").
+  actorLabel  String              @default("") @map("actor_label") @db.VarChar(160)
+  summary     String              @db.VarChar(500)
+  beforeJson  Json?               @map("before_json")
+  afterJson   Json?               @map("after_json")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([orderId, createdAt])
+  @@index([actorUserId])
+  @@map("order_events")
 }
 
 model OrderLine {

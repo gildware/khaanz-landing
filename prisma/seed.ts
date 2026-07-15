@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 
 import { getDefaultMenuPayload } from "../src/data/menu";
+import { ALL_ADMIN_PERMISSIONS } from "../src/lib/admin-permissions";
 import { getPrisma } from "../src/lib/prisma";
 import { writeMenuPayload } from "../src/lib/menu-repository";
 import { recordOpeningStock } from "../src/lib/inventory/stock-ops";
@@ -28,11 +29,13 @@ async function main() {
         displayName: "Super Admin",
         role: "SUPER_ADMIN",
         active: true,
+        permissions: ALL_ADMIN_PERMISSIONS,
       },
       update: {
         passwordHash,
         role: "SUPER_ADMIN",
         active: true,
+        permissions: ALL_ADMIN_PERMISSIONS,
       },
     });
     console.log(`Super admin ready: ${email}`);

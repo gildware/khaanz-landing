@@ -4,6 +4,10 @@ import {
   InventoryInsufficientError,
   reapplyOrderInventoryForEdit,
 } from "@/lib/inventory/apply-order-inventory";
+import {
+  orderSnapshotForAudit,
+  recordOrderEvent,
+} from "@/lib/order-events";
 import { computeOrderTotalMinor } from "@/lib/order-total";
 import type { OrderCreateParsed } from "@/lib/parse-order-create-body";
 import { normalizeIndianMobileDigits } from "@/lib/phone-digits";
@@ -42,7 +46,18 @@ export async function editOnlineOrder(
   const prisma = getPrisma();
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true, status: true, source: true },
+    select: {
+      id: true,
+      status: true,
+      source: true,
+      totalMinor: true,
+      deliveryChargeMinor: true,
+      discountMinor: true,
+      fulfillment: true,
+      notes: true,
+      address: true,
+      _count: { select: { lines: true } },
+    },
   });
 
   if (!order) {
@@ -71,6 +86,17 @@ export async function editOnlineOrder(
     discountMinor,
   });
 
+  const before = orderSnapshotForAudit({
+    status: order.status,
+    totalMinor: order.totalMinor,
+    deliveryChargeMinor: order.deliveryChargeMinor,
+    discountMinor: order.discountMinor,
+    fulfillment: order.fulfillment,
+    notes: order.notes,
+    address: order.address,
+    lineCount: order._count.lines,
+  });
+
   try {
     const updated = await prisma.$transaction(async (tx) => {
       await reapplyOrderInventoryForEdit(
@@ -96,6 +122,25 @@ export async function editOnlineOrder(
             })),
           },
         },
+      });
+
+      await recordOrderEvent(tx, {
+        orderId,
+        action: "EDITED",
+        actorType: options?.adminUserId ? "USER" : "SYSTEM",
+        actorUserId: options?.adminUserId ?? null,
+        summary: "Online order items/charges updated",
+        before,
+        after: orderSnapshotForAudit({
+          status: u.status,
+          totalMinor: u.totalMinor,
+          deliveryChargeMinor: u.deliveryChargeMinor,
+          discountMinor: u.discountMinor,
+          fulfillment: u.fulfillment,
+          notes: u.notes,
+          address: u.address,
+          lineCount: input.lines.length,
+        }),
       });
 
       return u;
@@ -137,7 +182,21 @@ export async function editPosOrder(
   const prisma = getPrisma();
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { id: true, status: true, source: true, orderRef: true },
+    select: {
+      id: true,
+      status: true,
+      source: true,
+      orderRef: true,
+      totalMinor: true,
+      deliveryChargeMinor: true,
+      discountMinor: true,
+      fulfillment: true,
+      paymentMethod: true,
+      dineInTable: true,
+      notes: true,
+      address: true,
+      _count: { select: { lines: true } },
+    },
   });
 
   if (!order) {
@@ -170,6 +229,19 @@ export async function editPosOrder(
     parsed.scheduleMode === "scheduled" && parsed.scheduledAt
       ? new Date(parsed.scheduledAt)
       : null;
+
+  const before = orderSnapshotForAudit({
+    status: order.status,
+    totalMinor: order.totalMinor,
+    deliveryChargeMinor: order.deliveryChargeMinor,
+    discountMinor: order.discountMinor,
+    fulfillment: order.fulfillment,
+    paymentMethod: order.paymentMethod,
+    dineInTable: order.dineInTable,
+    notes: order.notes,
+    address: order.address,
+    lineCount: order._count.lines,
+  });
 
   try {
     const updated = await prisma.$transaction(async (tx) => {
@@ -216,6 +288,27 @@ export async function editPosOrder(
             })),
           },
         },
+      });
+
+      await recordOrderEvent(tx, {
+        orderId,
+        action: "EDITED",
+        actorType: options?.adminUserId ? "USER" : "POS_SYNC",
+        actorUserId: options?.adminUserId ?? null,
+        summary: "POS order updated",
+        before,
+        after: orderSnapshotForAudit({
+          status: u.status,
+          totalMinor: u.totalMinor,
+          deliveryChargeMinor: u.deliveryChargeMinor,
+          discountMinor: u.discountMinor,
+          fulfillment: u.fulfillment,
+          paymentMethod: u.paymentMethod,
+          dineInTable: u.dineInTable,
+          notes: u.notes,
+          address: u.address,
+          lineCount: parsed.lines.length,
+        }),
       });
 
       return u;

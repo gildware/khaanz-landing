@@ -105,11 +105,22 @@ type AdminOrderDetail = {
   deliveryChargeMinor: number;
   discountMinor: number;
   currency: string;
+  createdByUserId?: string | null;
+  createdByLabel?: string | null;
   createdAt: string;
   updatedAt: string;
   customerPhone: string;
   customerName: string | null;
   lines: { sortIndex: number; payload: unknown }[];
+  events?: {
+    id: string;
+    action: string;
+    actorType: string;
+    actorUserId: string | null;
+    actorLabel: string;
+    summary: string;
+    createdAt: string;
+  }[];
 };
 
 /** Distinct colors per workflow status (incl. delivered = served for dine-in). */
@@ -837,6 +848,12 @@ export default function AdminOrdersPage() {
                     <span className="text-muted-foreground">Placed: </span>
                     {new Date(detail.createdAt).toLocaleString()}
                   </div>
+                  {detail.createdByLabel ? (
+                    <div>
+                      <span className="text-muted-foreground">Created by: </span>
+                      {detail.createdByLabel}
+                    </div>
+                  ) : null}
                   {detail.deliveryChargeMinor > 0 || detail.discountMinor > 0 ? (
                     <>
                       <div>
@@ -939,6 +956,29 @@ export default function AdminOrdersPage() {
                     ))}
                   </ul>
                 </div>
+
+                {detail.events && detail.events.length > 0 ? (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <div className="font-medium text-sm">Activity</div>
+                      <ol className="space-y-2">
+                        {detail.events.map((ev) => (
+                          <li
+                            key={ev.id}
+                            className="rounded-md border border-border/80 bg-muted/30 px-3 py-2 text-sm"
+                          >
+                            <div className="font-medium">{ev.summary}</div>
+                            <div className="text-muted-foreground text-xs mt-0.5">
+                              {ev.actorLabel || "—"} ·{" "}
+                              {new Date(ev.createdAt).toLocaleString()}
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  </>
+                ) : null}
 
                 <div className="flex flex-wrap gap-2 pt-2">
                   {(() => {

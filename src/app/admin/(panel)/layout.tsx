@@ -1,4 +1,5 @@
 import { AdminNewOrderNotifier } from "@/components/admin/admin-new-order-notifier";
+import { AdminSessionProvider } from "@/components/admin/admin-session-provider";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 
 export default function AdminPanelLayout({
@@ -7,12 +8,14 @@ export default function AdminPanelLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[100dvh]">
-      <AdminSidebar />
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <AdminNewOrderNotifier />
-        <div className="min-h-0 flex-1 overflow-auto p-6">{children}</div>
+    <AdminSessionProvider>
+      <div className="flex min-h-[100dvh]">
+        <AdminSidebar />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <AdminNewOrderNotifier />
+          <div className="min-h-0 flex-1 overflow-auto p-6">{children}</div>
+        </div>
       </div>
-    </div>
+    </AdminSessionProvider>
   );
 }

@@ -9,6 +9,7 @@ import {
   canAdminSetOrderStatus,
   ORDER_STATUS_LABEL,
 } from "@/lib/order-status-workflow";
+import { recordOrderEvent } from "@/lib/order-events";
 import { getPrisma } from "@/lib/prisma";
 import type { CartLine } from "@/types/menu";
 
@@ -94,6 +95,20 @@ export async function updateOrderStatus(
         );
       }
     }
+
+    await recordOrderEvent(tx, {
+      orderId,
+      action: "STATUS_CHANGED",
+      actorType: options?.adminUserId
+        ? "USER"
+        : options && options.adminUserId === null
+          ? "POS_SYNC"
+          : "SYSTEM",
+      actorUserId: options?.adminUserId ?? null,
+      summary: `Status: ${ORDER_STATUS_LABEL[order.status]} → ${ORDER_STATUS_LABEL[nextStatus]}`,
+      before: { status: order.status },
+      after: { status: nextStatus },
+    });
 
     return u;
   });

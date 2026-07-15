@@ -6,6 +6,10 @@ import {
   createAdminToken,
   type AdminRole,
 } from "@/lib/admin-auth";
+import {
+  ALL_ADMIN_PERMISSIONS,
+  parsePermissionsJson,
+} from "@/lib/admin-permissions";
 import { getPrisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -19,7 +23,7 @@ export async function POST(request: Request) {
   }
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-  const password = typeof body.password === "string" ? body.password : "";
+  const password = typeof body.password === "string" ? body.password.trim() : "";
   if (!email || !password) {
     return NextResponse.json(
       { error: "Email and password are required." },
@@ -39,10 +43,28 @@ export async function POST(request: Request) {
   }
 
   const role: AdminRole =
-    user.role === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN";
-  const token = await createAdminToken(user.id, role);
+    user.role === "SUPER_ADMIN"
+      ? "SUPER_ADMIN"
+      : user.role === "STAFF"
+        ? "STAFF"
+        : "ADMIN";
+  const permissions =
+    role === "SUPER_ADMIN"
+      ? ALL_ADMIN_PERMISSIONS
+      : parsePermissionsJson(user.permissions);
 
-  const res = NextResponse.json({ ok: true });
+  const token = await createAdminToken(user.id, role, permissions);
+
+  const res = NextResponse.json({
+    ok: true,
+    user: {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      role,
+      permissions,
+    },
+  });
   res.cookies.set(ADMIN_TOKEN_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",

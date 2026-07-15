@@ -3,6 +3,10 @@ import type { OrderSource, Prisma } from "@prisma/client";
 import type { CustomerSession } from "@/lib/customer-auth";
 import { upsertCustomerAddress } from "@/lib/customer-address";
 import { applyOrderInventoryDeduction } from "@/lib/inventory/apply-order-inventory";
+import {
+  orderSnapshotForAudit,
+  recordOrderEvent,
+} from "@/lib/order-events";
 import type { OrderCreateParsed } from "@/lib/parse-order-create-body";
 import {
   allocateNextOrderSequence,
@@ -94,6 +98,24 @@ export async function persistOrderToDatabase(
 
     await applyOrderInventoryDeduction(tx, orderId, parsed, null, now);
 
+    await recordOrderEvent(tx, {
+      orderId,
+      action: "CREATED",
+      actorType: "CUSTOMER",
+      actorLabel: parsed.customerName.trim() || "Customer",
+      summary: `Online order placed (${orderRef})`,
+      after: orderSnapshotForAudit({
+        status: "PENDING",
+        totalMinor,
+        deliveryChargeMinor,
+        discountMinor,
+        fulfillment: parsed.fulfillment,
+        notes: parsed.notes,
+        address: parsed.address,
+        lineCount: parsed.lines.length,
+      }),
+    });
+
     // Remember the delivery address so the customer can reuse it next time.
     if (parsed.fulfillment === "delivery" && parsed.address.trim().length > 0) {
       await upsertCustomerAddress(tx, customer.id, {
@@ -166,6 +188,7 @@ export async function persistPosOrderToDatabase(
         source: "pos" satisfies OrderSource,
         paymentMethod: paymentKey,
         dineInTable,
+        createdByUserId: options?.adminUserId ?? null,
         lines: {
           create: parsed.lines.map((line, sortIndex) => ({
             sortIndex,
@@ -182,6 +205,26 @@ export async function persistPosOrderToDatabase(
       options?.adminUserId ?? null,
       now,
     );
+
+    await recordOrderEvent(tx, {
+      orderId,
+      action: "CREATED",
+      actorType: options?.adminUserId ? "USER" : "POS_SYNC",
+      actorUserId: options?.adminUserId ?? null,
+      summary: `POS order created (${orderRef})`,
+      after: orderSnapshotForAudit({
+        status: "ACCEPTED",
+        totalMinor,
+        deliveryChargeMinor,
+        discountMinor,
+        fulfillment: parsed.fulfillment,
+        paymentMethod: paymentKey,
+        dineInTable,
+        notes: parsed.notes,
+        address: parsed.address,
+        lineCount: parsed.lines.length,
+      }),
+    });
 
     if (parsed.fulfillment === "delivery" && parsed.address.trim().length > 0) {
       await upsertCustomerAddress(tx, customer.id, {

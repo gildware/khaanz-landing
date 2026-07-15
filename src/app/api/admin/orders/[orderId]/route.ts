@@ -32,11 +32,26 @@ export async function GET(_request: Request, context: RouteContext) {
         select: { phoneDigits: true, displayName: true },
       },
       lines: { orderBy: { sortIndex: "asc" } },
+      events: {
+        orderBy: { createdAt: "asc" },
+        take: 100,
+      },
     },
   });
 
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
+
+  let createdByLabel: string | null = null;
+  if (order.createdByUserId) {
+    const creator = await prisma.user.findUnique({
+      where: { id: order.createdByUserId },
+      select: { displayName: true, email: true },
+    });
+    createdByLabel = creator
+      ? creator.displayName?.trim() || creator.email
+      : null;
   }
 
   return NextResponse.json({
@@ -60,6 +75,8 @@ export async function GET(_request: Request, context: RouteContext) {
     source: order.source,
     paymentMethod: order.paymentMethod,
     dineInTable: order.dineInTable,
+    createdByUserId: order.createdByUserId,
+    createdByLabel,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     customerPhone: order.customer.phoneDigits,
@@ -67,6 +84,17 @@ export async function GET(_request: Request, context: RouteContext) {
     lines: order.lines.map((l) => ({
       sortIndex: l.sortIndex,
       payload: l.payload,
+    })),
+    events: order.events.map((e) => ({
+      id: e.id,
+      action: e.action,
+      actorType: e.actorType,
+      actorUserId: e.actorUserId,
+      actorLabel: e.actorLabel,
+      summary: e.summary,
+      before: e.beforeJson,
+      after: e.afterJson,
+      createdAt: e.createdAt.toISOString(),
     })),
   });
 }
