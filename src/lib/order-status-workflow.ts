@@ -118,7 +118,7 @@ export function nextOrderStatusStep(
       case "ACCEPTED":
       case "PREPARING":
       case "OUT_FOR_DELIVERY":
-        return { nextStatus: "DELIVERED", label: "Served" };
+        return { nextStatus: "DELIVERED", label: "Mark as served" };
       case "DELIVERED":
         return { nextStatus: "TABLE_CLEARED", label: "Table cleared" };
       default:
