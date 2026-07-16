@@ -2,7 +2,9 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
+import { deleteOrder } from "@/lib/delete-order-db";
 import { editOnlineOrder } from "@/lib/edit-order-db";
+import { mapOrderCreatedByLabels } from "@/lib/order-created-by";
 import { getPrisma } from "@/lib/prisma";
 import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
 import { isCartLine, parseNonNegativeMinor, toCartLines } from "@/lib/parse-order-create-body";
@@ -43,16 +45,10 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
   }
 
-  let createdByLabel: string | null = null;
-  if (order.createdByUserId) {
-    const creator = await prisma.user.findUnique({
-      where: { id: order.createdByUserId },
-      select: { displayName: true, email: true },
-    });
-    createdByLabel = creator
-      ? creator.displayName?.trim() || creator.email
-      : null;
-  }
+  const createdByLabelById = await mapOrderCreatedByLabels(prisma, [
+    { id: order.id, createdByUserId: order.createdByUserId },
+  ]);
+  const createdByLabel = createdByLabelById.get(order.id) ?? null;
 
   return NextResponse.json({
     id: order.id,
@@ -125,6 +121,30 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const result = await updateOrderStatus(orderId, body.status, {
+    adminUserId: admin.userId,
+  });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+
+  return NextResponse.json(result);
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const cookieStore = await cookies();
+  const admin = await verifyAdminToken(
+    cookieStore.get(ADMIN_TOKEN_COOKIE)?.value,
+  );
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { orderId } = await context.params;
+  if (!orderId?.trim()) {
+    return NextResponse.json({ error: "Missing order id" }, { status: 400 });
+  }
+
+  const result = await deleteOrder(orderId.trim(), {
     adminUserId: admin.userId,
   });
   if (!result.ok) {

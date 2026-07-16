@@ -138,6 +138,8 @@ export async function persistPosOrderToDatabase(
     paymentMethodKey?: string;
     dineInTable?: string;
     adminUserId?: string | null;
+    /** Display name when creator is known but may not match a server user id. */
+    createdByLabel?: string | null;
   },
 ): Promise<{ orderRef: string }> {
   const prisma = getPrisma();
@@ -206,11 +208,14 @@ export async function persistPosOrderToDatabase(
       now,
     );
 
+    const createdByLabel = (options?.createdByLabel ?? "").trim().slice(0, 160);
     await recordOrderEvent(tx, {
       orderId,
       action: "CREATED",
-      actorType: options?.adminUserId ? "USER" : "POS_SYNC",
+      actorType:
+        options?.adminUserId || createdByLabel ? "USER" : "POS_SYNC",
       actorUserId: options?.adminUserId ?? null,
+      actorLabel: createdByLabel || undefined,
       summary: `POS order created (${orderRef})`,
       after: orderSnapshotForAudit({
         status: "ACCEPTED",

@@ -70,6 +70,11 @@ type PendingStatusChange = {
   destructive?: boolean;
 };
 
+type PendingDelete = {
+  orderId: string;
+  orderRef: string;
+};
+
 function formatMoneyMinor(minor: number): string {
   return `₹${(minor / 100).toFixed(0)}`;
 }
@@ -137,6 +142,7 @@ export function PosMobileOrderHistory({
   const [statusConfirm, setStatusConfirm] = useState<PendingStatusChange | null>(
     null,
   );
+  const [deleteConfirm, setDeleteConfirm] = useState<PendingDelete | null>(null);
 
   const openInPosCart = (order: PosMobileHistoryOrder) => {
     if (!canEditPosOrder(order.status, order.fulfillment)) {
@@ -323,6 +329,36 @@ export function PosMobileOrderHistory({
         fulfillment,
       });
       toast.success(`${pending.orderRef}: ${pending.actionLabel}`);
+    } catch {
+      toast.error("Network error.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const confirmDeleteOrder = async () => {
+    if (!deleteConfirm) return;
+    const pending = deleteConfirm;
+    setUpdatingId(pending.orderId);
+    setDeleteConfirm(null);
+    try {
+      const res = await fetch(`/api/admin/pos/orders/${pending.orderId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok) {
+        toast.error(data.error ?? "Could not delete order.");
+        return;
+      }
+      setOrders((prev) => prev.filter((o) => o.id !== pending.orderId));
+      if (expandedId === pending.orderId) setExpandedId(null);
+      onStatusUpdated?.({
+        id: pending.orderId,
+        status: "DELETED",
+        fulfillment: "",
+      });
+      toast.success(`${pending.orderRef} deleted`);
     } catch {
       toast.error("Network error.");
     } finally {
@@ -567,6 +603,20 @@ export function PosMobileOrderHistory({
                           Cancel order
                         </Button>
                       ) : null}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="!h-11 w-full text-sm text-destructive hover:text-destructive"
+                        disabled={busy}
+                        onClick={() =>
+                          setDeleteConfirm({
+                            orderId: o.id,
+                            orderRef: o.orderRef ?? o.id.slice(0, 8),
+                          })
+                        }
+                      >
+                        Delete order
+                      </Button>
                     </div>
 
                     {open ? (
@@ -677,6 +727,48 @@ export function PosMobileOrderHistory({
               variant="outline"
               className="!h-12 w-full text-base"
               onClick={() => setStatusConfirm(null)}
+            >
+              Back
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteConfirm !== null}
+        onOpenChange={(o) => {
+          if (!o) setDeleteConfirm(null);
+        }}
+      >
+        <DialogContent className="w-[calc(100%-1.5rem)] max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete order permanently?</DialogTitle>
+            <DialogDescription>
+              {deleteConfirm ? (
+                <>
+                  {deleteConfirm.orderRef} will be removed. This cannot be undone.
+                  Deducted inventory will be restored if needed.
+                </>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button
+              type="button"
+              className="!h-12 w-full text-base"
+              variant="destructive"
+              disabled={
+                Boolean(deleteConfirm && updatingId === deleteConfirm.orderId)
+              }
+              onClick={() => void confirmDeleteOrder()}
+            >
+              Delete order
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="!h-12 w-full text-base"
+              onClick={() => setDeleteConfirm(null)}
             >
               Back
             </Button>

@@ -237,6 +237,11 @@ type PendingAction = {
   destructive?: boolean;
 };
 
+type PendingDelete = {
+  orderId: string;
+  orderRef: string;
+};
+
 export default function AdminOnlineOrdersPage() {
   const [initialLoad, setInitialLoad] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -245,6 +250,7 @@ export default function AdminOnlineOrdersPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [actionConfirm, setActionConfirm] = useState<PendingAction | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<PendingDelete | null>(null);
   const [editingOrder, setEditingOrder] = useState<OrderRow | null>(null);
   const [travelConfigured, setTravelConfigured] = useState(true);
 
@@ -376,6 +382,28 @@ export default function AdminOnlineOrdersPage() {
             : o,
         ),
       );
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const confirmDeleteOrder = async () => {
+    if (!deleteConfirm) return;
+    const { orderId, orderRef } = deleteConfirm;
+    setUpdatingId(orderId);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        toast.error(j.error ?? "Delete failed");
+        return;
+      }
+      toast.success(`${orderRef} deleted`);
+      setDeleteConfirm(null);
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
     } finally {
       setUpdatingId(null);
     }
@@ -905,6 +933,21 @@ export default function AdminOnlineOrdersPage() {
                             Cancel
                           </Button>
                         ) : null}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs text-destructive hover:text-destructive"
+                          disabled={busy}
+                          onClick={() =>
+                            setDeleteConfirm({
+                              orderId: o.id,
+                              orderRef: o.orderRef ?? o.id.slice(0, 8),
+                            })
+                          }
+                        >
+                          Delete
+                        </Button>
                       </div>
                       {canSendWhatsApp ? (
                         <Button
@@ -985,6 +1028,56 @@ export default function AdminOnlineOrdersPage() {
                   {updatingId === actionConfirm.orderId
                     ? "Updating…"
                     : "Confirm"}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteConfirm !== null}
+        onOpenChange={(open) => {
+          if (
+            !open &&
+            (!deleteConfirm || updatingId !== deleteConfirm.orderId)
+          ) {
+            setDeleteConfirm(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          {deleteConfirm ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Delete order permanently?</DialogTitle>
+                <DialogDescription>
+                  Order{" "}
+                  <span className="font-medium text-foreground">
+                    {deleteConfirm.orderRef}
+                  </span>{" "}
+                  will be removed. This cannot be undone. Deducted inventory will
+                  be restored if needed.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={updatingId === deleteConfirm.orderId}
+                  onClick={() => setDeleteConfirm(null)}
+                >
+                  Back
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={updatingId === deleteConfirm.orderId}
+                  onClick={() => void confirmDeleteOrder()}
+                >
+                  {updatingId === deleteConfirm.orderId
+                    ? "Deleting…"
+                    : "Delete order"}
                 </Button>
               </DialogFooter>
             </>

@@ -94,6 +94,11 @@ type PendingStatusChange = {
   destructive?: boolean;
 };
 
+type PendingDelete = {
+  orderId: string;
+  orderRef: string;
+};
+
 type AdminOrderDetail = {
   id: string;
   orderRef: string | null;
@@ -175,6 +180,7 @@ export default function AdminOrdersPage() {
   const [statusConfirm, setStatusConfirm] = useState<PendingStatusChange | null>(
     null,
   );
+  const [deleteConfirm, setDeleteConfirm] = useState<PendingDelete | null>(null);
 
   const [posSettings, setPosSettings] = useState<RestaurantSettingsPayload | null>(
     null,
@@ -321,6 +327,32 @@ export default function AdminOrdersPage() {
       if (detail?.id === orderId) {
         void fetchOrderDetail(orderId);
       }
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const confirmDeleteOrder = async () => {
+    if (!deleteConfirm) return;
+    const { orderId, orderRef } = deleteConfirm;
+    setUpdatingId(orderId);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        toast.error(j.error ?? "Delete failed");
+        return;
+      }
+      toast.success(`${orderRef} deleted`);
+      setDeleteConfirm(null);
+      if (detail?.id === orderId) {
+        setDetailOpen(false);
+        setDetail(null);
+      }
+      await refreshOrders();
     } finally {
       setUpdatingId(null);
     }
@@ -755,6 +787,21 @@ export default function AdminOrdersPage() {
                           Cancel
                         </Button>
                       )}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs text-destructive hover:text-destructive"
+                        disabled={busy}
+                        onClick={() =>
+                          setDeleteConfirm({
+                            orderId: o.id,
+                            orderRef: o.orderRef ?? o.id.slice(0, 8),
+                          })
+                        }
+                      >
+                        Delete
+                      </Button>
                     </div>
                   </footer>
                 </article>
@@ -1033,6 +1080,21 @@ export default function AdminOrdersPage() {
                             Cancel order
                           </Button>
                         )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive hover:text-destructive"
+                          disabled={busy}
+                          onClick={() =>
+                            setDeleteConfirm({
+                              orderId: detail.id,
+                              orderRef: detail.orderRef ?? detail.id.slice(0, 8),
+                            })
+                          }
+                        >
+                          Delete order
+                        </Button>
                       </>
                     );
                   })()}
@@ -1094,6 +1156,56 @@ export default function AdminOrdersPage() {
                   onClick={() => void confirmStatusChange()}
                 >
                   {updatingId === statusConfirm.orderId ? "Updating…" : "Confirm"}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteConfirm !== null}
+        onOpenChange={(open) => {
+          if (
+            !open &&
+            (!deleteConfirm || updatingId !== deleteConfirm.orderId)
+          ) {
+            setDeleteConfirm(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          {deleteConfirm ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>Delete order permanently?</DialogTitle>
+                <DialogDescription>
+                  Order{" "}
+                  <span className="font-medium text-foreground">
+                    {deleteConfirm.orderRef}
+                  </span>{" "}
+                  will be removed. This cannot be undone. Deducted inventory will
+                  be restored if needed.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={updatingId === deleteConfirm.orderId}
+                  onClick={() => setDeleteConfirm(null)}
+                >
+                  Back
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={updatingId === deleteConfirm.orderId}
+                  onClick={() => void confirmDeleteOrder()}
+                >
+                  {updatingId === deleteConfirm.orderId
+                    ? "Deleting…"
+                    : "Delete order"}
                 </Button>
               </DialogFooter>
             </>

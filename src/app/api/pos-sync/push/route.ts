@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 
 import { readFloorPlan } from "@/lib/floor-plan";
+import { resolvePosSyncCreator } from "@/lib/order-created-by";
 import { httpResponseForOrderPersistError } from "@/lib/order-persist-errors";
 import { persistPosOrderToDatabase } from "@/lib/persist-order-db";
 import { parseOrderCreateBody } from "@/lib/parse-order-create-body";
@@ -60,9 +61,11 @@ async function persistPosOrderPayload(payload: unknown): Promise<PersistSyncResu
       ? bodyRec.paymentMethodKey.trim().slice(0, 64)
       : "";
 
-  const [settings, floorPlan] = await Promise.all([
+  const prisma = getPrisma();
+  const [settings, floorPlan, creator] = await Promise.all([
     readRestaurantSettings(),
     readFloorPlan(),
+    resolvePosSyncCreator(prisma, bodyRec),
   ]);
 
   const allowed = new Set(settings.paymentMethods.map((p) => p.id));
@@ -91,7 +94,7 @@ async function persistPosOrderPayload(payload: unknown): Promise<PersistSyncResu
       };
     }
     dineInTable = t.label.trim().slice(0, 80);
-    const occupying = await findOccupyingOrderForTable(getPrisma(), dineInTable);
+    const occupying = await findOccupyingOrderForTable(prisma, dineInTable);
     if (occupying) {
       return {
         ok: false,
@@ -105,7 +108,6 @@ async function persistPosOrderPayload(payload: unknown): Promise<PersistSyncResu
     parseClientOrderId(rec.clientOrderId) ?? parseClientOrderId(bodyRec.clientOrderId);
 
   if (clientOrderId) {
-    const prisma = getPrisma();
     const existing = await prisma.order.findUnique({
       where: { id: clientOrderId },
       select: { orderRef: true },
@@ -121,7 +123,8 @@ async function persistPosOrderPayload(payload: unknown): Promise<PersistSyncResu
     await persistPosOrderToDatabase(orderId, parsed, {
       paymentMethodKey,
       dineInTable,
-      adminUserId: null,
+      adminUserId: creator.userId,
+      createdByLabel: creator.label,
     });
     return { ok: true };
   } catch (e) {

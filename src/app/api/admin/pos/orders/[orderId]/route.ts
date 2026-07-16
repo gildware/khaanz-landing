@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { OrderStatus } from "@prisma/client";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
+import { deleteOrder } from "@/lib/delete-order-db";
 import { editPosOrder } from "@/lib/edit-order-db";
 import { readFloorPlan } from "@/lib/floor-plan";
 import { restaurantOrderStatusLabel } from "@/lib/order-status-workflow";
@@ -121,6 +122,42 @@ export async function PATCH(request: Request, context: RouteContext) {
     body.status as OrderStatus,
     { adminUserId: session.userId },
   );
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+
+  return NextResponse.json(result);
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const session = await requirePosSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { orderId } = await context.params;
+  if (!orderId?.trim()) {
+    return NextResponse.json({ error: "Missing order id" }, { status: 400 });
+  }
+
+  const prisma = getPrisma();
+  const existing = await prisma.order.findUnique({
+    where: { id: orderId.trim() },
+    select: { source: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
+  if (existing.source !== "pos") {
+    return NextResponse.json(
+      { error: "Only POS orders can be deleted here." },
+      { status: 409 },
+    );
+  }
+
+  const result = await deleteOrder(orderId.trim(), {
+    adminUserId: session.userId,
+  });
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }

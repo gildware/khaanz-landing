@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import { formatIstDateInput, parseIstDateInput } from "@/lib/ist-dates";
+import { mapOrderCreatedByLabels } from "@/lib/order-created-by";
 import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
 import { getPrisma } from "@/lib/prisma";
 
@@ -71,25 +72,9 @@ export async function GET(request: Request) {
   const hasMore = rows.length > pageSize;
   const page = rows.slice(0, pageSize);
 
-  const creatorIds = [
-    ...new Set(
-      page
-        .map((o) => o.createdByUserId)
-        .filter((id): id is string => Boolean(id)),
-    ),
-  ];
-  const creators =
-    creatorIds.length > 0
-      ? await prisma.user.findMany({
-          where: { id: { in: creatorIds } },
-          select: { id: true, displayName: true, email: true },
-        })
-      : [];
-  const creatorLabelById = new Map(
-    creators.map((u) => [
-      u.id,
-      u.displayName?.trim() || u.email || "Staff",
-    ]),
+  const createdByLabelById = await mapOrderCreatedByLabels(
+    prisma,
+    page.map((o) => ({ id: o.id, createdByUserId: o.createdByUserId })),
   );
 
   const orders = page.map((o) => ({
@@ -111,9 +96,7 @@ export async function GET(request: Request) {
     landmark: o.landmark,
     notes: o.notes,
     createdByUserId: o.createdByUserId,
-    createdByLabel: o.createdByUserId
-      ? (creatorLabelById.get(o.createdByUserId) ?? "Staff")
-      : null,
+    createdByLabel: createdByLabelById.get(o.id) ?? null,
     lines: o.lines.map((l) => ({
       sortIndex: l.sortIndex,
       payload: l.payload,

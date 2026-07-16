@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import { formatIstDateInput, parseIstDateInput } from "@/lib/ist-dates";
+import { mapOrderCreatedByLabels } from "@/lib/order-created-by";
 import { getPrisma } from "@/lib/prisma";
 import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
 import {
@@ -94,25 +95,9 @@ export async function GET(request: Request) {
 
   const withTravel = view === "online_pending" || view === "online";
 
-  const creatorIds = [
-    ...new Set(
-      orders
-        .map((o) => o.createdByUserId)
-        .filter((id): id is string => Boolean(id)),
-    ),
-  ];
-  const creators =
-    creatorIds.length > 0
-      ? await prisma.user.findMany({
-          where: { id: { in: creatorIds } },
-          select: { id: true, displayName: true, email: true },
-        })
-      : [];
-  const creatorLabelById = new Map(
-    creators.map((u) => [
-      u.id,
-      u.displayName?.trim() || u.email || "Staff",
-    ]),
+  const createdByLabelById = await mapOrderCreatedByLabels(
+    prisma,
+    orders.map((o) => ({ id: o.id, createdByUserId: o.createdByUserId })),
   );
 
   const mapped = await Promise.all(
@@ -144,9 +129,7 @@ export async function GET(request: Request) {
         landmark: o.landmark,
         notes: o.notes,
         createdByUserId: o.createdByUserId,
-        createdByLabel: o.createdByUserId
-          ? (creatorLabelById.get(o.createdByUserId) ?? "Staff")
-          : null,
+        createdByLabel: createdByLabelById.get(o.id) ?? null,
         latitude: coords?.lat ?? o.latitude,
         longitude: coords?.lng ?? o.longitude,
         mapUrl: hasCoords
