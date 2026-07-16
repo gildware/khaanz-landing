@@ -529,6 +529,19 @@ const ITEM_SORT_VALUES = new Set([
   "status-desc",
 ]);
 
+const SUPPLIER_SORT_VALUES = new Set([
+  "name-asc",
+  "name-desc",
+  "phone-asc",
+  "phone-desc",
+  "purchases-asc",
+  "purchases-desc",
+  "balance-asc",
+  "balance-desc",
+  "status-asc",
+  "status-desc",
+]);
+
 const ACTIVE_FILTER_VALUES = new Set<ActiveFilter>(["all", "active", "inactive"]);
 
 const STOCK_FILTER_OPTIONS: SearchableSelectOption[] = [
@@ -1888,9 +1901,27 @@ export default function AdminInventoryPage() {
   const [itemSortRaw, setItemSort] = useQueryParam("itemSort", "name-asc");
   const itemSort = ITEM_SORT_VALUES.has(itemSortRaw) ? itemSortRaw : "name-asc";
 
-  const [supplierSearch, setSupplierSearch] = useState("");
-  const [supplierStatusFilter, setSupplierStatusFilter] = useState<ActiveFilter>("active");
-  const [supplierSort, setSupplierSort] = useState("name-asc");
+  const [supplierSearch, setSupplierSearch] = useQueryParam("supplierQ", "");
+  const [supplierStatusRaw, setSupplierStatusRaw] = useQueryParam(
+    "supplierStatus",
+    "active",
+  );
+  const supplierStatusFilter: ActiveFilter = ACTIVE_FILTER_VALUES.has(
+    supplierStatusRaw as ActiveFilter,
+  )
+    ? (supplierStatusRaw as ActiveFilter)
+    : "active";
+  const setSupplierStatusFilter = useCallback(
+    (value: ActiveFilter) => setSupplierStatusRaw(value),
+    [setSupplierStatusRaw],
+  );
+  const [supplierSortRaw, setSupplierSort] = useQueryParam(
+    "supplierSort",
+    "name-asc",
+  );
+  const supplierSort = SUPPLIER_SORT_VALUES.has(supplierSortRaw)
+    ? supplierSortRaw
+    : "name-asc";
 
   const [purchaseSearch, setPurchaseSearch] = useState("");
   const [purchasePaymentFilter, setPurchasePaymentFilter] = useState("all");
@@ -2015,8 +2046,44 @@ export default function AdminInventoryPage() {
     });
 
     list = [...list].sort((a, b) => {
-      if (supplierSort === "name-desc") return b.name.localeCompare(a.name);
-      return a.name.localeCompare(b.name);
+      switch (supplierSort) {
+        case "name-desc":
+          return b.name.localeCompare(a.name);
+        case "phone-asc":
+          return (
+            (a.phone.trim() || "—").localeCompare(b.phone.trim() || "—") ||
+            a.name.localeCompare(b.name)
+          );
+        case "phone-desc":
+          return (
+            (b.phone.trim() || "—").localeCompare(a.phone.trim() || "—") ||
+            a.name.localeCompare(b.name)
+          );
+        case "purchases-asc":
+          return (
+            a.totalPurchasesPaise - b.totalPurchasesPaise ||
+            a.name.localeCompare(b.name)
+          );
+        case "purchases-desc":
+          return (
+            b.totalPurchasesPaise - a.totalPurchasesPaise ||
+            a.name.localeCompare(b.name)
+          );
+        case "balance-asc":
+          return a.balancePaise - b.balancePaise || a.name.localeCompare(b.name);
+        case "balance-desc":
+          return b.balancePaise - a.balancePaise || a.name.localeCompare(b.name);
+        case "status-asc":
+          return (
+            Number(b.active) - Number(a.active) || a.name.localeCompare(b.name)
+          );
+        case "status-desc":
+          return (
+            Number(a.active) - Number(b.active) || a.name.localeCompare(b.name)
+          );
+        default:
+          return a.name.localeCompare(b.name);
+      }
     });
     return list;
   }, [suppliers, supplierSearch, supplierStatusFilter, supplierSort]);
@@ -2896,10 +2963,8 @@ export default function AdminInventoryPage() {
             onStatusFilterChange={setSupplierStatusFilter}
             sort={supplierSort}
             onSortChange={setSupplierSort}
-            sortOptions={[
-              { value: "name-asc", label: "Name (A–Z)" },
-              { value: "name-desc", label: "Name (Z–A)" },
-            ]}
+            sortOptions={[]}
+            showSort={false}
             filteredCount={filteredSuppliers.length}
             totalCount={suppliers.length}
           />
@@ -2916,11 +2981,43 @@ export default function AdminInventoryPage() {
               </colgroup>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4">Name</TableHead>
-                  <TableHead className="px-4">Phone</TableHead>
-                  <TableHead className="px-4 text-right">Purchases</TableHead>
-                  <TableHead className="px-4 text-right">Balance</TableHead>
-                  <TableHead className="px-4">Status</TableHead>
+                  <SortableTableHead
+                    label="Name"
+                    column="name"
+                    sort={supplierSort}
+                    onSortChange={setSupplierSort}
+                    className="px-4"
+                  />
+                  <SortableTableHead
+                    label="Phone"
+                    column="phone"
+                    sort={supplierSort}
+                    onSortChange={setSupplierSort}
+                    className="px-4"
+                  />
+                  <SortableTableHead
+                    label="Purchases"
+                    column="purchases"
+                    sort={supplierSort}
+                    onSortChange={setSupplierSort}
+                    className="px-4 text-right"
+                    align="right"
+                  />
+                  <SortableTableHead
+                    label="Balance"
+                    column="balance"
+                    sort={supplierSort}
+                    onSortChange={setSupplierSort}
+                    className="px-4 text-right"
+                    align="right"
+                  />
+                  <SortableTableHead
+                    label="Status"
+                    column="status"
+                    sort={supplierSort}
+                    onSortChange={setSupplierSort}
+                    className="px-4"
+                  />
                   <TableHead className="px-4 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
