@@ -59,6 +59,7 @@ import {
   selectControlClassName,
 } from "@/components/admin/data-table-toolbar";
 import { PillRankChartCard } from "@/components/admin/pill-rank-chart";
+import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import {
   chartTooltipRupeePair,
   formatRupees,
@@ -66,6 +67,7 @@ import {
   paiseToRupeesNumber,
   rupeesToPaise,
 } from "@/lib/payroll/payroll-utils";
+import { useQueryParam } from "@/hooks/use-query-param";
 import { useTabParam } from "@/hooks/use-tab-param";
 
 function cx(...x: Array<string | false | null | undefined>): string {
@@ -510,6 +512,23 @@ const emptyItemForm = {
   minStockBase: "0",
   unitCostRupees: "",
 };
+
+const ITEM_SORT_VALUES = new Set([
+  "name-asc",
+  "name-desc",
+  "category-asc",
+  "category-desc",
+  "units-asc",
+  "units-desc",
+  "stock-asc",
+  "stock-desc",
+  "value-asc",
+  "value-desc",
+  "status-asc",
+  "status-desc",
+]);
+
+const ACTIVE_FILTER_VALUES = new Set<ActiveFilter>(["all", "active", "inactive"]);
 
 const STOCK_FILTER_OPTIONS: SearchableSelectOption[] = [
   { value: "all", label: "All" },
@@ -1732,11 +1751,29 @@ export default function AdminInventoryPage() {
     return [...cats].sort((a, b) => a.localeCompare(b));
   }, [items]);
 
-  const [itemSearch, setItemSearch] = useState("");
-  const [itemStatusFilter, setItemStatusFilter] = useState<ActiveFilter>("active");
-  const [itemCategoryFilter, setItemCategoryFilter] = useState("all");
-  const [itemStockFilter, setItemStockFilter] = useState<"all" | "low">("all");
-  const [itemSort, setItemSort] = useState("name-asc");
+  const [itemSearch, setItemSearch] = useQueryParam("itemQ", "");
+  const [itemStatusRaw, setItemStatusRaw] = useQueryParam("itemStatus", "active");
+  const itemStatusFilter: ActiveFilter = ACTIVE_FILTER_VALUES.has(
+    itemStatusRaw as ActiveFilter,
+  )
+    ? (itemStatusRaw as ActiveFilter)
+    : "active";
+  const setItemStatusFilter = useCallback(
+    (value: ActiveFilter) => setItemStatusRaw(value),
+    [setItemStatusRaw],
+  );
+  const [itemCategoryFilter, setItemCategoryFilter] = useQueryParam(
+    "itemCategory",
+    "all",
+  );
+  const [itemStockRaw, setItemStockRaw] = useQueryParam("itemStock", "all");
+  const itemStockFilter: "all" | "low" = itemStockRaw === "low" ? "low" : "all";
+  const setItemStockFilter = useCallback(
+    (value: "all" | "low") => setItemStockRaw(value),
+    [setItemStockRaw],
+  );
+  const [itemSortRaw, setItemSort] = useQueryParam("itemSort", "name-asc");
+  const itemSort = ITEM_SORT_VALUES.has(itemSortRaw) ? itemSortRaw : "name-asc";
 
   const [supplierSearch, setSupplierSearch] = useState("");
   const [supplierStatusFilter, setSupplierStatusFilter] = useState<ActiveFilter>("active");
@@ -1797,10 +1834,48 @@ export default function AdminInventoryPage() {
             (a.category.trim() || "—").localeCompare(b.category.trim() || "—") ||
             a.name.localeCompare(b.name)
           );
+        case "category-desc":
+          return (
+            (b.category.trim() || "—").localeCompare(a.category.trim() || "—") ||
+            a.name.localeCompare(b.name)
+          );
+        case "units-asc":
+        case "units-desc": {
+          const aUnits = `${a.purchaseUnit} ${a.baseUnitsPerPurchaseUnit} ${a.baseUnit}`;
+          const bUnits = `${b.purchaseUnit} ${b.baseUnitsPerPurchaseUnit} ${b.baseUnit}`;
+          const cmp = aUnits.localeCompare(bUnits) || a.name.localeCompare(b.name);
+          return itemSort === "units-desc" ? -cmp : cmp;
+        }
         case "stock-asc":
-          return Number(a.stockOnHandBase) - Number(b.stockOnHandBase);
+          return (
+            Number(a.stockOnHandBase) - Number(b.stockOnHandBase) ||
+            a.name.localeCompare(b.name)
+          );
         case "stock-desc":
-          return Number(b.stockOnHandBase) - Number(a.stockOnHandBase);
+          return (
+            Number(b.stockOnHandBase) - Number(a.stockOnHandBase) ||
+            a.name.localeCompare(b.name)
+          );
+        case "value-asc":
+          return (
+            itemStockValuePaise(a, settings?.costingMethod) -
+              itemStockValuePaise(b, settings?.costingMethod) ||
+            a.name.localeCompare(b.name)
+          );
+        case "value-desc":
+          return (
+            itemStockValuePaise(b, settings?.costingMethod) -
+              itemStockValuePaise(a, settings?.costingMethod) ||
+            a.name.localeCompare(b.name)
+          );
+        case "status-asc":
+          return (
+            Number(b.active) - Number(a.active) || a.name.localeCompare(b.name)
+          );
+        case "status-desc":
+          return (
+            Number(a.active) - Number(b.active) || a.name.localeCompare(b.name)
+          );
         default:
           return a.name.localeCompare(b.name);
       }
@@ -1813,6 +1888,7 @@ export default function AdminInventoryPage() {
     itemCategoryFilter,
     itemStockFilter,
     itemSort,
+    settings?.costingMethod,
   ]);
 
   const filteredSuppliers = useMemo(() => {
@@ -2247,13 +2323,8 @@ export default function AdminInventoryPage() {
             onStatusFilterChange={setItemStatusFilter}
             sort={itemSort}
             onSortChange={setItemSort}
-            sortOptions={[
-              { value: "name-asc", label: "Name (A–Z)" },
-              { value: "name-desc", label: "Name (Z–A)" },
-              { value: "category-asc", label: "Category" },
-              { value: "stock-asc", label: "Stock (low–high)" },
-              { value: "stock-desc", label: "Stock (high–low)" },
-            ]}
+            sortOptions={[]}
+            showSort={false}
             filteredCount={filteredItems.length}
             totalCount={items.length}
           >
@@ -2288,12 +2359,46 @@ export default function AdminInventoryPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Units</TableHead>
-                  <TableHead className="text-right">Stock</TableHead>
-                  <TableHead className="text-right">Stock Value</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableTableHead
+                    label="Name"
+                    column="name"
+                    sort={itemSort}
+                    onSortChange={setItemSort}
+                  />
+                  <SortableTableHead
+                    label="Category"
+                    column="category"
+                    sort={itemSort}
+                    onSortChange={setItemSort}
+                  />
+                  <SortableTableHead
+                    label="Units"
+                    column="units"
+                    sort={itemSort}
+                    onSortChange={setItemSort}
+                  />
+                  <SortableTableHead
+                    label="Stock"
+                    column="stock"
+                    sort={itemSort}
+                    onSortChange={setItemSort}
+                    className="text-right"
+                    align="right"
+                  />
+                  <SortableTableHead
+                    label="Stock Value"
+                    column="value"
+                    sort={itemSort}
+                    onSortChange={setItemSort}
+                    className="text-right"
+                    align="right"
+                  />
+                  <SortableTableHead
+                    label="Status"
+                    column="status"
+                    sort={itemSort}
+                    onSortChange={setItemSort}
+                  />
                   <TableHead className="w-[9rem] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
