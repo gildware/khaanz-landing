@@ -933,22 +933,22 @@ export default function AdminOnlineOrdersPage() {
                             Cancel
                           </Button>
                         ) : null}
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="h-8 text-xs text-destructive hover:text-destructive"
-                          disabled={busy}
-                          onClick={() =>
-                            setDeleteConfirm({
-                              orderId: o.id,
-                              orderRef: o.orderRef ?? o.id.slice(0, 8),
-                            })
-                          }
-                        >
-                          Delete
-                        </Button>
                       </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        className="h-8 w-full text-xs"
+                        disabled={busy}
+                        onClick={() =>
+                          setDeleteConfirm({
+                            orderId: o.id,
+                            orderRef: o.orderRef ?? o.id.slice(0, 8),
+                          })
+                        }
+                      >
+                        Delete order
+                      </Button>
                       {canSendWhatsApp ? (
                         <Button
                           type="button"

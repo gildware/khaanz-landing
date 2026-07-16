@@ -344,6 +344,21 @@ function avgCostToRateRupeesInput(
   return paiseToRupeesInput(Math.round(cost * conv));
 }
 
+/** On-hand stock × unit cost (same basis as inventory summary / charts). */
+function itemStockValuePaise(
+  item: InvItem,
+  costingMethod: string | undefined,
+): number {
+  const qty = Number(item.stockOnHandBase);
+  const unitCost = Number(
+    costingMethod === "LATEST_PURCHASE"
+      ? item.lastPurchasePaisePerBase
+      : item.avgCostPaisePerBase,
+  );
+  if (!Number.isFinite(qty) || !Number.isFinite(unitCost)) return 0;
+  return Math.round(qty * unitCost);
+}
+
 type Supplier = {
   id: string;
   name: string;
@@ -2277,6 +2292,7 @@ export default function AdminInventoryPage() {
                   <TableHead>Category</TableHead>
                   <TableHead>Units</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
+                  <TableHead className="text-right">Stock Value</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-[9rem] text-right">Actions</TableHead>
                 </TableRow>
@@ -2284,13 +2300,13 @@ export default function AdminInventoryPage() {
               <TableBody>
                 {items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                       No items yet. Add one to track stock and purchases.
                     </TableCell>
                   </TableRow>
                 ) : filteredItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                       No items match your search or filters.
                     </TableCell>
                   </TableRow>
@@ -2306,6 +2322,11 @@ export default function AdminInventoryPage() {
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-sm">
                         {r.stockOnHandBase} {r.baseUnit}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-sm">
+                        {formatRupees(
+                          itemStockValuePaise(r, settings?.costingMethod),
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-1.5">

@@ -476,8 +476,9 @@ export default function AdminOrdersPage() {
         <div className="min-w-0">
           <h1 className="font-semibold text-2xl tracking-tight">Orders</h1>
           <p className="text-muted-foreground text-sm">
-            POS and in-restaurant orders. Advance kitchen status one step at a
-            time, or cancel. Website orders are managed under Online orders.
+            POS and in-restaurant orders. Advance kitchen status, cancel, or
+            permanently delete an order. Website orders are managed under Online
+            orders.
           </p>
         </div>
 
@@ -590,7 +591,7 @@ export default function AdminOrdersPage() {
               return (
                 <article
                   key={o.id}
-                  className="flex h-[clamp(480px,min(560px,85dvh),600px)] w-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-card p-4 shadow-sm ring-1 ring-border/50"
+                  className="flex h-[clamp(520px,min(600px,88dvh),640px)] w-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-card p-4 shadow-sm ring-1 ring-border/50"
                 >
                   <div className="flex shrink-0 gap-3 border-b border-border/70 pb-3">
                     <div className="min-w-0 flex-1 space-y-1">
@@ -778,7 +779,8 @@ export default function AdminOrdersPage() {
                               orderRef: o.orderRef ?? o.id.slice(0, 8),
                               currentStatusLabel: statusLabel,
                               nextStatus: "CANCELLED",
-                              nextStatusLabel: RESTAURANT_ORDER_STATUS_TAB_LABEL.CANCELLED,
+                              nextStatusLabel:
+                                RESTAURANT_ORDER_STATUS_TAB_LABEL.CANCELLED,
                               actionLabel: "Cancel order",
                               destructive: true,
                             })
@@ -787,22 +789,22 @@ export default function AdminOrdersPage() {
                           Cancel
                         </Button>
                       )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-xs text-destructive hover:text-destructive"
-                        disabled={busy}
-                        onClick={() =>
-                          setDeleteConfirm({
-                            orderId: o.id,
-                            orderRef: o.orderRef ?? o.id.slice(0, 8),
-                          })
-                        }
-                      >
-                        Delete
-                      </Button>
                     </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      className="h-8 w-full text-xs"
+                      disabled={busy}
+                      onClick={() =>
+                        setDeleteConfirm({
+                          orderId: o.id,
+                          orderRef: o.orderRef ?? o.id.slice(0, 8),
+                        })
+                      }
+                    >
+                      Delete order
+                    </Button>
                   </footer>
                 </article>
               );
