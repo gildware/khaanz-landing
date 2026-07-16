@@ -306,6 +306,90 @@ export async function recordKitchenUse(
   return { id: row.id, costPaise };
 }
 
+export async function recordStockSale(
+  tx: Prisma.TransactionClient,
+  input: {
+    inventoryItemId: string;
+    qtyBase: Prisma.Decimal;
+    /** Selling price in paise per 1 base unit. */
+    ratePaisePerBase: Prisma.Decimal;
+    soldAt: Date;
+    buyerName?: string;
+    note?: string;
+    createdByUserId?: string | null;
+    allowNegativeStock: boolean;
+  },
+): Promise<{ id: string; totalPaise: number; costPaise: number }> {
+  const item = await tx.inventoryItem.findFirst({
+    where: { id: input.inventoryItemId, active: true },
+  });
+  if (!item) throw new Error("INVENTORY_ITEM_NOT_FOUND");
+  const qty = input.qtyBase.abs();
+  if (qty.equals(D0)) throw new Error("STOCK_SALE_QTY_ZERO");
+
+  const rate = input.ratePaisePerBase;
+  if (rate.lessThan(D0)) throw new Error("STOCK_SALE_RATE_INVALID");
+
+  const totalPaise = Math.max(0, Math.round(Number(qty.mul(rate).toString())));
+  const costPaise = Math.max(
+    0,
+    Math.round(Number(qty.mul(item.avgCostPaisePerBase).toString())),
+  );
+
+  const delta = d(0).sub(qty);
+  await tx.inventoryItem.update({
+    where: { id: item.id },
+    data: { stockOnHandBase: item.stockOnHandBase.add(delta) },
+  });
+
+  const row = await tx.stockSaleEntry.create({
+    data: {
+      inventoryItemId: item.id,
+      soldAt: input.soldAt,
+      qtyBase: qty,
+      ratePaisePerBase: rate,
+      totalPaise,
+      costPaise,
+      buyerName: (input.buyerName ?? "").trim().slice(0, 200),
+      note: (input.note ?? "").trim().slice(0, 500),
+      createdByUserId: input.createdByUserId ?? null,
+    },
+  });
+
+  await consumeFromBatchesFifo(tx, {
+    inventoryItemId: item.id,
+    qtyBase: qty,
+    occurredAt: input.soldAt,
+    referenceType: "stock_sale",
+    referenceId: row.id,
+    orderId: null,
+    createdByUserId: input.createdByUserId ?? null,
+    allowNegative: input.allowNegativeStock,
+  });
+
+  await tx.inventoryMovement.create({
+    data: {
+      inventoryItemId: item.id,
+      occurredAt: input.soldAt,
+      type: "STOCK_SALE",
+      qtyDeltaBase: delta,
+      referenceType: "stock_sale",
+      referenceId: row.id,
+      note: [
+        totalPaise > 0 ? `₹${(totalPaise / 100).toFixed(2)}` : "",
+        (input.buyerName ?? "").trim(),
+        (input.note ?? "").trim(),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+        .slice(0, 500),
+      createdByUserId: input.createdByUserId ?? null,
+    },
+  });
+
+  return { id: row.id, totalPaise, costPaise };
+}
+
 export type AuditLineInput = {
   inventoryItemId: string;
   countedBase: Prisma.Decimal;

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDownIcon,
+  BanknoteIcon,
   ChevronDownIcon,
   CopyIcon,
   EyeIcon,
@@ -824,6 +825,20 @@ export default function AdminInventoryPage() {
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [recipesList, setRecipesList] = useState<RecipeRow[]>([]);
   const [movements, setMovements] = useState<MovementRow[]>([]);
+  const [stockSales, setStockSales] = useState<
+    {
+      id: string;
+      inventoryItemId: string;
+      soldAt: string;
+      qtyBase: string;
+      ratePaisePerBase: string;
+      totalPaise: number;
+      costPaise: number;
+      buyerName: string;
+      note: string;
+      item: { name: string; baseUnit: string };
+    }[]
+  >([]);
 
   const loadPurchases = useCallback(async () => {
     const r = await adminFetch<{ purchases: PurchaseRow[] }>(
@@ -842,6 +857,24 @@ export default function AdminInventoryPage() {
       "/api/admin/inventory/movements",
     );
     setMovements(r.movements);
+  }, []);
+
+  const loadStockSales = useCallback(async () => {
+    const r = await adminFetch<{
+      entries: {
+        id: string;
+        inventoryItemId: string;
+        soldAt: string;
+        qtyBase: string;
+        ratePaisePerBase: string;
+        totalPaise: number;
+        costPaise: number;
+        buyerName: string;
+        note: string;
+        item: { name: string; baseUnit: string };
+      }[];
+    }>("/api/admin/inventory/stock-sales?limit=100");
+    setStockSales(r.entries);
   }, []);
 
   const loadMenu = useCallback(async () => {
@@ -873,6 +906,7 @@ export default function AdminInventoryPage() {
           loadPurchases(),
           loadRecipesList(),
           loadMovements(),
+          loadStockSales(),
           loadMenu(),
           loadSettings(),
           loadExpiry(),
@@ -889,6 +923,7 @@ export default function AdminInventoryPage() {
     loadPurchases,
     loadRecipesList,
     loadSettings,
+    loadStockSales,
     loadSummary,
     loadSuppliers,
   ]);
@@ -1566,6 +1601,17 @@ export default function AdminInventoryPage() {
     paymentReference: "",
   });
 
+  const [sellForm, setSellForm] = useState({
+    itemId: "",
+    qty: "",
+    qtyUnit: "purchase" as QtyEntryUnit,
+    priceRupees: "",
+    buyerName: "",
+    note: "",
+    soldAt: "",
+  });
+  const [sellSubmitting, setSellSubmitting] = useState(false);
+
   const postOpening = async () => {
     const item = items.find((i) => i.id === ops.openingItemId);
     if (!item) {
@@ -1633,6 +1679,73 @@ export default function AdminInventoryPage() {
       await Promise.all([loadItems(), loadSummary(), loadMovements()]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  };
+
+  const postStockSale = async () => {
+    const item = items.find((i) => i.id === sellForm.itemId);
+    if (!item) {
+      toast.error("Select a stock item");
+      return;
+    }
+    const qtyBase = convertQtyToBaseUnits(
+      sellForm.qty,
+      sellForm.qtyUnit,
+      item.baseUnitsPerPurchaseUnit,
+    );
+    if (!qtyBase) {
+      toast.error("Enter a valid quantity");
+      return;
+    }
+    const pricePaise = rupeesToPaise(sellForm.priceRupees);
+    if (!Number.isFinite(pricePaise) || pricePaise < 0) {
+      toast.error("Enter a valid selling price");
+      return;
+    }
+    const factor = Number(item.baseUnitsPerPurchaseUnit);
+    const ratePaisePerBase =
+      sellForm.qtyUnit === "base"
+        ? pricePaise
+        : Number.isFinite(factor) && factor > 0
+          ? pricePaise / factor
+          : NaN;
+    if (!Number.isFinite(ratePaisePerBase) || ratePaisePerBase < 0) {
+      toast.error("Could not convert selling price to base unit");
+      return;
+    }
+    setSellSubmitting(true);
+    try {
+      const out = await adminFetch<{ totalPaise: number }>("/api/admin/inventory/stock-sales", {
+        method: "POST",
+        body: JSON.stringify({
+          inventoryItemId: sellForm.itemId,
+          qtyBase,
+          ratePaisePerBase,
+          buyerName: sellForm.buyerName.trim(),
+          note: sellForm.note.trim(),
+          ...(sellForm.soldAt
+            ? { soldAt: new Date(sellForm.soldAt).toISOString() }
+            : {}),
+        }),
+      });
+      toast.success(`Stock sold — ${formatRupees(out.totalPaise)}`);
+      setSellForm((x) => ({
+        ...x,
+        qty: "",
+        priceRupees: "",
+        buyerName: "",
+        note: "",
+      }));
+      await Promise.all([
+        loadItems(),
+        loadSummary(),
+        loadMovements(),
+        loadStockSales(),
+      ]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to record stock sale");
+    } finally {
+      setSellSubmitting(false);
     }
   };
 
@@ -2030,7 +2143,7 @@ export default function AdminInventoryPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
           <TabsTrigger value="overview" className="data-[state=active]:font-semibold">
             Overview
           </TabsTrigger>
@@ -2045,6 +2158,9 @@ export default function AdminInventoryPage() {
           </TabsTrigger>
           <TabsTrigger value="recipes" className="data-[state=active]:font-semibold">
             Recipes
+          </TabsTrigger>
+          <TabsTrigger value="sell" className="data-[state=active]:font-semibold">
+            Sell stock
           </TabsTrigger>
           <TabsTrigger value="ops" className="data-[state=active]:font-semibold">
             Stock & pay
@@ -4242,6 +4358,260 @@ export default function AdminInventoryPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+        </TabsContent>
+
+        <TabsContent value="sell" className="space-y-6 pt-4">
+          <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="flex items-center gap-2 font-medium text-base">
+                  <BanknoteIcon className="size-4 text-muted-foreground" />
+                  Sell stock
+                </h2>
+                <p className="mt-1 text-muted-foreground text-sm">
+                  Sell an inventory item directly (cash). Stock is reduced and the sale is
+                  recorded in reports and the cash pool.
+                </p>
+              </div>
+              <Button
+                type="button"
+                disabled={sellSubmitting}
+                onClick={() => void postStockSale()}
+              >
+                {sellSubmitting ? "Saving…" : "Record sale"}
+              </Button>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Stock item</Label>
+                <InventoryItemSelect
+                  value={sellForm.itemId}
+                  onChange={(v) => setSellForm({ ...sellForm, itemId: v })}
+                  items={items}
+                />
+                <ItemOnHandHint item={items.find((i) => i.id === sellForm.itemId)} />
+              </div>
+
+              {(() => {
+                const sellItem = items.find((i) => i.id === sellForm.itemId);
+                const previewBase = sellItem
+                  ? convertQtyToBaseUnits(
+                      sellForm.qty,
+                      sellForm.qtyUnit,
+                      sellItem.baseUnitsPerPurchaseUnit,
+                    )
+                  : null;
+                const pricePaise = rupeesToPaise(sellForm.priceRupees);
+                const factor = sellItem ? Number(sellItem.baseUnitsPerPurchaseUnit) : NaN;
+                const ratePaisePerBase =
+                  sellItem && Number.isFinite(pricePaise) && pricePaise >= 0
+                    ? sellForm.qtyUnit === "base"
+                      ? pricePaise
+                      : Number.isFinite(factor) && factor > 0
+                        ? pricePaise / factor
+                        : NaN
+                    : NaN;
+                const lineTotalPaise =
+                  previewBase && Number.isFinite(ratePaisePerBase)
+                    ? Math.max(
+                        0,
+                        Math.round(Number(previewBase) * ratePaisePerBase),
+                      )
+                    : null;
+                const avgCostHint =
+                  sellItem && sellForm.qtyUnit === "purchase"
+                    ? avgCostToRateRupeesInput(
+                        sellItem.avgCostPaisePerBase,
+                        sellItem.baseUnitsPerPurchaseUnit,
+                      )
+                    : sellItem
+                      ? paiseToRupeesInput(
+                          Math.round(Number(sellItem.avgCostPaisePerBase)),
+                        )
+                      : "";
+
+                return (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Quantity unit</Label>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={sellForm.qtyUnit === "purchase" ? "default" : "outline"}
+                          disabled={!sellItem}
+                          onClick={() =>
+                            setSellForm({ ...sellForm, qtyUnit: "purchase" })
+                          }
+                        >
+                          {sellItem?.purchaseUnit || "Purchase unit"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={sellForm.qtyUnit === "base" ? "default" : "outline"}
+                          disabled={!sellItem}
+                          onClick={() => setSellForm({ ...sellForm, qtyUnit: "base" })}
+                        >
+                          {sellItem?.baseUnit || "Base unit"}
+                        </Button>
+                      </div>
+                      {sellItem ? (
+                        <p className="text-muted-foreground text-xs">
+                          1 {sellItem.purchaseUnit} = {sellItem.baseUnitsPerPurchaseUnit}{" "}
+                          {sellItem.baseUnit}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="sell-qty">Quantity</Label>
+                      <Input
+                        id="sell-qty"
+                        inputMode="decimal"
+                        placeholder={
+                          sellForm.qtyUnit === "purchase" ? "e.g. 2" : "e.g. 5000"
+                        }
+                        value={sellForm.qty}
+                        onChange={(e) =>
+                          setSellForm({ ...sellForm, qty: e.target.value })
+                        }
+                        disabled={!sellItem}
+                      />
+                      {previewBase && sellItem && sellForm.qtyUnit === "purchase" ? (
+                        <p className="text-muted-foreground text-xs">
+                          = {previewBase} {sellItem.baseUnit}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="sell-price">
+                        Selling price (₹ /{" "}
+                        {sellForm.qtyUnit === "purchase"
+                          ? (sellItem?.purchaseUnit ?? "purchase unit")
+                          : (sellItem?.baseUnit ?? "base unit")}
+                        )
+                      </Label>
+                      <Input
+                        id="sell-price"
+                        inputMode="decimal"
+                        placeholder={avgCostHint ? `Cost ~ ₹${avgCostHint}` : "e.g. 120"}
+                        value={sellForm.priceRupees}
+                        onChange={(e) =>
+                          setSellForm({ ...sellForm, priceRupees: e.target.value })
+                        }
+                        disabled={!sellItem}
+                      />
+                      {lineTotalPaise != null ? (
+                        <p className="text-sm tabular-nums">
+                          Line total:{" "}
+                          <span className="font-medium">{formatRupees(lineTotalPaise)}</span>
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="sell-at">Sold at (optional)</Label>
+                      <Input
+                        id="sell-at"
+                        type="datetime-local"
+                        value={sellForm.soldAt}
+                        onChange={(e) =>
+                          setSellForm({ ...sellForm, soldAt: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="sell-buyer">Buyer (optional)</Label>
+                      <Input
+                        id="sell-buyer"
+                        placeholder="Name or shop"
+                        value={sellForm.buyerName}
+                        onChange={(e) =>
+                          setSellForm({ ...sellForm, buyerName: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="sell-note">Note (optional)</Label>
+                      <Input
+                        id="sell-note"
+                        placeholder="e.g. Sold leftover rice"
+                        value={sellForm.note}
+                        onChange={(e) =>
+                          setSellForm({ ...sellForm, note: e.target.value })
+                        }
+                      />
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-card shadow-sm">
+            <div className="border-b px-4 py-3">
+              <h3 className="font-medium text-sm">Recent stock sales</h3>
+              <p className="text-muted-foreground text-xs">
+                Latest {stockSales.length} sale{stockSales.length === 1 ? "" : "s"}
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>When</TableHead>
+                    <TableHead>Item</TableHead>
+                    <TableHead className="text-right">Qty</TableHead>
+                    <TableHead className="text-right">Sale</TableHead>
+                    <TableHead className="text-right">Cost</TableHead>
+                    <TableHead>Buyer</TableHead>
+                    <TableHead>Note</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stockSales.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="py-10 text-center text-muted-foreground"
+                      >
+                        No stock sales yet. Record your first sale above.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    stockSales.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell className="text-muted-foreground text-sm tabular-nums whitespace-nowrap">
+                          {s.soldAt.slice(0, 16).replace("T", " ")}
+                        </TableCell>
+                        <TableCell className="font-medium text-sm">{s.item.name}</TableCell>
+                        <TableCell className="text-right text-sm tabular-nums">
+                          {s.qtyBase} {s.item.baseUnit}
+                        </TableCell>
+                        <TableCell className="text-right text-sm tabular-nums font-medium">
+                          {formatRupees(s.totalPaise)}
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground text-sm tabular-nums">
+                          {formatRupees(s.costPaise)}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {s.buyerName.trim() || "—"}
+                        </TableCell>
+                        <TableCell className="max-w-[10rem] truncate text-muted-foreground text-xs">
+                          {s.note.trim() || "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="ops" className="space-y-6 pt-4">

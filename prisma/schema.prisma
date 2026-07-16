@@ -398,6 +398,8 @@ enum InventoryMovementType {
   WASTAGE
   /// Oil, gas, petrol, and other consumables used in kitchen (hits P&L).
   KITCHEN_USE
+  /// Direct sale of an inventory item (not via menu / vendor sale).
+  STOCK_SALE
 }
 
 enum InventoryBatchSourceType {
@@ -458,6 +460,7 @@ model InventoryItem {
   recipeIngredients  RecipeIngredient[]
   wastageRows        WastageEntry[]
   kitchenUseRows     KitchenUseEntry[]
+  stockSaleRows      StockSaleEntry[]
   stockAdjustments   StockAdjustment[]
   stockAuditLines    StockAuditLine[]
   personalUseEntries PersonalUseEntry[]
@@ -845,6 +848,30 @@ model KitchenUseEntry {
   @@index([inventoryItemId, usedAt])
   @@index([usedAt])
   @@map("kitchen_use_entries")
+}
+
+/// Direct sale of raw inventory stock (reduces stock; records revenue + COGS).
+model StockSaleEntry {
+  id               String   @id @default(cuid())
+  inventoryItemId  String   @map("inventory_item_id")
+  soldAt           DateTime @map("sold_at")
+  qtyBase          Decimal  @map("qty_base") @db.Decimal(24, 8)
+  /// Selling price in paise per 1 base unit.
+  ratePaisePerBase Decimal  @map("rate_paise_per_base") @db.Decimal(24, 6)
+  /// qty × selling rate (paise), rounded.
+  totalPaise       Int      @map("total_paise")
+  /// Snapshot of qty × avg cost at sale time (paise) — COGS.
+  costPaise        Int      @map("cost_paise")
+  buyerName        String   @default("") @map("buyer_name") @db.VarChar(200)
+  note             String   @default("") @db.VarChar(500)
+  createdByUserId  String?  @map("created_by_user_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  item InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@index([inventoryItemId, soldAt])
+  @@index([soldAt])
+  @@map("stock_sale_entries")
 }
 
 /// Prepared menu dish wasted (deducts ingredients via recipe).

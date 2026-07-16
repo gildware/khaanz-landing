@@ -43,6 +43,7 @@ async function deleteInventoryHistory(tx: Tx, menuAlreadyCleared: boolean): Prom
     await tx.menuWastageEntry.deleteMany({});
   }
   await tx.kitchenUseEntry.deleteMany({});
+  await tx.stockSaleEntry.deleteMany({});
   await tx.stockAdjustment.deleteMany({});
   await tx.inventoryBatchConsumption.deleteMany({});
   await tx.inventoryMovement.deleteMany({});

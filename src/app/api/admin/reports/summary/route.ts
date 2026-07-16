@@ -212,6 +212,7 @@ export async function GET(request: Request) {
     kitchenUseAgg,
     vendorSalesAgg,
     vendorPaymentsAgg,
+    stockSalesAgg,
     expenseEntries,
     wastageEntries,
     menuWastageEntries,
@@ -255,6 +256,11 @@ export async function GET(request: Request) {
     prisma.vendorPayment.aggregate({
       where: { paidAt: { gte: from, lt: toExclusive } },
       _sum: { amountPaise: true },
+    }),
+    prisma.stockSaleEntry.aggregate({
+      where: { soldAt: { gte: from, lt: toExclusive } },
+      _sum: { totalPaise: true, costPaise: true },
+      _count: { _all: true },
     }),
     prisma.expenseEntry.findMany({
       where: {
@@ -461,13 +467,16 @@ export async function GET(request: Request) {
   const stockCostPaiseInt = Math.round(Number(stockCostPaise.toString()));
   const kitchenUseCostPaise = kitchenUseAgg._sum.costPaise ?? 0;
   const recipeStockCostPaise = stockCostPaiseInt;
-  const totalStockCostUsedPaise = recipeStockCostPaise + kitchenUseCostPaise;
+  const stockSaleCostPaise = stockSalesAgg._sum.costPaise ?? 0;
+  const stockSalesPaise = stockSalesAgg._sum.totalPaise ?? 0;
+  const totalStockCostUsedPaise =
+    recipeStockCostPaise + kitchenUseCostPaise + stockSaleCostPaise;
 
   const salesPaise = salesAgg._sum.totalMinor ?? 0;
   const orderCount = salesAgg._count._all ?? 0;
   const expensesPaise = expenseAgg._sum.amountPaise ?? 0;
   const capitalExpensesPaise = capitalExpenseAgg._sum.amountPaise ?? 0;
-  const grossMarginPaise = salesPaise - totalStockCostUsedPaise;
+  const grossMarginPaise = salesPaise + stockSalesPaise - totalStockCostUsedPaise;
   const netProfitPaise = grossMarginPaise - expensesPaise - salariesPaise;
 
   const personalByKind = new Map<
@@ -701,6 +710,9 @@ export async function GET(request: Request) {
       vendorSalesPaise: vendorSalesAgg._sum.totalPaise ?? 0,
       vendorSalesCount: vendorSalesAgg._count._all ?? 0,
       vendorPaymentsPaise: vendorPaymentsAgg._sum.amountPaise ?? 0,
+      stockSalesPaise,
+      stockSalesCount: stockSalesAgg._count._all ?? 0,
+      stockSaleCostPaise,
     },
     charts: {
       dailySales,

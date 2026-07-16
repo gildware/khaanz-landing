@@ -131,6 +131,7 @@ export async function sumCashMovementsInRange(
   const [
     orders,
     vendorPayments,
+    stockSales,
     expenses,
     personalCash,
     supplierPayments,
@@ -148,6 +149,10 @@ export async function sumCashMovementsInRange(
     prisma.vendorPayment.findMany({
       where: { paidAt: { gte: rangeStart, lt: toExclusive } },
       select: { amountPaise: true },
+    }),
+    prisma.stockSaleEntry.findMany({
+      where: { soldAt: { gte: rangeStart, lt: toExclusive } },
+      select: { totalPaise: true },
     }),
     prisma.expenseEntry.findMany({
       where: { occurredAt: { gte: rangeStart, lt: toExclusive } },
@@ -179,6 +184,7 @@ export async function sumCashMovementsInRange(
 
   for (const o of orders) out.salesCollectedPaise += o.totalMinor;
   for (const p of vendorPayments) out.vendorCollectionsPaise += p.amountPaise;
+  for (const s of stockSales) out.salesCollectedPaise += s.totalPaise;
   for (const e of expenses) out.expensesPaise += e.amountPaise;
   for (const p of personalCash) out.personalCashPaise += p.cashAmountPaise;
   for (const p of supplierPayments) out.supplierPaymentsPaise += p.amountPaise;
@@ -239,6 +245,7 @@ export async function buildCashDailyTable(
     const [
       orders,
       vendorPayments,
+      stockSales,
       expenses,
       personalCash,
       supplierPayments,
@@ -256,6 +263,10 @@ export async function buildCashDailyTable(
       prisma.vendorPayment.findMany({
         where: { paidAt: { gte: rangeStart, lt: toExclusive } },
         select: { paidAt: true, amountPaise: true },
+      }),
+      prisma.stockSaleEntry.findMany({
+        where: { soldAt: { gte: rangeStart, lt: toExclusive } },
+        select: { soldAt: true, totalPaise: true },
       }),
       prisma.expenseEntry.findMany({
         where: { occurredAt: { gte: rangeStart, lt: toExclusive } },
@@ -294,6 +305,11 @@ export async function buildCashDailyTable(
       const key = istDayKey(p.paidAt);
       const row = movementsByDate.get(key);
       if (row) addMovement(row, { vendorCollectionsPaise: p.amountPaise });
+    }
+    for (const s of stockSales) {
+      const key = istDayKey(s.soldAt);
+      const row = movementsByDate.get(key);
+      if (row) addMovement(row, { salesCollectedPaise: s.totalPaise });
     }
     for (const e of expenses) {
       const key = istDayKey(e.occurredAt);

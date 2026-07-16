@@ -109,6 +109,9 @@ type ReportsSummary = {
     vendorSalesPaise: number;
     vendorSalesCount: number;
     vendorPaymentsPaise: number;
+    stockSalesPaise?: number;
+    stockSalesCount?: number;
+    stockSaleCostPaise?: number;
   };
   charts: {
     dailySales: DailySalesRow[];
@@ -508,6 +511,23 @@ export default function AdminReportsPage() {
           }
           Icon={CreditCardIcon}
           gradientClassName="bg-gradient-to-br from-blue-500/25 via-indigo-500/15 to-violet-500/15"
+        />
+        <KpiCard
+          title="Stock sales"
+          value={
+            summary
+              ? formatRupees(summary.kpis.stockSalesPaise ?? 0)
+              : isLoading
+                ? "…"
+                : "—"
+          }
+          subtitle={
+            summary
+              ? `${summary.kpis.stockSalesCount ?? 0} sales · cost ${formatRupees(summary.kpis.stockSaleCostPaise ?? 0)}`
+              : undefined
+          }
+          Icon={WarehouseIcon}
+          gradientClassName="bg-gradient-to-br from-emerald-500/25 via-teal-500/15 to-cyan-500/15"
         />
       </div>
 

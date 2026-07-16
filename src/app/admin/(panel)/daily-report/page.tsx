@@ -37,6 +37,7 @@ type DayRow = {
   netProfitPaise: number;
   personalUsePaise: number;
   vendorSalesPaise: number;
+  stockSalesPaise: number;
 };
 
 type DailyTableResponse = {
@@ -58,10 +59,11 @@ type DailyTableResponse = {
     netProfitPaise: number;
     personalUsePaise: number;
     vendorSalesPaise: number;
+    stockSalesPaise: number;
   };
 };
 
-const COL_COUNT = 13;
+const COL_COUNT = 14;
 
 const fetcher = async (url: string) => {
   const res = await fetch(url, { credentials: "include" });
@@ -252,6 +254,9 @@ export default function AdminDailyReportPage() {
               <TableHead className="sticky top-0 z-20 border-b bg-card text-right">
                 Vendor
               </TableHead>
+              <TableHead className="sticky top-0 z-20 border-b bg-card text-right">
+                Stock sales
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -298,6 +303,7 @@ export default function AdminDailyReportPage() {
                   <MoneyCell paise={row.netProfitPaise} emphasize />
                   <MoneyCell paise={row.personalUsePaise} muted />
                   <MoneyCell paise={row.vendorSalesPaise} muted />
+                  <MoneyCell paise={row.stockSalesPaise} muted />
                 </TableRow>
               );
             })}
@@ -325,6 +331,7 @@ export default function AdminDailyReportPage() {
                 />
                 <FooterMoney paise={totals.personalUsePaise} muted />
                 <FooterMoney paise={totals.vendorSalesPaise} muted />
+                <FooterMoney paise={totals.stockSalesPaise} muted />
               </TableRow>
             </TableFooter>
           ) : null}

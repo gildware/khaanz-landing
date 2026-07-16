@@ -48,6 +48,7 @@ type DayRow = {
   netProfitPaise: number;
   personalUsePaise: number;
   vendorSalesPaise: number;
+  stockSalesPaise: number;
 };
 
 function parseMonthKey(raw: string | null): string | null {
@@ -89,6 +90,7 @@ function emptyDay(date: string, label: string, isFuture: boolean): DayRow {
     netProfitPaise: 0,
     personalUsePaise: 0,
     vendorSalesPaise: 0,
+    stockSalesPaise: 0,
   };
 }
 
@@ -113,7 +115,15 @@ export async function GET(request: Request) {
     rowsByDate.set(date, emptyDay(date, istDateLabel(dayStart), date > todayKey));
   }
 
-  const [orders, expenseEntries, kitchenUseEntries, wastageEntries, personalUseEntries, vendorSales] =
+  const [
+    orders,
+    expenseEntries,
+    kitchenUseEntries,
+    wastageEntries,
+    personalUseEntries,
+    vendorSales,
+    stockSales,
+  ] =
     await Promise.all([
       prisma.order.findMany({
         where: {
@@ -157,6 +167,10 @@ export async function GET(request: Request) {
       prisma.vendorSale.findMany({
         where: { soldAt: { gte: from, lt: toExclusive } },
         select: { soldAt: true, totalPaise: true },
+      }),
+      prisma.stockSaleEntry.findMany({
+        where: { soldAt: { gte: from, lt: toExclusive } },
+        select: { soldAt: true, totalPaise: true, costPaise: true },
       }),
     ]);
 
@@ -273,12 +287,20 @@ export async function GET(request: Request) {
     if (row) row.vendorSalesPaise += sale.totalPaise;
   }
 
+  for (const sale of stockSales) {
+    const row = rowsByDate.get(istDayKey(sale.soldAt));
+    if (!row) continue;
+    row.stockSalesPaise += sale.totalPaise;
+    row.stockCostUsedPaise += sale.costPaise;
+  }
+
   const days: DayRow[] = dayKeys.map((date) => {
     const row = rowsByDate.get(date)!;
     if (row.isFuture) {
       return emptyDay(row.date, row.label, true);
     }
-    row.grossMarginPaise = row.salesPaise - row.stockCostUsedPaise;
+    row.grossMarginPaise =
+      row.salesPaise + row.stockSalesPaise - row.stockCostUsedPaise;
     row.netProfitPaise =
       row.grossMarginPaise - row.expensesPaise - row.salariesPaise;
     return row;
@@ -300,6 +322,7 @@ export async function GET(request: Request) {
       acc.netProfitPaise += row.netProfitPaise;
       acc.personalUsePaise += row.personalUsePaise;
       acc.vendorSalesPaise += row.vendorSalesPaise;
+      acc.stockSalesPaise += row.stockSalesPaise;
       return acc;
     },
     {
@@ -316,6 +339,7 @@ export async function GET(request: Request) {
       netProfitPaise: 0,
       personalUsePaise: 0,
       vendorSalesPaise: 0,
+      stockSalesPaise: 0,
     },
   );
 
