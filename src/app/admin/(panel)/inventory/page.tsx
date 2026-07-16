@@ -347,18 +347,40 @@ function avgCostToRateRupeesInput(
   return paiseToRupeesInput(Math.round(cost * conv));
 }
 
+/** Unit cost in paise per base unit (respects inventory costing method). */
+function itemUnitCostPaise(
+  item: InvItem | undefined,
+  costingMethod: string | undefined,
+): number {
+  if (!item) return 0;
+  const unitCost = Number(
+    costingMethod === "LATEST_PURCHASE"
+      ? item.lastPurchasePaisePerBase
+      : item.avgCostPaisePerBase,
+  );
+  return Number.isFinite(unitCost) ? unitCost : 0;
+}
+
 /** On-hand stock × unit cost (same basis as inventory summary / charts). */
 function itemStockValuePaise(
   item: InvItem,
   costingMethod: string | undefined,
 ): number {
   const qty = Number(item.stockOnHandBase);
-  const unitCost = Number(
-    costingMethod === "LATEST_PURCHASE"
-      ? item.lastPurchasePaisePerBase
-      : item.avgCostPaisePerBase,
-  );
-  if (!Number.isFinite(qty) || !Number.isFinite(unitCost)) return 0;
+  const unitCost = itemUnitCostPaise(item, costingMethod);
+  if (!Number.isFinite(qty) || unitCost <= 0) return 0;
+  return Math.round(qty * unitCost);
+}
+
+/** Recipe line: qty (base) × unit cost. */
+function recipeIngredientValuePaise(
+  item: InvItem | undefined,
+  qtyBase: string,
+  costingMethod: string | undefined,
+): number {
+  const qty = Number(qtyBase);
+  const unitCost = itemUnitCostPaise(item, costingMethod);
+  if (!Number.isFinite(qty) || qty <= 0 || unitCost <= 0) return 0;
   return Math.round(qty * unitCost);
 }
 
@@ -1542,6 +1564,21 @@ export default function AdminInventoryPage() {
         qtyBase: x.qtyBase,
       })),
   });
+
+  const recipeTotalValuePaise = useMemo(
+    () =>
+      recipeIngredients.reduce(
+        (sum, ln) =>
+          sum +
+          recipeIngredientValuePaise(
+            items.find((i) => i.id === ln.inventoryItemId),
+            ln.qtyBase,
+            settings?.costingMethod,
+          ),
+        0,
+      ),
+    [recipeIngredients, items, settings?.costingMethod],
+  );
 
   const submitRecipe = async (mode: "update" | "new") => {
     if (recipeSubmitting) return;
@@ -4229,7 +4266,7 @@ export default function AdminInventoryPage() {
             }}
           >
             <DialogContent
-              className="max-h-[90vh] max-w-lg overflow-y-auto"
+              className="max-h-[95vh] w-[min(100vw-2rem,42rem)] max-w-3xl overflow-y-auto sm:max-w-3xl"
               showCloseButton={!recipeSubmitting}
             >
               <DialogHeader>
@@ -4300,48 +4337,82 @@ export default function AdminInventoryPage() {
                       Add
                     </Button>
                   </div>
+                  <div className="mb-1 flex gap-2 px-0.5 text-muted-foreground text-xs">
+                    <span className="flex-1">Item</span>
+                    <span className="w-24 text-center">Qty</span>
+                    <span className="w-20 text-right">Value</span>
+                    <span className="w-8" aria-hidden />
+                  </div>
                   <div className="space-y-2">
-                    {recipeIngredients.map((ln) => (
-                      <div key={ln.id} className="flex gap-2">
-                        <InventoryItemSelect
-                          value={ln.inventoryItemId}
-                          onChange={(v) =>
-                            setRecipeIngredients((x) =>
-                              x.map((r) =>
-                                r.id === ln.id ? { ...r, inventoryItemId: v } : r,
-                              ),
-                            )
-                          }
-                          items={items}
-                          className="flex-1"
-                        />
-                        <Input
-                          className="w-24"
-                          inputMode="decimal"
-                          placeholder="Qty"
-                          value={ln.qtyBase}
-                          onChange={(e) =>
-                            setRecipeIngredients((x) =>
-                              x.map((r) =>
-                                r.id === ln.id ? { ...r, qtyBase: e.target.value } : r,
-                              ),
-                            )
-                          }
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            setRecipeIngredients((x) =>
-                              x.length <= 1 ? x : x.filter((r) => r.id !== ln.id),
-                            )
-                          }
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    ))}
+                    {recipeIngredients.map((ln) => {
+                      const lineValuePaise = recipeIngredientValuePaise(
+                        items.find((i) => i.id === ln.inventoryItemId),
+                        ln.qtyBase,
+                        settings?.costingMethod,
+                      );
+                      return (
+                        <div key={ln.id} className="flex items-center gap-2">
+                          <InventoryItemSelect
+                            value={ln.inventoryItemId}
+                            onChange={(v) =>
+                              setRecipeIngredients((x) =>
+                                x.map((r) =>
+                                  r.id === ln.id ? { ...r, inventoryItemId: v } : r,
+                                ),
+                              )
+                            }
+                            items={items}
+                            className="flex-1"
+                          />
+                          <Input
+                            className="w-24"
+                            inputMode="decimal"
+                            placeholder="Qty"
+                            value={ln.qtyBase}
+                            onChange={(e) =>
+                              setRecipeIngredients((x) =>
+                                x.map((r) =>
+                                  r.id === ln.id ? { ...r, qtyBase: e.target.value } : r,
+                                ),
+                              )
+                            }
+                          />
+                          <span
+                            className="w-20 shrink-0 text-right text-sm tabular-nums text-muted-foreground"
+                            title={
+                              lineValuePaise > 0
+                                ? settings?.costingMethod === "LATEST_PURCHASE"
+                                  ? "Latest purchase cost × qty"
+                                  : "Avg cost × qty"
+                                : undefined
+                            }
+                          >
+                            {lineValuePaise > 0 ? formatRupees(lineValuePaise) : "—"}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="w-8 shrink-0 px-0"
+                            onClick={() =>
+                              setRecipeIngredients((x) =>
+                                x.length <= 1 ? x : x.filter((r) => r.id !== ln.id),
+                              )
+                            }
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm">
+                    <span className="font-medium">Recipe total</span>
+                    <span className="font-medium tabular-nums">
+                      {recipeTotalValuePaise > 0
+                        ? formatRupees(recipeTotalValuePaise)
+                        : "—"}
+                    </span>
                   </div>
                 </div>
               </div>
