@@ -1,6 +1,10 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 import { D0 } from "@/lib/inventory/decimal-utils";
+import {
+  itemUnitCostPaisePerBase,
+  peekFifoConsumptionCost,
+} from "@/lib/inventory/inventory-costing";
 import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 import { resolveRecipeVersion } from "@/lib/inventory/recipe-resolve";
 
@@ -35,11 +39,20 @@ export async function computeDishCostBreakdown(
       where: { id: ing.inventoryItemId, active: true },
     });
     if (!item) continue;
-    const unit =
-      settings.costingMethod === "LATEST_PURCHASE"
-        ? item.lastPurchasePaisePerBase
-        : item.avgCostPaisePerBase;
-    const lineCost = ing.qtyBase.mul(unit).toDecimalPlaces(4);
+
+    let lineCost: Prisma.Decimal;
+    let unit: Prisma.Decimal;
+
+    if (settings.costingMethod === "FIFO") {
+      lineCost = await peekFifoConsumptionCost(tx, item.id, ing.qtyBase);
+      unit = ing.qtyBase.greaterThan(0)
+        ? lineCost.div(ing.qtyBase).toDecimalPlaces(6, Prisma.Decimal.ROUND_HALF_UP)
+        : D0;
+    } else {
+      unit = itemUnitCostPaisePerBase(item, settings.costingMethod);
+      lineCost = ing.qtyBase.mul(unit).toDecimalPlaces(4);
+    }
+
     costPaise = costPaise.add(lineCost);
     lines.push({
       inventoryItemId: item.id,

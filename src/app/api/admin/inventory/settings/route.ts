@@ -10,6 +10,7 @@ export const runtime = "nodejs";
 const METHODS: InventoryCostingMethod[] = [
   "WEIGHTED_AVERAGE",
   "LATEST_PURCHASE",
+  "FIFO",
 ];
 
 function isCostingMethod(x: unknown): x is InventoryCostingMethod {

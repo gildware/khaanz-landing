@@ -1,5 +1,9 @@
 import { Prisma } from "@prisma/client";
 
+import {
+  itemUnitCostPaisePerBase,
+  onHandValuesFifoPaiseByItem,
+} from "@/lib/inventory/inventory-costing";
 import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 import { getPrisma } from "@/lib/prisma";
 
@@ -23,14 +27,24 @@ export async function loadStockValueRankRows(): Promise<StockValueRankRow[]> {
     orderBy: { name: "asc" },
   });
 
-  const unitCost = (item: (typeof items)[number]) =>
-    invSettings.costingMethod === "LATEST_PURCHASE"
-      ? item.lastPurchasePaisePerBase
-      : item.avgCostPaisePerBase;
+  if (invSettings.costingMethod === "FIFO") {
+    const values = await prisma.$transaction((tx) =>
+      onHandValuesFifoPaiseByItem(
+        tx,
+        items.map((i) => i.id),
+      ),
+    );
+    return items.map((item) => ({
+      key: item.id,
+      label: item.name,
+      valuePaise: values.get(item.id) ?? 0,
+    }));
+  }
 
   const rows: StockValueRankRow[] = [];
   for (const item of items) {
-    const valuePaise = decimalToPaiseInt(item.stockOnHandBase.mul(unitCost(item)));
+    const unit = itemUnitCostPaisePerBase(item, invSettings.costingMethod);
+    const valuePaise = decimalToPaiseInt(item.stockOnHandBase.mul(unit));
     rows.push({ key: item.id, label: item.name, valuePaise });
   }
   return rows;

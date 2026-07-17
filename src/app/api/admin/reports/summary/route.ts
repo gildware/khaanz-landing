@@ -9,6 +9,11 @@ import {
   computeStockWorthPaise,
 } from "@/lib/expenses/personal-use-worth";
 import { d } from "@/lib/inventory/decimal-utils";
+import {
+  sumOrderConsumptionCostPaise,
+  wastageCostPaiseByEntryId,
+} from "@/lib/inventory/fifo-cogs";
+import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 import { planOrderConsumption } from "@/lib/inventory/plan-order-consumption";
 import {
   formatIstDateInput,
@@ -281,7 +286,14 @@ export async function GET(request: Request) {
         wastageType: true,
         menuWastageEntryId: true,
         wastedAt: true,
-        item: { select: { id: true, name: true, avgCostPaisePerBase: true } },
+        item: {
+          select: {
+            id: true,
+            name: true,
+            avgCostPaisePerBase: true,
+            lastPurchasePaisePerBase: true,
+          },
+        },
       },
     }),
     prisma.menuWastageEntry.findMany({
@@ -449,22 +461,33 @@ export async function GET(request: Request) {
     }
   });
 
-  const invIds = [...periodConsumption.keys()];
-  const invMeta =
-    invIds.length === 0
-      ? []
-      : await prisma.inventoryItem.findMany({
-          where: { id: { in: invIds } },
-          select: { id: true, avgCostPaisePerBase: true },
-        });
-  const costById = new Map(invMeta.map((i) => [i.id, i.avgCostPaisePerBase]));
+  const invSettings = await ensureInventorySettings(prisma);
+  let stockCostPaiseInt: number;
+  if (invSettings.costingMethod === "FIFO") {
+    stockCostPaiseInt = await prisma.$transaction((tx) =>
+      sumOrderConsumptionCostPaise(
+        tx,
+        orders.map((o) => o.id),
+      ),
+    );
+  } else {
+    const invIds = [...periodConsumption.keys()];
+    const invMeta =
+      invIds.length === 0
+        ? []
+        : await prisma.inventoryItem.findMany({
+            where: { id: { in: invIds } },
+            select: { id: true, avgCostPaisePerBase: true },
+          });
+    const costById = new Map(invMeta.map((i) => [i.id, i.avgCostPaisePerBase]));
 
-  let stockCostPaise = new Prisma.Decimal(0);
-  for (const [id, qtyBase] of periodConsumption.entries()) {
-    const rate = costById.get(id) ?? d(0);
-    stockCostPaise = stockCostPaise.add(qtyBase.mul(rate));
+    let stockCostPaise = new Prisma.Decimal(0);
+    for (const [id, qtyBase] of periodConsumption.entries()) {
+      const rate = costById.get(id) ?? d(0);
+      stockCostPaise = stockCostPaise.add(qtyBase.mul(rate));
+    }
+    stockCostPaiseInt = Math.round(Number(stockCostPaise.toString()));
   }
-  const stockCostPaiseInt = Math.round(Number(stockCostPaise.toString()));
   const kitchenUseCostPaise = kitchenUseAgg._sum.costPaise ?? 0;
   const recipeStockCostPaise = stockCostPaiseInt;
   const stockSaleCostPaise = stockSalesAgg._sum.costPaise ?? 0;
@@ -544,9 +567,28 @@ export async function GET(request: Request) {
   let dishLinkedCostPaise = 0;
   let ingredientOnlyEntryCount = 0;
 
+  const fifoWastageCosts =
+    invSettings.costingMethod === "FIFO"
+      ? await prisma.$transaction((tx) =>
+          wastageCostPaiseByEntryId(
+            tx,
+            wastageEntries.map((w) => w.id),
+            new Map(
+              wastageEntries.map((w) => [w.item.id, w.item.avgCostPaisePerBase]),
+            ),
+          ),
+        )
+      : null;
+
   for (const w of wastageEntries) {
     const qty = w.qtyBase;
-    const cost = Math.round(Number(qty.mul(w.item.avgCostPaisePerBase).toString()));
+    const rate =
+      invSettings.costingMethod === "LATEST_PURCHASE"
+        ? w.item.lastPurchasePaisePerBase
+        : w.item.avgCostPaisePerBase;
+    const cost =
+      fifoWastageCosts?.get(w.id) ??
+      Math.round(Number(qty.mul(rate).toString()));
     wastageCostPaise += cost;
 
     if (w.menuWastageEntryId) {

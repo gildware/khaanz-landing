@@ -248,6 +248,7 @@ export async function createPurchaseInTransaction(
       expiryDate: r.expiryDate,
       lotCode: r.lotCode || batchRef,
       purchaseLineId: pl.id,
+      unitCostPaisePerBase: lineCostPerBase,
     });
   }
 

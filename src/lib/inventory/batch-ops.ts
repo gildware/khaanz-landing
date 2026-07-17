@@ -1,6 +1,7 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 import { D0, d } from "@/lib/inventory/decimal-utils";
+import { allocationCostPaise } from "@/lib/inventory/inventory-costing";
 
 export async function ensureBackfillBatchForLegacyStock(
   tx: Prisma.TransactionClient,
@@ -9,7 +10,12 @@ export async function ensureBackfillBatchForLegacyStock(
   const [item, batchCount] = await Promise.all([
     tx.inventoryItem.findUnique({
       where: { id: inventoryItemId },
-      select: { id: true, stockOnHandBase: true, createdAt: true },
+      select: {
+        id: true,
+        stockOnHandBase: true,
+        createdAt: true,
+        avgCostPaisePerBase: true,
+      },
     }),
     tx.inventoryBatch.count({ where: { inventoryItemId } }),
   ]);
@@ -29,6 +35,7 @@ export async function ensureBackfillBatchForLegacyStock(
       lotCode: "LEGACY",
       qtyReceivedBase: item.stockOnHandBase,
       remainingQtyBase: item.stockOnHandBase,
+      unitCostPaisePerBase: item.avgCostPaisePerBase,
     },
   });
 }
@@ -44,10 +51,17 @@ export async function createInboundBatch(
     expiryDate?: Date | null;
     lotCode?: string;
     purchaseLineId?: string | null;
+    /** Paise per 1 base unit for this layer. */
+    unitCostPaisePerBase?: Prisma.Decimal | number | null;
   },
 ): Promise<{ batchId: string }> {
   const qty = input.qtyBase.abs();
   if (qty.equals(D0)) throw new Error("BATCH_QTY_ZERO");
+
+  const unitCost = d(input.unitCostPaisePerBase ?? 0).toDecimalPlaces(
+    6,
+    Prisma.Decimal.ROUND_HALF_UP,
+  );
 
   const b = await tx.inventoryBatch.create({
     data: {
@@ -59,6 +73,7 @@ export async function createInboundBatch(
       lotCode: (input.lotCode ?? "").trim().slice(0, 64),
       qtyReceivedBase: qty,
       remainingQtyBase: qty,
+      unitCostPaisePerBase: unitCost,
       purchaseLineId: input.purchaseLineId ?? null,
     },
     select: { id: true },
@@ -66,7 +81,12 @@ export async function createInboundBatch(
   return { batchId: b.id };
 }
 
-type ConsumeOut = { batchId: string; qtyBase: Prisma.Decimal };
+export type ConsumeAllocation = {
+  batchId: string;
+  qtyBase: Prisma.Decimal;
+  unitCostPaisePerBase: Prisma.Decimal;
+  costPaise: number;
+};
 
 export async function consumeFromSpecificBatch(
   tx: Prisma.TransactionClient,
@@ -81,13 +101,18 @@ export async function consumeFromSpecificBatch(
     createdByUserId?: string | null;
     allowNegative: boolean;
   },
-): Promise<void> {
+): Promise<ConsumeAllocation | null> {
   const qty = input.qtyBase.abs();
-  if (qty.equals(D0)) return;
+  if (qty.equals(D0)) return null;
 
   const b = await tx.inventoryBatch.findUnique({
     where: { id: input.batchId },
-    select: { id: true, inventoryItemId: true, remainingQtyBase: true },
+    select: {
+      id: true,
+      inventoryItemId: true,
+      remainingQtyBase: true,
+      unitCostPaisePerBase: true,
+    },
   });
   if (!b || b.inventoryItemId !== input.inventoryItemId) {
     throw new Error("BATCH_NOT_FOUND");
@@ -96,6 +121,8 @@ export async function consumeFromSpecificBatch(
   if (!input.allowNegative && b.remainingQtyBase.lessThan(qty)) {
     throw new Error("BATCH_INSUFFICIENT");
   }
+
+  const costPaise = allocationCostPaise(qty, b.unitCostPaisePerBase);
 
   await tx.inventoryBatch.update({
     where: { id: b.id },
@@ -111,9 +138,17 @@ export async function consumeFromSpecificBatch(
       referenceId: (input.referenceId ?? "").slice(0, 64),
       occurredAt: input.occurredAt,
       qtyBase: qty,
+      costPaise,
       createdByUserId: input.createdByUserId ?? null,
     },
   });
+
+  return {
+    batchId: b.id,
+    qtyBase: qty,
+    unitCostPaisePerBase: b.unitCostPaisePerBase,
+    costPaise,
+  };
 }
 
 export async function consumeFromBatchesFifo(
@@ -129,27 +164,35 @@ export async function consumeFromBatchesFifo(
     /// When true and stock is insufficient, we record the deficit into a special negative batch.
     allowNegative: boolean;
   },
-): Promise<ConsumeOut[]> {
+): Promise<ConsumeAllocation[]> {
   const need0 = input.qtyBase.abs();
   if (need0.equals(D0)) return [];
 
   await ensureBackfillBatchForLegacyStock(tx, input.inventoryItemId);
 
   let need = need0;
-  const allocations: ConsumeOut[] = [];
+  const allocations: ConsumeAllocation[] = [];
 
   while (need.greaterThan(D0)) {
     const locked = (await tx.$queryRaw<
-      { id: string; remaining_qty_base: string }[]
+      {
+        id: string;
+        remaining_qty_base: string;
+        unit_cost_paise_per_base: string;
+      }[]
     >`
-      SELECT id, remaining_qty_base
+      SELECT id, remaining_qty_base, unit_cost_paise_per_base
       FROM inventory_batches
       WHERE inventory_item_id = ${input.inventoryItemId}
         AND remaining_qty_base > 0
       ORDER BY received_at ASC, id ASC
       LIMIT 50
       FOR UPDATE
-    `) as { id: string; remaining_qty_base: string }[];
+    `) as {
+      id: string;
+      remaining_qty_base: string;
+      unit_cost_paise_per_base: string;
+    }[];
 
     if (locked.length === 0) break;
 
@@ -158,6 +201,8 @@ export async function consumeFromBatchesFifo(
       const remaining = d(row.remaining_qty_base);
       if (!remaining.greaterThan(D0)) continue;
       const take = remaining.greaterThan(need) ? need : remaining;
+      const unitCost = d(row.unit_cost_paise_per_base);
+      const costPaise = allocationCostPaise(take, unitCost);
 
       await tx.inventoryBatch.update({
         where: { id: row.id },
@@ -174,11 +219,17 @@ export async function consumeFromBatchesFifo(
           referenceId: (input.referenceId ?? "").slice(0, 64),
           occurredAt: input.occurredAt,
           qtyBase: take,
+          costPaise,
           createdByUserId: input.createdByUserId ?? null,
         },
       });
 
-      allocations.push({ batchId: row.id, qtyBase: take });
+      allocations.push({
+        batchId: row.id,
+        qtyBase: take,
+        unitCostPaisePerBase: unitCost,
+        costPaise,
+      });
       need = need.sub(take);
     }
   }
@@ -195,14 +246,14 @@ export async function consumeFromBatchesFifo(
         qtyReceivedBase: D0,
       },
       orderBy: { receivedAt: "desc" },
-      select: { id: true, remainingQtyBase: true },
+      select: { id: true, remainingQtyBase: true, unitCostPaisePerBase: true },
     });
 
     const negative = existingNeg
       ? await tx.inventoryBatch.update({
           where: { id: existingNeg.id },
           data: { remainingQtyBase: existingNeg.remainingQtyBase.sub(need) },
-          select: { id: true },
+          select: { id: true, unitCostPaisePerBase: true },
         })
       : await tx.inventoryBatch.create({
           data: {
@@ -214,10 +265,14 @@ export async function consumeFromBatchesFifo(
             lotCode: "NEGATIVE",
             qtyReceivedBase: D0,
             remainingQtyBase: d(0).sub(need),
+            unitCostPaisePerBase: D0,
             purchaseLineId: null,
           },
-          select: { id: true },
+          select: { id: true, unitCostPaisePerBase: true },
         });
+
+    const unitCost = negative.unitCostPaisePerBase;
+    const costPaise = allocationCostPaise(need, unitCost);
 
     await tx.inventoryBatchConsumption.create({
       data: {
@@ -228,11 +283,17 @@ export async function consumeFromBatchesFifo(
         referenceId: (input.referenceId ?? "").slice(0, 64),
         occurredAt: input.occurredAt,
         qtyBase: need,
+        costPaise,
         createdByUserId: input.createdByUserId ?? null,
       },
     });
 
-    allocations.push({ batchId: negative.id, qtyBase: need });
+    allocations.push({
+      batchId: negative.id,
+      qtyBase: need,
+      unitCostPaisePerBase: unitCost,
+      costPaise,
+    });
   }
 
   return allocations;
@@ -274,4 +335,3 @@ export async function restoreToBatches(
 
   return restoredByItem;
 }
-

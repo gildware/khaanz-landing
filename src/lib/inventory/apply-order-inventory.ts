@@ -258,6 +258,11 @@ export async function applyOrderInventoryRestore(
     });
   }
 
+  // Drop consumption rows so FIFO COGS reports do not count cancelled orders.
+  await tx.inventoryBatchConsumption.deleteMany({
+    where: { orderId, referenceType: "order" },
+  });
+
   await tx.order.update({
     where: { id: orderId },
     data: { inventoryRestoredAt: at },

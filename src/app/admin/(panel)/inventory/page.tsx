@@ -347,12 +347,19 @@ function avgCostToRateRupeesInput(
   return paiseToRupeesInput(Math.round(cost * conv));
 }
 
+function costingMethodLabel(method: string | undefined): string {
+  if (method === "LATEST_PURCHASE") return "latest purchase";
+  if (method === "FIFO") return "FIFO (oldest first)";
+  return "moving average";
+}
+
 /** Unit cost in paise per base unit (respects inventory costing method). */
 function itemUnitCostPaise(
   item: InvItem | undefined,
   costingMethod: string | undefined,
 ): number {
   if (!item) return 0;
+  // FIFO keeps avgCost as remaining-weighted for display; true COGS uses batches.
   const unitCost = Number(
     costingMethod === "LATEST_PURCHASE"
       ? item.lastPurchasePaisePerBase
@@ -1859,6 +1866,24 @@ export default function AdminInventoryPage() {
     }
   };
 
+  const setCostingMethod = async (
+    costingMethod: "WEIGHTED_AVERAGE" | "LATEST_PURCHASE" | "FIFO",
+  ) => {
+    if (!settings || settings.costingMethod === costingMethod) return;
+    const next = { ...settings, costingMethod };
+    try {
+      await adminFetch("/api/admin/inventory/settings", {
+        method: "PATCH",
+        body: JSON.stringify({ costingMethod }),
+      });
+      setSettings(next);
+      void loadSummary();
+      toast.success("Costing method updated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  };
+
   const kpis = summary?.kpis;
   const charts = summary?.charts;
   const categoryPieData = useMemo(
@@ -2278,7 +2303,7 @@ export default function AdminInventoryPage() {
               value={kpis ? formatRupees(kpis.totalInventoryValuePaise) : "…"}
               subtitle={
                 kpis
-                  ? `${kpis.activeItemsCount} active items · ${kpis.costingMethod === "LATEST_PURCHASE" ? "latest purchase" : "moving average"} cost`
+                  ? `${kpis.activeItemsCount} active items · ${costingMethodLabel(kpis.costingMethod)} cost`
                   : undefined
               }
               Icon={WarehouseIcon}
@@ -2374,7 +2399,7 @@ export default function AdminInventoryPage() {
           <div className="flex flex-col gap-4 lg:flex-row">
             <PillRankChartCard
               title="Top items by stock value"
-              subtitle={`Top 5 on-hand value · ${kpis?.costingMethod === "LATEST_PURCHASE" ? "latest purchase" : "moving average"} cost`}
+              subtitle={`Top 5 on-hand value · ${costingMethodLabel(kpis?.costingMethod)} cost`}
               topTabLabel="Top value"
               bottomTabLabel="Low value"
               topRows={stockTopPillRows}
@@ -4383,7 +4408,9 @@ export default function AdminInventoryPage() {
                               lineValuePaise > 0
                                 ? settings?.costingMethod === "LATEST_PURCHASE"
                                   ? "Latest purchase cost × qty"
-                                  : "Avg cost × qty"
+                                  : settings?.costingMethod === "FIFO"
+                                    ? "Remaining-stock weighted cost × qty (FIFO COGS uses oldest batches)"
+                                    : "Avg cost × qty"
                                 : undefined
                             }
                           >
@@ -5150,12 +5177,47 @@ export default function AdminInventoryPage() {
                 <div className="rounded-2xl border bg-card p-5 shadow-sm">
                   <h3 className="font-semibold text-base">Inventory settings</h3>
                   <p className="mt-1 text-muted-foreground text-sm leading-relaxed">
-                    How item costs are calculated:{" "}
-                    {settings.costingMethod === "LATEST_PURCHASE"
-                      ? "latest purchase price"
-                      : "moving average cost"}
+                    How stock value, recipe cost, and COGS are calculated.
                   </p>
                   <div className="mt-4 space-y-4">
+                    <div className="space-y-2 rounded-lg border p-3">
+                      <Label className="text-sm font-medium">Costing method</Label>
+                      <SearchableSelect
+                        options={[
+                          {
+                            value: "WEIGHTED_AVERAGE",
+                            label: "Moving average — blend purchase prices",
+                          },
+                          {
+                            value: "LATEST_PURCHASE",
+                            label: "Latest purchase — always use last buy rate",
+                          },
+                          {
+                            value: "FIFO",
+                            label: "FIFO — oldest stock cost first (X, then Y, then Z)",
+                          },
+                        ]}
+                        value={settings.costingMethod}
+                        onValueChange={(v) => {
+                          if (
+                            v === "WEIGHTED_AVERAGE" ||
+                            v === "LATEST_PURCHASE" ||
+                            v === "FIFO"
+                          ) {
+                            void setCostingMethod(v);
+                          }
+                        }}
+                        placeholder="Costing method"
+                        searchPlaceholder="Search…"
+                      />
+                      <p className="text-muted-foreground text-xs leading-relaxed">
+                        {settings.costingMethod === "FIFO"
+                          ? "Uses each purchase batch’s own price. First stock bought is costed first when you sell, waste, or cook."
+                          : settings.costingMethod === "LATEST_PURCHASE"
+                            ? "Every use is valued at the most recent purchase rate."
+                            : "Every use is valued at the blended average of stock on hand."}
+                      </p>
+                    </div>
                     <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm">
                       <input
                         type="checkbox"

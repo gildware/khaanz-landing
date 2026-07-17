@@ -3,6 +3,7 @@ import { Prisma, type WastageType } from "@prisma/client";
 
 import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
 import { d } from "@/lib/inventory/decimal-utils";
+import { wastageCostPaiseByEntryId } from "@/lib/inventory/fifo-cogs";
 import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 import {
   istDateLabel,
@@ -69,6 +70,7 @@ export async function GET(request: Request) {
     prisma.wastageEntry.findMany({
       where: wastedAtFilter ? { wastedAt: wastedAtFilter } : undefined,
       select: {
+        id: true,
         wastedAt: true,
         qtyBase: true,
         wastageType: true,
@@ -93,6 +95,7 @@ export async function GET(request: Request) {
         variation: { select: { name: true } },
         ingredients: {
           select: {
+            id: true,
             qtyBase: true,
             item: {
               select: {
@@ -113,6 +116,19 @@ export async function GET(request: Request) {
     invSettings.costingMethod === "LATEST_PURCHASE"
       ? item.lastPurchasePaisePerBase
       : item.avgCostPaisePerBase;
+
+  const fifoCosts =
+    invSettings.costingMethod === "FIFO"
+      ? await prisma.$transaction((tx) =>
+          wastageCostPaiseByEntryId(
+            tx,
+            ingredientRows.map((w) => w.id),
+            new Map(
+              ingredientRows.map((w) => [w.item.id, w.item.avgCostPaisePerBase]),
+            ),
+          ),
+        )
+      : null;
 
   const wastageByItem = new Map<
     string,
@@ -140,7 +156,8 @@ export async function GET(request: Request) {
   };
 
   for (const w of ingredientRows) {
-    const cost = lineCostPaise(w.qtyBase, unitRate(w.item));
+    const cost =
+      fifoCosts?.get(w.id) ?? lineCostPaise(w.qtyBase, unitRate(w.item));
     totalCostPaise += cost;
     addDailyCost(w.wastedAt, cost);
 
@@ -184,9 +201,15 @@ export async function GET(request: Request) {
   for (const mw of dishRows) {
     let costPaise = 0;
     for (const ing of mw.ingredients) {
-      costPaise += lineCostPaise(ing.qtyBase, unitRate(ing.item));
+      costPaise +=
+        fifoCosts?.get(ing.id) ??
+        lineCostPaise(ing.qtyBase, unitRate(ing.item));
     }
-    addDailyCost(mw.wastedAt, costPaise);
+    // Ingredient loop already counted these in dailyCost; skip double-add under FIFO
+    // when ingredient rows are present. Keep prior behavior for avg/latest.
+    if (invSettings.costingMethod !== "FIFO") {
+      addDailyCost(mw.wastedAt, costPaise);
+    }
     const key = `${mw.menuItem.name}:${mw.variation.name}`;
     const label = `${mw.menuItem.name} · ${mw.variation.name}`;
     const prev = menuWastageByDish.get(key) ?? {
@@ -282,7 +305,9 @@ export async function GET(request: Request) {
     costingNote:
       invSettings.costingMethod === "LATEST_PURCHASE"
         ? "Valued at latest purchase cost"
-        : "Valued at moving average cost",
+        : invSettings.costingMethod === "FIFO"
+          ? "Valued at FIFO batch cost (oldest stock first)"
+          : "Valued at moving average cost",
     charts: {
       byType,
       byItem,

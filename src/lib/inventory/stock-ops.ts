@@ -3,8 +3,11 @@ import type { AdjustmentReason, Prisma, WastageType } from "@prisma/client";
 import { D0, d } from "@/lib/inventory/decimal-utils";
 import { consumeFromBatchesFifo, createInboundBatch } from "@/lib/inventory/batch-ops";
 import {
+  allocationCostPaise,
   costPaisePerBaseFromPurchaseRate,
+  itemUnitCostPaisePerBase,
   nextCostsAfterInbound,
+  sumAllocationCostPaise,
 } from "@/lib/inventory/inventory-costing";
 import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 
@@ -92,6 +95,7 @@ export async function recordOpeningOrAdjustment(
       expiryDate: null,
       lotCode: "ADJUSTMENT",
       purchaseLineId: null,
+      unitCostPaisePerBase: item.avgCostPaisePerBase,
     });
   }
 }
@@ -126,12 +130,14 @@ export async function recordOpeningStock(
     stockOnHandBase: item.stockOnHandBase.add(qty),
   };
 
+  let batchUnitCost = item.avgCostPaisePerBase;
   if (rate != null) {
     const settings = await ensureInventorySettings(tx);
     const costPerBase = costPaisePerBaseFromPurchaseRate(
       rate,
       item.baseUnitsPerPurchaseUnit,
     );
+    batchUnitCost = costPerBase;
     const next = nextCostsAfterInbound({
       costingMethod: settings.costingMethod,
       oldStockBase: item.stockOnHandBase,
@@ -171,6 +177,7 @@ export async function recordOpeningStock(
     expiryDate: null,
     lotCode: "OPENING",
     purchaseLineId: null,
+    unitCostPaisePerBase: batchUnitCost,
   });
 }
 
@@ -257,29 +264,26 @@ export async function recordKitchenUse(
   const qty = input.qtyBase.abs();
   if (qty.equals(D0)) throw new Error("KITCHEN_USE_QTY_ZERO");
 
-  const costPaise = Math.max(
-    0,
-    Math.round(Number(qty.mul(item.avgCostPaisePerBase).toString())),
-  );
-
+  const settings = await ensureInventorySettings(tx);
   const delta = d(0).sub(qty);
   await tx.inventoryItem.update({
     where: { id: item.id },
     data: { stockOnHandBase: item.stockOnHandBase.add(delta) },
   });
 
+  // Placeholder row so consume can reference it; cost updated after FIFO alloc.
   const row = await tx.kitchenUseEntry.create({
     data: {
       inventoryItemId: item.id,
       usedAt: input.usedAt,
       qtyBase: qty,
-      costPaise,
+      costPaise: 0,
       note: (input.note ?? "").slice(0, 500),
       createdByUserId: input.createdByUserId ?? null,
     },
   });
 
-  await consumeFromBatchesFifo(tx, {
+  const allocations = await consumeFromBatchesFifo(tx, {
     inventoryItemId: item.id,
     qtyBase: qty,
     occurredAt: input.usedAt,
@@ -289,6 +293,21 @@ export async function recordKitchenUse(
     createdByUserId: input.createdByUserId ?? null,
     allowNegative: input.allowNegativeStock,
   });
+
+  const costPaise =
+    settings.costingMethod === "FIFO"
+      ? sumAllocationCostPaise(allocations)
+      : allocationCostPaise(
+          qty,
+          itemUnitCostPaisePerBase(item, settings.costingMethod),
+        );
+
+  if (costPaise !== 0) {
+    await tx.kitchenUseEntry.update({
+      where: { id: row.id },
+      data: { costPaise },
+    });
+  }
 
   await tx.inventoryMovement.create({
     data: {
@@ -330,11 +349,8 @@ export async function recordStockSale(
   const rate = input.ratePaisePerBase;
   if (rate.lessThan(D0)) throw new Error("STOCK_SALE_RATE_INVALID");
 
+  const settings = await ensureInventorySettings(tx);
   const totalPaise = Math.max(0, Math.round(Number(qty.mul(rate).toString())));
-  const costPaise = Math.max(
-    0,
-    Math.round(Number(qty.mul(item.avgCostPaisePerBase).toString())),
-  );
 
   const delta = d(0).sub(qty);
   await tx.inventoryItem.update({
@@ -349,14 +365,14 @@ export async function recordStockSale(
       qtyBase: qty,
       ratePaisePerBase: rate,
       totalPaise,
-      costPaise,
+      costPaise: 0,
       buyerName: (input.buyerName ?? "").trim().slice(0, 200),
       note: (input.note ?? "").trim().slice(0, 500),
       createdByUserId: input.createdByUserId ?? null,
     },
   });
 
-  await consumeFromBatchesFifo(tx, {
+  const allocations = await consumeFromBatchesFifo(tx, {
     inventoryItemId: item.id,
     qtyBase: qty,
     occurredAt: input.soldAt,
@@ -366,6 +382,21 @@ export async function recordStockSale(
     createdByUserId: input.createdByUserId ?? null,
     allowNegative: input.allowNegativeStock,
   });
+
+  const costPaise =
+    settings.costingMethod === "FIFO"
+      ? sumAllocationCostPaise(allocations)
+      : allocationCostPaise(
+          qty,
+          itemUnitCostPaisePerBase(item, settings.costingMethod),
+        );
+
+  if (costPaise !== 0) {
+    await tx.stockSaleEntry.update({
+      where: { id: row.id },
+      data: { costPaise },
+    });
+  }
 
   await tx.inventoryMovement.create({
     data: {
@@ -452,6 +483,7 @@ export async function recordStockAudit(
         expiryDate: null,
         lotCode: "AUDIT",
         purchaseLineId: null,
+        unitCostPaisePerBase: item.avgCostPaisePerBase,
       });
     } else {
       await consumeFromBatchesFifo(tx, {

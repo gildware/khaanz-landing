@@ -19,6 +19,12 @@ async function cleanup() {
   const prisma = getPrisma();
   await prisma.$transaction(async (tx) => {
     await tx.inventoryBatchConsumption.deleteMany({});
+    await tx.kitchenUseEntry.deleteMany({});
+    await tx.stockSaleEntry.deleteMany({});
+    await tx.wastageEntry.deleteMany({});
+    await tx.menuWastageEntry.deleteMany({});
+    await tx.stockAuditLine.deleteMany({});
+    await tx.stockAudit.deleteMany({});
     await tx.inventoryBatch.deleteMany({});
     await tx.inventoryMovement.deleteMany({});
     await tx.stockAdjustment.deleteMany({});
@@ -30,11 +36,12 @@ async function cleanup() {
     await tx.supplierPayment.deleteMany({});
     await tx.recipeIngredient.deleteMany({});
     await tx.recipeVersion.deleteMany({});
-    await tx.inventoryItem.deleteMany({});
-    await tx.supplier.deleteMany({});
+    await tx.personalUseEntry.deleteMany({});
     await tx.orderLine.deleteMany({});
     await tx.order.deleteMany({});
     await tx.customer.deleteMany({});
+    await tx.inventoryItem.deleteMany({});
+    await tx.supplier.deleteMany({});
   });
 }
 
@@ -148,6 +155,125 @@ test("purchase creates batches and FIFO consumes oldest batch first", async () =
     });
     assert.ok(allocs.length > 0);
     assert.equal(allocs[0]!.batchId, batchesBefore[0]!.id);
+  });
+});
+
+test("FIFO costing uses oldest batch purchase rates for COGS", async () => {
+  const prisma = getPrisma();
+  const now = new Date();
+
+  await prisma.$transaction(async (tx) => {
+    await tx.inventorySettings.upsert({
+      where: { id: "default" },
+      create: {
+        id: "default",
+        costingMethod: "FIFO",
+        restoreStockOnCancel: true,
+        allowNegativeStock: true,
+      },
+      update: { costingMethod: "FIFO" },
+    });
+
+    const supplier = await tx.supplier.create({
+      data: { name: rand("Supplier"), active: true, defaultCreditDays: 15 },
+    });
+    const item = await tx.inventoryItem.create({
+      data: {
+        name: rand("Atta"),
+        category: "Dry",
+        baseUnit: "g",
+        purchaseUnit: "kg",
+        baseUnitsPerPurchaseUnit: new Prisma.Decimal("1000"),
+        minStockBase: new Prisma.Decimal("0"),
+        active: true,
+      },
+    });
+
+    // 10 kg @ ₹10/kg → 1000 paise/kg → 1 paise/g
+    await createPurchaseInTransaction(tx, {
+      supplierId: supplier.id,
+      purchasedAt: new Date(now.getTime() + 1000),
+      paymentType: "CASH",
+      creditDays: null,
+      notes: "cheap",
+      createdByUserId: null,
+      lines: [
+        {
+          inventoryItemId: item.id,
+          qtyPurchase: d("10"),
+          ratePaisePerPurchaseUnit: 1000,
+          expiryDate: null,
+          lotCode: "X",
+        },
+      ],
+    });
+
+    // 5 kg @ ₹20/kg → 2 paise/g
+    await createPurchaseInTransaction(tx, {
+      supplierId: supplier.id,
+      purchasedAt: new Date(now.getTime() + 2000),
+      paymentType: "CASH",
+      creditDays: null,
+      notes: "mid",
+      createdByUserId: null,
+      lines: [
+        {
+          inventoryItemId: item.id,
+          qtyPurchase: d("5"),
+          ratePaisePerPurchaseUnit: 2000,
+          expiryDate: null,
+          lotCode: "Y",
+        },
+      ],
+    });
+
+    // 10 kg @ ₹30/kg → 3 paise/g
+    await createPurchaseInTransaction(tx, {
+      supplierId: supplier.id,
+      purchasedAt: new Date(now.getTime() + 3000),
+      paymentType: "CASH",
+      creditDays: null,
+      notes: "dear",
+      createdByUserId: null,
+      lines: [
+        {
+          inventoryItemId: item.id,
+          qtyPurchase: d("10"),
+          ratePaisePerPurchaseUnit: 3000,
+          expiryDate: null,
+          lotCode: "Z",
+        },
+      ],
+    });
+
+    const batches = await tx.inventoryBatch.findMany({
+      where: { inventoryItemId: item.id },
+      orderBy: [{ receivedAt: "asc" }, { id: "asc" }],
+    });
+    assert.equal(batches.length, 3);
+    assert.equal(Number(batches[0]!.unitCostPaisePerBase.toString()), 1);
+    assert.equal(Number(batches[1]!.unitCostPaisePerBase.toString()), 2);
+    assert.equal(Number(batches[2]!.unitCostPaisePerBase.toString()), 3);
+
+    // Consume 12 kg (12000 g) → 10kg@1 + 2kg@2 = 10000 + 4000 = 14000 paise
+    const allocations = await consumeFromBatchesFifo(tx, {
+      inventoryItemId: item.id,
+      qtyBase: d("12000"),
+      occurredAt: new Date(now.getTime() + 4000),
+      referenceType: "order",
+      referenceId: "fifo-cost-test",
+      orderId: null,
+      createdByUserId: null,
+      allowNegative: false,
+    });
+
+    const totalCost = allocations.reduce((s, a) => s + a.costPaise, 0);
+    assert.equal(totalCost, 14000);
+    assert.equal(allocations.length, 2);
+    assert.equal(Number(allocations[0]!.qtyBase.toString()), 10000);
+    assert.equal(allocations[0]!.costPaise, 10000);
+    assert.equal(Number(allocations[1]!.qtyBase.toString()), 2000);
+    assert.equal(allocations[1]!.costPaise, 4000);
   });
 });
 
@@ -331,6 +457,11 @@ test("cancel restore restores the exact batches consumed for an order", async ()
 
     const after = await tx.inventoryBatch.findUniqueOrThrow({ where: { id: before.id } });
     assert.ok(after.remainingQtyBase.greaterThan(before.remainingQtyBase));
+
+    const consLeft = await tx.inventoryBatchConsumption.count({
+      where: { orderId, referenceType: "order" },
+    });
+    assert.equal(consLeft, 0, "cancel restore must drop order consumption rows for FIFO COGS");
   });
 });
 

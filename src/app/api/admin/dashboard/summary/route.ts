@@ -9,6 +9,8 @@ import {
   ensureCashPoolSettings,
 } from "@/lib/cash/cash-pool";
 import { d } from "@/lib/inventory/decimal-utils";
+import { sumOrderConsumptionCostPaise } from "@/lib/inventory/fifo-cogs";
+import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 import { planOrderConsumption } from "@/lib/inventory/plan-order-consumption";
 import {
   loadStockValueRankRows,
@@ -343,6 +345,7 @@ export async function GET(request: Request) {
 
   const soldByKey = new Map<string, { label: string; qty: number }>();
   const monthConsumption = new Map<string, Prisma.Decimal>();
+  const invSettings = await ensureInventorySettings(prisma);
 
   await prisma.$transaction(async (tx) => {
     for (const o of monthOrders) {
@@ -367,6 +370,8 @@ export async function GET(request: Request) {
         }
       }
 
+      if (invSettings.costingMethod === "FIFO") continue;
+
       const consumption = await planOrderConsumption(
         tx,
         { lines },
@@ -381,22 +386,32 @@ export async function GET(request: Request) {
     }
   });
 
-  const invIds = [...monthConsumption.keys()];
-  const invMeta =
-    invIds.length === 0
-      ? []
-      : await prisma.inventoryItem.findMany({
-          where: { id: { in: invIds } },
-          select: { id: true, avgCostPaisePerBase: true },
-        });
-  const costById = new Map(invMeta.map((i) => [i.id, i.avgCostPaisePerBase]));
+  let stockCostPaiseInt: number;
+  if (invSettings.costingMethod === "FIFO") {
+    stockCostPaiseInt = await prisma.$transaction((tx) =>
+      sumOrderConsumptionCostPaise(
+        tx,
+        monthOrders.map((o) => o.id),
+      ),
+    );
+  } else {
+    const invIds = [...monthConsumption.keys()];
+    const invMeta =
+      invIds.length === 0
+        ? []
+        : await prisma.inventoryItem.findMany({
+            where: { id: { in: invIds } },
+            select: { id: true, avgCostPaisePerBase: true },
+          });
+    const costById = new Map(invMeta.map((i) => [i.id, i.avgCostPaisePerBase]));
 
-  let stockCostPaise = new Prisma.Decimal(0);
-  for (const [id, qtyBase] of monthConsumption.entries()) {
-    const rate = costById.get(id) ?? d(0);
-    stockCostPaise = stockCostPaise.add(qtyBase.mul(rate));
+    let stockCostPaise = new Prisma.Decimal(0);
+    for (const [id, qtyBase] of monthConsumption.entries()) {
+      const rate = costById.get(id) ?? d(0);
+      stockCostPaise = stockCostPaise.add(qtyBase.mul(rate));
+    }
+    stockCostPaiseInt = Math.round(Number(stockCostPaise.toString()));
   }
-  const stockCostPaiseInt = Math.round(Number(stockCostPaise.toString()));
   const kitchenUseCostPaise = monthKitchenUseAgg._sum.costPaise ?? 0;
   const recipeStockCostPaise = stockCostPaiseInt;
   const totalStockCostUsedPaise = recipeStockCostPaise + kitchenUseCostPaise;

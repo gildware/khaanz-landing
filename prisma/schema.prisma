@@ -359,6 +359,8 @@ model OrderLine {
 enum InventoryCostingMethod {
   WEIGHTED_AVERAGE
   LATEST_PURCHASE
+  /// Consume oldest batches first; COGS / stock value use each batch's purchase rate.
+  FIFO
 }
 
 enum PurchasePaymentType {
@@ -557,6 +559,8 @@ model InventoryBatch {
   lotCode          String                   @default("") @map("lot_code") @db.VarChar(64)
   qtyReceivedBase  Decimal                  @map("qty_received_base") @db.Decimal(24, 8)
   remainingQtyBase Decimal                  @map("remaining_qty_base") @db.Decimal(24, 8)
+  /// Unit cost for this layer (paise per 1 base unit). Used by FIFO costing.
+  unitCostPaisePerBase Decimal              @default(0) @map("unit_cost_paise_per_base") @db.Decimal(24, 6)
   createdAt        DateTime                 @default(now()) @map("created_at")
   purchaseLineId   String?                  @unique @map("purchase_line_id")
 
@@ -579,6 +583,8 @@ model InventoryBatchConsumption {
   referenceId     String   @map("reference_id") @db.VarChar(64)
   occurredAt      DateTime @map("occurred_at")
   qtyBase         Decimal  @map("qty_base") @db.Decimal(24, 8)
+  /// Snapshot COGS for this allocation (paise), from the batch layer rate.
+  costPaise       Int      @default(0) @map("cost_paise")
   createdByUserId String?  @map("created_by_user_id")
   createdAt       DateTime @default(now()) @map("created_at")
 
@@ -837,7 +843,7 @@ model KitchenUseEntry {
   inventoryItemId String   @map("inventory_item_id")
   usedAt          DateTime @map("used_at")
   qtyBase         Decimal  @map("qty_base") @db.Decimal(24, 8)
-  /// Snapshot of qty × avg cost at record time (paise).
+  /// Snapshot COGS at record time (paise); respects costing method (avg / latest / FIFO).
   costPaise       Int      @map("cost_paise")
   note            String   @default("") @db.VarChar(500)
   createdByUserId String?  @map("created_by_user_id")
