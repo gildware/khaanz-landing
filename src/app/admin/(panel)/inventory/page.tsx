@@ -589,6 +589,23 @@ const ITEM_SORT_VALUES = new Set([
   "status-desc",
 ]);
 
+const RECIPE_SORT_VALUES = new Set([
+  "menu-asc",
+  "menu-desc",
+  "variation-asc",
+  "variation-desc",
+  "version-asc",
+  "version-desc",
+  "date-asc",
+  "date-desc",
+  "ingredients-asc",
+  "ingredients-desc",
+  "cost-asc",
+  "cost-desc",
+  "price-asc",
+  "price-desc",
+]);
+
 const SUPPLIER_SORT_VALUES = new Set([
   "name-asc",
   "name-desc",
@@ -1551,6 +1568,7 @@ export default function AdminInventoryPage() {
   const [editingRecipeVersion, setEditingRecipeVersion] = useState<number | null>(
     null,
   );
+  const [copyingRecipe, setCopyingRecipe] = useState(false);
   const [recipeSubmitting, setRecipeSubmitting] = useState(false);
 
   const resetRecipeForm = () => {
@@ -1564,6 +1582,7 @@ export default function AdminInventoryPage() {
     ]);
     setEditingRecipeId(null);
     setEditingRecipeVersion(null);
+    setCopyingRecipe(false);
   };
 
   const openNewRecipe = () => {
@@ -1574,10 +1593,33 @@ export default function AdminInventoryPage() {
   const openEditRecipe = (row: RecipeRow) => {
     setEditingRecipeId(row.id);
     setEditingRecipeVersion(row.version);
+    setCopyingRecipe(false);
     setRecipe({
       menuItemId: row.menuItemId,
       variationId: row.variationId ?? "",
       effectiveFrom: row.effectiveFrom.slice(0, 16),
+    });
+    setRecipeIngredients(
+      row.ingredients.length > 0
+        ? row.ingredients.map((ing) => ({
+            id: crypto.randomUUID(),
+            inventoryItemId: ing.inventoryItemId,
+            qtyBase: ing.qtyBase,
+          }))
+        : [{ id: crypto.randomUUID(), inventoryItemId: "", qtyBase: "" }],
+    );
+    setRecipeDialogOpen(true);
+  };
+
+  /** Prefill a new version from an existing recipe (does not edit the source). */
+  const openCopyRecipe = (row: RecipeRow) => {
+    setEditingRecipeId(null);
+    setEditingRecipeVersion(null);
+    setCopyingRecipe(true);
+    setRecipe({
+      menuItemId: row.menuItemId,
+      variationId: row.variationId ?? "",
+      effectiveFrom: new Date().toISOString().slice(0, 16),
     });
     setRecipeIngredients(
       row.ingredients.length > 0
@@ -2023,7 +2065,10 @@ export default function AdminInventoryPage() {
 
   const [recipeSearch, setRecipeSearch] = useState("");
   const [recipeMenuFilter, setRecipeMenuFilter] = useState("all");
-  const [recipeSort, setRecipeSort] = useState("date-desc");
+  const [recipeSortRaw, setRecipeSort] = useQueryParam("recipeSort", "date-desc");
+  const recipeSort = RECIPE_SORT_VALUES.has(recipeSortRaw)
+    ? recipeSortRaw
+    : "date-desc";
 
   const [movementSearch, setMovementSearch] = useState("");
   const [movementTypeFilter, setMovementTypeFilter] = useState("all");
@@ -2053,6 +2098,22 @@ export default function AdminInventoryPage() {
         0,
       ),
     [items, settings?.costingMethod],
+  );
+
+  /** Min selling price in rupees for sort (specific variation, or cheapest of all). */
+  const recipeMenuSellingPriceSortValue = useCallback(
+    (menuItemId: string, variationId: string | null) => {
+      const item = menu?.items.find((x) => x.id === menuItemId);
+      if (!item?.variations.length) return Number.POSITIVE_INFINITY;
+      if (variationId) {
+        const v = item.variations.find((x) => x.id === variationId);
+        return v && Number.isFinite(v.price) ? v.price : Number.POSITIVE_INFINITY;
+      }
+      const prices = item.variations.map((v) => v.price).filter((p) => Number.isFinite(p));
+      if (prices.length === 0) return Number.POSITIVE_INFINITY;
+      return Math.min(...prices);
+    },
+    [menu?.items],
   );
 
   /** Menu selling price(s) for a recipe row — specific variation, or range for "All variations". */
@@ -2279,18 +2340,62 @@ export default function AdminInventoryPage() {
     });
 
     list = [...list].sort((a, b) => {
+      const byMenu = () =>
+        a.menuItemName.localeCompare(b.menuItemName) ||
+        b.effectiveFrom.localeCompare(a.effectiveFrom);
       switch (recipeSort) {
-        case "date-asc":
-          return a.effectiveFrom.localeCompare(b.effectiveFrom);
         case "menu-asc":
+          return byMenu();
+        case "menu-desc":
           return (
-            a.menuItemName.localeCompare(b.menuItemName) ||
+            b.menuItemName.localeCompare(a.menuItemName) ||
             b.effectiveFrom.localeCompare(a.effectiveFrom)
           );
+        case "variation-asc":
+        case "variation-desc": {
+          const aVar = recipeVariationLabel(a.menuItemId, a.variationId);
+          const bVar = recipeVariationLabel(b.menuItemId, b.variationId);
+          const cmp = aVar.localeCompare(bVar) || byMenu();
+          return recipeSort === "variation-desc" ? -cmp : cmp;
+        }
+        case "version-asc":
+          return a.version - b.version || byMenu();
+        case "version-desc":
+          return b.version - a.version || byMenu();
+        case "date-asc":
+          return (
+            a.effectiveFrom.localeCompare(b.effectiveFrom) || byMenu()
+          );
+        case "date-desc":
+          return (
+            b.effectiveFrom.localeCompare(a.effectiveFrom) || byMenu()
+          );
+        case "ingredients-asc":
+          return (
+            a.ingredients.length - b.ingredients.length || byMenu()
+          );
         case "ingredients-desc":
-          return b.ingredients.length - a.ingredients.length;
+          return (
+            b.ingredients.length - a.ingredients.length || byMenu()
+          );
+        case "cost-asc":
+          return recipeCostPaise(a) - recipeCostPaise(b) || byMenu();
+        case "cost-desc":
+          return recipeCostPaise(b) - recipeCostPaise(a) || byMenu();
+        case "price-asc":
+          return (
+            recipeMenuSellingPriceSortValue(a.menuItemId, a.variationId) -
+              recipeMenuSellingPriceSortValue(b.menuItemId, b.variationId) ||
+            byMenu()
+          );
+        case "price-desc":
+          return (
+            recipeMenuSellingPriceSortValue(b.menuItemId, b.variationId) -
+              recipeMenuSellingPriceSortValue(a.menuItemId, a.variationId) ||
+            byMenu()
+          );
         default:
-          return b.effectiveFrom.localeCompare(a.effectiveFrom);
+          return b.effectiveFrom.localeCompare(a.effectiveFrom) || byMenu();
       }
     });
     return list;
@@ -2300,6 +2405,8 @@ export default function AdminInventoryPage() {
     recipeMenuFilter,
     recipeSort,
     recipeVariationLabel,
+    recipeCostPaise,
+    recipeMenuSellingPriceSortValue,
   ]);
 
   const filteredMovements = useMemo(() => {
@@ -4248,12 +4355,8 @@ export default function AdminInventoryPage() {
             searchPlaceholder="Search menu item, variation…"
             sort={recipeSort}
             onSortChange={setRecipeSort}
-            sortOptions={[
-              { value: "date-desc", label: "Effective (newest)" },
-              { value: "date-asc", label: "Effective (oldest)" },
-              { value: "menu-asc", label: "Menu item (A–Z)" },
-              { value: "ingredients-desc", label: "Most ingredients" },
-            ]}
+            sortOptions={[]}
+            showSort={false}
             filteredCount={filteredRecipes.length}
             totalCount={recipesList.length}
             showStatusFilter={false}
@@ -4281,14 +4384,55 @@ export default function AdminInventoryPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Menu item</TableHead>
-                  <TableHead>Variation</TableHead>
-                  <TableHead>Version</TableHead>
-                  <TableHead>Effective from</TableHead>
-                  <TableHead className="text-right">Ingredients</TableHead>
-                  <TableHead className="text-right">Recipe cost</TableHead>
-                  <TableHead className="text-right">Selling price</TableHead>
-                  <TableHead className="w-[7rem] text-right">Actions</TableHead>
+                  <SortableTableHead
+                    label="Menu item"
+                    column="menu"
+                    sort={recipeSort}
+                    onSortChange={setRecipeSort}
+                  />
+                  <SortableTableHead
+                    label="Variation"
+                    column="variation"
+                    sort={recipeSort}
+                    onSortChange={setRecipeSort}
+                  />
+                  <SortableTableHead
+                    label="Version"
+                    column="version"
+                    sort={recipeSort}
+                    onSortChange={setRecipeSort}
+                  />
+                  <SortableTableHead
+                    label="Effective from"
+                    column="date"
+                    sort={recipeSort}
+                    onSortChange={setRecipeSort}
+                  />
+                  <SortableTableHead
+                    label="Ingredients"
+                    column="ingredients"
+                    sort={recipeSort}
+                    onSortChange={setRecipeSort}
+                    className="text-right"
+                    align="right"
+                  />
+                  <SortableTableHead
+                    label="Recipe cost"
+                    column="cost"
+                    sort={recipeSort}
+                    onSortChange={setRecipeSort}
+                    className="text-right"
+                    align="right"
+                  />
+                  <SortableTableHead
+                    label="Selling price"
+                    column="price"
+                    sort={recipeSort}
+                    onSortChange={setRecipeSort}
+                    className="text-right"
+                    align="right"
+                  />
+                  <TableHead className="w-[9rem] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -4341,6 +4485,18 @@ export default function AdminInventoryPage() {
                             type="button"
                             variant="ghost"
                             size="sm"
+                            title="Copy recipe"
+                            onClick={() => openCopyRecipe(r)}
+                          >
+                            <CopyIcon className="size-4" aria-hidden />
+                            <span className="sr-only">
+                              Copy recipe for {r.menuItemName}
+                            </span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
                             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                             onClick={() => setDeletingRecipe(r)}
                           >
@@ -4374,7 +4530,9 @@ export default function AdminInventoryPage() {
                 <DialogTitle>
                   {editingRecipeId
                     ? `Edit recipe · v${editingRecipeVersion ?? "?"}`
-                    : "New recipe version"}
+                    : copyingRecipe
+                      ? "Copy recipe · new version"
+                      : "New recipe version"}
                 </DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-2">
