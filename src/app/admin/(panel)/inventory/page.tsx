@@ -64,6 +64,7 @@ import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import {
   chartTooltipRupeePair,
   formatRupees,
+  formatRupeesAmount,
   paiseToRupeesInput,
   paiseToRupeesNumber,
   rupeesToPaise,
@@ -389,6 +390,36 @@ function recipeIngredientValuePaise(
   const unitCost = itemUnitCostPaise(item, costingMethod);
   if (!Number.isFinite(qty) || qty <= 0 || unitCost <= 0) return 0;
   return Math.round(qty * unitCost);
+}
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
+/** ISO datetime → "12th May 2026" (calendar date only). */
+function formatEffectiveDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso.slice(0, 10);
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  if (!year || month < 1 || month > 12 || day < 1 || day > 31) return iso.slice(0, 10);
+  const j = day % 10;
+  const k = day % 100;
+  const suffix =
+    j === 1 && k !== 11 ? "st" : j === 2 && k !== 12 ? "nd" : j === 3 && k !== 13 ? "rd" : "th";
+  return `${day}${suffix} ${MONTH_NAMES[month - 1]} ${year}`;
 }
 
 type Supplier = {
@@ -2005,6 +2036,40 @@ export default function AdminInventoryPage() {
       if (!variationId) return "All variations";
       const item = menu?.items.find((x) => x.id === menuItemId);
       return item?.variations.find((v) => v.id === variationId)?.name ?? variationId;
+    },
+    [menu?.items],
+  );
+
+  const recipeCostPaise = useCallback(
+    (r: RecipeRow) =>
+      r.ingredients.reduce(
+        (sum, ing) =>
+          sum +
+          recipeIngredientValuePaise(
+            items.find((i) => i.id === ing.inventoryItemId),
+            ing.qtyBase,
+            settings?.costingMethod,
+          ),
+        0,
+      ),
+    [items, settings?.costingMethod],
+  );
+
+  /** Menu selling price(s) for a recipe row — specific variation, or range for "All variations". */
+  const recipeMenuSellingPriceLabel = useCallback(
+    (menuItemId: string, variationId: string | null) => {
+      const item = menu?.items.find((x) => x.id === menuItemId);
+      if (!item?.variations.length) return "—";
+      if (variationId) {
+        const v = item.variations.find((x) => x.id === variationId);
+        return v ? formatRupeesAmount(v.price) : "—";
+      }
+      const prices = item.variations.map((v) => v.price).filter((p) => Number.isFinite(p));
+      if (prices.length === 0) return "—";
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+      if (min === max) return formatRupeesAmount(min);
+      return `${formatRupeesAmount(min)}–${formatRupeesAmount(max)}`;
     },
     [menu?.items],
   );
@@ -4221,35 +4286,45 @@ export default function AdminInventoryPage() {
                   <TableHead>Version</TableHead>
                   <TableHead>Effective from</TableHead>
                   <TableHead className="text-right">Ingredients</TableHead>
+                  <TableHead className="text-right">Recipe cost</TableHead>
+                  <TableHead className="text-right">Selling price</TableHead>
                   <TableHead className="w-[7rem] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {recipesList.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                       No recipe versions yet.
                     </TableCell>
                   </TableRow>
                 ) : filteredRecipes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                       No recipes match your search or filters.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRecipes.map((r) => (
+                  filteredRecipes.map((r) => {
+                    const costPaise = recipeCostPaise(r);
+                    return (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium">{r.menuItemName}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {recipeVariationLabel(r.menuItemId, r.variationId)}
                       </TableCell>
                       <TableCell className="tabular-nums">v{r.version}</TableCell>
-                      <TableCell className="text-sm tabular-nums">
-                        {r.effectiveFrom.slice(0, 16).replace("T", " ")}
+                      <TableCell className="text-sm">
+                        {formatEffectiveDate(r.effectiveFrom)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {r.ingredients.length}
+                      </TableCell>
+                      <TableCell className="text-right text-sm tabular-nums">
+                        {costPaise > 0 ? formatRupees(costPaise) : "—"}
+                      </TableCell>
+                      <TableCell className="text-right text-sm tabular-nums">
+                        {recipeMenuSellingPriceLabel(r.menuItemId, r.variationId)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -4277,7 +4352,8 @@ export default function AdminInventoryPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
