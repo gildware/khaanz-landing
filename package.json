@@ -16,7 +16,7 @@
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "desktop": "npm --prefix pos-desktop run dev",
-    "test": "tsx --test tests/inventory-scenarios.test.ts tests/fifo-costing.test.ts",
+    "test": "tsx --test tests/inventory-scenarios.test.ts tests/fifo-costing.test.ts tests/nested-recipes.test.ts",
     "test:fifo": "tsx --test tests/fifo-costing.test.ts"
   },
   "prisma": {

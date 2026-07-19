@@ -1,12 +1,39 @@
-import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
 import { computeDishCostBreakdown } from "@/lib/inventory/dish-cost";
-import { parseDecimalQty } from "@/lib/inventory/parse-quantity";
+import {
+  assertNoRecipeComponentCycles,
+  parseRecipeIngredients,
+  parseRecipeYield,
+  toRecipeIngredientCreates,
+} from "@/lib/inventory/parse-recipe-ingredients";
 import { getPrisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
+
+function serializeIngredient(i: {
+  inventoryItemId: string | null;
+  componentMenuItemId: string | null;
+  componentVariationId: string | null;
+  qtyBase: { toString(): string };
+  componentMenuItem?: { name: string } | null;
+}) {
+  if (i.componentMenuItemId) {
+    return {
+      kind: "menu_item" as const,
+      componentMenuItemId: i.componentMenuItemId,
+      componentMenuItemName: i.componentMenuItem?.name ?? "",
+      componentVariationId: i.componentVariationId,
+      qtyBase: i.qtyBase.toString(),
+    };
+  }
+  return {
+    kind: "inventory" as const,
+    inventoryItemId: i.inventoryItemId!,
+    qtyBase: i.qtyBase.toString(),
+  };
+}
 
 export async function GET(request: Request) {
   const session = await requireAdminInventorySession();
@@ -34,7 +61,11 @@ export async function GET(request: Request) {
     where: menuItemId ? { menuItemId } : {},
     orderBy: [{ menuItemId: "asc" }, { effectiveFrom: "desc" }],
     include: {
-      ingredients: true,
+      ingredients: {
+        include: {
+          componentMenuItem: { select: { id: true, name: true } },
+        },
+      },
       menuItem: { select: { id: true, name: true } },
     },
     take: menuItemId ? 50 : 200,
@@ -66,11 +97,10 @@ export async function GET(request: Request) {
       variationId: r.variationId,
       effectiveFrom: r.effectiveFrom.toISOString(),
       label: r.label,
+      yieldQty: r.yieldQty.toString(),
+      yieldUnit: r.yieldUnit,
       version: versionById.get(r.id) ?? 1,
-      ingredients: r.ingredients.map((i) => ({
-        inventoryItemId: i.inventoryItemId,
-        qtyBase: i.qtyBase.toString(),
-      })),
+      ingredients: r.ingredients.map(serializeIngredient),
     })),
   });
 }
@@ -110,9 +140,17 @@ export async function POST(request: Request) {
   const label =
     typeof body.label === "string" ? body.label.trim().slice(0, 120) : "";
 
-  const ingRaw = body.ingredients;
-  if (!Array.isArray(ingRaw) || ingRaw.length === 0) {
-    return NextResponse.json({ error: "ingredients[] required" }, { status: 400 });
+  const yieldParsed = parseRecipeYield(body);
+  if ("error" in yieldParsed) {
+    return NextResponse.json({ error: yieldParsed.error }, { status: 400 });
+  }
+
+  const ingredients = parseRecipeIngredients(body.ingredients);
+  if ("error" in ingredients) {
+    return NextResponse.json(
+      { error: ingredients.error },
+      { status: ingredients.status },
+    );
   }
 
   const prisma = getPrisma();
@@ -121,23 +159,49 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Menu item not found" }, { status: 404 });
   }
 
-  const ingredients: { inventoryItemId: string; qtyBase: Prisma.Decimal }[] = [];
-  for (const raw of ingRaw) {
-    if (!raw || typeof raw !== "object") continue;
-    const o = raw as Record<string, unknown>;
-    const inventoryItemId =
-      typeof o.inventoryItemId === "string" ? o.inventoryItemId.trim() : "";
-    if (!inventoryItemId) {
-      return NextResponse.json({ error: "ingredient inventoryItemId" }, { status: 400 });
+  const inventoryIds = ingredients
+    .filter((i) => i.kind === "inventory")
+    .map((i) => i.inventoryItemId);
+  if (inventoryIds.length > 0) {
+    const found = await prisma.inventoryItem.findMany({
+      where: { id: { in: inventoryIds }, active: true },
+      select: { id: true },
+    });
+    if (found.length !== new Set(inventoryIds).size) {
+      return NextResponse.json(
+        { error: "One or more inventory items not found" },
+        { status: 400 },
+      );
     }
-    const q = parseDecimalQty(o.qtyBase, "qtyBase");
-    if ("error" in q) {
-      return NextResponse.json({ error: q.error }, { status: 400 });
+  }
+
+  const componentIds = ingredients
+    .filter((i) => i.kind === "menu_item")
+    .map((i) => i.componentMenuItemId);
+  if (componentIds.length > 0) {
+    const found = await prisma.menuItem.findMany({
+      where: { id: { in: componentIds } },
+      select: { id: true },
+    });
+    if (found.length !== new Set(componentIds).size) {
+      return NextResponse.json(
+        { error: "One or more component menu items not found" },
+        { status: 400 },
+      );
     }
-    if (!q.greaterThan(0)) {
-      return NextResponse.json({ error: "qtyBase must be > 0" }, { status: 400 });
-    }
-    ingredients.push({ inventoryItemId, qtyBase: q });
+  }
+
+  const cycle = await prisma.$transaction((tx) =>
+    assertNoRecipeComponentCycles(
+      tx,
+      menuItemId,
+      ingredients
+        .filter((i) => i.kind === "menu_item")
+        .map((i) => ({ componentMenuItemId: i.componentMenuItemId })),
+    ),
+  );
+  if (cycle) {
+    return NextResponse.json({ error: cycle.error }, { status: 400 });
   }
 
   const version = await prisma.recipeVersion.create({
@@ -146,14 +210,19 @@ export async function POST(request: Request) {
       variationId,
       effectiveFrom,
       label,
+      yieldQty: yieldParsed.yieldQty,
+      yieldUnit: yieldParsed.yieldUnit,
       ingredients: {
-        create: ingredients.map((i) => ({
-          inventoryItemId: i.inventoryItemId,
-          qtyBase: i.qtyBase,
-        })),
+        create: toRecipeIngredientCreates(ingredients),
       },
     },
-    include: { ingredients: true },
+    include: {
+      ingredients: {
+        include: {
+          componentMenuItem: { select: { id: true, name: true } },
+        },
+      },
+    },
   });
 
   return NextResponse.json({
@@ -161,9 +230,8 @@ export async function POST(request: Request) {
     menuItemId: version.menuItemId,
     variationId: version.variationId,
     effectiveFrom: version.effectiveFrom.toISOString(),
-    ingredients: version.ingredients.map((i) => ({
-      inventoryItemId: i.inventoryItemId,
-      qtyBase: i.qtyBase.toString(),
-    })),
+    yieldQty: version.yieldQty.toString(),
+    yieldUnit: version.yieldUnit,
+    ingredients: version.ingredients.map(serializeIngredient),
   });
 }

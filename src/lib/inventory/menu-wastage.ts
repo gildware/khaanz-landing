@@ -1,10 +1,7 @@
 import type { Prisma, WastageType } from "@prisma/client";
 
 import { D0 } from "@/lib/inventory/decimal-utils";
-import {
-  resolveRecipeVersion,
-  scaleRecipe,
-} from "@/lib/inventory/recipe-resolve";
+import { expandMenuItemConsumption } from "@/lib/inventory/recipe-resolve";
 import { recordWastage } from "@/lib/inventory/stock-ops";
 
 export async function recordMenuWastage(
@@ -35,13 +32,14 @@ export async function recordMenuWastage(
   const qty = input.quantity.abs();
   if (qty.equals(D0)) throw new Error("WASTAGE_QTY_ZERO");
 
-  const recipe = await resolveRecipeVersion(
+  const consumption = await expandMenuItemConsumption(
     tx,
     input.menuItemId,
     input.variationId,
     input.wastedAt,
+    qty,
   );
-  if (!recipe || recipe.ingredients.length === 0) {
+  if (consumption.size === 0) {
     throw new Error("RECIPE_NOT_FOUND");
   }
 
@@ -58,7 +56,6 @@ export async function recordMenuWastage(
     select: { id: true },
   });
 
-  const consumption = scaleRecipe(recipe, qty);
   const dishLabel = `${menuItem.name} · ${variation.name} × ${qty.toString()}`;
   const userNote = (input.note ?? "").trim();
   const wastageNote = userNote ? `${dishLabel} — ${userNote}` : dishLabel;

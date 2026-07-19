@@ -6,7 +6,7 @@ import {
   peekFifoConsumptionCost,
 } from "@/lib/inventory/inventory-costing";
 import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
-import { resolveRecipeVersion } from "@/lib/inventory/recipe-resolve";
+import { expandMenuItemConsumption } from "@/lib/inventory/recipe-resolve";
 
 export type DishCostBreakdown = {
   menuItemId: string;
@@ -28,15 +28,22 @@ export async function computeDishCostBreakdown(
   at: Date,
 ): Promise<DishCostBreakdown | null> {
   const settings = await ensureInventorySettings(tx);
-  const recipe = await resolveRecipeVersion(tx, menuItemId, variationId, at);
-  if (!recipe) return null;
+  const consumption = await expandMenuItemConsumption(
+    tx,
+    menuItemId,
+    variationId,
+    at,
+    new Prisma.Decimal(1),
+  );
+  if (consumption.size === 0) return null;
 
   const lines: DishCostBreakdown["lines"] = [];
   let costPaise = D0;
 
-  for (const ing of recipe.ingredients) {
+  for (const [inventoryItemId, qtyBase] of consumption) {
+    if (!qtyBase.greaterThan(0)) continue;
     const item = await tx.inventoryItem.findFirst({
-      where: { id: ing.inventoryItemId, active: true },
+      where: { id: inventoryItemId, active: true },
     });
     if (!item) continue;
 
@@ -44,24 +51,26 @@ export async function computeDishCostBreakdown(
     let unit: Prisma.Decimal;
 
     if (settings.costingMethod === "FIFO") {
-      lineCost = await peekFifoConsumptionCost(tx, item.id, ing.qtyBase);
-      unit = ing.qtyBase.greaterThan(0)
-        ? lineCost.div(ing.qtyBase).toDecimalPlaces(6, Prisma.Decimal.ROUND_HALF_UP)
+      lineCost = await peekFifoConsumptionCost(tx, item.id, qtyBase);
+      unit = qtyBase.greaterThan(0)
+        ? lineCost.div(qtyBase).toDecimalPlaces(6, Prisma.Decimal.ROUND_HALF_UP)
         : D0;
     } else {
       unit = itemUnitCostPaisePerBase(item, settings.costingMethod);
-      lineCost = ing.qtyBase.mul(unit).toDecimalPlaces(4);
+      lineCost = qtyBase.mul(unit).toDecimalPlaces(4);
     }
 
     costPaise = costPaise.add(lineCost);
     lines.push({
       inventoryItemId: item.id,
       name: item.name,
-      qtyBase: ing.qtyBase,
+      qtyBase,
       unitCostPaise: unit,
       lineCostPaise: lineCost,
     });
   }
+
+  if (lines.length === 0) return null;
 
   return {
     menuItemId,

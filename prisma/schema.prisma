@@ -111,6 +111,8 @@ model MenuItem {
   variations        MenuItemVariation[]
   addons            MenuItemAddon[]
   recipeVersions      RecipeVersion[]
+  /// Other recipes that use this menu item as a nested component.
+  usedAsRecipeComponent RecipeIngredient[]  @relation("RecipeComponentMenuItem")
   vendorSaleLines     VendorSaleLine[]
   sellableToVendors   VendorSellableMenuItem?
   personalUseEntries  PersonalUseEntry[]
@@ -759,6 +761,11 @@ model RecipeVersion {
   variationId   String?  @map("variation_id") @db.VarChar(64)
   effectiveFrom DateTime @map("effective_from")
   label         String   @default("") @db.VarChar(120)
+  /// Finished yield of one recipe batch (default 1 = one sold portion).
+  /// Nested recipes use qty in the same unit (e.g. yield 200 g, use 50 → 50/200 of ingredients).
+  yieldQty      Decimal  @default(1) @map("yield_qty") @db.Decimal(24, 8)
+  /// Display unit for yield/nested qty (e.g. "g", "portion"). Empty = portion.
+  yieldUnit     String   @default("") @map("yield_unit") @db.VarChar(32)
   createdAt     DateTime @default(now()) @map("created_at")
 
   menuItem    MenuItem           @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
@@ -768,16 +775,24 @@ model RecipeVersion {
   @@map("recipe_versions")
 }
 
+/// One recipe line: either an inventory item OR a nested menu-item component (not both).
 model RecipeIngredient {
-  id              String  @id @default(cuid())
-  recipeVersionId String  @map("recipe_version_id")
-  inventoryItemId String  @map("inventory_item_id")
-  qtyBase         Decimal @map("qty_base") @db.Decimal(24, 8)
+  id                   String  @id @default(cuid())
+  recipeVersionId      String  @map("recipe_version_id")
+  inventoryItemId      String? @map("inventory_item_id")
+  componentMenuItemId  String? @map("component_menu_item_id")
+  /// Optional variation for the nested menu item; null uses that item's default recipe.
+  componentVariationId String? @map("component_variation_id") @db.VarChar(64)
+  /// Inventory: qty in inventory base unit. Nested: qty of the component's yield unit.
+  qtyBase              Decimal @map("qty_base") @db.Decimal(24, 8)
 
-  recipe RecipeVersion @relation(fields: [recipeVersionId], references: [id], onDelete: Cascade)
-  item   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  recipe              RecipeVersion @relation(fields: [recipeVersionId], references: [id], onDelete: Cascade)
+  item                InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  componentMenuItem   MenuItem?      @relation("RecipeComponentMenuItem", fields: [componentMenuItemId], references: [id], onDelete: Restrict)
 
-  @@unique([recipeVersionId, inventoryItemId])
+  @@index([recipeVersionId])
+  @@index([inventoryItemId])
+  @@index([componentMenuItemId])
   @@map("recipe_ingredients")
 }
 

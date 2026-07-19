@@ -2,9 +2,8 @@ import type { Prisma } from "@prisma/client";
 
 import { d } from "@/lib/inventory/decimal-utils";
 import {
+  expandMenuItemConsumption,
   mergeConsumption,
-  resolveRecipeVersion,
-  scaleRecipe,
 } from "@/lib/inventory/recipe-resolve";
 import type { OrderCreateParsed } from "@/lib/parse-order-create-body";
 import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
@@ -35,15 +34,15 @@ export async function planOrderConsumption(
     if (isCartOpenLine(line)) continue;
 
     if (isCartItemLine(line)) {
-      const recipe = await resolveRecipeVersion(
+      const portion = d(line.quantity);
+      const consumption = await expandMenuItemConsumption(
         tx,
         line.itemId,
         line.variation.id,
         at,
+        portion,
       );
-      if (!recipe) continue;
-      const portion = d(line.quantity);
-      mergeConsumption(totals, scaleRecipe(recipe, portion));
+      mergeConsumption(totals, consumption);
       continue;
     }
 
@@ -52,15 +51,15 @@ export async function planOrderConsumption(
       if (!combo) continue;
       const comboPortions = d(line.quantity);
       for (const comp of combo.components) {
-        const recipe = await resolveRecipeVersion(
+        const portions = comboPortions.mul(d(comp.quantity));
+        const consumption = await expandMenuItemConsumption(
           tx,
           comp.itemId,
           comp.variationId,
           at,
+          portions,
         );
-        if (!recipe) continue;
-        const portions = comboPortions.mul(d(comp.quantity));
-        mergeConsumption(totals, scaleRecipe(recipe, portions));
+        mergeConsumption(totals, consumption);
       }
     }
   }
