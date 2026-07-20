@@ -123,35 +123,44 @@ export async function readMenuPayload(): Promise<MenuPayload> {
   };
 }
 
+/**
+ * Full catalog sync for admin menu saves.
+ *
+ * Upserts categories/items/combos by stable id so existing `menu_items` rows are
+ * kept. That preserves FK-cascaded data such as recipes. Rows absent from the
+ * payload are deleted (removing a dish still cascades that dish's recipes).
+ */
 export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
   const prisma = getPrisma();
   const combos = normalizeMenuCombos(payload.combos);
   const categoriesNorm = normalizeMenuCategories(payload.categories);
   const categoryMeta = uniqueCategoryIds(categoriesNorm.map((c) => c.name));
   const nameToId = new Map(categoryMeta.map((c) => [c.name, c.id]));
+  const keepCategoryIds = categoryMeta.map((c) => c.id);
+  const keepItemIds = payload.items.map((it) => it.id);
+  const keepComboIds = combos.map((c) => c.id);
+  const keepGlobalAddonIds = payload.globalAddons.map((g) => g.id);
+
+  const fallbackCategoryId = categoryMeta[0]?.id;
+  if (!fallbackCategoryId && payload.items.length > 0) {
+    throw new Error("Menu must include at least one category when items exist.");
+  }
 
   await prisma.$transaction(async (tx) => {
-    await tx.menuComboComponent.deleteMany();
-    await tx.menuCombo.deleteMany();
-    await tx.menuItemAddon.deleteMany();
-    await tx.menuItemVariation.deleteMany();
-    await tx.menuItem.deleteMany();
-    await tx.menuGlobalAddon.deleteMany();
-
-    for (;;) {
-      const n = await tx.category.deleteMany({
-        where: { parentId: { not: null } },
-      });
-      if (n.count === 0) break;
-    }
-    await tx.category.deleteMany();
-
     for (let i = 0; i < categoryMeta.length; i++) {
       const { id, name } = categoryMeta[i]!;
       const def = categoriesNorm[i];
-      await tx.category.create({
-        data: {
+      await tx.category.upsert({
+        where: { id },
+        create: {
           id,
+          name,
+          image: (def?.image ?? "").trim(),
+          icon: def?.icon?.trim() || "utensils-crossed",
+          parentId: null,
+          sortOrder: i,
+        },
+        update: {
           name,
           image: (def?.image ?? "").trim(),
           icon: def?.icon?.trim() || "utensils-crossed",
@@ -163,9 +172,15 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
 
     for (let gi = 0; gi < payload.globalAddons.length; gi++) {
       const g = payload.globalAddons[gi]!;
-      await tx.menuGlobalAddon.create({
-        data: {
+      await tx.menuGlobalAddon.upsert({
+        where: { id: g.id },
+        create: {
           id: g.id,
+          name: g.name,
+          price: g.price,
+          sortOrder: gi,
+        },
+        update: {
           name: g.name,
           price: g.price,
           sortOrder: gi,
@@ -173,17 +188,14 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
       });
     }
 
-    const fallbackCategoryId = categoryMeta[0]?.id;
-    if (!fallbackCategoryId && payload.items.length > 0) {
-      throw new Error("Menu must include at least one category when items exist.");
-    }
-
     for (let ii = 0; ii < payload.items.length; ii++) {
       const it = payload.items[ii]!;
       const categoryId =
         nameToId.get(it.category) ?? fallbackCategoryId ?? categoryMeta[0]!.id;
-      await tx.menuItem.create({
-        data: {
+
+      await tx.menuItem.upsert({
+        where: { id: it.id },
+        create: {
           id: it.id,
           categoryId,
           name: it.name,
@@ -193,30 +205,80 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
           recommended: it.recommended ?? false,
           available: it.available !== false,
           sortOrder: ii,
-          variations: {
-            create: it.variations.map((v, vi) => ({
-              id: v.id,
-              name: v.name,
-              price: v.price,
-              sortOrder: vi,
-            })),
-          },
-          addons: {
-            create: it.addons.map((a, ai) => ({
-              addonKey: a.id,
-              name: a.name,
-              price: a.price,
-              sortOrder: ai,
-            })),
-          },
+        },
+        update: {
+          categoryId,
+          name: it.name,
+          description: it.description ?? "",
+          image: it.image ?? "",
+          isVeg: it.isVeg,
+          recommended: it.recommended ?? false,
+          available: it.available !== false,
+          sortOrder: ii,
         },
       });
+
+      const keepVariationIds = it.variations.map((v) => v.id);
+      for (let vi = 0; vi < it.variations.length; vi++) {
+        const v = it.variations[vi]!;
+        await tx.menuItemVariation.upsert({
+          where: { id: v.id },
+          create: {
+            id: v.id,
+            itemId: it.id,
+            name: v.name,
+            price: v.price,
+            sortOrder: vi,
+          },
+          update: {
+            itemId: it.id,
+            name: v.name,
+            price: v.price,
+            sortOrder: vi,
+          },
+        });
+      }
+      if (keepVariationIds.length === 0) {
+        await tx.menuItemVariation.deleteMany({ where: { itemId: it.id } });
+      } else {
+        await tx.menuItemVariation.deleteMany({
+          where: { itemId: it.id, id: { notIn: keepVariationIds } },
+        });
+      }
+
+      const keepAddonKeys = it.addons.map((a) => a.id);
+      for (let ai = 0; ai < it.addons.length; ai++) {
+        const a = it.addons[ai]!;
+        await tx.menuItemAddon.upsert({
+          where: { itemId_addonKey: { itemId: it.id, addonKey: a.id } },
+          create: {
+            itemId: it.id,
+            addonKey: a.id,
+            name: a.name,
+            price: a.price,
+            sortOrder: ai,
+          },
+          update: {
+            name: a.name,
+            price: a.price,
+            sortOrder: ai,
+          },
+        });
+      }
+      if (keepAddonKeys.length === 0) {
+        await tx.menuItemAddon.deleteMany({ where: { itemId: it.id } });
+      } else {
+        await tx.menuItemAddon.deleteMany({
+          where: { itemId: it.id, addonKey: { notIn: keepAddonKeys } },
+        });
+      }
     }
 
     for (let ci = 0; ci < combos.length; ci++) {
       const c = combos[ci]!;
-      await tx.menuCombo.create({
-        data: {
+      await tx.menuCombo.upsert({
+        where: { id: c.id },
+        create: {
           id: c.id,
           name: c.name,
           description: c.description ?? "",
@@ -226,15 +288,85 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
           recommended: c.recommended ?? false,
           available: c.available !== false,
           sortOrder: ci,
-          components: {
-            create: c.components.map((comp, si) => ({
-              itemId: comp.itemId,
-              variationId: comp.variationId,
-              quantity: comp.quantity ?? 1,
-              sortOrder: si,
-            })),
-          },
         },
+        update: {
+          name: c.name,
+          description: c.description ?? "",
+          image: c.image ?? "",
+          price: c.price,
+          isVeg: c.isVeg,
+          recommended: c.recommended ?? false,
+          available: c.available !== false,
+          sortOrder: ci,
+        },
+      });
+
+      await tx.menuComboComponent.deleteMany({ where: { comboId: c.id } });
+      if (c.components.length > 0) {
+        await tx.menuComboComponent.createMany({
+          data: c.components.map((comp, si) => ({
+            comboId: c.id,
+            itemId: comp.itemId,
+            variationId: comp.variationId,
+            quantity: comp.quantity ?? 1,
+            sortOrder: si,
+          })),
+        });
+      }
+    }
+
+    if (keepComboIds.length === 0) {
+      await tx.menuCombo.deleteMany();
+    } else {
+      await tx.menuCombo.deleteMany({
+        where: { id: { notIn: keepComboIds } },
+      });
+    }
+
+    if (keepGlobalAddonIds.length === 0) {
+      await tx.menuGlobalAddon.deleteMany();
+    } else {
+      await tx.menuGlobalAddon.deleteMany({
+        where: { id: { notIn: keepGlobalAddonIds } },
+      });
+    }
+
+    const removedItems = await tx.menuItem.findMany({
+      where:
+        keepItemIds.length === 0 ? {} : { id: { notIn: keepItemIds } },
+      select: { id: true },
+    });
+    const removedItemIds = removedItems.map((r) => r.id);
+    if (removedItemIds.length > 0) {
+      // Nested recipes may Restrict-delete; drop those component lines first.
+      await tx.recipeIngredient.deleteMany({
+        where: { componentMenuItemId: { in: removedItemIds } },
+      });
+      await tx.vendorSellableMenuItem.deleteMany({
+        where: { menuItemId: { in: removedItemIds } },
+      });
+      // Recipes for removed items cascade via RecipeVersion.onDelete.
+      await tx.menuItem.deleteMany({
+        where: { id: { in: removedItemIds } },
+      });
+    }
+
+    for (;;) {
+      const n = await tx.category.deleteMany({
+        where: {
+          parentId: { not: null },
+          ...(keepCategoryIds.length > 0
+            ? { id: { notIn: keepCategoryIds } }
+            : {}),
+        },
+      });
+      if (n.count === 0) break;
+    }
+    if (keepCategoryIds.length === 0) {
+      await tx.category.deleteMany();
+    } else {
+      await tx.category.deleteMany({
+        where: { id: { notIn: keepCategoryIds } },
       });
     }
   });
@@ -244,9 +376,9 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
  * Home-layout save: reorder categories/items, toggle item visibility, and set
  * which items/combos are recommended on the storefront home page.
  *
- * Unlike `writeMenuPayload`, this performs targeted `sortOrder` / `available` /
- * `recommended` updates only — it never deletes menu rows, so it is safe even
- * when items or variations are referenced by wastage, recipes, vendor sales, etc.
+ * Targeted `sortOrder` / `available` / `recommended` updates only — never
+ * deletes menu rows. Catalog edits go through `writeMenuPayload`, which upserts
+ * kept items so recipes and other FKs on those rows are preserved.
  */
 export async function writeMenuLayout(layout: {
   categories: string[];

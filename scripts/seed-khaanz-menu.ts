@@ -10,8 +10,8 @@
  *      shipped image assets in `public/menu/` are reflected in the database.
  *
  * Unlike `prisma/seed.ts` (which only seeds when the menu is empty and uses
- * `writeMenuPayload` to fully replace everything), this script can be run
- * repeatedly and only upserts/updates the relevant rows. Safe for local AND
+ * `writeMenuPayload` to sync the full catalog), this script can be run
+ * repeatedly and only upserts/updates the KHAANZ rows. Safe for local AND
  * production.
  *
  * Usage (reads DATABASE_URL from the environment / .env):
