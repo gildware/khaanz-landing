@@ -41,6 +41,7 @@ const emptyItem = (categoryNames: string[]): MenuItem => ({
   variations: [{ id: newId("v"), name: "Regular", price: 99 }],
   addons: [],
   available: true,
+  notForSale: false,
 });
 
 export interface ItemFormDialogProps {
@@ -124,6 +125,10 @@ export function ItemFormDialog({
       addons: prev.addons.filter((_, i) => i !== idx),
     }));
   };
+
+  const categoryNotForSale = categories.some(
+    (c) => c.name === item.category && c.notForSale === true,
+  );
 
   const onFile = (file: File | null) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -216,7 +221,23 @@ export function ItemFormDialog({
               />
               <span className="text-sm">Available</span>
             </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={item.notForSale === true || categoryNotForSale}
+                disabled={categoryNotForSale}
+                onCheckedChange={(v) =>
+                  setItem((p) => ({ ...p, notForSale: Boolean(v) }))
+                }
+              />
+              <span className="text-sm">Not for sale</span>
+            </div>
           </div>
+          {categoryNotForSale ? (
+            <p className="text-muted-foreground text-xs">
+              This category is not for sale — all items in it are excluded from
+              ordering.
+            </p>
+          ) : null}
           <div className="grid gap-2">
             <Label>Image URL</Label>
             <Input

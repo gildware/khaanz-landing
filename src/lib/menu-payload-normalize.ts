@@ -18,6 +18,7 @@ export function parseCategoryEntry(x: unknown): MenuCategoryDef | null {
       typeof o.icon === "string" && o.icon.trim() !== ""
         ? o.icon.trim()
         : "utensils-crossed",
+    notForSale: o.notForSale === true ? true : undefined,
   };
 }
 

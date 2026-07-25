@@ -150,17 +150,31 @@ async function main() {
         },
       });
 
-      // Components have no natural key — replace them wholesale (safe: no FKs in).
-      await tx.menuComboComponent.deleteMany({ where: { comboId: c.id } });
-      await tx.menuComboComponent.createMany({
-        data: c.components.map((comp, si) => ({
-          comboId: c.id,
+      // Components have no natural key — update by sort order; never delete extras.
+      const existingComponents = await tx.menuComboComponent.findMany({
+        where: { comboId: c.id },
+        orderBy: { sortOrder: "asc" },
+      });
+      for (let si = 0; si < c.components.length; si++) {
+        const comp = c.components[si]!;
+        const existing = existingComponents[si];
+        const data = {
           itemId: comp.itemId,
           variationId: comp.variationId,
           quantity: comp.quantity ?? 1,
           sortOrder: si,
-        })),
-      });
+        };
+        if (existing) {
+          await tx.menuComboComponent.update({
+            where: { id: existing.id },
+            data,
+          });
+        } else {
+          await tx.menuComboComponent.create({
+            data: { comboId: c.id, ...data },
+          });
+        }
+      }
     }
 
     // --- Image sync (all bundled-default rows, non-destructive) -------------

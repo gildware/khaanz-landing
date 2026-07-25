@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ItemCustomizeSheet } from "@/components/ItemCustomizeSheet";
 import { MenuItemImage } from "@/components/MenuItemImage";
 import { useMenuData } from "@/contexts/menu-data-context";
-import { isMenuItemAvailable } from "@/lib/menu-availability";
+import { isMenuItemOrderable } from "@/lib/menu-availability";
 import type { MenuItem } from "@/types/menu";
 
 /**
@@ -14,7 +14,8 @@ import type { MenuItem } from "@/types/menu";
 export function FeaturedDishesCarousel() {
   const { data } = useMenuData();
   const featured = (data?.items ?? []).filter(
-    (i) => i.recommended && isMenuItemAvailable(i),
+    (i) =>
+      i.recommended && isMenuItemOrderable(i, data?.categories ?? []),
   );
   const [active, setActive] = useState<MenuItem | null>(null);
   const [open, setOpen] = useState(false);

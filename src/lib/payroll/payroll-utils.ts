@@ -25,6 +25,21 @@ export function paiseToRupeesNumber(paise: number): number {
   return paise / 100;
 }
 
+/** Recipe line costs — show tiny amounts (e.g. ₹0.003) instead of hiding them. */
+export function formatRecipeCostRupees(paise: number): string {
+  if (!Number.isFinite(paise)) return "—";
+  const rupees = Math.max(0, paise) / 100;
+  if (rupees < 0.01) {
+    return rupees.toLocaleString("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3,
+    });
+  }
+  return formatRupees(paise);
+}
+
 /** Format a value already in rupees (e.g. chart series). */
 export function formatRupeesAmount(rupees: number): string {
   if (!Number.isFinite(rupees)) return "—";

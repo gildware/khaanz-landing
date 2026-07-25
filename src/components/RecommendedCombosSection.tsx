@@ -28,14 +28,15 @@ export function RecommendedCombosSection() {
   const visible = useMemo(() => {
     const items = data?.items ?? [];
     const combos = data?.combos ?? [];
+    const categories = data?.categories ?? [];
     return combos.filter(
       (c) =>
         c.recommended &&
         c.available !== false &&
-        isComboAvailable(c, items) &&
+        isComboAvailable(c, items, categories) &&
         matchesComboSearch(c, q),
     );
-  }, [data?.items, data?.combos, q]);
+  }, [data?.items, data?.combos, data?.categories, q]);
 
   if (isLoading && !data) return null;
   if (visible.length === 0) return null;

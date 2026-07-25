@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { useMenuData } from "@/contexts/menu-data-context";
 import { isComboAvailable } from "@/lib/menu-combos";
-import { isMenuItemAvailable } from "@/lib/menu-availability";
+import { isMenuItemOrderable } from "@/lib/menu-availability";
 import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
 import { useCartStore } from "@/store/cartStore";
 
@@ -28,14 +28,17 @@ export function CartAvailabilitySync() {
       }
       if (isCartItemLine(line)) {
         const item = byId.get(line.itemId);
-        if (!item || !isMenuItemAvailable(item)) {
+        if (!item || !isMenuItemOrderable(item, data.categories)) {
           removeItem(line.lineId);
         }
         continue;
       }
       if (isCartComboLine(line)) {
         const combo = combos.find((c) => c.id === line.comboId);
-        if (!combo || !isComboAvailable(combo, data.items)) {
+        if (
+          !combo ||
+          !isComboAvailable(combo, data.items, data.categories)
+        ) {
           removeItem(line.lineId);
         }
       }

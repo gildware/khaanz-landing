@@ -33,6 +33,7 @@ export async function readMenuPayload(): Promise<MenuPayload> {
           sortOrder: true,
           image: true,
           icon: true,
+          notForSale: true,
         },
         orderBy: { sortOrder: "asc" },
       }),
@@ -72,6 +73,7 @@ export async function readMenuPayload(): Promise<MenuPayload> {
     name: c.name,
     image: (c.image ?? "").trim(),
     icon: (c.icon ?? "").trim() || "utensils-crossed",
+    notForSale: c.notForSale || undefined,
   }));
 
   const menuItems: MenuItem[] = items.map((row) => ({
@@ -83,6 +85,7 @@ export async function readMenuPayload(): Promise<MenuPayload> {
     isVeg: row.isVeg,
     recommended: row.recommended || undefined,
     available: row.available,
+    notForSale: row.notForSale || undefined,
     variations: row.variations.map((v) => ({
       id: v.id,
       name: v.name,
@@ -124,11 +127,11 @@ export async function readMenuPayload(): Promise<MenuPayload> {
 }
 
 /**
- * Full catalog sync for admin menu saves.
+ * Full catalog sync for admin menu saves and bundled-default seeding.
  *
- * Upserts categories/items/combos by stable id so existing `menu_items` rows are
- * kept. That preserves FK-cascaded data such as recipes. Rows absent from the
- * payload are deleted (removing a dish still cascades that dish's recipes).
+ * Upserts categories, items, variations, addons, combos, and global add-ons by
+ * stable id. Rows already in the database but absent from the payload are left
+ * untouched so admin-added dishes, recipes, and other FK-linked data survive sync.
  */
 export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
   const prisma = getPrisma();
@@ -136,17 +139,15 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
   const categoriesNorm = normalizeMenuCategories(payload.categories);
   const categoryMeta = uniqueCategoryIds(categoriesNorm.map((c) => c.name));
   const nameToId = new Map(categoryMeta.map((c) => [c.name, c.id]));
-  const keepCategoryIds = categoryMeta.map((c) => c.id);
-  const keepItemIds = payload.items.map((it) => it.id);
-  const keepComboIds = combos.map((c) => c.id);
-  const keepGlobalAddonIds = payload.globalAddons.map((g) => g.id);
 
   const fallbackCategoryId = categoryMeta[0]?.id;
   if (!fallbackCategoryId && payload.items.length > 0) {
     throw new Error("Menu must include at least one category when items exist.");
   }
 
-  await prisma.$transaction(async (tx) => {
+  // Full-catalog sync touches many rows; remote DBs can exceed Prisma's 5s default.
+  await prisma.$transaction(
+    async (tx) => {
     for (let i = 0; i < categoryMeta.length; i++) {
       const { id, name } = categoryMeta[i]!;
       const def = categoriesNorm[i];
@@ -159,6 +160,7 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
           icon: def?.icon?.trim() || "utensils-crossed",
           parentId: null,
           sortOrder: i,
+          notForSale: def?.notForSale === true,
         },
         update: {
           name,
@@ -166,6 +168,7 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
           icon: def?.icon?.trim() || "utensils-crossed",
           parentId: null,
           sortOrder: i,
+          notForSale: def?.notForSale === true,
         },
       });
     }
@@ -204,6 +207,7 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
           isVeg: it.isVeg,
           recommended: it.recommended ?? false,
           available: it.available !== false,
+          notForSale: it.notForSale === true,
           sortOrder: ii,
         },
         update: {
@@ -214,11 +218,11 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
           isVeg: it.isVeg,
           recommended: it.recommended ?? false,
           available: it.available !== false,
+          notForSale: it.notForSale === true,
           sortOrder: ii,
         },
       });
 
-      const keepVariationIds = it.variations.map((v) => v.id);
       for (let vi = 0; vi < it.variations.length; vi++) {
         const v = it.variations[vi]!;
         await tx.menuItemVariation.upsert({
@@ -238,15 +242,7 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
           },
         });
       }
-      if (keepVariationIds.length === 0) {
-        await tx.menuItemVariation.deleteMany({ where: { itemId: it.id } });
-      } else {
-        await tx.menuItemVariation.deleteMany({
-          where: { itemId: it.id, id: { notIn: keepVariationIds } },
-        });
-      }
 
-      const keepAddonKeys = it.addons.map((a) => a.id);
       for (let ai = 0; ai < it.addons.length; ai++) {
         const a = it.addons[ai]!;
         await tx.menuItemAddon.upsert({
@@ -263,13 +259,6 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
             price: a.price,
             sortOrder: ai,
           },
-        });
-      }
-      if (keepAddonKeys.length === 0) {
-        await tx.menuItemAddon.deleteMany({ where: { itemId: it.id } });
-      } else {
-        await tx.menuItemAddon.deleteMany({
-          where: { itemId: it.id, addonKey: { notIn: keepAddonKeys } },
         });
       }
     }
@@ -301,75 +290,34 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
         },
       });
 
-      await tx.menuComboComponent.deleteMany({ where: { comboId: c.id } });
-      if (c.components.length > 0) {
-        await tx.menuComboComponent.createMany({
-          data: c.components.map((comp, si) => ({
-            comboId: c.id,
-            itemId: comp.itemId,
-            variationId: comp.variationId,
-            quantity: comp.quantity ?? 1,
-            sortOrder: si,
-          })),
-        });
+      const existingComponents = await tx.menuComboComponent.findMany({
+        where: { comboId: c.id },
+        orderBy: { sortOrder: "asc" },
+      });
+      for (let si = 0; si < c.components.length; si++) {
+        const comp = c.components[si]!;
+        const existing = existingComponents[si];
+        const data = {
+          itemId: comp.itemId,
+          variationId: comp.variationId,
+          quantity: comp.quantity ?? 1,
+          sortOrder: si,
+        };
+        if (existing) {
+          await tx.menuComboComponent.update({
+            where: { id: existing.id },
+            data,
+          });
+        } else {
+          await tx.menuComboComponent.create({
+            data: { comboId: c.id, ...data },
+          });
+        }
       }
     }
-
-    if (keepComboIds.length === 0) {
-      await tx.menuCombo.deleteMany();
-    } else {
-      await tx.menuCombo.deleteMany({
-        where: { id: { notIn: keepComboIds } },
-      });
-    }
-
-    if (keepGlobalAddonIds.length === 0) {
-      await tx.menuGlobalAddon.deleteMany();
-    } else {
-      await tx.menuGlobalAddon.deleteMany({
-        where: { id: { notIn: keepGlobalAddonIds } },
-      });
-    }
-
-    const removedItems = await tx.menuItem.findMany({
-      where:
-        keepItemIds.length === 0 ? {} : { id: { notIn: keepItemIds } },
-      select: { id: true },
-    });
-    const removedItemIds = removedItems.map((r) => r.id);
-    if (removedItemIds.length > 0) {
-      // Nested recipes may Restrict-delete; drop those component lines first.
-      await tx.recipeIngredient.deleteMany({
-        where: { componentMenuItemId: { in: removedItemIds } },
-      });
-      await tx.vendorSellableMenuItem.deleteMany({
-        where: { menuItemId: { in: removedItemIds } },
-      });
-      // Recipes for removed items cascade via RecipeVersion.onDelete.
-      await tx.menuItem.deleteMany({
-        where: { id: { in: removedItemIds } },
-      });
-    }
-
-    for (;;) {
-      const n = await tx.category.deleteMany({
-        where: {
-          parentId: { not: null },
-          ...(keepCategoryIds.length > 0
-            ? { id: { notIn: keepCategoryIds } }
-            : {}),
-        },
-      });
-      if (n.count === 0) break;
-    }
-    if (keepCategoryIds.length === 0) {
-      await tx.category.deleteMany();
-    } else {
-      await tx.category.deleteMany({
-        where: { id: { notIn: keepCategoryIds } },
-      });
-    }
-  });
+    },
+    { maxWait: 15_000, timeout: 120_000 },
+  );
 }
 
 /**
@@ -377,8 +325,8 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
  * which items/combos are recommended on the storefront home page.
  *
  * Targeted `sortOrder` / `available` / `recommended` updates only — never
- * deletes menu rows. Catalog edits go through `writeMenuPayload`, which upserts
- * kept items so recipes and other FKs on those rows are preserved.
+ * deletes menu rows. Catalog edits go through `writeMenuPayload`, which also
+ * never deletes — it only upserts rows present in the payload.
  */
 export async function writeMenuLayout(layout: {
   categories: string[];

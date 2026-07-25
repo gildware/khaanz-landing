@@ -8,7 +8,7 @@ import { MenuCard, MenuCardSkeleton } from "@/components/MenuCard";
 import { useMenuExplore } from "@/contexts/menu-explore-context";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { COMBOS_TAB_ID, isComboAvailable } from "@/lib/menu-combos";
-import { isMenuItemAvailable } from "@/lib/menu-availability";
+import { isMenuItemOrderable } from "@/lib/menu-availability";
 import { CategoryIcon } from "@/lib/category-icons";
 import type { MenuCategoryDef } from "@/types/menu-category";
 import type { MenuCombo, MenuItem } from "@/types/menu";
@@ -49,15 +49,18 @@ export function MenuGrid() {
     />
   );
 
-  const menuItems = useMemo(
-    () => (data?.items ?? []).filter(isMenuItemAvailable),
-    [data?.items],
-  );
-  const combos = useMemo(() => data?.combos ?? [], [data?.combos]);
   const categories = useMemo(
     () => data?.categories ?? [],
     [data?.categories],
   );
+  const menuItems = useMemo(
+    () =>
+      (data?.items ?? []).filter((item) =>
+        isMenuItemOrderable(item, categories),
+      ),
+    [data?.items, categories],
+  );
+  const combos = useMemo(() => data?.combos ?? [], [data?.combos]);
   const categoryByName = useMemo(() => {
     const m = new Map<string, MenuCategoryDef>();
     for (const c of categories) {
@@ -71,9 +74,9 @@ export function MenuGrid() {
   const visibleCombos = useMemo(() => {
     const items = data?.items ?? [];
     return combos.filter(
-      (c) => isComboAvailable(c, items) && matchesComboSearch(c, q),
+      (c) => isComboAvailable(c, items, categories) && matchesComboSearch(c, q),
     );
-  }, [combos, data?.items, q]);
+  }, [combos, data?.items, categories, q]);
 
   const groupedByCategory = useMemo(() => {
     if (category !== "all") return null;

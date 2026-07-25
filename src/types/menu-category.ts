@@ -5,4 +5,6 @@ export interface MenuCategoryDef {
   image: string;
   /** Key from `CATEGORY_ICON_OPTIONS` / `category-icons` map */
   icon: string;
+  /** When true, all items in this category are not for sale. */
+  notForSale?: boolean;
 }

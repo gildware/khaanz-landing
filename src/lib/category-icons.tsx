@@ -14,6 +14,7 @@ import {
   IceCream2,
   LeafyGreen,
   Martini,
+  Package,
   Pizza,
   Salad,
   Sandwich,
@@ -44,6 +45,7 @@ export const CATEGORY_ICON_MAP: Record<string, LucideIcon> = {
   "chef-hat": ChefHat,
   "leafy-green": LeafyGreen,
   martini: Martini,
+  package: Package,
 };
 
 export const CATEGORY_ICON_OPTIONS: { value: string; label: string }[] = [
@@ -66,6 +68,7 @@ export const CATEGORY_ICON_OPTIONS: { value: string; label: string }[] = [
   { value: "chef-hat", label: "Chef" },
   { value: "leafy-green", label: "Veg / greens" },
   { value: "martini", label: "Bar / cocktails" },
+  { value: "package", label: "Raw / stock" },
 ];
 
 export function CategoryIcon({

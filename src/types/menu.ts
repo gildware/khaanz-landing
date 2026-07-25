@@ -23,6 +23,8 @@ export interface MenuItem {
   addons: MenuAddon[];
   recommended?: boolean;
   available?: boolean;
+  /** Kept in catalog but not orderable (ingredients, internal items). */
+  notForSale?: boolean;
 }
 
 /** One slot in a combo — references a menu item and which variation is included */

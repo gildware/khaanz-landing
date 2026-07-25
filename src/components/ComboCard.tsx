@@ -36,12 +36,16 @@ export function ComboCard({ combo }: ComboCardProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const { data } = useMenuData();
   const items = useMemo(() => data?.items ?? [], [data?.items]);
+  const categories = useMemo(() => data?.categories ?? [], [data?.categories]);
   const addCombo = useCartStore((s) => s.addCombo);
   const cartItems = useCartStore((s) => s.items);
   const increaseQty = useCartStore((s) => s.increaseQty);
   const decreaseQty = useCartStore((s) => s.decreaseQty);
 
-  const ok = useMemo(() => isComboAvailable(combo, items), [combo, items]);
+  const ok = useMemo(
+    () => isComboAvailable(combo, items, categories),
+    [combo, items, categories],
+  );
   const summary = useMemo(
     () => formatComboComponentSummary(combo, items),
     [combo, items],

@@ -28,6 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { MENU_CATEGORY_DEFAULTS } from "@/data/menu";
 import { useMenuData } from "@/contexts/menu-data-context";
 import {
@@ -37,6 +39,7 @@ import {
 import { persistMenuPayload } from "@/lib/persist-menu-client";
 import { cn } from "@/lib/utils";
 import type { MenuCategoryDef } from "@/types/menu-category";
+import type { MenuItem } from "@/types/menu";
 
 const FALLBACK_ICON = "utensils-crossed";
 
@@ -130,6 +133,7 @@ export function MenuCatalogCategoriesPanel() {
     name: "",
     image: "",
     icon: FALLBACK_ICON,
+    notForSale: false,
   });
 
   const fallbackImage = useMemo(
@@ -168,12 +172,13 @@ export function MenuCatalogCategoriesPanel() {
   }, [data?.categories, normalizeList]);
 
   const persistCategoriesRows = useCallback(
-    async (nextRows: MenuCategoryDef[]) => {
+    async (nextRows: MenuCategoryDef[], nextItems?: MenuItem[]) => {
       if (!data) return;
       try {
         await persistMenuPayload({
           ...data,
           categories: normalizeList(nextRows),
+          ...(nextItems ? { items: nextItems } : {}),
         });
         await mutate();
         toast.success("Categories saved");
@@ -192,6 +197,7 @@ export function MenuCatalogCategoriesPanel() {
         name: "",
         image: "",
         icon: FALLBACK_ICON,
+        notForSale: false,
       }),
     );
     setDialogOpen(true);
@@ -228,8 +234,29 @@ export function MenuCatalogCategoriesPanel() {
     setRows(built.nextRows);
     setDialogOpen(false);
     setEditingIndex(null);
-    void persistCategoriesRows(built.nextRows);
-  }, [draft, editingIndex, rows, applyDefaults, persistCategoriesRows]);
+
+    let nextItems: MenuItem[] | undefined;
+    if (data && draft.notForSale === true) {
+      const categoryName = built.nextRows[
+        editingIndex ?? built.nextRows.length - 1
+      ]?.name;
+      const oldName =
+        editingIndex !== null ? rows[editingIndex]?.name : undefined;
+      if (categoryName) {
+        nextItems = data.items.map((item) => {
+          if (
+            item.category === categoryName ||
+            (oldName && item.category === oldName)
+          ) {
+            return { ...item, notForSale: true };
+          }
+          return item;
+        });
+      }
+    }
+
+    void persistCategoriesRows(built.nextRows, nextItems);
+  }, [draft, editingIndex, rows, data, applyDefaults, persistCategoriesRows]);
 
   const remove = (idx: number) => {
     if (!data) return;
@@ -275,6 +302,11 @@ export function MenuCatalogCategoriesPanel() {
               <span className="min-w-0 flex-1 font-medium text-sm leading-snug">
                 {r.name}
               </span>
+              {r.notForSale ? (
+                <Badge variant="outline" className="shrink-0 text-[10px]">
+                  Not for sale
+                </Badge>
+              ) : null}
             </CardContent>
             <CardFooter className="flex flex-col gap-1.5 border-border/80 bg-muted/40 p-2">
               <Link
@@ -407,6 +439,25 @@ export function MenuCatalogCategoriesPanel() {
                 name), otherwise the global fallback image.
               </p>
             </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="cat-not-for-sale"
+                checked={draft.notForSale === true}
+                onCheckedChange={(v) =>
+                  setDraft((p) => ({ ...p, notForSale: Boolean(v) }))
+                }
+              />
+              <Label htmlFor="cat-not-for-sale" className="font-normal">
+                Not for sale
+              </Label>
+            </div>
+            {draft.notForSale ? (
+              <p className="text-muted-foreground text-xs">
+                All items in this category will be marked not for sale when you
+                save.
+              </p>
+            ) : null}
           </div>
 
           <DialogFooter>

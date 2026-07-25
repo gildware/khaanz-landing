@@ -15,6 +15,7 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
+    "db:backup": "bash scripts/backup-db.sh",
     "desktop": "npm --prefix pos-desktop run dev",
     "test": "tsx --test tests/inventory-scenarios.test.ts tests/fifo-costing.test.ts tests/nested-recipes.test.ts",
     "test:fifo": "tsx --test tests/fifo-costing.test.ts"

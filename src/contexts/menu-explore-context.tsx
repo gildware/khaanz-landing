@@ -12,7 +12,7 @@ import {
 
 import { useMenuData } from "@/contexts/menu-data-context";
 import { COMBOS_TAB_ID, isComboAvailable } from "@/lib/menu-combos";
-import { isMenuItemAvailable } from "@/lib/menu-availability";
+import { isMenuItemOrderable } from "@/lib/menu-availability";
 
 type MenuExploreContextValue = {
   category: string | "all";
@@ -43,7 +43,9 @@ export function MenuExploreProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (category === COMBOS_TAB_ID) {
-      const hasAvailable = combos.some((c) => isComboAvailable(c, items));
+      const hasAvailable = combos.some((c) =>
+        isComboAvailable(c, items, categories),
+      );
       if (!hasAvailable) {
         setCategoryState("all");
       }
@@ -51,7 +53,8 @@ export function MenuExploreProvider({ children }: { children: ReactNode }) {
     }
     if (category !== "all") {
       const hasAvailable = items.some(
-        (i) => i.category === category && isMenuItemAvailable(i),
+        (i) =>
+          i.category === category && isMenuItemOrderable(i, categories),
       );
       if (!hasAvailable) {
         setCategoryState("all");

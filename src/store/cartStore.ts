@@ -10,7 +10,7 @@ import {
   migrateCartLine,
 } from "@/lib/cart-line";
 import { formatComboComponentSummary, isComboAvailable } from "@/lib/menu-combos";
-import { isMenuItemAvailable } from "@/lib/menu-availability";
+import { isMenuItemAvailable, isMenuItemOrderable } from "@/lib/menu-availability";
 import type {
   CartAddonWithQty,
   CartComboLine,
@@ -42,7 +42,7 @@ export const useCartStore = create<CartState>()(
       items: [],
 
       addItem: ({ item, variation, addons }) => {
-        if (!isMenuItemAvailable(item)) return;
+        if (!isMenuItemAvailable(item) || item.notForSale === true) return;
         const unitPrice = computeUnitPrice(variation, addons);
         const lineId = buildLineId(item.id, variation, addons);
 

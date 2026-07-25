@@ -15,7 +15,7 @@ import {
   computePosBillTotals,
   parseRupeeInputToCents,
 } from "@/lib/billing-utils";
-import { isMenuItemAvailable } from "@/lib/menu-availability";
+import { isMenuItemOrderable } from "@/lib/menu-availability";
 import { formatComboComponentSummary, isComboAvailable } from "@/lib/menu-combos";
 import {
   flushOfflinePosQueue,
@@ -555,7 +555,7 @@ export function useAdminPosRegister() {
         toast.error("Select a table for dine-in before adding items.");
         return;
       }
-      if (!isMenuItemAvailable(item)) return;
+      if (!isMenuItemOrderable(item, categories)) return;
       const unitPrice = computeUnitPrice(variation, addons);
       const lineId = buildLineId(item.id, variation, addons);
       setCart((prev) => {
@@ -583,7 +583,7 @@ export function useAdminPosRegister() {
       });
       toast.success(`Added ${item.name}`);
     },
-    [canAddItems],
+    [canAddItems, categories],
   );
 
   const addOpenLine = useCallback(() => {
@@ -620,7 +620,7 @@ export function useAdminPosRegister() {
       toast.error("Select a table for dine-in before adding items.");
       return;
     }
-    if (!isComboAvailable(combo, items)) return;
+    if (!isComboAvailable(combo, items, categories)) return;
     const lineId = buildComboLineId(combo.id);
     const componentSummary = formatComboComponentSummary(combo, items);
     setCart((prev) => {
@@ -646,7 +646,7 @@ export function useAdminPosRegister() {
       return [...prev, line];
     });
     toast.success(`Added ${combo.name}`);
-  }, [canAddItems, items]);
+  }, [canAddItems, items, categories]);
 
   const bumpQty = useCallback((lineId: string, delta: number) => {
     setCart((prev) => {
@@ -670,7 +670,7 @@ export function useAdminPosRegister() {
       toast.error("Select a table for dine-in before adding items.");
       return;
     }
-    if (!isMenuItemAvailable(item)) {
+    if (!isMenuItemOrderable(item, categories)) {
       toast.error("This item is unavailable.");
       return;
     }
@@ -686,7 +686,7 @@ export function useAdminPosRegister() {
     setDialogItem(item);
     setVariationId(v0.id);
     setAddonQty(Object.fromEntries(item.addons.map((a) => [a.id, 0])));
-  }, [addItemLine, canAddItems]);
+  }, [addItemLine, canAddItems, categories]);
 
   const confirmConfigure = useCallback(() => {
     if (!dialogItem) return;
@@ -705,7 +705,7 @@ export function useAdminPosRegister() {
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((it) => {
-      if (!isMenuItemAvailable(it)) return false;
+      if (!isMenuItemOrderable(it, categories)) return false;
       if (q) return it.name.toLowerCase().includes(q);
       if (
         categoryKey &&
@@ -717,17 +717,17 @@ export function useAdminPosRegister() {
       }
       return true;
     });
-  }, [items, query, categoryKey]);
+  }, [items, query, categoryKey, categories]);
 
   const filteredCombos = useMemo(() => {
     const q = query.trim().toLowerCase();
     return combos.filter((c) => {
       if (c.available === false) return false;
-      if (!isComboAvailable(c, items)) return false;
+      if (!isComboAvailable(c, items, categories)) return false;
       if (q && !c.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [combos, items, query]);
+  }, [combos, items, query, categories]);
 
   const paymentDisplayName = useCallback(
     (key: string) =>

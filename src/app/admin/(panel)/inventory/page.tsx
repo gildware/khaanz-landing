@@ -63,12 +63,14 @@ import { PillRankChartCard } from "@/components/admin/pill-rank-chart";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import {
   chartTooltipRupeePair,
+  formatRecipeCostRupees,
   formatRupees,
   formatRupeesAmount,
   paiseToRupeesInput,
   paiseToRupeesNumber,
   rupeesToPaise,
 } from "@/lib/payroll/payroll-utils";
+import { formatRecipeQtyBase } from "@/lib/inventory/decimal-utils";
 import { useQueryParam } from "@/hooks/use-query-param";
 import { useTabParam } from "@/hooks/use-tab-param";
 
@@ -389,7 +391,7 @@ function recipeIngredientValuePaise(
   const qty = Number(qtyBase);
   const unitCost = itemUnitCostPaise(item, costingMethod);
   if (!Number.isFinite(qty) || qty <= 0 || unitCost <= 0) return 0;
-  return Math.round(qty * unitCost);
+  return qty * unitCost;
 }
 
 function isMenuItemRecipeLine(
@@ -446,10 +448,9 @@ function recipeRowCostPaise(
         continue;
       }
       const factor = nestedQty / yieldQty;
-      sum += Math.round(
+      sum +=
         recipeRowCostPaise(child, allRecipes, items, costingMethod, nextStack) *
-          factor,
-      );
+        factor;
       continue;
     }
     sum += recipeIngredientValuePaise(
@@ -1678,6 +1679,7 @@ export default function AdminInventoryPage() {
   const [recipeSubmitting, setRecipeSubmitting] = useState(false);
 
   const recipeIngredientFromRow = (ing: RecipeIngredientRow): RecipeIngredientDraft => {
+    const qtyBase = formatRecipeQtyBase(ing.qtyBase);
     if (isMenuItemRecipeLine(ing)) {
       return {
         id: crypto.randomUUID(),
@@ -1685,7 +1687,7 @@ export default function AdminInventoryPage() {
         inventoryItemId: "",
         componentMenuItemId: ing.componentMenuItemId,
         componentVariationId: ing.componentVariationId ?? "",
-        qtyBase: ing.qtyBase,
+        qtyBase,
       };
     }
     return {
@@ -1694,7 +1696,7 @@ export default function AdminInventoryPage() {
       inventoryItemId: ing.inventoryItemId,
       componentMenuItemId: "",
       componentVariationId: "",
-      qtyBase: ing.qtyBase,
+      qtyBase,
     };
   };
 
@@ -4759,7 +4761,7 @@ export default function AdminInventoryPage() {
                               {r.ingredients.length}
                             </TableCell>
                             <TableCell className="text-right text-sm tabular-nums">
-                              {costPaise > 0 ? formatRupees(costPaise) : "—"}
+                              {formatRecipeCostRupees(costPaise)}
                             </TableCell>
                             <TableCell className="text-right text-sm tabular-nums">
                               {recipeMenuSellingPriceLabel(
@@ -5140,7 +5142,7 @@ export default function AdminInventoryPage() {
                                 ) {
                                   return 0;
                                 }
-                                return Math.round(
+                                return (
                                   (recipeRowCostPaise(
                                     componentRecipe,
                                     recipesList,
@@ -5148,7 +5150,7 @@ export default function AdminInventoryPage() {
                                     settings?.costingMethod,
                                   ) *
                                     nestedQty) /
-                                    yieldQty,
+                                  yieldQty
                                 );
                               })()
                             : 0;
@@ -5273,9 +5275,10 @@ export default function AdminInventoryPage() {
                             }
                           />
                           <span
-                            className="w-20 shrink-0 text-right text-sm tabular-nums text-muted-foreground"
+                            className="w-24 shrink-0 text-right text-sm tabular-nums text-muted-foreground"
                             title={
-                              lineValuePaise > 0
+                              (ln.kind === "inventory" && ln.inventoryItemId && ln.qtyBase) ||
+                              (ln.kind === "menu_item" && ln.componentMenuItemId && ln.qtyBase)
                                 ? ln.kind === "menu_item"
                                   ? "Expanded from nested recipe"
                                   : settings?.costingMethod === "LATEST_PURCHASE"
@@ -5286,7 +5289,10 @@ export default function AdminInventoryPage() {
                                 : undefined
                             }
                           >
-                            {lineValuePaise > 0 ? formatRupees(lineValuePaise) : "—"}
+                            {(ln.kind === "inventory" && ln.inventoryItemId && ln.qtyBase) ||
+                            (ln.kind === "menu_item" && ln.componentMenuItemId && ln.qtyBase)
+                              ? formatRecipeCostRupees(lineValuePaise)
+                              : "—"}
                           </span>
                           <Button
                             type="button"
@@ -5308,9 +5314,7 @@ export default function AdminInventoryPage() {
                   <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm">
                     <span className="font-medium">Recipe total</span>
                     <span className="font-medium tabular-nums">
-                      {recipeTotalValuePaise > 0
-                        ? formatRupees(recipeTotalValuePaise)
-                        : "—"}
+                      {formatRecipeCostRupees(recipeTotalValuePaise)}
                     </span>
                   </div>
                 </div>

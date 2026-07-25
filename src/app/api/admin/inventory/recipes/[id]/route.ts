@@ -7,6 +7,7 @@ import {
   parseRecipeYield,
   toRecipeIngredientCreates,
 } from "@/lib/inventory/parse-recipe-ingredients";
+import { formatRecipeQtyBase } from "@/lib/inventory/decimal-utils";
 import { getPrisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -26,13 +27,13 @@ function serializeIngredient(i: {
       componentMenuItemId: i.componentMenuItemId,
       componentMenuItemName: i.componentMenuItem?.name ?? "",
       componentVariationId: i.componentVariationId,
-      qtyBase: i.qtyBase.toString(),
+      qtyBase: formatRecipeQtyBase(i.qtyBase),
     };
   }
   return {
     kind: "inventory" as const,
     inventoryItemId: i.inventoryItemId!,
-    qtyBase: i.qtyBase.toString(),
+    qtyBase: formatRecipeQtyBase(i.qtyBase),
   };
 }
 
@@ -168,7 +169,7 @@ export async function PATCH(request: Request, context: Ctx) {
         },
       },
     });
-  });
+  }, { maxWait: 15_000, timeout: 60_000 });
 
   return NextResponse.json({
     id: version.id,

@@ -3,7 +3,7 @@
 import { useMenuExplore } from "@/contexts/menu-explore-context";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { isComboAvailable, COMBOS_TAB_ID } from "@/lib/menu-combos";
-import { isMenuItemAvailable } from "@/lib/menu-availability";
+import { isMenuItemOrderable } from "@/lib/menu-availability";
 import { CategoryIcon } from "@/lib/category-icons";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
@@ -18,15 +18,18 @@ export function CategoryTabs() {
     const list = data?.categories ?? [];
     const items = data?.items ?? [];
     return list.filter((cat) =>
-      items.some((i) => i.category === cat.name && isMenuItemAvailable(i)),
+      items.some(
+        (i) => i.category === cat.name && isMenuItemOrderable(i, list),
+      ),
     );
   }, [data?.categories, data?.items]);
 
   const hasCombos = useMemo(() => {
     const combos = data?.combos ?? [];
     const items = data?.items ?? [];
-    return combos.some((c) => isComboAvailable(c, items));
-  }, [data?.combos, data?.items]);
+    const categories = data?.categories ?? [];
+    return combos.some((c) => isComboAvailable(c, items, categories));
+  }, [data?.combos, data?.items, data?.categories]);
 
   const chips: {
     id: string | typeof ALL;

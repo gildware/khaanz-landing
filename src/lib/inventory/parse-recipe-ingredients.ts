@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 
-import { d } from "@/lib/inventory/decimal-utils";
+import { d, formatRecipeQtyBase, roundRecipeQtyBase } from "@/lib/inventory/decimal-utils";
 import { parseDecimalQty } from "@/lib/inventory/parse-quantity";
 
 export type ParsedRecipeIngredient =
@@ -92,7 +92,7 @@ export function parseRecipeIngredients(
       ingredients.push({
         kind: "inventory",
         inventoryItemId,
-        qtyBase: q,
+        qtyBase: roundRecipeQtyBase(q),
       });
       continue;
     }
@@ -110,7 +110,7 @@ export function parseRecipeIngredients(
         kind: "menu_item",
         componentMenuItemId,
         componentVariationId,
-        qtyBase: q,
+        qtyBase: roundRecipeQtyBase(q),
       });
       continue;
     }

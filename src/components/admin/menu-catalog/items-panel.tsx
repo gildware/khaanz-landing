@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { persistMenuPayload } from "@/lib/persist-menu-client";
+import { isMenuItemNotForSale } from "@/lib/menu-availability";
 import type { MenuCategoryDef } from "@/types/menu-category";
 import type { MenuItem } from "@/types/menu";
 
@@ -59,6 +60,9 @@ export function MenuCatalogItemsPanel() {
   const [filterType, setFilterType] = useState<"all" | "veg" | "nonveg">("all");
   const [filterAvailability, setFilterAvailability] = useState<
     "all" | "available" | "unavailable"
+  >("all");
+  const [filterForSale, setFilterForSale] = useState<
+    "all" | "for-sale" | "not-for-sale"
   >("all");
   const [sort, setSort] = useState("name-asc");
 
@@ -127,6 +131,12 @@ export function MenuCatalogItemsPanel() {
     if (filterAvailability === "unavailable") {
       list = list.filter((i) => i.available === false);
     }
+    if (filterForSale === "for-sale") {
+      list = list.filter((i) => !isMenuItemNotForSale(i, categories));
+    }
+    if (filterForSale === "not-for-sale") {
+      list = list.filter((i) => isMenuItemNotForSale(i, categories));
+    }
 
     list = [...list].sort((a, b) => {
       switch (sort) {
@@ -158,7 +168,9 @@ export function MenuCatalogItemsPanel() {
     filterCategory,
     filterType,
     filterAvailability,
+    filterForSale,
     sort,
+    categories,
   ]);
 
   return (
@@ -243,6 +255,25 @@ export function MenuCatalogItemsPanel() {
             searchPlaceholder="Search…"
           />
         </div>
+        <div className="space-y-1">
+          <Label className="text-muted-foreground text-xs">For sale</Label>
+          <SearchableSelect
+            triggerClassName={selectControlClassName}
+            options={[
+              { value: "all", label: "All" },
+              { value: "for-sale", label: "For sale" },
+              { value: "not-for-sale", label: "Not for sale" },
+            ]}
+            value={filterForSale}
+            onValueChange={(v) =>
+              setFilterForSale(
+                (v as "all" | "for-sale" | "not-for-sale") ?? "all",
+              )
+            }
+            placeholder="For sale"
+            searchPlaceholder="Search…"
+          />
+        </div>
       </DataTableToolbar>
 
       <div className="overflow-x-auto rounded-xl border">
@@ -255,6 +286,7 @@ export function MenuCatalogItemsPanel() {
               <TableHead>Type</TableHead>
               <TableHead className="text-right tabular-nums">Price</TableHead>
               <TableHead>Available</TableHead>
+              <TableHead>For sale</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -262,7 +294,7 @@ export function MenuCatalogItemsPanel() {
             {filteredItems.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No menu items match your filters.
@@ -300,6 +332,32 @@ export function MenuCatalogItemsPanel() {
                         void (async () => {
                           const nextItems = data.items.map((i) =>
                             i.id === item.id ? { ...i, available: Boolean(v) } : i,
+                          );
+                          try {
+                            await savePayload({ ...data, items: nextItems });
+                            toast.success("Updated");
+                          } catch (e) {
+                            toast.error(
+                              e instanceof Error ? e.message : "Save failed",
+                            );
+                          }
+                        })();
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={!isMenuItemNotForSale(item, categories)}
+                      disabled={categories.some(
+                        (c) => c.name === item.category && c.notForSale === true,
+                      )}
+                      onCheckedChange={(v) => {
+                        if (!data) return;
+                        void (async () => {
+                          const nextItems = data.items.map((i) =>
+                            i.id === item.id
+                              ? { ...i, notForSale: !Boolean(v) }
+                              : i,
                           );
                           try {
                             await savePayload({ ...data, items: nextItems });

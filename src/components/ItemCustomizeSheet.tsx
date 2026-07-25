@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { getAddonsForItem } from "@/data/menu";
 import { computeUnitPrice } from "@/lib/cart-line";
-import { isMenuItemAvailable } from "@/lib/menu-availability";
+import { isMenuItemOrderable } from "@/lib/menu-availability";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItem, MenuVariation } from "@/types/menu";
 import { MenuItemImage } from "@/components/MenuItemImage";
@@ -85,7 +85,7 @@ export function ItemCustomizeSheet({
 
   const handleAdd = () => {
     if (!cachedItem || !variation) return;
-    if (!isMenuItemAvailable(cachedItem)) {
+    if (!isMenuItemOrderable(cachedItem, menuData?.categories)) {
       toast.error("This item is not available to order right now.");
       return;
     }
@@ -196,7 +196,10 @@ export function ItemCustomizeSheet({
               size="lg"
               className="bg-cta-gradient min-w-[10rem] rounded-full font-semibold text-primary-foreground shadow-lg shadow-cta"
               onClick={handleAdd}
-              disabled={!variation || !isMenuItemAvailable(cachedItem)}
+              disabled={
+                !variation ||
+                !isMenuItemOrderable(cachedItem, menuData?.categories)
+              }
             >
               Add to cart
             </Button>

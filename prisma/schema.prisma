@@ -78,9 +78,11 @@ model Category {
    * Lucide icon key (see `category-icons.ts`)
    */
   icon      String     @default("")
-  parentId  String?    @map("parent_id")
-  sortOrder Int        @map("sort_order")
-  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  parentId    String?    @map("parent_id")
+  sortOrder   Int        @map("sort_order")
+  /// When true, every item in this category is treated as not for sale.
+  notForSale  Boolean    @default(false) @map("not_for_sale")
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
   children  Category[] @relation("CategoryTree")
   items     MenuItem[]
 
@@ -106,6 +108,8 @@ model MenuItem {
   isVeg             Boolean                 @default(true) @map("is_veg")
   recommended       Boolean                 @default(false)
   available         Boolean                 @default(true)
+  /// Ingredient / internal item — kept in catalog but not orderable.
+  notForSale        Boolean                 @default(false) @map("not_for_sale")
   sortOrder         Int                     @default(0) @map("sort_order")
   category          Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   variations        MenuItemVariation[]

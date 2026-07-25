@@ -1,4 +1,5 @@
-import { isMenuItemAvailable } from "@/lib/menu-availability";
+import { isMenuItemOrderable } from "@/lib/menu-availability";
+import type { MenuCategoryDef } from "@/types/menu-category";
 import type { MenuCombo, MenuItem } from "@/types/menu";
 
 /** Virtual category id for the Combos tab (not stored in categories list) */
@@ -38,12 +39,16 @@ export function computeComboRetailTotal(
   return sum;
 }
 
-export function isComboAvailable(combo: MenuCombo, items: MenuItem[]): boolean {
+export function isComboAvailable(
+  combo: MenuCombo,
+  items: MenuItem[],
+  categories?: MenuCategoryDef[],
+): boolean {
   if (combo.available === false) return false;
   if (!combo.components.length) return false;
   for (const c of combo.components) {
     const item = items.find((i) => i.id === c.itemId);
-    if (!item || !isMenuItemAvailable(item)) return false;
+    if (!item || !isMenuItemOrderable(item, categories)) return false;
     if (!item.variations.some((v) => v.id === c.variationId)) return false;
   }
   return true;

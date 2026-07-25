@@ -150,17 +150,17 @@ export function MenuCatalogCombosPanel() {
       </DataTableToolbar>
 
       <div className="overflow-x-auto rounded-xl border">
-      <Table>
+      <Table className="min-w-[880px] table-fixed">
         <TableHeader>
           <TableRow>
             <TableHead className="w-16"> </TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Includes</TableHead>
-            <TableHead className="text-right">Actual</TableHead>
-            <TableHead className="text-right">Offer</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Available</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="w-[14%]">Name</TableHead>
+            <TableHead className="w-[32%]">Includes</TableHead>
+            <TableHead className="w-[9%] text-right">Actual</TableHead>
+            <TableHead className="w-[9%] text-right">Offer</TableHead>
+            <TableHead className="w-[10%]">Type</TableHead>
+            <TableHead className="w-[10%]">Available</TableHead>
+            <TableHead className="w-[16%] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -190,8 +190,10 @@ export function MenuCatalogCombosPanel() {
                   />
                 </div>
               </TableCell>
-              <TableCell className="font-medium">{combo.name}</TableCell>
-              <TableCell className="max-w-[240px] text-muted-foreground text-sm">
+              <TableCell className="truncate font-medium">{combo.name}</TableCell>
+              <TableCell
+                className="whitespace-normal break-words text-muted-foreground text-sm align-top"
+              >
                 {formatComboComponentSummary(combo, items)}
               </TableCell>
               <TableCell className="text-right tabular-nums text-muted-foreground">
