@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -36,10 +36,9 @@ import {
   CATEGORY_ICON_OPTIONS,
   CategoryIcon,
 } from "@/lib/category-icons";
-import { persistMenuPayload } from "@/lib/persist-menu-client";
+import { persistMenuCategories } from "@/lib/persist-menu-client";
 import { cn } from "@/lib/utils";
 import type { MenuCategoryDef } from "@/types/menu-category";
-import type { MenuItem } from "@/types/menu";
 
 const FALLBACK_ICON = "utensils-crossed";
 
@@ -126,6 +125,7 @@ function buildCategoryRowsFromDraft(
 export function MenuCatalogCategoriesPanel() {
   const { data, mutate } = useMenuData();
   const [rows, setRows] = useState<MenuCategoryDef[]>([]);
+  const dirtyRef = useRef(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -168,26 +168,47 @@ export function MenuCatalogCategoriesPanel() {
   );
 
   useEffect(() => {
+    if (dirtyRef.current) return;
     setRows(data?.categories?.length ? normalizeList([...data.categories]) : []);
   }, [data?.categories, normalizeList]);
 
   const persistCategoriesRows = useCallback(
-    async (nextRows: MenuCategoryDef[], nextItems?: MenuItem[]) => {
-      if (!data) return;
+    async (
+      nextRows: MenuCategoryDef[],
+      options?: { markNotForSaleCategory?: string },
+    ) => {
       try {
-        await persistMenuPayload({
-          ...data,
-          categories: normalizeList(nextRows),
-          ...(nextItems ? { items: nextItems } : {}),
-        });
-        await mutate();
+        await mutate(
+          async (current) => {
+            if (!current) throw new Error("Menu not loaded");
+            const normalized = normalizeList(nextRows);
+            await persistMenuCategories(normalized, {
+              markNotForSaleCategory: options?.markNotForSaleCategory,
+            });
+            dirtyRef.current = false;
+            const nextItems =
+              options?.markNotForSaleCategory && current.items
+                ? current.items.map((item) =>
+                    item.category === options.markNotForSaleCategory
+                      ? { ...item, notForSale: true }
+                      : item,
+                  )
+                : current.items;
+            return {
+              ...current,
+              categories: normalized,
+              items: nextItems,
+            };
+          },
+          { revalidate: false },
+        );
         toast.success("Categories saved");
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Save failed");
         await mutate();
       }
     },
-    [data, mutate, normalizeList],
+    [mutate, normalizeList],
   );
 
   const openAdd = () => {
@@ -234,29 +255,16 @@ export function MenuCatalogCategoriesPanel() {
     setRows(built.nextRows);
     setDialogOpen(false);
     setEditingIndex(null);
+    dirtyRef.current = false;
 
-    let nextItems: MenuItem[] | undefined;
-    if (data && draft.notForSale === true) {
-      const categoryName = built.nextRows[
-        editingIndex ?? built.nextRows.length - 1
-      ]?.name;
-      const oldName =
-        editingIndex !== null ? rows[editingIndex]?.name : undefined;
-      if (categoryName) {
-        nextItems = data.items.map((item) => {
-          if (
-            item.category === categoryName ||
-            (oldName && item.category === oldName)
-          ) {
-            return { ...item, notForSale: true };
-          }
-          return item;
-        });
-      }
-    }
-
-    void persistCategoriesRows(built.nextRows, nextItems);
-  }, [draft, editingIndex, rows, data, applyDefaults, persistCategoriesRows]);
+    const savedCategory = built.nextRows[
+      editingIndex ?? built.nextRows.length - 1
+    ]?.name;
+    void persistCategoriesRows(built.nextRows, {
+      markNotForSaleCategory:
+        draft.notForSale === true && savedCategory ? savedCategory : undefined,
+    });
+  }, [draft, editingIndex, rows, applyDefaults, persistCategoriesRows]);
 
   const remove = (idx: number) => {
     if (!data) return;
@@ -268,6 +276,7 @@ export function MenuCatalogCategoriesPanel() {
     }
     const nextRows = rows.filter((_, i) => i !== idx);
     setRows(nextRows);
+    dirtyRef.current = false;
     void persistCategoriesRows(nextRows);
   };
 

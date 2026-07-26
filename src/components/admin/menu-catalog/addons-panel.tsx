@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import type { MenuAddon } from "@/types/menu";
 import { useMenuData } from "@/contexts/menu-data-context";
-import { persistMenuPayload } from "@/lib/persist-menu-client";
+import { persistGlobalAddons } from "@/lib/persist-menu-client";
 
 function newAddonId() {
   return `ga-${Date.now().toString(36)}`;
@@ -27,6 +27,7 @@ export function MenuCatalogAddonsPanel() {
   const [rows, setRows] = useState<MenuAddon[]>([]);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("name-asc");
+  const dirtyRef = useRef(false);
 
   const displayRows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -50,15 +51,28 @@ export function MenuCatalogAddonsPanel() {
   }, [rows, search, sort]);
 
   useEffect(() => {
+    if (dirtyRef.current) return;
     setRows(data?.globalAddons ?? []);
   }, [data?.globalAddons]);
 
   const save = async () => {
-    if (!data) return;
     const cleaned = rows.filter((r) => r.name.trim().length > 0);
     try {
-      await persistMenuPayload({ ...data, globalAddons: cleaned });
-      await mutate();
+      await mutate(
+        async (current) => {
+          if (!current) throw new Error("Menu not loaded");
+          await persistGlobalAddons(cleaned);
+          dirtyRef.current = false;
+          return { ...current, globalAddons: cleaned };
+        },
+        {
+          optimisticData: (current) =>
+            current ? { ...current, globalAddons: cleaned } : current,
+          rollbackOnError: true,
+          populateCache: true,
+          revalidate: false,
+        },
+      );
       toast.success("Global add-ons saved");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
@@ -66,6 +80,7 @@ export function MenuCatalogAddonsPanel() {
   };
 
   const updateRow = (idx: number, patch: Partial<MenuAddon>) => {
+    dirtyRef.current = true;
     setRows((prev) => {
       const next = [...prev];
       const cur = next[idx];
@@ -76,6 +91,7 @@ export function MenuCatalogAddonsPanel() {
   };
 
   const addRow = () => {
+    dirtyRef.current = true;
     setRows((prev) => [
       ...prev,
       { id: newAddonId(), name: "", price: 0 },
@@ -83,6 +99,7 @@ export function MenuCatalogAddonsPanel() {
   };
 
   const removeRow = (idx: number) => {
+    dirtyRef.current = true;
     setRows((prev) => prev.filter((_, i) => i !== idx));
   };
 

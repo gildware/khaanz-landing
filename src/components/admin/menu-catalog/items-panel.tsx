@@ -23,10 +23,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useMenuData } from "@/contexts/menu-data-context";
-import { persistMenuPayload } from "@/lib/persist-menu-client";
+import { deleteMenuItemClient, persistMenuItem, persistMenuItemFlags } from "@/lib/persist-menu-client";
 import { isMenuItemNotForSale } from "@/lib/menu-availability";
 import type { MenuCategoryDef } from "@/types/menu-category";
 import type { MenuItem } from "@/types/menu";
+import type { MenuPayload } from "@/types/menu-payload";
 
 const EMPTY_ITEMS: MenuItem[] = [];
 const EMPTY_CATEGORIES: MenuCategoryDef[] = [];
@@ -66,10 +67,126 @@ export function MenuCatalogItemsPanel() {
   >("all");
   const [sort, setSort] = useState("name-asc");
 
-  const savePayload = async (next: NonNullable<typeof data>) => {
-    await persistMenuPayload(next);
-    await mutate();
-  };
+  const savePayloadOptimistic = useCallback(
+    async (
+      buildNext: (current: MenuPayload) => MenuPayload,
+      persist: (next: MenuPayload) => Promise<void>,
+      successMessage = "Updated",
+      options?: { revalidate?: boolean },
+    ) => {
+      try {
+        await mutate(
+          async (current) => {
+            if (!current) throw new Error("Menu not loaded");
+            const next = buildNext(current);
+            await persist(next);
+            return next;
+          },
+          {
+            optimisticData: (current) =>
+              current ? buildNext(current) : current,
+            rollbackOnError: true,
+            populateCache: true,
+            revalidate: options?.revalidate ?? false,
+          },
+        );
+        toast.success(successMessage);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Save failed");
+      }
+    },
+    [mutate],
+  );
+
+  const saveItemOptimistic = useCallback(
+    async (item: MenuItem, successMessage = "Item saved") => {
+      try {
+        await mutate(
+          async (current) => {
+            if (!current) throw new Error("Menu not loaded");
+            const idx = current.items.findIndex((i) => i.id === item.id);
+            const nextItems =
+              idx === -1
+                ? [...current.items, item]
+                : current.items.map((i) => (i.id === item.id ? item : i));
+            await persistMenuItem(item);
+            return { ...current, items: nextItems };
+          },
+          {
+            optimisticData: (current) => {
+              if (!current) return current;
+              const idx = current.items.findIndex((i) => i.id === item.id);
+              const nextItems =
+                idx === -1
+                  ? [...current.items, item]
+                  : current.items.map((i) => (i.id === item.id ? item : i));
+              return { ...current, items: nextItems };
+            },
+            rollbackOnError: true,
+            populateCache: true,
+            revalidate: false,
+          },
+        );
+        toast.success(successMessage);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Save failed");
+      }
+    },
+    [mutate],
+  );
+
+  const deleteItemOptimistic = useCallback(
+    async (itemId: string) => {
+      try {
+        await mutate(
+          async (current) => {
+            if (!current) throw new Error("Menu not loaded");
+            await deleteMenuItemClient(itemId);
+            return {
+              ...current,
+              items: current.items.filter((i) => i.id !== itemId),
+            };
+          },
+          {
+            optimisticData: (current) =>
+              current
+                ? {
+                    ...current,
+                    items: current.items.filter((i) => i.id !== itemId),
+                  }
+                : current,
+            rollbackOnError: true,
+            populateCache: true,
+            revalidate: false,
+          },
+        );
+        toast.success("Item removed");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Delete failed");
+      }
+    },
+    [mutate],
+  );
+
+  const updateItemFlags = useCallback(
+    (
+      itemId: string,
+      flags: { available?: boolean; notForSale?: boolean },
+    ) => {
+      void savePayloadOptimistic(
+        (current) => ({
+          ...current,
+          items: current.items.map((i) =>
+            i.id === itemId ? { ...i, ...flags } : i,
+          ),
+        }),
+        async () => {
+          await persistMenuItemFlags(itemId, flags);
+        },
+      );
+    },
+    [savePayloadOptimistic],
+  );
 
   useEffect(() => {
     const raw = searchParams.get("category");
@@ -327,47 +444,24 @@ export function MenuCatalogItemsPanel() {
                   <TableCell>
                     <Switch
                       checked={item.available !== false}
+                      disabled={!data}
                       onCheckedChange={(v) => {
-                        if (!data) return;
-                        void (async () => {
-                          const nextItems = data.items.map((i) =>
-                            i.id === item.id ? { ...i, available: Boolean(v) } : i,
-                          );
-                          try {
-                            await savePayload({ ...data, items: nextItems });
-                            toast.success("Updated");
-                          } catch (e) {
-                            toast.error(
-                              e instanceof Error ? e.message : "Save failed",
-                            );
-                          }
-                        })();
+                        updateItemFlags(item.id, { available: Boolean(v) });
                       }}
                     />
                   </TableCell>
                   <TableCell>
                     <Switch
                       checked={!isMenuItemNotForSale(item, categories)}
-                      disabled={categories.some(
-                        (c) => c.name === item.category && c.notForSale === true,
-                      )}
+                      disabled={
+                        !data ||
+                        categories.some(
+                          (c) =>
+                            c.name === item.category && c.notForSale === true,
+                        )
+                      }
                       onCheckedChange={(v) => {
-                        if (!data) return;
-                        void (async () => {
-                          const nextItems = data.items.map((i) =>
-                            i.id === item.id
-                              ? { ...i, notForSale: !Boolean(v) }
-                              : i,
-                          );
-                          try {
-                            await savePayload({ ...data, items: nextItems });
-                            toast.success("Updated");
-                          } catch (e) {
-                            toast.error(
-                              e instanceof Error ? e.message : "Save failed",
-                            );
-                          }
-                        })();
+                        updateItemFlags(item.id, { notForSale: !Boolean(v) });
                       }}
                     />
                   </TableCell>
@@ -389,20 +483,7 @@ export function MenuCatalogItemsPanel() {
                       size="sm"
                       className="text-destructive"
                       onClick={() => {
-                        if (!data) return;
-                        void (async () => {
-                          try {
-                            await savePayload({
-                              ...data,
-                              items: data.items.filter((i) => i.id !== item.id),
-                            });
-                            toast.success("Item removed");
-                          } catch (e) {
-                            toast.error(
-                              e instanceof Error ? e.message : "Save failed",
-                            );
-                          }
-                        })();
+                        void deleteItemOptimistic(item.id);
                       }}
                     >
                       Delete
@@ -421,20 +502,7 @@ export function MenuCatalogItemsPanel() {
         categories={categories}
         initial={editing}
         onSave={(item) => {
-          if (!data) return;
-          void (async () => {
-            try {
-              const idx = data.items.findIndex((i) => i.id === item.id);
-              const nextItems =
-                idx === -1
-                  ? [...data.items, item]
-                  : data.items.map((i) => (i.id === item.id ? item : i));
-              await savePayload({ ...data, items: nextItems });
-              toast.success("Item saved");
-            } catch (e) {
-              toast.error(e instanceof Error ? e.message : "Save failed");
-            }
-          })();
+          void saveItemOptimistic(item);
         }}
       />
     </div>

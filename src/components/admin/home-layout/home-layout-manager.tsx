@@ -195,7 +195,7 @@ export function HomeLayoutManager() {
         })),
       });
       setDirty(false);
-      await mutate();
+      await mutate(undefined, { revalidate: false });
       toast.success("Home layout saved");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");

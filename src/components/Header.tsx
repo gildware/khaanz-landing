@@ -106,6 +106,7 @@ export function Header() {
             variant="ghost"
             size="icon-sm"
             className="relative rounded-full"
+            data-cart-target="header"
             onClick={() => setCartOpen(true)}
             aria-label="Open cart"
           >

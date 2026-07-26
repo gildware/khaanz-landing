@@ -635,6 +635,160 @@ type RecipeRow = {
   ingredients: RecipeIngredientRow[];
 };
 
+type MenuItemVariationCoverageRow = {
+  menuItemId: string;
+  menuItemName: string;
+  category: string;
+  variationId: string | null;
+  variationName: string;
+  versionCount: number;
+  status: "missing" | "complete";
+};
+
+type AllTabRow =
+  | { kind: "recipe"; recipe: RecipeRow }
+  | { kind: "missing"; row: MenuItemVariationCoverageRow };
+
+type RecipeSortContext = {
+  recipeVariationLabel: (menuItemId: string, variationId: string | null) => string;
+  recipeCostPaise: (r: RecipeRow) => number;
+  recipeMenuSellingPriceSortValue: (
+    menuItemId: string,
+    variationId: string | null,
+  ) => number;
+};
+
+function compareRecipeRows(
+  a: RecipeRow,
+  b: RecipeRow,
+  recipeSort: string,
+  ctx: RecipeSortContext,
+): number {
+  const byMenu = () =>
+    a.menuItemName.localeCompare(b.menuItemName) ||
+    b.effectiveFrom.localeCompare(a.effectiveFrom);
+
+  switch (recipeSort) {
+    case "menu-asc":
+      return byMenu();
+    case "menu-desc":
+      return (
+        b.menuItemName.localeCompare(a.menuItemName) ||
+        b.effectiveFrom.localeCompare(a.effectiveFrom)
+      );
+    case "variation-asc":
+    case "variation-desc": {
+      const aVar = ctx.recipeVariationLabel(a.menuItemId, a.variationId);
+      const bVar = ctx.recipeVariationLabel(b.menuItemId, b.variationId);
+      const cmp = aVar.localeCompare(bVar) || byMenu();
+      return recipeSort === "variation-desc" ? -cmp : cmp;
+    }
+    case "version-asc":
+      return a.version - b.version || byMenu();
+    case "version-desc":
+      return b.version - a.version || byMenu();
+    case "date-asc":
+      return a.effectiveFrom.localeCompare(b.effectiveFrom) || byMenu();
+    case "date-desc":
+      return b.effectiveFrom.localeCompare(a.effectiveFrom) || byMenu();
+    case "ingredients-asc":
+      return a.ingredients.length - b.ingredients.length || byMenu();
+    case "ingredients-desc":
+      return b.ingredients.length - a.ingredients.length || byMenu();
+    case "cost-asc":
+      return ctx.recipeCostPaise(a) - ctx.recipeCostPaise(b) || byMenu();
+    case "cost-desc":
+      return ctx.recipeCostPaise(b) - ctx.recipeCostPaise(a) || byMenu();
+    case "price-asc":
+      return (
+        ctx.recipeMenuSellingPriceSortValue(a.menuItemId, a.variationId) -
+          ctx.recipeMenuSellingPriceSortValue(b.menuItemId, b.variationId) ||
+        byMenu()
+      );
+    case "price-desc":
+      return (
+        ctx.recipeMenuSellingPriceSortValue(b.menuItemId, b.variationId) -
+          ctx.recipeMenuSellingPriceSortValue(a.menuItemId, a.variationId) ||
+        byMenu()
+      );
+    default:
+      return b.effectiveFrom.localeCompare(a.effectiveFrom) || byMenu();
+  }
+}
+
+function compareAllTabRows(
+  a: AllTabRow,
+  b: AllTabRow,
+  recipeSort: string,
+  ctx: RecipeSortContext,
+): number {
+  if (a.kind === "recipe" && b.kind === "recipe") {
+    return compareRecipeRows(a.recipe, b.recipe, recipeSort, ctx);
+  }
+
+  const menuA = a.kind === "recipe" ? a.recipe.menuItemName : a.row.menuItemName;
+  const menuB = b.kind === "recipe" ? b.recipe.menuItemName : b.row.menuItemName;
+  const varA =
+    a.kind === "recipe"
+      ? ctx.recipeVariationLabel(a.recipe.menuItemId, a.recipe.variationId)
+      : a.row.variationName;
+  const varB =
+    b.kind === "recipe"
+      ? ctx.recipeVariationLabel(b.recipe.menuItemId, b.recipe.variationId)
+      : b.row.variationName;
+
+  if (a.kind === "missing" && b.kind === "missing") {
+    switch (recipeSort) {
+      case "menu-desc":
+        return menuB.localeCompare(menuA) || varB.localeCompare(varA);
+      case "variation-desc":
+        return varB.localeCompare(varA) || menuB.localeCompare(menuA);
+      case "variation-asc":
+        return varA.localeCompare(varB) || menuA.localeCompare(menuB);
+      default:
+        return menuA.localeCompare(menuB) || varA.localeCompare(varB);
+    }
+  }
+
+  const metricSort =
+    recipeSort.startsWith("date-") ||
+    recipeSort.startsWith("version-") ||
+    recipeSort.startsWith("ingredients-") ||
+    recipeSort.startsWith("cost-") ||
+    recipeSort.startsWith("price-");
+  if (metricSort) {
+    return a.kind === "recipe" ? -1 : 1;
+  }
+
+  switch (recipeSort) {
+    case "menu-desc": {
+      const cmp = menuB.localeCompare(menuA);
+      if (cmp !== 0) return cmp;
+      break;
+    }
+    case "variation-desc": {
+      const cmp = varB.localeCompare(varA);
+      if (cmp !== 0) return cmp;
+      if (menuA !== menuB) return menuA.localeCompare(menuB);
+      break;
+    }
+    case "variation-asc": {
+      const cmp = varA.localeCompare(varB);
+      if (cmp !== 0) return cmp;
+      if (menuA !== menuB) return menuA.localeCompare(menuB);
+      break;
+    }
+    default: {
+      const cmp = menuA.localeCompare(menuB);
+      if (cmp !== 0) return cmp;
+      const varCmp = varA.localeCompare(varB);
+      if (varCmp !== 0) return varCmp;
+    }
+  }
+
+  return a.kind === "recipe" ? -1 : 1;
+}
+
 type MovementRow = {
   id: string;
   itemName: string;
@@ -2197,6 +2351,20 @@ export default function AdminInventoryPage() {
     }
     return [...cats].sort((a, b) => a.localeCompare(b));
   }, [items]);
+  const menuItemCategoryById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of menu?.items ?? []) {
+      map.set(item.id, item.category.trim());
+    }
+    return map;
+  }, [menu?.items]);
+  const menuCategories = useMemo(() => {
+    const cats = new Set<string>();
+    for (const c of menuItemCategoryById.values()) {
+      if (c) cats.add(c);
+    }
+    return [...cats].sort((a, b) => a.localeCompare(b));
+  }, [menuItemCategoryById]);
 
   const [itemSearch, setItemSearch] = useQueryParam("itemQ", "");
   const [itemStatusRaw, setItemStatusRaw] = useQueryParam("itemStatus", "active");
@@ -2251,13 +2419,19 @@ export default function AdminInventoryPage() {
 
   const [recipeSearch, setRecipeSearch] = useState("");
   const [recipeMenuFilter, setRecipeMenuFilter] = useState("all");
+  const [recipeCategoryFilter, setRecipeCategoryFilter] = useState("all");
   const [recipeSortRaw, setRecipeSort] = useQueryParam("recipeSort", "date-desc");
   const recipeSort = RECIPE_SORT_VALUES.has(recipeSortRaw)
     ? recipeSortRaw
     : "date-desc";
   const [recipeView, setRecipeView] = useTabParam("all", "recipeView");
+  const recipeViewTab =
+    recipeView === "added" || recipeView === "missing"
+      ? recipeView
+      : recipeView === "items"
+        ? "missing"
+        : "all";
   const [recipeItemSearch, setRecipeItemSearch] = useState("");
-  const [recipeItemStatusFilter, setRecipeItemStatusFilter] = useState("missing");
 
   const [movementSearch, setMovementSearch] = useState("");
   const [movementTypeFilter, setMovementTypeFilter] = useState("all");
@@ -2508,86 +2682,46 @@ export default function AdminInventoryPage() {
     purchaseSort,
   ]);
 
-  const filteredRecipes = useMemo(() => {
+  const filteredRecipeMatches = useMemo(() => {
     const q = recipeSearch.trim().toLowerCase();
-    let list = recipesList.filter((r) => {
+    return recipesList.filter((r) => {
       if (recipeMenuFilter !== "all" && r.menuItemId !== recipeMenuFilter) return false;
+      if (recipeCategoryFilter !== "all") {
+        const cat = menuItemCategoryById.get(r.menuItemId) ?? "";
+        if (cat !== recipeCategoryFilter) return false;
+      }
       if (!q) return true;
       const varLabel = recipeVariationLabel(r.menuItemId, r.variationId);
+      const category = menuItemCategoryById.get(r.menuItemId) ?? "";
       const hay =
-        `${r.menuItemName} ${varLabel} ${r.label} v${r.version}`.toLowerCase();
+        `${r.menuItemName} ${category} ${varLabel} ${r.label} v${r.version}`.toLowerCase();
       return hay.includes(q);
     });
-
-    list = [...list].sort((a, b) => {
-      const byMenu = () =>
-        a.menuItemName.localeCompare(b.menuItemName) ||
-        b.effectiveFrom.localeCompare(a.effectiveFrom);
-      switch (recipeSort) {
-        case "menu-asc":
-          return byMenu();
-        case "menu-desc":
-          return (
-            b.menuItemName.localeCompare(a.menuItemName) ||
-            b.effectiveFrom.localeCompare(a.effectiveFrom)
-          );
-        case "variation-asc":
-        case "variation-desc": {
-          const aVar = recipeVariationLabel(a.menuItemId, a.variationId);
-          const bVar = recipeVariationLabel(b.menuItemId, b.variationId);
-          const cmp = aVar.localeCompare(bVar) || byMenu();
-          return recipeSort === "variation-desc" ? -cmp : cmp;
-        }
-        case "version-asc":
-          return a.version - b.version || byMenu();
-        case "version-desc":
-          return b.version - a.version || byMenu();
-        case "date-asc":
-          return (
-            a.effectiveFrom.localeCompare(b.effectiveFrom) || byMenu()
-          );
-        case "date-desc":
-          return (
-            b.effectiveFrom.localeCompare(a.effectiveFrom) || byMenu()
-          );
-        case "ingredients-asc":
-          return (
-            a.ingredients.length - b.ingredients.length || byMenu()
-          );
-        case "ingredients-desc":
-          return (
-            b.ingredients.length - a.ingredients.length || byMenu()
-          );
-        case "cost-asc":
-          return recipeCostPaise(a) - recipeCostPaise(b) || byMenu();
-        case "cost-desc":
-          return recipeCostPaise(b) - recipeCostPaise(a) || byMenu();
-        case "price-asc":
-          return (
-            recipeMenuSellingPriceSortValue(a.menuItemId, a.variationId) -
-              recipeMenuSellingPriceSortValue(b.menuItemId, b.variationId) ||
-            byMenu()
-          );
-        case "price-desc":
-          return (
-            recipeMenuSellingPriceSortValue(b.menuItemId, b.variationId) -
-              recipeMenuSellingPriceSortValue(a.menuItemId, a.variationId) ||
-            byMenu()
-          );
-        default:
-          return b.effectiveFrom.localeCompare(a.effectiveFrom) || byMenu();
-      }
-    });
-    return list;
   }, [
     recipesList,
     recipeSearch,
     recipeMenuFilter,
-    recipeSort,
+    recipeCategoryFilter,
+    menuItemCategoryById,
     recipeVariationLabel,
-    recipeCostPaise,
-    recipeMenuSellingPriceSortValue,
   ]);
+
+  const recipeSortContext = useMemo<RecipeSortContext>(
+    () => ({
+      recipeVariationLabel,
+      recipeCostPaise,
+      recipeMenuSellingPriceSortValue,
+    }),
+    [recipeVariationLabel, recipeCostPaise, recipeMenuSellingPriceSortValue],
+  );
+
+  const filteredRecipes = useMemo(
+    () =>
+      [...filteredRecipeMatches].sort((a, b) =>
+        compareRecipeRows(a, b, recipeSort, recipeSortContext),
+      ),
+    [filteredRecipeMatches, recipeSort, recipeSortContext],
+  );
 
   const filteredMovements = useMemo(() => {
     const q = movementSearch.trim().toLowerCase();
@@ -2614,9 +2748,7 @@ export default function AdminInventoryPage() {
     return [...ids.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [recipesList]);
 
-  type MenuItemRecipeStatus = "missing" | "partial" | "complete";
-
-  const menuItemsRecipeCoverage = useMemo(() => {
+  const menuItemVariationCoverage = useMemo(() => {
     const byMenuItem = new Map<string, RecipeRow[]>();
     for (const r of recipesList) {
       const list = byMenuItem.get(r.menuItemId) ?? [];
@@ -2624,78 +2756,144 @@ export default function AdminInventoryPage() {
       byMenuItem.set(r.menuItemId, list);
     }
 
-    return (menu?.items ?? [])
-      .map((item) => {
-        const versions = byMenuItem.get(item.id) ?? [];
-        const hasAllVariations = versions.some((r) => r.variationId === null);
-        const coveredVariationIds = new Set(
-          versions
-            .map((r) => r.variationId)
-            .filter((id): id is string => Boolean(id)),
+    const rows: MenuItemVariationCoverageRow[] = [];
+    for (const item of menu?.items ?? []) {
+      const versions = byMenuItem.get(item.id) ?? [];
+      const hasAllVariations = versions.some((r) => r.variationId === null);
+      const allVariationVersionCount = hasAllVariations
+        ? versions.filter((r) => r.variationId === null).length
+        : 0;
+      const versionCountByVariation = new Map<string, number>();
+      for (const version of versions) {
+        if (!version.variationId) continue;
+        versionCountByVariation.set(
+          version.variationId,
+          (versionCountByVariation.get(version.variationId) ?? 0) + 1,
         );
-        const variationCount = item.variations.length;
-        const uncoveredVariations = item.variations.filter(
-          (v) => !hasAllVariations && !coveredVariationIds.has(v.id),
-        );
+      }
 
-        let status: MenuItemRecipeStatus;
-        if (versions.length === 0) {
-          status = "missing";
-        } else if (
+      const variationTargets =
+        item.variations.length > 0
+          ? item.variations.map((v) => ({ id: v.id, name: v.name }))
+          : [{ id: null as string | null, name: "—" }];
+
+      for (const variation of variationTargets) {
+        const covered =
           hasAllVariations ||
-          (variationCount > 0 && uncoveredVariations.length === 0)
-        ) {
-          status = "complete";
-        } else {
-          status = "partial";
-        }
+          (variation.id !== null && versionCountByVariation.has(variation.id));
+        const versionCount = hasAllVariations
+          ? allVariationVersionCount
+          : variation.id !== null
+            ? (versionCountByVariation.get(variation.id) ?? 0)
+            : versions.filter((r) => r.variationId === null).length;
 
-        return {
-          id: item.id,
-          name: item.name,
+        rows.push({
+          menuItemId: item.id,
+          menuItemName: item.name,
           category: item.category,
-          variations: item.variations,
-          versionCount: versions.length,
-          status,
-          uncoveredVariations,
-          hasAllVariations,
-        };
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
+          variationId: variation.id,
+          variationName: variation.name,
+          versionCount,
+          status: covered ? "complete" : "missing",
+        });
+      }
+    }
+
+    return rows.sort(
+      (a, b) =>
+        a.menuItemName.localeCompare(b.menuItemName) ||
+        a.variationName.localeCompare(b.variationName),
+    );
   }, [menu?.items, recipesList]);
 
-  const filteredMenuItemsRecipeCoverage = useMemo(() => {
+  const filteredMenuItemVariationCoverage = useMemo(() => {
     const q = recipeItemSearch.trim().toLowerCase();
-    return menuItemsRecipeCoverage.filter((row) => {
-      if (recipeItemStatusFilter === "missing" && row.status !== "missing") {
+    return menuItemVariationCoverage.filter((row) => {
+      if (recipeViewTab === "missing" && row.status === "complete") {
         return false;
       }
-      if (recipeItemStatusFilter === "partial" && row.status !== "partial") {
-        return false;
-      }
-      if (recipeItemStatusFilter === "complete" && row.status !== "complete") {
-        return false;
-      }
-      if (recipeItemStatusFilter === "needs" && row.status === "complete") {
+      if (
+        recipeCategoryFilter !== "all" &&
+        row.category.trim() !== recipeCategoryFilter
+      ) {
         return false;
       }
       if (!q) return true;
-      const hay = `${row.name} ${row.category}`.toLowerCase();
+      const hay =
+        `${row.menuItemName} ${row.variationName} ${row.category}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [menuItemsRecipeCoverage, recipeItemSearch, recipeItemStatusFilter]);
+  }, [
+    menuItemVariationCoverage,
+    recipeItemSearch,
+    recipeViewTab,
+    recipeCategoryFilter,
+  ]);
 
   const recipeCoverageCounts = useMemo(() => {
     let missing = 0;
-    let partial = 0;
     let complete = 0;
-    for (const row of menuItemsRecipeCoverage) {
+    for (const row of menuItemVariationCoverage) {
       if (row.status === "missing") missing += 1;
-      else if (row.status === "partial") partial += 1;
       else complete += 1;
     }
-    return { missing, partial, complete, total: menuItemsRecipeCoverage.length };
-  }, [menuItemsRecipeCoverage]);
+    return { missing, complete, total: menuItemVariationCoverage.length };
+  }, [menuItemVariationCoverage]);
+
+  const filteredAllTabMissingVariations = useMemo(() => {
+    const q = recipeSearch.trim().toLowerCase();
+    return menuItemVariationCoverage
+      .filter((row) => {
+        if (row.status !== "missing") return false;
+        if (recipeMenuFilter !== "all" && row.menuItemId !== recipeMenuFilter) {
+          return false;
+        }
+        if (
+          recipeCategoryFilter !== "all" &&
+          row.category.trim() !== recipeCategoryFilter
+        ) {
+          return false;
+        }
+        if (!q) return true;
+        const hay =
+          `${row.menuItemName} ${row.variationName} ${row.category}`.toLowerCase();
+        return hay.includes(q);
+      })
+      .sort(
+        (a, b) =>
+          a.menuItemName.localeCompare(b.menuItemName) ||
+          a.variationName.localeCompare(b.variationName),
+      );
+  }, [
+    menuItemVariationCoverage,
+    recipeSearch,
+    recipeMenuFilter,
+    recipeCategoryFilter,
+  ]);
+
+  const allTabRows = useMemo(() => {
+    const rows: AllTabRow[] = [
+      ...filteredRecipeMatches.map((recipe) => ({ kind: "recipe" as const, recipe })),
+      ...filteredAllTabMissingVariations.map((row) => ({
+        kind: "missing" as const,
+        row,
+      })),
+    ];
+
+    rows.sort((a, b) => compareAllTabRows(a, b, recipeSort, recipeSortContext));
+
+    return rows;
+  }, [
+    filteredRecipeMatches,
+    filteredAllTabMissingVariations,
+    recipeSort,
+    recipeSortContext,
+  ]);
+
+  const recipeNeedsCount = recipeCoverageCounts.missing;
+  const recipeAddedMenuItemCount = recipeCoverageCounts.complete;
+
+  const allTabTotalRowCount = recipesList.length + recipeNeedsCount;
 
   return (
     <div className="space-y-6">
@@ -4613,23 +4811,27 @@ export default function AdminInventoryPage() {
           </div>
 
           <Tabs
-            value={
-              recipeView === "items" || recipeView === "all" ? recipeView : "all"
-            }
+            value={recipeViewTab}
             onValueChange={setRecipeView}
             className="space-y-4"
           >
-            <TabsList className="grid w-full max-w-lg grid-cols-2">
+            <TabsList className="grid w-full max-w-xl grid-cols-3">
               <TabsTrigger value="all" className="data-[state=active]:font-semibold">
-                All recipes
+                All
                 <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
-                  {recipesList.length}
+                  {recipeCoverageCounts.total}
                 </span>
               </TabsTrigger>
-              <TabsTrigger value="items" className="data-[state=active]:font-semibold">
-                By menu item
+              <TabsTrigger value="added" className="data-[state=active]:font-semibold">
+                Added
                 <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
-                  {recipeCoverageCounts.missing + recipeCoverageCounts.partial}
+                  {recipeAddedMenuItemCount}
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="missing" className="data-[state=active]:font-semibold">
+                Missing
+                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
+                  {recipeNeedsCount}
                 </span>
               </TabsTrigger>
             </TabsList>
@@ -4638,7 +4840,256 @@ export default function AdminInventoryPage() {
               <DataTableToolbar
                 search={recipeSearch}
                 onSearchChange={setRecipeSearch}
-                searchPlaceholder="Search menu item, variation…"
+                searchPlaceholder="Search menu item, category, variation…"
+                sort={recipeSort}
+                onSortChange={setRecipeSort}
+                sortOptions={[]}
+                showSort={false}
+                filteredCount={allTabRows.length}
+                totalCount={allTabTotalRowCount}
+                showStatusFilter={false}
+              >
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground text-xs">Category</Label>
+                  <SearchableSelect
+                    triggerClassName={selectControlClassName}
+                    options={[
+                      { value: "all", label: "All categories" },
+                      ...menuCategories.map((c) => ({ value: c, label: c })),
+                    ]}
+                    value={recipeCategoryFilter}
+                    onValueChange={setRecipeCategoryFilter}
+                    placeholder="Category"
+                    searchPlaceholder="Search categories…"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground text-xs">Menu item</Label>
+                  <SearchableSelect
+                    triggerClassName={selectControlClassName}
+                    options={[
+                      { value: "all", label: "All dishes" },
+                      ...menuItemsForRecipeFilter.map(([id, name]) => ({
+                        value: id,
+                        label: name,
+                      })),
+                    ]}
+                    value={recipeMenuFilter}
+                    onValueChange={setRecipeMenuFilter}
+                    placeholder="Menu item"
+                    searchPlaceholder="Search dishes…"
+                  />
+                </div>
+              </DataTableToolbar>
+
+              <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <SortableTableHead
+                        label="Menu item"
+                        column="menu"
+                        sort={recipeSort}
+                        onSortChange={setRecipeSort}
+                      />
+                      <SortableTableHead
+                        label="Variation"
+                        column="variation"
+                        sort={recipeSort}
+                        onSortChange={setRecipeSort}
+                      />
+                      <SortableTableHead
+                        label="Version"
+                        column="version"
+                        sort={recipeSort}
+                        onSortChange={setRecipeSort}
+                      />
+                      <SortableTableHead
+                        label="Effective from"
+                        column="date"
+                        sort={recipeSort}
+                        onSortChange={setRecipeSort}
+                      />
+                      <SortableTableHead
+                        label="Ingredients"
+                        column="ingredients"
+                        sort={recipeSort}
+                        onSortChange={setRecipeSort}
+                        className="text-right"
+                        align="right"
+                      />
+                      <SortableTableHead
+                        label="Recipe cost"
+                        column="cost"
+                        sort={recipeSort}
+                        onSortChange={setRecipeSort}
+                        className="text-right"
+                        align="right"
+                      />
+                      <SortableTableHead
+                        label="Selling price"
+                        column="price"
+                        sort={recipeSort}
+                        onSortChange={setRecipeSort}
+                        className="text-right"
+                        align="right"
+                      />
+                      <TableHead className="w-[9rem] text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {menuItemVariationCoverage.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={8}
+                          className="py-10 text-center text-muted-foreground"
+                        >
+                          No menu items found. Add dishes under Menu first.
+                        </TableCell>
+                      </TableRow>
+                    ) : allTabRows.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={8}
+                          className="py-10 text-center text-muted-foreground"
+                        >
+                          No recipes or menu items match your search or filters.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      allTabRows.map((entry) => {
+                        if (entry.kind === "recipe") {
+                          const r = entry.recipe;
+                          const costPaise = recipeCostPaise(r);
+                          return (
+                            <TableRow key={r.id}>
+                              <TableCell className="font-medium">
+                                {r.menuItemName}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {recipeVariationLabel(r.menuItemId, r.variationId)}
+                              </TableCell>
+                              <TableCell className="tabular-nums">
+                                v{r.version}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {formatEffectiveDate(r.effectiveFrom)}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums">
+                                {r.ingredients.length}
+                              </TableCell>
+                              <TableCell className="text-right text-sm tabular-nums">
+                                {formatRecipeCostRupees(costPaise)}
+                              </TableCell>
+                              <TableCell className="text-right text-sm tabular-nums">
+                                {recipeMenuSellingPriceLabel(
+                                  r.menuItemId,
+                                  r.variationId,
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openEditRecipe(r)}
+                                  >
+                                    <PencilIcon className="size-4" aria-hidden />
+                                    <span className="sr-only">
+                                      Edit recipe for {r.menuItemName}
+                                    </span>
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Copy recipe"
+                                    onClick={() => openCopyRecipe(r)}
+                                  >
+                                    <CopyIcon className="size-4" aria-hidden />
+                                    <span className="sr-only">
+                                      Copy recipe for {r.menuItemName}
+                                    </span>
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                    onClick={() => setDeletingRecipe(r)}
+                                  >
+                                    <Trash2Icon className="size-4" aria-hidden />
+                                    <span className="sr-only">
+                                      Delete recipe for {r.menuItemName}
+                                    </span>
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
+
+                        const row = entry.row;
+                        return (
+                          <TableRow
+                            key={`missing:${row.menuItemId}:${row.variationId ?? ""}`}
+                          >
+                            <TableCell className="font-medium">
+                              {row.menuItemName}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              {row.variationName}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              —
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-sm">
+                              —
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground text-sm">
+                              —
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground text-sm">
+                              —
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground text-sm">
+                              —
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  openNewRecipe({
+                                    menuItemId: row.menuItemId,
+                                    variationId: row.variationId ?? undefined,
+                                  })
+                                }
+                              >
+                                <PlusIcon className="size-4" aria-hidden />
+                                <span className="sr-only">
+                                  Add recipe for {row.menuItemName} ·{" "}
+                                  {row.variationName}
+                                </span>
+                                <span className="ml-1">Add</span>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="added" className="mt-0 space-y-4">
+              <DataTableToolbar
+                search={recipeSearch}
+                onSearchChange={setRecipeSearch}
+                searchPlaceholder="Search menu item, category, variation…"
                 sort={recipeSort}
                 onSortChange={setRecipeSort}
                 sortOptions={[]}
@@ -4647,6 +5098,20 @@ export default function AdminInventoryPage() {
                 totalCount={recipesList.length}
                 showStatusFilter={false}
               >
+                <div className="space-y-1">
+                  <Label className="text-muted-foreground text-xs">Category</Label>
+                  <SearchableSelect
+                    triggerClassName={selectControlClassName}
+                    options={[
+                      { value: "all", label: "All categories" },
+                      ...menuCategories.map((c) => ({ value: c, label: c })),
+                    ]}
+                    value={recipeCategoryFilter}
+                    onValueChange={setRecipeCategoryFilter}
+                    placeholder="Category"
+                    searchPlaceholder="Search categories…"
+                  />
+                </div>
                 <div className="space-y-1">
                   <Label className="text-muted-foreground text-xs">Menu item</Label>
                   <SearchableSelect
@@ -4817,63 +5282,31 @@ export default function AdminInventoryPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="items" className="mt-0 space-y-4">
+            <TabsContent value="missing" className="mt-0 space-y-4">
               <DataTableToolbar
                 search={recipeItemSearch}
                 onSearchChange={setRecipeItemSearch}
-                searchPlaceholder="Search menu item, category…"
+                searchPlaceholder="Search menu item, variation, category…"
                 sort=""
                 onSortChange={() => undefined}
                 sortOptions={[]}
                 showSort={false}
-                filteredCount={filteredMenuItemsRecipeCoverage.length}
-                totalCount={
-                  recipeItemStatusFilter === "missing"
-                    ? recipeCoverageCounts.missing
-                    : recipeItemStatusFilter === "partial"
-                      ? recipeCoverageCounts.partial
-                      : recipeItemStatusFilter === "complete"
-                        ? recipeCoverageCounts.complete
-                        : recipeItemStatusFilter === "needs"
-                          ? recipeCoverageCounts.missing +
-                            recipeCoverageCounts.partial
-                          : recipeCoverageCounts.total
-                }
+                filteredCount={filteredMenuItemVariationCoverage.length}
+                totalCount={recipeNeedsCount}
                 showStatusFilter={false}
               >
                 <div className="space-y-1">
-                  <Label className="text-muted-foreground text-xs">Status</Label>
+                  <Label className="text-muted-foreground text-xs">Category</Label>
                   <SearchableSelect
                     triggerClassName={selectControlClassName}
                     options={[
-                      {
-                        value: "missing",
-                        label: `No recipe (${recipeCoverageCounts.missing})`,
-                      },
-                      {
-                        value: "needs",
-                        label: `Needs recipe (${
-                          recipeCoverageCounts.missing +
-                          recipeCoverageCounts.partial
-                        })`,
-                      },
-                      {
-                        value: "partial",
-                        label: `Partial (${recipeCoverageCounts.partial})`,
-                      },
-                      {
-                        value: "complete",
-                        label: `Has recipe (${recipeCoverageCounts.complete})`,
-                      },
-                      {
-                        value: "all",
-                        label: `All items (${recipeCoverageCounts.total})`,
-                      },
+                      { value: "all", label: "All categories" },
+                      ...menuCategories.map((c) => ({ value: c, label: c })),
                     ]}
-                    value={recipeItemStatusFilter}
-                    onValueChange={setRecipeItemStatusFilter}
-                    placeholder="Status"
-                    searchPlaceholder="Filter status…"
+                    value={recipeCategoryFilter}
+                    onValueChange={setRecipeCategoryFilter}
+                    placeholder="Category"
+                    searchPlaceholder="Search categories…"
                   />
                 </div>
               </DataTableToolbar>
@@ -4883,15 +5316,15 @@ export default function AdminInventoryPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Menu item</TableHead>
+                      <TableHead>Variation</TableHead>
                       <TableHead>Category</TableHead>
-                      <TableHead>Coverage</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Versions</TableHead>
                       <TableHead className="w-[9rem] text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {menuItemsRecipeCoverage.length === 0 ? (
+                    {menuItemVariationCoverage.length === 0 ? (
                       <TableRow>
                         <TableCell
                           colSpan={6}
@@ -4900,46 +5333,31 @@ export default function AdminInventoryPage() {
                           No menu items found. Add dishes under Menu first.
                         </TableCell>
                       </TableRow>
-                    ) : filteredMenuItemsRecipeCoverage.length === 0 ? (
+                    ) : filteredMenuItemVariationCoverage.length === 0 ? (
                       <TableRow>
                         <TableCell
                           colSpan={6}
                           className="py-10 text-center text-muted-foreground"
                         >
-                          {recipeItemStatusFilter === "missing" ||
-                          recipeItemStatusFilter === "needs"
-                            ? "All filtered menu items already have recipes."
-                            : "No menu items match your search or filters."}
+                          All filtered variations already have recipes.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredMenuItemsRecipeCoverage.map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell className="font-medium">{row.name}</TableCell>
+                      filteredMenuItemVariationCoverage.map((row) => (
+                        <TableRow
+                          key={`${row.menuItemId}:${row.variationId ?? ""}`}
+                        >
+                          <TableCell className="font-medium">
+                            {row.menuItemName}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {row.variationName}
+                          </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
                             {row.category || "—"}
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {row.status === "missing" ? (
-                              "No recipe"
-                            ) : row.status === "complete" ? (
-                              row.hasAllVariations
-                                ? "All variations"
-                                : `${row.variations.length}/${row.variations.length} variations`
-                            ) : (
-                              `${row.variations.length - row.uncoveredVariations.length}/${row.variations.length} variations · missing ${row.uncoveredVariations
-                                .map((v) => v.name)
-                                .join(", ")}`
-                            )}
-                          </TableCell>
                           <TableCell>
-                            {row.status === "missing" ? (
-                              <Badge variant="destructive">No recipe</Badge>
-                            ) : row.status === "partial" ? (
-                              <Badge variant="secondary">Partial</Badge>
-                            ) : (
-                              <Badge variant="outline">Has recipe</Badge>
-                            )}
+                            <Badge variant="destructive">No recipe</Badge>
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
                             {row.versionCount}
@@ -4951,18 +5369,15 @@ export default function AdminInventoryPage() {
                               size="sm"
                               onClick={() =>
                                 openNewRecipe({
-                                  menuItemId: row.id,
-                                  variationId:
-                                    row.status === "partial" &&
-                                    row.uncoveredVariations.length === 1
-                                      ? row.uncoveredVariations[0]?.id
-                                      : undefined,
+                                  menuItemId: row.menuItemId,
+                                  variationId: row.variationId ?? undefined,
                                 })
                               }
                             >
                               <PlusIcon className="size-4" aria-hidden />
                               <span className="sr-only">
-                                Add recipe for {row.name}
+                                Add recipe for {row.menuItemName} ·{" "}
+                                {row.variationName}
                               </span>
                               <span className="ml-1">Add</span>
                             </Button>

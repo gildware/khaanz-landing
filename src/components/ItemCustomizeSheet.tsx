@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { getAddonsForItem } from "@/data/menu";
 import { computeUnitPrice } from "@/lib/cart-line";
+import { flyToCart } from "@/lib/fly-to-cart";
 import { isMenuItemOrderable } from "@/lib/menu-availability";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItem, MenuVariation } from "@/types/menu";
@@ -33,6 +35,9 @@ export function ItemCustomizeSheet({
   open,
   onOpenChange,
 }: ItemCustomizeSheetProps) {
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
+  const imageRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((s) => s.addItem);
   const { data: menuData } = useMenuData();
 
@@ -90,11 +95,17 @@ export function ItemCustomizeSheet({
       return;
     }
     const addonsWithQty = selectedAddons.map((a) => ({ ...a, quantity: 1 }));
+    const sourceRect = imageRef.current?.getBoundingClientRect();
     addItem({ item: cachedItem, variation, addons: addonsWithQty });
-    toast.success(`${cachedItem.name} added to cart`, {
-      description: `${variation.name} · ₹${unitPrice}`,
-    });
     onOpenChange(false);
+
+    if (isHomePage && sourceRect) {
+      flyToCart({ sourceRect, imageSrc: cachedItem.image });
+    } else if (!isHomePage) {
+      toast.success(`${cachedItem.name} added to cart`, {
+        description: `${variation.name} · ₹${unitPrice}`,
+      });
+    }
   };
 
   if (!cachedItem) return null;
@@ -108,7 +119,10 @@ export function ItemCustomizeSheet({
           </SheetTitle>
         </SheetHeader>
         <div className="flex gap-3 border-b border-border/70 p-4">
-          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl ring-1 ring-border">
+          <div
+            ref={imageRef}
+            className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl ring-1 ring-border"
+          >
             <MenuItemImage
               src={cachedItem.image}
               alt=""

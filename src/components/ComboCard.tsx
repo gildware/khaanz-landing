@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ import {
   formatComboComponentSummary,
   isComboAvailable,
 } from "@/lib/menu-combos";
+import { flyToCart } from "@/lib/fly-to-cart";
 import { useCartStore } from "@/store/cartStore";
 import { isCartComboLine } from "@/types/menu";
 import type { MenuCombo } from "@/types/menu";
@@ -33,6 +35,9 @@ export interface ComboCardProps {
 }
 
 export function ComboCard({ combo }: ComboCardProps) {
+  const pathname = usePathname();
+  const isHomePage = pathname === "/";
+  const imageRef = useRef<HTMLDivElement>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const { data } = useMenuData();
   const items = useMemo(() => data?.items ?? [], [data?.items]);
@@ -164,7 +169,10 @@ export function ComboCard({ combo }: ComboCardProps) {
             </SheetTitle>
           </SheetHeader>
           <div className="flex gap-3 border-b border-border/70 p-4">
-            <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl ring-1 ring-border">
+            <div
+              ref={imageRef}
+              className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl ring-1 ring-border"
+            >
               <MenuItemImage
                 src={combo.image}
                 alt=""
@@ -213,11 +221,17 @@ export function ComboCard({ combo }: ComboCardProps) {
                   toast.error("This combo is not available right now.");
                   return;
                 }
+                const sourceRect = imageRef.current?.getBoundingClientRect();
                 addCombo(combo, items);
-                toast.success(`${combo.name} added to cart`, {
-                  description: `Combo · ₹${combo.price}`,
-                });
                 setSheetOpen(false);
+
+                if (isHomePage && sourceRect) {
+                  flyToCart({ sourceRect, imageSrc: combo.image });
+                } else if (!isHomePage) {
+                  toast.success(`${combo.name} added to cart`, {
+                    description: `Combo · ₹${combo.price}`,
+                  });
+                }
               }}
             >
               Add combo · ₹{combo.price}

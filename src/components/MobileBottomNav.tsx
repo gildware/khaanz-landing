@@ -51,6 +51,7 @@ export function MobileBottomNav() {
         </button>
         <button
           type="button"
+          data-cart-target="mobile"
           onClick={() => setCartOpen(true)}
           className={cn(
             "relative flex flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[10px] font-medium transition-colors",

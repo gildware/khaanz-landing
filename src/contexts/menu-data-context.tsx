@@ -5,6 +5,7 @@ import {
   useContext,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import useSWR, { type KeyedMutator } from "swr";
 
 import type { MenuPayload } from "@/types/menu-payload";
@@ -25,12 +26,16 @@ type MenuDataContextValue = {
 const MenuDataContext = createContext<MenuDataContextValue | null>(null);
 
 export function MenuDataProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith("/admin");
+
   const { data, error, isLoading, mutate } = useSWR<MenuPayload>(
     "/api/menu",
     fetcher,
     {
-      refreshInterval: 60_000,
-      revalidateOnFocus: true,
+      // Storefront polls for menu changes; admin edits locally and saves explicitly.
+      refreshInterval: isAdminRoute ? 0 : 60_000,
+      revalidateOnFocus: !isAdminRoute,
       dedupingInterval: 5000,
     },
   );

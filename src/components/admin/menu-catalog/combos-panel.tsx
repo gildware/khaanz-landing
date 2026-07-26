@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -27,7 +27,10 @@ import {
   computeComboRetailTotal,
   formatComboComponentSummary,
 } from "@/lib/menu-combos";
-import { persistMenuPayload } from "@/lib/persist-menu-client";
+import {
+  deleteMenuComboClient,
+  persistMenuCombo,
+} from "@/lib/persist-menu-client";
 import type { MenuCombo } from "@/types/menu";
 
 export function MenuCatalogCombosPanel() {
@@ -70,10 +73,75 @@ export function MenuCatalogCombosPanel() {
     return list;
   }, [combos, items, search, filterType, filterAvailability, sort]);
 
-  const savePayload = async (next: NonNullable<typeof data>) => {
-    await persistMenuPayload(next);
-    await mutate();
-  };
+  const saveComboOptimistic = useCallback(
+    async (combo: MenuCombo, successMessage = "Combo saved") => {
+      try {
+        await mutate(
+          async (current) => {
+            if (!current) throw new Error("Menu not loaded");
+            const idx = current.combos.findIndex((c) => c.id === combo.id);
+            const nextCombos =
+              idx === -1
+                ? [...current.combos, combo]
+                : current.combos.map((c) => (c.id === combo.id ? combo : c));
+            await persistMenuCombo(combo);
+            return { ...current, combos: nextCombos };
+          },
+          {
+            optimisticData: (current) => {
+              if (!current) return current;
+              const idx = current.combos.findIndex((c) => c.id === combo.id);
+              const nextCombos =
+                idx === -1
+                  ? [...current.combos, combo]
+                  : current.combos.map((c) => (c.id === combo.id ? combo : c));
+              return { ...current, combos: nextCombos };
+            },
+            rollbackOnError: true,
+            populateCache: true,
+            revalidate: false,
+          },
+        );
+        toast.success(successMessage);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Save failed");
+      }
+    },
+    [mutate],
+  );
+
+  const deleteComboOptimistic = useCallback(
+    async (comboId: string) => {
+      try {
+        await mutate(
+          async (current) => {
+            if (!current) throw new Error("Menu not loaded");
+            await deleteMenuComboClient(comboId);
+            return {
+              ...current,
+              combos: current.combos.filter((c) => c.id !== comboId),
+            };
+          },
+          {
+            optimisticData: (current) =>
+              current
+                ? {
+                    ...current,
+                    combos: current.combos.filter((c) => c.id !== comboId),
+                  }
+                : current,
+            rollbackOnError: true,
+            populateCache: true,
+            revalidate: false,
+          },
+        );
+        toast.success("Combo removed");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Delete failed");
+      }
+    },
+    [mutate],
+  );
 
   return (
     <div className="space-y-6">
@@ -211,20 +279,10 @@ export function MenuCatalogCombosPanel() {
                 <Switch
                   checked={combo.available !== false}
                   onCheckedChange={(v) => {
-                    if (!data) return;
-                    void (async () => {
-                      const nextCombos = data.combos.map((c) =>
-                        c.id === combo.id ? { ...c, available: Boolean(v) } : c,
-                      );
-                      try {
-                        await savePayload({ ...data, combos: nextCombos });
-                        toast.success("Updated");
-                      } catch (e) {
-                        toast.error(
-                          e instanceof Error ? e.message : "Save failed",
-                        );
-                      }
-                    })();
+                    void saveComboOptimistic(
+                      { ...combo, available: Boolean(v) },
+                      "Updated",
+                    );
                   }}
                 />
               </TableCell>
@@ -246,20 +304,7 @@ export function MenuCatalogCombosPanel() {
                   size="sm"
                   className="text-destructive"
                   onClick={() => {
-                    if (!data) return;
-                    void (async () => {
-                      try {
-                        await savePayload({
-                          ...data,
-                          combos: data.combos.filter((c) => c.id !== combo.id),
-                        });
-                        toast.success("Combo removed");
-                      } catch (e) {
-                        toast.error(
-                          e instanceof Error ? e.message : "Save failed",
-                        );
-                      }
-                    })();
+                    void deleteComboOptimistic(combo.id);
                   }}
                 >
                   Delete
@@ -277,20 +322,7 @@ export function MenuCatalogCombosPanel() {
         menuItems={items}
         initial={editing}
         onSave={(combo) => {
-          if (!data) return;
-          void (async () => {
-            try {
-              const idx = data.combos.findIndex((c) => c.id === combo.id);
-              const nextCombos =
-                idx === -1
-                  ? [...data.combos, combo]
-                  : data.combos.map((c) => (c.id === combo.id ? combo : c));
-              await savePayload({ ...data, combos: nextCombos });
-              toast.success("Combo saved");
-            } catch (e) {
-              toast.error(e instanceof Error ? e.message : "Save failed");
-            }
-          })();
+          void saveComboOptimistic(combo);
         }}
       />
     </div>
