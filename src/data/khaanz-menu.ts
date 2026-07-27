@@ -115,6 +115,28 @@ export const KHAANZ_ITEMS: MenuItem[] = [
     variations: [{ id: "khaanz-tandoori-burger-single", name: "Single", price: 169 }],
     addons: [],
   },
+  {
+    id: "khaanz-chicken-tikki-burger",
+    name: "Chicken Tikki Burger",
+    category: "Burgers",
+    description: "Crispy chicken tikki patty with fresh veggies and our signature sauce.",
+    image: "/menu/chicken-tikki-burger.jpg",
+    isVeg: false,
+    available: true,
+    variations: [{ id: "khaanz-chicken-tikki-burger-single", name: "Single", price: 100 }],
+    addons: [],
+  },
+  {
+    id: "khaanz-veg-tikki-burger",
+    name: "Veg Tikki Burger",
+    category: "Burgers",
+    description: "Golden veg aloo tikki patty with crisp lettuce and creamy sauce.",
+    image: "/menu/veg-tikki-burger.jpg",
+    isVeg: true,
+    available: true,
+    variations: [{ id: "khaanz-veg-tikki-burger-single", name: "Single", price: 80 }],
+    addons: [],
+  },
 ];
 
 /**
