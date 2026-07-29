@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2Icon, RefreshCwIcon } from "lucide-react";
+import { LayoutGridIcon, Loader2Icon, RefreshCwIcon, TableIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { OrderStatus } from "@prisma/client";
 
@@ -19,6 +19,14 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatIstDateInput } from "@/lib/ist-dates";
 import {
   RESTAURANT_ORDER_STATUS_TAB_LABEL,
@@ -45,8 +53,10 @@ import type { RestaurantSettingsPayload } from "@/types/restaurant-settings";
 
 const AUTO_REFRESH_MS = 30_000;
 const PAGE_SIZE = 10;
+const ORDERS_VIEW_STORAGE_KEY = "admin-orders-view-mode";
 
 type StatusFilter = "all" | OrderStatus;
+type OrdersViewMode = "cards" | "table";
 
 const ORDER_STATUS_TABS: { id: StatusFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -177,6 +187,7 @@ export default function AdminOrdersPage() {
   const [detail, setDetail] = useState<AdminOrderDetail | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [viewMode, setViewMode] = useState<OrdersViewMode>("cards");
   const [statusConfirm, setStatusConfirm] = useState<PendingStatusChange | null>(
     null,
   );
@@ -264,6 +275,24 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     void loadInitial();
   }, [loadInitial]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(ORDERS_VIEW_STORAGE_KEY);
+      if (stored === "cards" || stored === "table") setViewMode(stored);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const changeViewMode = useCallback((mode: OrdersViewMode) => {
+    setViewMode(mode);
+    try {
+      window.localStorage.setItem(ORDERS_VIEW_STORAGE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     void (async () => {
@@ -483,6 +512,34 @@ export default function AdminOrdersPage() {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-3">
+          <div
+            className="flex items-center rounded-lg border p-0.5"
+            role="group"
+            aria-label="Orders view"
+          >
+            <Button
+              type="button"
+              size="sm"
+              variant={viewMode === "cards" ? "default" : "ghost"}
+              className="h-8 gap-1.5 px-2.5"
+              aria-pressed={viewMode === "cards"}
+              onClick={() => changeViewMode("cards")}
+            >
+              <LayoutGridIcon className="size-4" />
+              Cards
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={viewMode === "table" ? "default" : "ghost"}
+              className="h-8 gap-1.5 px-2.5"
+              aria-pressed={viewMode === "table"}
+              onClick={() => changeViewMode("table")}
+            >
+              <TableIcon className="size-4" />
+              Table
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             <Checkbox
               id="auto-refresh"
@@ -570,6 +627,182 @@ export default function AdminOrdersPage() {
         ) : filteredOrders.length === 0 ? (
           <div className="rounded-2xl border border-dashed bg-muted/20 px-4 py-12 text-center text-muted-foreground text-sm">
             No orders in this status for the selected date.
+          </div>
+        ) : viewMode === "table" ? (
+          <div className="overflow-x-auto rounded-xl border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Fulfillment</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Taken by</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.map((o) => {
+                  const step = nextOrderStatusStep(o.status, o.fulfillment);
+                  const busy = updatingId === o.id;
+                  const rupee = (o.totalMinor / 100).toFixed(2);
+                  const canCancel =
+                    o.status !== "CANCELLED" &&
+                    o.status !== "DELIVERED" &&
+                    o.status !== "TABLE_CLEARED";
+                  const lines = o.lines ?? [];
+                  const canPrintWhole =
+                    orderLinePayloadsToReceiptLines(lines).length > 0;
+                  const statusLabel = restaurantOrderStatusLabel(
+                    o.status as OrderStatus,
+                    o.fulfillment,
+                  );
+                  return (
+                    <TableRow key={o.id}>
+                      <TableCell className="font-mono text-sm font-semibold whitespace-nowrap">
+                        {o.orderRef ?? "—"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground text-xs tabular-nums">
+                        {new Date(o.createdAt).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="min-w-[8rem]">
+                          <p className="font-medium text-sm">
+                            {o.customerName ?? "—"}
+                          </p>
+                          <p className="font-mono text-muted-foreground text-xs">
+                            {o.customerPhone}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        <p>{fulfillmentLabelFromKey(o.fulfillment)}</p>
+                        {o.fulfillment === "dine_in" && o.dineInTable?.trim() ? (
+                          <p className="text-muted-foreground text-xs">
+                            Table {o.dineInTable.trim()}
+                          </p>
+                        ) : null}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "font-medium whitespace-nowrap",
+                            orderStatusBadgeClassName(o.status),
+                          )}
+                        >
+                          {statusLabel}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {o.createdByLabel?.trim() || "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums whitespace-nowrap">
+                        ₹{rupee}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-1.5">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            disabled={!canPrintWhole}
+                            onClick={() => void printWholeOrder(o, "kot")}
+                          >
+                            KOT
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            disabled={!canPrintWhole}
+                            onClick={() => void printWholeOrder(o, "bill")}
+                          >
+                            Bill
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="h-7 text-xs"
+                            disabled={busy}
+                            onClick={() => openDetails(o.id)}
+                          >
+                            Details
+                          </Button>
+                          {step ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="default"
+                              className="h-7 text-xs"
+                              disabled={busy}
+                              onClick={() =>
+                                requestStatusChange({
+                                  orderId: o.id,
+                                  orderRef: o.orderRef ?? o.id.slice(0, 8),
+                                  currentStatusLabel: statusLabel,
+                                  nextStatus: step.nextStatus,
+                                  nextStatusLabel: restaurantOrderStatusLabel(
+                                    step.nextStatus as OrderStatus,
+                                    o.fulfillment,
+                                  ),
+                                  actionLabel: step.label,
+                                })
+                              }
+                            >
+                              {busy ? "…" : step.label}
+                            </Button>
+                          ) : null}
+                          {canCancel ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              disabled={busy}
+                              onClick={() =>
+                                requestStatusChange({
+                                  orderId: o.id,
+                                  orderRef: o.orderRef ?? o.id.slice(0, 8),
+                                  currentStatusLabel: statusLabel,
+                                  nextStatus: "CANCELLED",
+                                  nextStatusLabel:
+                                    RESTAURANT_ORDER_STATUS_TAB_LABEL.CANCELLED,
+                                  actionLabel: "Cancel order",
+                                  destructive: true,
+                                })
+                              }
+                            >
+                              Cancel
+                            </Button>
+                          ) : null}
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            className="h-7 text-xs"
+                            disabled={busy}
+                            onClick={() =>
+                              setDeleteConfirm({
+                                orderId: o.id,
+                                orderRef: o.orderRef ?? o.id.slice(0, 8),
+                              })
+                            }
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

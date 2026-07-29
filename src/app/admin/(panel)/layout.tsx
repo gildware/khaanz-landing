@@ -2,14 +2,17 @@ import { AdminMobilePosRedirect } from "@/components/admin/admin-mobile-pos-redi
 import { AdminNewOrderNotifier } from "@/components/admin/admin-new-order-notifier";
 import { AdminSessionProvider } from "@/components/admin/admin-session-provider";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { loadAdminClientSession } from "@/lib/admin-session";
 
-export default function AdminPanelLayout({
+export default async function AdminPanelLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const initialUser = await loadAdminClientSession();
+
   return (
-    <AdminSessionProvider>
+    <AdminSessionProvider initialUser={initialUser}>
       <AdminMobilePosRedirect>
         <div className="admin-panel-root flex h-dvh max-h-dvh overflow-hidden">
           <AdminSidebar />

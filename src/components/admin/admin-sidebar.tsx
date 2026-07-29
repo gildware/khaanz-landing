@@ -99,13 +99,9 @@ export function AdminSidebar() {
     router.refresh();
   };
 
-  // While session loads, keep nav visible. SUPER_ADMIN always sees everything.
-  // If session fails to load, still show nav so the admin UI is not blank
-  // (page/API middleware still enforces permissions).
-  const visibleLinks =
-    loading || !user || user.role === "SUPER_ADMIN"
-      ? links
-      : links.filter((l) => can(l.permission));
+  // The layout seeds the session server-side, so this filters correctly on the
+  // first paint. `can` already grants everything to SUPER_ADMIN.
+  const visibleLinks = user ? links.filter((l) => can(l.permission)) : [];
   const label =
     user?.displayName?.trim() ||
     user?.email ||

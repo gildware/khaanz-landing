@@ -32,9 +32,16 @@ const AdminSessionContext = createContext<AdminSessionContextValue | null>(
   null,
 );
 
-export function AdminSessionProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AdminSessionUser | null>(null);
-  const [loading, setLoading] = useState(true);
+export function AdminSessionProvider({
+  initialUser = null,
+  children,
+}: {
+  /** Server-rendered session. Avoids a flash of unpermitted UI before the fetch resolves. */
+  initialUser?: AdminSessionUser | null;
+  children: ReactNode;
+}) {
+  const [user, setUser] = useState<AdminSessionUser | null>(initialUser);
+  const [loading, setLoading] = useState(initialUser === null);
 
   const refresh = useCallback(async () => {
     try {
@@ -46,7 +53,8 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
       const data = (await res.json()) as { user: AdminSessionUser };
       setUser(data.user);
     } catch {
-      setUser(null);
+      // Network blip: keep the session we already have rather than dropping
+      // the user to a no-permission state.
     } finally {
       setLoading(false);
     }

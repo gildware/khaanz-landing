@@ -7,6 +7,7 @@ import {
   verifyAdminToken,
 } from "@/lib/admin-auth";
 import {
+  ALL_ADMIN_PERMISSIONS,
   hasAnyPermission,
   hasPermission,
   parsePermissionsJson,
@@ -19,6 +20,15 @@ export type AdminSessionUser = AdminSession & {
   email: string;
   displayName: string | null;
   active: boolean;
+};
+
+/** Mirrors the `/api/admin/session` payload consumed by `AdminSessionProvider`. */
+export type AdminClientSessionUser = {
+  id: string;
+  email: string;
+  displayName: string | null;
+  role: string;
+  permissions: AdminPermission[];
 };
 
 /** Cookie JWT only — no DB round-trip. Prefer `loadAdminSession` for APIs. */
@@ -63,6 +73,25 @@ export async function loadAdminSession(): Promise<AdminSessionUser | null> {
     email: user.email,
     displayName: user.displayName,
     active: user.active,
+  };
+}
+
+/**
+ * Server-side seed for the client session provider, so permission-gated UI
+ * renders in its final state on first paint instead of after a client fetch.
+ */
+export async function loadAdminClientSession(): Promise<AdminClientSessionUser | null> {
+  const session = await loadAdminSession();
+  if (!session) return null;
+  return {
+    id: session.userId,
+    email: session.email,
+    displayName: session.displayName,
+    role: session.role,
+    permissions:
+      session.role === "SUPER_ADMIN"
+        ? [...ALL_ADMIN_PERMISSIONS]
+        : session.permissions,
   };
 }
 

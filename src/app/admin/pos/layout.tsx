@@ -1,18 +1,21 @@
 import { AdminMobilePosRedirect } from "@/components/admin/admin-mobile-pos-redirect";
 import { AdminNewOrderNotifier } from "@/components/admin/admin-new-order-notifier";
 import { AdminSessionProvider } from "@/components/admin/admin-session-provider";
+import { loadAdminClientSession } from "@/lib/admin-session";
 
 /**
  * Standalone POS layout — no admin sidebar so the register can use the full viewport.
  * Opened from the sidebar via target=_blank.
  */
-export default function AdminPosStandaloneLayout({
+export default async function AdminPosStandaloneLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const initialUser = await loadAdminClientSession();
+
   return (
-    <AdminSessionProvider>
+    <AdminSessionProvider initialUser={initialUser}>
       <AdminMobilePosRedirect>
         <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
           <AdminNewOrderNotifier />
