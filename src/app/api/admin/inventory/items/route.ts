@@ -3,9 +3,64 @@ import { NextResponse } from "next/server";
 import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
 import { costPaisePerBaseFromPurchaseRate } from "@/lib/inventory/inventory-costing";
 import { parseDecimalQty } from "@/lib/inventory/parse-quantity";
+import {
+  parseYieldLinkInput,
+  serializeYieldLink,
+} from "@/lib/inventory/yield-links";
 import { getPrisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
+
+const itemSelect = {
+  id: true,
+  name: true,
+  category: true,
+  baseUnit: true,
+  purchaseUnit: true,
+  baseUnitsPerPurchaseUnit: true,
+  stockOnHandBase: true,
+  minStockBase: true,
+  avgCostPaisePerBase: true,
+  lastPurchasePaisePerBase: true,
+  active: true,
+  yieldSourceItemId: true,
+  yieldPercent: true,
+  yieldSourceItem: { select: { id: true, name: true } },
+} as const;
+
+function serializeItem(
+  r: {
+    id: string;
+    name: string;
+    category: string;
+    baseUnit: string;
+    purchaseUnit: string;
+    baseUnitsPerPurchaseUnit: { toString(): string };
+    stockOnHandBase: { toString(): string };
+    minStockBase: { toString(): string };
+    avgCostPaisePerBase: { toString(): string };
+    lastPurchasePaisePerBase: { toString(): string };
+    active: boolean;
+    yieldSourceItemId: string | null;
+    yieldPercent: { toString(): string } | null;
+    yieldSourceItem: { id: string; name: string } | null;
+  },
+) {
+  return {
+    id: r.id,
+    name: r.name,
+    category: r.category,
+    baseUnit: r.baseUnit,
+    purchaseUnit: r.purchaseUnit,
+    baseUnitsPerPurchaseUnit: r.baseUnitsPerPurchaseUnit.toString(),
+    stockOnHandBase: r.stockOnHandBase.toString(),
+    minStockBase: r.minStockBase.toString(),
+    avgCostPaisePerBase: r.avgCostPaisePerBase.toString(),
+    lastPurchasePaisePerBase: r.lastPurchasePaisePerBase.toString(),
+    active: r.active,
+    yieldLink: serializeYieldLink(r),
+  };
+}
 
 export async function GET() {
   const session = await requireAdminInventorySession();
@@ -14,36 +69,10 @@ export async function GET() {
   }
   const prisma = getPrisma();
   const rows = await prisma.inventoryItem.findMany({
-    select: {
-      id: true,
-      name: true,
-      category: true,
-      baseUnit: true,
-      purchaseUnit: true,
-      baseUnitsPerPurchaseUnit: true,
-      stockOnHandBase: true,
-      minStockBase: true,
-      avgCostPaisePerBase: true,
-      lastPurchasePaisePerBase: true,
-      active: true,
-    },
+    select: itemSelect,
     orderBy: { name: "asc" },
   });
-  return NextResponse.json({
-    items: rows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      category: r.category,
-      baseUnit: r.baseUnit,
-      purchaseUnit: r.purchaseUnit,
-      baseUnitsPerPurchaseUnit: r.baseUnitsPerPurchaseUnit.toString(),
-      stockOnHandBase: r.stockOnHandBase.toString(),
-      minStockBase: r.minStockBase.toString(),
-      avgCostPaisePerBase: r.avgCostPaisePerBase.toString(),
-      lastPurchasePaisePerBase: r.lastPurchasePaisePerBase.toString(),
-      active: r.active,
-    })),
-  });
+  return NextResponse.json({ items: rows.map(serializeItem) });
 }
 
 export async function POST(request: Request) {
@@ -111,7 +140,36 @@ export async function POST(request: Request) {
     unitCostPaisePerBase = costPaisePerBaseFromPurchaseRate(Math.floor(rate), conv);
   }
 
+  const yieldParsed = parseYieldLinkInput(body);
+  if ("error" in yieldParsed) {
+    return NextResponse.json({ error: yieldParsed.error }, { status: 400 });
+  }
+
   const prisma = getPrisma();
+
+  let yieldData: {
+    yieldSourceItemId: string | null;
+    yieldPercent: number | null;
+  } | null = null;
+  if ("clear" in yieldParsed) {
+    yieldData = { yieldSourceItemId: null, yieldPercent: null };
+  } else if ("sourceItemId" in yieldParsed) {
+    const source = await prisma.inventoryItem.findUnique({
+      where: { id: yieldParsed.sourceItemId },
+      select: { id: true },
+    });
+    if (!source) {
+      return NextResponse.json(
+        { error: "Yield source item not found" },
+        { status: 400 },
+      );
+    }
+    yieldData = {
+      yieldSourceItemId: yieldParsed.sourceItemId,
+      yieldPercent: yieldParsed.yieldPercent,
+    };
+  }
+
   const row = await prisma.inventoryItem.create({
     data: {
       name: name.slice(0, 200),
@@ -126,19 +184,10 @@ export async function POST(request: Request) {
             lastPurchasePaisePerBase: unitCostPaisePerBase,
           }
         : {}),
+      ...(yieldData ?? {}),
     },
+    select: itemSelect,
   });
 
-  return NextResponse.json({
-    id: row.id,
-    name: row.name,
-    category: row.category,
-    baseUnit: row.baseUnit,
-    purchaseUnit: row.purchaseUnit,
-    baseUnitsPerPurchaseUnit: row.baseUnitsPerPurchaseUnit.toString(),
-    stockOnHandBase: row.stockOnHandBase.toString(),
-    minStockBase: row.minStockBase.toString(),
-    avgCostPaisePerBase: row.avgCostPaisePerBase.toString(),
-    lastPurchasePaisePerBase: row.lastPurchasePaisePerBase.toString(),
-  });
+  return NextResponse.json(serializeItem(row));
 }

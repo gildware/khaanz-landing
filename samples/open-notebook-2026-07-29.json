@@ -1,0 +1,61 @@
+{
+  "saleDate": "2026-07-29",
+  "notes": "Strips corrected to 8 Pcs; Onion Flour 2kg skipped (not a sale)",
+  "lines": [
+    {
+      "name": "Nimbu",
+      "qty": 1,
+      "unitPrice": 20,
+      "detail": "→ Nimbuz Jeera"
+    },
+    {
+      "name": "C. Samosa",
+      "qty": 2,
+      "unitPrice": 35,
+      "detail": "Chicken Samosa"
+    },
+    {
+      "name": "C. Samosa",
+      "qty": 4,
+      "unitPrice": 35,
+      "detail": "Chicken Samosa"
+    },
+    {
+      "name": "C. Burger",
+      "qty": 1,
+      "unitPrice": 100,
+      "detail": "→ Chicken Tikki Burger"
+    },
+    {
+      "name": "Crispy chicken 2PC",
+      "qty": 1,
+      "unitPrice": 169,
+      "detail": "→ Crispy Chicken 2 Pcs"
+    },
+    {
+      "name": "Strips 8pc",
+      "qty": 1,
+      "unitPrice": 279,
+      "detail": "notebook 6pc→229; user said 8 pieces → Strips 8 Pcs @279"
+    },
+    {
+      "name": "C. Samosa",
+      "qty": 1,
+      "unitPrice": 35,
+      "detail": "Chicken Samosa"
+    },
+    {
+      "name": "Wings 4pc",
+      "qty": 1,
+      "unitPrice": 119,
+      "detail": "→ Wings 4 Pcs"
+    },
+    {
+      "name": "C. Samosa",
+      "qty": 9,
+      "unitPrice": 35,
+      "detail": "Chicken Samosa"
+    }
+  ],
+  "notebookSum": 1247
+}

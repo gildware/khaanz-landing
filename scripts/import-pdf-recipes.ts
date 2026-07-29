@@ -4,6 +4,9 @@
  * Source: scripts/data/pdf-recipes-2026-07-26.json
  * Run:    npx tsx scripts/import-pdf-recipes.ts
  * Dry run: npx tsx scripts/import-pdf-recipes.ts --dry-run
+ *
+ * The JSON is a point-in-time export. Recipes edited after that export would be
+ * reverted, so existing recipes are left untouched unless --force is passed.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -186,6 +189,7 @@ function matchVariation(
 
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
+  const force = process.argv.includes("--force");
   const prisma = getPrisma();
 
   const jsonPath = join(
@@ -241,6 +245,7 @@ async function main() {
   let created = 0;
   let updated = 0;
   let skipped = 0;
+  let preserved = 0;
   let invCreated = 0;
 
   async function ensureInventory(
@@ -368,14 +373,6 @@ async function main() {
       yieldUnit = "g";
     }
 
-    if (dryRun) {
-      console.log(
-        `[dry] ${menu.name} / ${variationId ?? "(all)"} ← ${lines.length} lines · yield ${yieldQty} ${yieldUnit}`,
-      );
-      created++;
-      continue;
-    }
-
     const existing = await prisma.recipeVersion.findFirst({
       where: {
         menuItemId: menu.id,
@@ -383,6 +380,25 @@ async function main() {
       },
       orderBy: { effectiveFrom: "desc" },
     });
+
+    // Overwriting replaces every ingredient line, so any edit made after the PDF
+    // export would be silently reverted. Opt in explicitly.
+    if (existing && !force) {
+      warnings.push(
+        `PRESERVED (pass --force to overwrite): ${recipe.title} → ${menu.id}${variationId ? ` / ${variationId}` : ""}`,
+      );
+      preserved++;
+      continue;
+    }
+
+    if (dryRun) {
+      console.log(
+        `[dry] ${existing ? "OVERWRITE" : "create"} ${menu.name} / ${variationId ?? "(all)"} ← ${lines.length} lines · yield ${yieldQty} ${yieldUnit}`,
+      );
+      if (existing) updated++;
+      else created++;
+      continue;
+    }
 
     await prisma.$transaction(
       async (tx) => {
@@ -453,9 +469,15 @@ async function main() {
   console.log("\n=== Summary ===");
   console.log(`PDF recipes: ${recipes.length}`);
   console.log(`Created: ${created}`);
-  console.log(`Updated: ${updated}`);
+  console.log(`Updated (overwritten): ${updated}`);
+  console.log(`Preserved (already had a recipe): ${preserved}`);
   console.log(`Skipped: ${skipped}`);
   console.log(`Stock items created: ${invCreated}`);
+  if (preserved > 0) {
+    console.log(
+      `\n${preserved} existing recipe(s) were left as-is. Re-run with --force to overwrite them from the PDF.`,
+    );
+  }
   if (warnings.length) {
     console.log(`\nWarnings (${warnings.length}):`);
     for (const w of warnings.slice(0, 40)) console.log("  " + w);
@@ -475,7 +497,9 @@ async function main() {
   console.log("\nDB now:", Object.fromEntries(counts.map((r) => [r.t, Number(r.c)])));
 
   await prisma.$disconnect();
-  if (errors.length && !dryRun && created + updated === 0) process.exit(1);
+  if (errors.length && !dryRun && created + updated + preserved === 0) {
+    process.exit(1);
+  }
 }
 
 main().catch(async (e) => {

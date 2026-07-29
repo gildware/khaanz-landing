@@ -14,6 +14,7 @@ import {
   PlusCircleIcon,
   PlusIcon,
   ReceiptIcon,
+  RefreshCwIcon,
   Settings2Icon,
   Trash2Icon,
   TruckIcon,
@@ -37,6 +38,7 @@ import {
 } from "@/components/admin/admin-page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -349,6 +351,11 @@ type InvItem = {
   avgCostPaisePerBase: string;
   lastPurchasePaisePerBase: string;
   active: boolean;
+  yieldLink?: {
+    sourceItemId: string;
+    sourceItemName: string;
+    yieldPercent: number;
+  } | null;
 };
 
 /** Convert stored paise-per-base cost → ₹ input for 1 purchase unit. */
@@ -385,11 +392,34 @@ function itemUnitCostPaise(
   return Number.isFinite(unitCost) ? unitCost : 0;
 }
 
+/** Current rate in paise for one purchase unit, deriving linked items from source yield. */
+function itemRatePaisePerPurchaseUnit(
+  item: InvItem,
+  items: InvItem[],
+  costingMethod: string | undefined,
+): number {
+  let unitCost = itemUnitCostPaise(item, costingMethod);
+  if (item.yieldLink) {
+    const source = items.find((candidate) => candidate.id === item.yieldLink?.sourceItemId);
+    const yieldFraction = item.yieldLink.yieldPercent / 100;
+    if (source && yieldFraction > 0) {
+      unitCost = itemUnitCostPaise(source, costingMethod) / yieldFraction;
+    }
+  }
+
+  const unitsPerPurchase = Number(item.baseUnitsPerPurchaseUnit);
+  if (!Number.isFinite(unitCost) || unitCost <= 0) return 0;
+  if (!Number.isFinite(unitsPerPurchase) || unitsPerPurchase <= 0) return 0;
+  return Math.round(unitCost * unitsPerPurchase);
+}
+
 /** On-hand stock × unit cost (same basis as inventory summary / charts). */
 function itemStockValuePaise(
   item: InvItem,
   costingMethod: string | undefined,
 ): number {
+  // Yield-linked cook items do not hold stock — value lives on the source.
+  if (item.yieldLink) return 0;
   const qty = Number(item.stockOnHandBase);
   const unitCost = itemUnitCostPaise(item, costingMethod);
   if (!Number.isFinite(qty) || unitCost <= 0) return 0;
@@ -656,6 +686,47 @@ type PurchaseRow = {
   lineCount: number;
 };
 
+type PurchaseDetailLine = {
+  id: string;
+  inventoryItemId: string;
+  itemName: string;
+  category: string;
+  baseUnit: string;
+  purchaseUnit: string;
+  baseUnitsPerPurchaseUnit: string;
+  qtyPurchase: string;
+  ratePaisePerPurchaseUnit: number;
+  lineTotalPaise: number;
+  qtyBaseReceived: string;
+  remainingQtyBase: string | null;
+  expiryDate: string | null;
+  lotCode: string;
+};
+
+type PurchaseDetail = {
+  id: string;
+  batchRef: string;
+  supplierId: string;
+  supplierName: string;
+  supplierPhone: string;
+  purchasedAt: string;
+  paymentType: string;
+  creditDays: number | null;
+  dueAt: string | null;
+  totalPaise: number;
+  notes: string;
+  createdAt: string;
+  editable: boolean;
+  lines: PurchaseDetailLine[];
+  returns: {
+    id: string;
+    returnedAt: string;
+    totalCreditPaise: number;
+    lineCount: number;
+    notes: string;
+  }[];
+};
+
 type RecipeIngredientRow =
   | {
       kind?: "inventory";
@@ -868,6 +939,8 @@ const emptyItemForm = {
   baseUnitsPerPurchaseUnit: "1000",
   minStockBase: "0",
   unitCostRupees: "",
+  yieldSourceItemId: "",
+  yieldPercent: "",
 };
 
 const ITEM_SORT_VALUES = new Set([
@@ -879,6 +952,8 @@ const ITEM_SORT_VALUES = new Set([
   "units-desc",
   "stock-asc",
   "stock-desc",
+  "rate-asc",
+  "rate-desc",
   "value-asc",
   "value-desc",
   "status-asc",
@@ -960,9 +1035,50 @@ type OpsMenuId =
   | "opening"
   | "kitchen"
   | "adjustment"
+  | "recipe_reconcile"
   | "payment"
   | "activity"
   | "settings";
+
+type RecipeReconcileLineRow = {
+  inventoryItemId: string;
+  name: string;
+  baseUnit: string;
+  deductedBase: string;
+  shouldBase: string;
+  priorCorrectionBase: string;
+  effectiveDeductedBase: string;
+  deltaBase: string;
+  direction: "up" | "down" | "none";
+  qtyBase: string;
+};
+
+type RecipeReconcileMode = "current" | "at_sale";
+
+type RecipeReconcilePreview = {
+  scopeKey: string;
+  mode: RecipeReconcileMode;
+  recipeAsOf: string;
+  fromDate: string | null;
+  toDate: string | null;
+  orderCount: number;
+  lines: RecipeReconcileLineRow[];
+  changeCount: number;
+  appliedCount?: number;
+};
+
+const RECIPE_RECONCILE_MODE_OPTIONS: SearchableSelectOption[] = [
+  {
+    value: "current",
+    label: "Current recipes apply to all past sales",
+    searchText: "as of now rewrite history wrong recipe",
+  },
+  {
+    value: "at_sale",
+    label: "Respect recipe dates — only genuine drift",
+    searchText: "effective from historical at sale time",
+  },
+];
 
 const OPS_MENU_SECTIONS: {
   group: string;
@@ -978,6 +1094,11 @@ const OPS_MENU_SECTIONS: {
       { id: "opening", label: "Add opening / extra stock", Icon: PlusCircleIcon },
       { id: "kitchen", label: "Record kitchen use", Icon: FlameIcon },
       { id: "adjustment", label: "Fix stock count", Icon: ArrowUpDownIcon },
+      {
+        id: "recipe_reconcile",
+        label: "Fix after recipe change",
+        Icon: RefreshCwIcon,
+      },
     ],
   },
   {
@@ -1012,6 +1133,8 @@ function supplierSelectOptions(
 }
 
 function isLowStock(item: InvItem): boolean {
+  // Linked cook items reorder on the source — ignore their local min stock.
+  if (item.yieldLink) return false;
   const stock = Number(item.stockOnHandBase);
   const min = Number(item.minStockBase);
   return Number.isFinite(stock) && Number.isFinite(min) && min > 0 && stock < min;
@@ -1070,6 +1193,24 @@ function StockActionCard(props: {
   );
 }
 
+/** Stock in purchase (conversion) units, max 2 decimals. */
+function formatStockInPurchaseUnits(item: {
+  stockOnHandBase: string;
+  baseUnitsPerPurchaseUnit: string;
+  purchaseUnit: string;
+  baseUnit: string;
+}): string {
+  const stock = Number(item.stockOnHandBase);
+  const factor = Number(item.baseUnitsPerPurchaseUnit);
+  if (!Number.isFinite(stock)) {
+    return `${item.stockOnHandBase} ${item.baseUnit}`;
+  }
+  if (!Number.isFinite(factor) || factor <= 0) {
+    return `${formatRecipeQtyBase(stock)} ${item.baseUnit}`;
+  }
+  return `${formatRecipeQtyBase(stock / factor)} ${item.purchaseUnit}`;
+}
+
 function ItemOnHandHint(props: { item: InvItem | undefined }) {
   const { item } = props;
   if (!item) return null;
@@ -1077,7 +1218,7 @@ function ItemOnHandHint(props: { item: InvItem | undefined }) {
     <p className="text-muted-foreground text-xs">
       Current stock:{" "}
       <span className="font-medium text-foreground tabular-nums">
-        {item.stockOnHandBase} {item.baseUnit}
+        {formatStockInPurchaseUnits(item)}
       </span>
     </p>
   );
@@ -1113,7 +1254,23 @@ function InventoryItemSelect(props: {
   className?: string;
 }) {
   const { value, onChange, items, className } = props;
-  const options = useMemo(() => inventoryItemSelectOptions(items), [items]);
+  const options = useMemo(() => {
+    const base = inventoryItemSelectOptions(items);
+    if (value && !base.some((o) => o.value === value)) {
+      const it = items.find((i) => i.id === value);
+      if (it) {
+        return [
+          {
+            value: it.id,
+            label: `${it.name} (${it.baseUnit})`,
+            searchText: `${it.name} ${it.category}`,
+          },
+          ...base,
+        ];
+      }
+    }
+    return base;
+  }, [items, value]);
   return (
     <SearchableSelect
       className={className}
@@ -1477,6 +1634,10 @@ export default function AdminInventoryPage() {
         item.avgCostPaisePerBase,
         item.baseUnitsPerPurchaseUnit,
       ),
+      yieldSourceItemId: item.yieldLink?.sourceItemId ?? "",
+      yieldPercent: item.yieldLink
+        ? String(item.yieldLink.yieldPercent)
+        : "",
     });
     setItemDialogOpen(true);
   };
@@ -1495,6 +1656,10 @@ export default function AdminInventoryPage() {
         item.avgCostPaisePerBase,
         item.baseUnitsPerPurchaseUnit,
       ),
+      yieldSourceItemId: item.yieldLink?.sourceItemId ?? "",
+      yieldPercent: item.yieldLink
+        ? String(item.yieldLink.yieldPercent)
+        : "",
     });
     setItemDialogOpen(true);
   };
@@ -1509,10 +1674,34 @@ export default function AdminInventoryPage() {
       toast.error("Base unit and purchase unit are required");
       return;
     }
-    const { unitCostRupees, ...itemFields } = itemForm;
-    const payload: Record<string, unknown> = { ...itemFields };
-    if (unitCostRupees.trim() !== "") {
+    if (itemForm.yieldSourceItemId) {
+      const pct = Number(itemForm.yieldPercent);
+      if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
+        toast.error("Yield % must be between 1 and 100");
+        return;
+      }
+      if (editingItemId && itemForm.yieldSourceItemId === editingItemId) {
+        toast.error("Item cannot come from itself");
+        return;
+      }
+    }
+    const { unitCostRupees, yieldSourceItemId, yieldPercent, ...itemFields } =
+      itemForm;
+    const hasYieldLink = yieldSourceItemId.trim() !== "";
+    const payload: Record<string, unknown> = {
+      ...itemFields,
+      // Linked cook items reorder/cost from the source — clear local min stock.
+      minStockBase: hasYieldLink ? "0" : itemFields.minStockBase,
+    };
+    if (!hasYieldLink && unitCostRupees.trim() !== "") {
       payload.ratePaisePerPurchaseUnit = rupeesToPaise(unitCostRupees);
+    }
+    if (hasYieldLink) {
+      payload.yieldSourceItemId = yieldSourceItemId.trim();
+      payload.yieldPercent = Number(yieldPercent);
+    } else {
+      payload.yieldSourceItemId = null;
+      payload.yieldPercent = null;
     }
     try {
       if (editingItemId) {
@@ -1858,6 +2047,7 @@ export default function AdminInventoryPage() {
     paymentType: "CREDIT",
     purchasedAt: new Date().toISOString().slice(0, 16),
     creditDays: "",
+    notes: "",
   });
 
   type PurchaseLineDraft = {
@@ -1892,6 +2082,11 @@ export default function AdminInventoryPage() {
   }, [purchaseLines]);
 
   const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
+  const [editingPurchaseId, setEditingPurchaseId] = useState<string | null>(null);
+  const [editingPurchaseBatchRef, setEditingPurchaseBatchRef] = useState<string | null>(
+    null,
+  );
+  const [purchaseSubmitting, setPurchaseSubmitting] = useState(false);
 
   const resetPurchaseForm = () => {
     setPurchase({
@@ -1899,6 +2094,7 @@ export default function AdminInventoryPage() {
       paymentType: "CREDIT",
       purchasedAt: new Date().toISOString().slice(0, 16),
       creditDays: "",
+      notes: "",
     });
     setPurchaseLines([
       {
@@ -1910,6 +2106,8 @@ export default function AdminInventoryPage() {
         lotCode: "",
       },
     ]);
+    setEditingPurchaseId(null);
+    setEditingPurchaseBatchRef(null);
   };
 
   const openNewPurchase = () => {
@@ -1917,29 +2115,90 @@ export default function AdminInventoryPage() {
     setPurchaseDialogOpen(true);
   };
 
-  const submitPurchase = async () => {
+  const openEditPurchase = (detail: PurchaseDetail) => {
+    if (!detail.editable) {
+      toast.error(
+        "This purchase can’t be edited because some received stock has already been used or returned.",
+      );
+      return;
+    }
+    setEditingPurchaseId(detail.id);
+    setEditingPurchaseBatchRef(detail.batchRef);
+    setPurchase({
+      supplierId: detail.supplierId,
+      paymentType: detail.paymentType,
+      purchasedAt: detail.purchasedAt.slice(0, 16),
+      creditDays:
+        detail.creditDays !== null && detail.creditDays !== undefined
+          ? String(detail.creditDays)
+          : "",
+      notes: detail.notes,
+    });
+    setPurchaseLines(
+      detail.lines.map((ln) => ({
+        id: crypto.randomUUID(),
+        inventoryItemId: ln.inventoryItemId,
+        qtyPurchase: ln.qtyPurchase,
+        rateRupees: paiseToRupeesInput(ln.ratePaisePerPurchaseUnit),
+        expiryDate: ln.expiryDate ? ln.expiryDate.slice(0, 10) : "",
+        lotCode: ln.lotCode,
+      })),
+    );
+    setViewingPurchase(null);
+    setPurchaseDetail(null);
+    setPurchaseDialogOpen(true);
+  };
+
+  const openEditPurchaseFromRow = async (p: PurchaseRow) => {
     try {
-      await adminFetch("/api/admin/inventory/purchases", {
-        method: "POST",
-        body: JSON.stringify({
-          supplierId: purchase.supplierId,
-          paymentType: purchase.paymentType,
-          purchasedAt: new Date(purchase.purchasedAt).toISOString(),
-          creditDays:
-            purchase.paymentType === "CREDIT" && purchase.creditDays.trim()
-              ? Number(purchase.creditDays)
-              : undefined,
-          lines: purchaseLines.map((l) => ({
-            inventoryItemId: l.inventoryItemId,
-            qtyPurchase: l.qtyPurchase,
-            ratePaisePerPurchaseUnit: rupeesToPaise(l.rateRupees),
-            expiryDate: l.expiryDate ? new Date(l.expiryDate).toISOString() : undefined,
-            lotCode: l.lotCode || undefined,
-          })),
-        }),
-      });
-      toast.success("Purchase recorded");
+      const r = await adminFetch<{ purchase: PurchaseDetail }>(
+        `/api/admin/inventory/purchases/${p.id}`,
+      );
+      openEditPurchase(r.purchase);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load purchase");
+    }
+  };
+
+  const submitPurchase = async () => {
+    setPurchaseSubmitting(true);
+    try {
+      const payload = {
+        supplierId: purchase.supplierId,
+        paymentType: purchase.paymentType,
+        purchasedAt: new Date(purchase.purchasedAt).toISOString(),
+        creditDays:
+          purchase.paymentType === "CREDIT" && purchase.creditDays.trim()
+            ? Number(purchase.creditDays)
+            : undefined,
+        notes: purchase.notes.trim() || undefined,
+        lines: purchaseLines.map((l) => ({
+          inventoryItemId: l.inventoryItemId,
+          qtyPurchase: l.qtyPurchase,
+          ratePaisePerPurchaseUnit: rupeesToPaise(l.rateRupees),
+          expiryDate: l.expiryDate ? new Date(l.expiryDate).toISOString() : undefined,
+          lotCode: l.lotCode || undefined,
+        })),
+      };
+      if (editingPurchaseId) {
+        await adminFetch(`/api/admin/inventory/purchases/${editingPurchaseId}`, {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        });
+        toast.success(
+          editingPurchaseBatchRef
+            ? `Purchase ${editingPurchaseBatchRef} updated`
+            : "Purchase updated",
+        );
+      } else {
+        await adminFetch("/api/admin/inventory/purchases", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        toast.success("Purchase recorded");
+      }
       setPurchaseDialogOpen(false);
+      const supplierId = purchase.supplierId;
       resetPurchaseForm();
       await Promise.all([
         loadItems(),
@@ -1947,11 +2206,43 @@ export default function AdminInventoryPage() {
         loadSuppliers(),
         loadPurchases(),
         loadMovements(),
-        refreshProfileIfOpen(purchase.supplierId),
+        refreshProfileIfOpen(supplierId),
       ]);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Purchase failed");
+      toast.error(
+        e instanceof Error
+          ? e.message
+          : editingPurchaseId
+            ? "Update failed"
+            : "Purchase failed",
+      );
+    } finally {
+      setPurchaseSubmitting(false);
     }
+  };
+
+  const [viewingPurchase, setViewingPurchase] = useState<PurchaseRow | null>(null);
+  const [purchaseDetail, setPurchaseDetail] = useState<PurchaseDetail | null>(null);
+  const [purchaseDetailLoading, setPurchaseDetailLoading] = useState(false);
+
+  const openPurchaseDetail = (p: PurchaseRow) => {
+    setViewingPurchase(p);
+    setPurchaseDetail(null);
+    setPurchaseDetailLoading(true);
+    void (async () => {
+      try {
+        const r = await adminFetch<{ purchase: PurchaseDetail }>(
+          `/api/admin/inventory/purchases/${p.id}`,
+        );
+        setPurchaseDetail(r.purchase);
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Failed to load purchase details",
+        );
+      } finally {
+        setPurchaseDetailLoading(false);
+      }
+    })();
   };
 
   const [deletingPurchase, setDeletingPurchase] = useState<PurchaseRow | null>(null);
@@ -1965,6 +2256,10 @@ export default function AdminInventoryPage() {
         method: "DELETE",
       });
       toast.success(`Purchase ${deletingPurchase.batchRef} deleted and reversed`);
+      if (viewingPurchase?.id === deletingPurchase.id) {
+        setViewingPurchase(null);
+        setPurchaseDetail(null);
+      }
       setDeletingPurchase(null);
       await Promise.all([
         loadItems(),
@@ -2527,6 +2822,16 @@ export default function AdminInventoryPage() {
     soldAt: "",
   });
   const [sellSubmitting, setSellSubmitting] = useState(false);
+  const [recipeReconcilePreview, setRecipeReconcilePreview] =
+    useState<RecipeReconcilePreview | null>(null);
+  const [recipeReconcileLoading, setRecipeReconcileLoading] = useState(false);
+  const [recipeReconcileApplying, setRecipeReconcileApplying] = useState(false);
+  const [recipeReconcileConfirmed, setRecipeReconcileConfirmed] =
+    useState(false);
+  const [recipeReconcileMode, setRecipeReconcileMode] =
+    useState<RecipeReconcileMode>("at_sale");
+  const [recipeReconcileFrom, setRecipeReconcileFrom] = useState("");
+  const [recipeReconcileTo, setRecipeReconcileTo] = useState("");
 
   const postOpening = async () => {
     const item = items.find((i) => i.id === ops.openingItemId);
@@ -2680,6 +2985,91 @@ export default function AdminInventoryPage() {
       await Promise.all([loadItems(), loadSummary(), loadMovements()]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
+    }
+  };
+
+  const recipeReconcileQuery = () => {
+    const params = new URLSearchParams({ mode: recipeReconcileMode });
+    if (recipeReconcileFrom.trim()) params.set("from", recipeReconcileFrom.trim());
+    if (recipeReconcileTo.trim()) params.set("to", recipeReconcileTo.trim());
+    return params.toString();
+  };
+
+  const previewRecipeReconcile = async () => {
+    if (
+      recipeReconcileFrom.trim() &&
+      recipeReconcileTo.trim() &&
+      recipeReconcileFrom.trim() > recipeReconcileTo.trim()
+    ) {
+      toast.error("From date must be on or before To date");
+      return;
+    }
+    setRecipeReconcileLoading(true);
+    setRecipeReconcileConfirmed(false);
+    try {
+      const preview = await adminFetch<RecipeReconcilePreview>(
+        `/api/admin/inventory/reconcile-recipes?${recipeReconcileQuery()}`,
+      );
+      setRecipeReconcilePreview(preview);
+      if (preview.fromDate && !recipeReconcileFrom.trim()) {
+        setRecipeReconcileFrom(preview.fromDate);
+      }
+      if (preview.toDate && !recipeReconcileTo.trim()) {
+        setRecipeReconcileTo(preview.toDate);
+      }
+      if (preview.changeCount === 0) {
+        toast.success("Nothing to fix for this date range");
+      } else {
+        toast.success(
+          `Preview ready — ${preview.changeCount} ingredient${preview.changeCount === 1 ? "" : "s"} to adjust`,
+        );
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Preview failed");
+    } finally {
+      setRecipeReconcileLoading(false);
+    }
+  };
+
+  const applyRecipeReconcile = async () => {
+    if (!recipeReconcileConfirmed) {
+      toast.error("Confirm that recipes are fixed before applying");
+      return;
+    }
+    if (!recipeReconcilePreview || recipeReconcilePreview.changeCount === 0) {
+      toast.error("Run preview first — nothing to apply");
+      return;
+    }
+    if (recipeReconcilePreview.mode !== recipeReconcileMode) {
+      toast.error("Mode changed — run preview again before applying");
+      return;
+    }
+    setRecipeReconcileApplying(true);
+    try {
+      const out = await adminFetch<RecipeReconcilePreview>(
+        "/api/admin/inventory/reconcile-recipes",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            confirm: true,
+            mode: recipeReconcileMode,
+            from: recipeReconcileFrom.trim(),
+            to: recipeReconcileTo.trim(),
+          }),
+        },
+      );
+      setRecipeReconcilePreview(out);
+      setRecipeReconcileConfirmed(false);
+      toast.success(
+        out.appliedCount
+          ? `Adjusted ${out.appliedCount} ingredient${out.appliedCount === 1 ? "" : "s"}`
+          : "Nothing to adjust",
+      );
+      await Promise.all([loadItems(), loadSummary(), loadMovements()]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Apply failed");
+    } finally {
+      setRecipeReconcileApplying(false);
     }
   };
 
@@ -2992,6 +3382,18 @@ export default function AdminInventoryPage() {
         case "stock-desc":
           return (
             Number(b.stockOnHandBase) - Number(a.stockOnHandBase) ||
+            a.name.localeCompare(b.name)
+          );
+        case "rate-asc":
+          return (
+            itemRatePaisePerPurchaseUnit(a, items, settings?.costingMethod) -
+              itemRatePaisePerPurchaseUnit(b, items, settings?.costingMethod) ||
+            a.name.localeCompare(b.name)
+          );
+        case "rate-desc":
+          return (
+            itemRatePaisePerPurchaseUnit(b, items, settings?.costingMethod) -
+              itemRatePaisePerPurchaseUnit(a, items, settings?.costingMethod) ||
             a.name.localeCompare(b.name)
           );
         case "value-asc":
@@ -3545,7 +3947,6 @@ export default function AdminInventoryPage() {
           <div className="flex flex-col gap-4 lg:flex-row">
             <PillRankChartCard
               title="Top items by stock value"
-              subtitle={`Top 5 on-hand value · ${costingMethodLabel(kpis?.costingMethod)} cost`}
               topTabLabel="Top value"
               bottomTabLabel="Low value"
               topRows={stockTopPillRows}
@@ -3555,11 +3956,12 @@ export default function AdminInventoryPage() {
               emptyMessage="No stock value to chart."
               formatValue={(v) => formatRupees(v)}
               valueTitle={(r) => `${r.label}: ${formatRupees(r.value)}`}
+              maxItems={10}
+              variant="rank-bars"
             />
 
             <PillRankChartCard
               title="Supplier payables"
-              subtitle="Top 5 outstanding balances owed to suppliers."
               topTabLabel="Top owed"
               bottomTabLabel="Low owed"
               topRows={supplierTopPillRows}
@@ -3570,6 +3972,8 @@ export default function AdminInventoryPage() {
               formatValue={(v) => formatRupees(v)}
               valueTitle={(r) => `${r.label}: ${formatRupees(r.value)} payable`}
               filterTopPositive
+              maxItems={10}
+              variant="rank-bars"
             />
           </div>
 
@@ -3598,8 +4002,11 @@ export default function AdminInventoryPage() {
                             <span className="text-muted-foreground text-xs">({r.baseUnit})</span>
                           </TableCell>
                           <TableCell className="text-right text-sm tabular-nums">
-                            {r.stockOnHandBase}
-                            <span className="text-muted-foreground"> / {r.minStockBase}</span>
+                            {formatRecipeQtyBase(r.stockOnHandBase)}
+                            <span className="text-muted-foreground">
+                              {" "}
+                              / {formatRecipeQtyBase(r.minStockBase)}
+                            </span>
                           </TableCell>
                         </TableRow>
                       ))
@@ -3777,6 +4184,14 @@ export default function AdminInventoryPage() {
                     align="right"
                   />
                   <SortableTableHead
+                    label="Rate"
+                    column="rate"
+                    sort={itemSort}
+                    onSortChange={setItemSort}
+                    className="text-right"
+                    align="right"
+                  />
+                  <SortableTableHead
                     label="Stock Value"
                     column="value"
                     sort={itemSort}
@@ -3796,20 +4211,28 @@ export default function AdminInventoryPage() {
               <TableBody>
                 {items.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                       No items yet. Add one to track stock and purchases.
                     </TableCell>
                   </TableRow>
                 ) : filteredItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                       No items match your search or filters.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredItems.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div>{r.name}</div>
+                        {r.yieldLink ? (
+                          <div className="mt-0.5 font-normal text-muted-foreground text-xs">
+                            From {r.yieldLink.sourceItemName || "source"} @{" "}
+                            {r.yieldLink.yieldPercent}% yield
+                          </div>
+                        ) : null}
+                      </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {r.category.trim() || "—"}
                       </TableCell>
@@ -3817,12 +4240,30 @@ export default function AdminInventoryPage() {
                         1 {r.purchaseUnit} = {r.baseUnitsPerPurchaseUnit} {r.baseUnit}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-sm">
-                        {r.stockOnHandBase} {r.baseUnit}
+                        {r.yieldLink ? (
+                          <span className="text-muted-foreground" title={`Stock on ${r.yieldLink.sourceItemName}`}>
+                            —
+                          </span>
+                        ) : (
+                          formatStockInPurchaseUnits(r)
+                        )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-sm">
-                        {formatRupees(
-                          itemStockValuePaise(r, settings?.costingMethod),
-                        )}
+                        {(() => {
+                          const rate = itemRatePaisePerPurchaseUnit(
+                            r,
+                            items,
+                            settings?.costingMethod,
+                          );
+                          return rate > 0 ? `${formatRupees(rate)}/${r.purchaseUnit}` : "—";
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-sm">
+                        {r.yieldLink
+                          ? "—"
+                          : formatRupees(
+                              itemStockValuePaise(r, settings?.costingMethod),
+                            )}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -4011,51 +4452,121 @@ export default function AdminInventoryPage() {
                 </div>
                 <div className="space-y-2">
                   <InventoryFieldLabel
-                    htmlFor="inv-item-dialog-min-stock"
-                    label="Minimum stock (optional)"
+                    htmlFor="inv-item-dialog-yield-source"
+                    label="Comes from (yield link) — optional"
                     hint={
                       <>
-                        <span className="font-medium text-foreground">Why needed:</span> Low-stock
-                        alerts on Overview. Use <strong>0</strong> to disable.
-                      </>
-                    }
-                  />
-                  <Input
-                    id="inv-item-dialog-min-stock"
-                    inputMode="decimal"
-                    placeholder="0 = no alert"
-                    value={itemForm.minStockBase}
-                    onChange={(e) =>
-                      setItemForm({ ...itemForm, minStockBase: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <InventoryFieldLabel
-                    htmlFor="inv-item-dialog-unit-cost"
-                    label={`Unit cost (₹ / ${itemForm.purchaseUnit || "purchase unit"}) — optional`}
-                    hint={
-                      <>
-                        <span className="font-medium text-foreground">What to enter:</span> Typical
-                        purchase price for 1 {itemForm.purchaseUnit || "purchase unit"} (same as a
-                        purchase rate).
+                        <span className="font-medium text-foreground">What to enter:</span>{" "}
+                        The purchase item this cook item is made from (e.g. Chicken Boneless
+                        comes from Frozen chicken).
                         <br />
-                        <span className="font-medium text-foreground">Used in:</span> Inventory
-                        value, recipe costing, and wastage worth. Leave blank if you will set cost
-                        later via a purchase or opening stock.
+                        <span className="font-medium text-foreground">Used in:</span> When a
+                        recipe uses this item, stock and cost are taken from the source at the
+                        yield %. Unit cost and min stock are set on the source instead.
                       </>
                     }
                   />
-                  <Input
-                    id="inv-item-dialog-unit-cost"
-                    inputMode="decimal"
-                    placeholder="e.g. 450"
-                    value={itemForm.unitCostRupees}
-                    onChange={(e) =>
-                      setItemForm({ ...itemForm, unitCostRupees: e.target.value })
+                  <SearchableSelect
+                    options={[
+                      { value: "", label: "None — purchase this item directly" },
+                      ...inventoryItemSelectOptions(
+                        items.filter((i) => i.id !== editingItemId),
+                      ),
+                    ]}
+                    value={itemForm.yieldSourceItemId}
+                    onValueChange={(yieldSourceItemId) =>
+                      setItemForm({
+                        ...itemForm,
+                        yieldSourceItemId,
+                        yieldPercent:
+                          yieldSourceItemId && !itemForm.yieldPercent
+                            ? "80"
+                            : itemForm.yieldPercent,
+                      })
                     }
+                    placeholder="Select source item…"
+                    searchPlaceholder="Search items…"
                   />
                 </div>
+                {itemForm.yieldSourceItemId ? (
+                  <div className="space-y-2">
+                    <InventoryFieldLabel
+                      htmlFor="inv-item-dialog-yield-percent"
+                      label="Yield %"
+                      hint={
+                        <>
+                          <span className="font-medium text-foreground">What to enter:</span>{" "}
+                          Usable percent of the source (e.g. 80 means 1 kg source → 800 g of
+                          this item).
+                        </>
+                      }
+                    />
+                    <Input
+                      id="inv-item-dialog-yield-percent"
+                      inputMode="decimal"
+                      placeholder="e.g. 80"
+                      value={itemForm.yieldPercent}
+                      onChange={(e) =>
+                        setItemForm({ ...itemForm, yieldPercent: e.target.value })
+                      }
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      Unit cost and minimum stock are hidden — use the source item for
+                      purchase price and reorder alerts.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <InventoryFieldLabel
+                        htmlFor="inv-item-dialog-min-stock"
+                        label="Minimum stock (optional)"
+                        hint={
+                          <>
+                            <span className="font-medium text-foreground">Why needed:</span>{" "}
+                            Low-stock alerts on Overview. Use <strong>0</strong> to disable.
+                          </>
+                        }
+                      />
+                      <Input
+                        id="inv-item-dialog-min-stock"
+                        inputMode="decimal"
+                        placeholder="0 = no alert"
+                        value={itemForm.minStockBase}
+                        onChange={(e) =>
+                          setItemForm({ ...itemForm, minStockBase: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <InventoryFieldLabel
+                        htmlFor="inv-item-dialog-unit-cost"
+                        label={`Unit cost (₹ / ${itemForm.purchaseUnit || "purchase unit"}) — optional`}
+                        hint={
+                          <>
+                            <span className="font-medium text-foreground">What to enter:</span>{" "}
+                            Typical purchase price for 1{" "}
+                            {itemForm.purchaseUnit || "purchase unit"} (same as a purchase
+                            rate).
+                            <br />
+                            <span className="font-medium text-foreground">Used in:</span>{" "}
+                            Inventory value, recipe costing, and wastage worth. Leave blank if
+                            you will set cost later via a purchase or opening stock.
+                          </>
+                        }
+                      />
+                      <Input
+                        id="inv-item-dialog-unit-cost"
+                        inputMode="decimal"
+                        placeholder="e.g. 450"
+                        value={itemForm.unitCostRupees}
+                        onChange={(e) =>
+                          setItemForm({ ...itemForm, unitCostRupees: e.target.value })
+                        }
+                      />
+                    </div>
+                  </>
+                )}
               </div>
               <DialogFooter>
                 <Button
@@ -4974,7 +5485,7 @@ export default function AdminInventoryPage() {
                   <TableHead>Payment</TableHead>
                   <TableHead className="text-right">Lines</TableHead>
                   <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="w-[4rem] text-right">Actions</TableHead>
+                  <TableHead className="w-[8.5rem] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -4992,7 +5503,11 @@ export default function AdminInventoryPage() {
                   </TableRow>
                 ) : (
                   filteredPurchases.map((p) => (
-                    <TableRow key={p.id}>
+                    <TableRow
+                      key={p.id}
+                      className="cursor-pointer hover:bg-muted/40"
+                      onClick={() => openPurchaseDetail(p)}
+                    >
                       <TableCell className="font-medium text-sm">{p.batchRef}</TableCell>
                       <TableCell>{p.supplierName}</TableCell>
                       <TableCell className="text-muted-foreground text-sm tabular-nums">
@@ -5005,17 +5520,46 @@ export default function AdminInventoryPage() {
                       <TableCell className="text-right tabular-nums">
                         {formatRupees(p.totalPaise)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => setDeletingPurchase(p)}
-                        >
-                          <Trash2Icon className="size-4" aria-hidden />
-                          <span className="sr-only">Delete purchase {p.batchRef}</span>
-                        </Button>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <div className="inline-flex items-center justify-end gap-0.5">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openPurchaseDetail(p);
+                            }}
+                          >
+                            <EyeIcon className="size-4" aria-hidden />
+                            <span className="sr-only">View purchase {p.batchRef}</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void openEditPurchaseFromRow(p);
+                            }}
+                          >
+                            <PencilIcon className="size-4" aria-hidden />
+                            <span className="sr-only">Edit purchase {p.batchRef}</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingPurchase(p);
+                            }}
+                          >
+                            <Trash2Icon className="size-4" aria-hidden />
+                            <span className="sr-only">Delete purchase {p.batchRef}</span>
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -5024,17 +5568,271 @@ export default function AdminInventoryPage() {
             </Table>
           </div>
 
-          <Dialog open={purchaseDialogOpen} onOpenChange={setPurchaseDialogOpen}>
+          <Dialog
+            open={viewingPurchase !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setViewingPurchase(null);
+                setPurchaseDetail(null);
+              }
+            }}
+          >
+            <DialogContent
+              className="flex h-[min(92vh,880px)] w-[min(96vw,64rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,64rem)]"
+              showCloseButton
+            >
+              {viewingPurchase ? (
+                <>
+                  <DialogHeader className="shrink-0 border-b px-5 py-4 text-left">
+                    <DialogTitle className="text-xl">
+                      {viewingPurchase.batchRef}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {viewingPurchase.supplierName} ·{" "}
+                      {viewingPurchase.purchasedAt.slice(0, 16).replace("T", " ")}
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+                    {purchaseDetailLoading && !purchaseDetail ? (
+                      <AdminTableSkeleton rows={5} />
+                    ) : !purchaseDetail ? (
+                      <p className="text-muted-foreground text-sm">
+                        Could not load this purchase.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-4">
+                          <div>
+                            <p className="text-muted-foreground text-xs">Payment</p>
+                            <p className="font-medium text-sm">
+                              {purchaseDetail.paymentType}
+                              {purchaseDetail.creditDays !== null
+                                ? ` · ${purchaseDetail.creditDays} days`
+                                : ""}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">Due</p>
+                            <p className="font-medium text-sm tabular-nums">
+                              {purchaseDetail.dueAt
+                                ? purchaseDetail.dueAt.slice(0, 10)
+                                : "—"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">Items</p>
+                            <p className="font-medium text-sm tabular-nums">
+                              {purchaseDetail.lines.length}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground text-xs">Total</p>
+                            <p className="font-medium text-sm tabular-nums">
+                              {formatRupees(purchaseDetail.totalPaise)}
+                            </p>
+                          </div>
+                          {purchaseDetail.supplierPhone.trim() ? (
+                            <div>
+                              <p className="text-muted-foreground text-xs">
+                                Supplier phone
+                              </p>
+                              <p className="font-medium text-sm tabular-nums">
+                                {purchaseDetail.supplierPhone}
+                              </p>
+                            </div>
+                          ) : null}
+                          {purchaseDetail.notes.trim() ? (
+                            <div className="sm:col-span-4">
+                              <p className="text-muted-foreground text-xs">Notes</p>
+                              <p className="text-sm">{purchaseDetail.notes}</p>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div className="overflow-hidden rounded-xl border bg-card">
+                          <div className="overflow-x-auto">
+                            <Table className="min-w-[48rem]">
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Item</TableHead>
+                                  <TableHead className="text-right">Qty</TableHead>
+                                  <TableHead className="text-right">Received</TableHead>
+                                  <TableHead className="text-right">Remaining</TableHead>
+                                  <TableHead className="text-right">Rate</TableHead>
+                                  <TableHead>Expiry</TableHead>
+                                  <TableHead>Lot</TableHead>
+                                  <TableHead className="text-right">Total</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {purchaseDetail.lines.length === 0 ? (
+                                  <TableRow>
+                                    <TableCell
+                                      colSpan={8}
+                                      className="py-8 text-center text-muted-foreground"
+                                    >
+                                      This purchase has no line items.
+                                    </TableCell>
+                                  </TableRow>
+                                ) : (
+                                  purchaseDetail.lines.map((ln) => (
+                                    <TableRow key={ln.id}>
+                                      <TableCell>
+                                        <p className="font-medium text-sm">{ln.itemName}</p>
+                                        {ln.category.trim() ? (
+                                          <p className="text-muted-foreground text-xs">
+                                            {ln.category}
+                                          </p>
+                                        ) : null}
+                                      </TableCell>
+                                      <TableCell className="text-right text-sm tabular-nums">
+                                        {formatRecipeQtyBase(ln.qtyPurchase)}{" "}
+                                        {ln.purchaseUnit}
+                                      </TableCell>
+                                      <TableCell className="text-right text-sm tabular-nums">
+                                        {formatRecipeQtyBase(ln.qtyBaseReceived)}{" "}
+                                        {ln.baseUnit}
+                                      </TableCell>
+                                      <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
+                                        {ln.remainingQtyBase === null
+                                          ? "—"
+                                          : `${formatRecipeQtyBase(ln.remainingQtyBase)} ${ln.baseUnit}`}
+                                      </TableCell>
+                                      <TableCell className="text-right text-sm tabular-nums">
+                                        {formatRupees(ln.ratePaisePerPurchaseUnit)}
+                                        <span className="text-muted-foreground">
+                                          {" "}
+                                          / {ln.purchaseUnit}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="text-sm tabular-nums text-muted-foreground">
+                                        {ln.expiryDate ? ln.expiryDate.slice(0, 10) : "—"}
+                                      </TableCell>
+                                      <TableCell className="text-sm text-muted-foreground">
+                                        {ln.lotCode.trim() || "—"}
+                                      </TableCell>
+                                      <TableCell className="text-right text-sm font-medium tabular-nums">
+                                        {formatRupees(ln.lineTotalPaise)}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
+
+                        {purchaseDetail.returns.length > 0 ? (
+                          <div className="overflow-hidden rounded-xl border bg-card">
+                            <div className="border-b px-4 py-3">
+                              <p className="font-medium text-sm">Returns against this purchase</p>
+                            </div>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Date</TableHead>
+                                  <TableHead className="text-right">Lines</TableHead>
+                                  <TableHead>Notes</TableHead>
+                                  <TableHead className="text-right">Credit</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {purchaseDetail.returns.map((r) => (
+                                  <TableRow key={r.id}>
+                                    <TableCell className="text-sm tabular-nums">
+                                      {r.returnedAt.slice(0, 10)}
+                                    </TableCell>
+                                    <TableCell className="text-right text-sm tabular-nums">
+                                      {r.lineCount}
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground text-sm">
+                                      {r.notes.trim() || "—"}
+                                    </TableCell>
+                                    <TableCell className="text-right text-sm tabular-nums">
+                                      {formatRupees(r.totalCreditPaise)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ) : null}
+
+                        {!purchaseDetail.editable ? (
+                          <p className="text-muted-foreground text-xs">
+                            Editing is locked because stock from this purchase has already
+                            been used or returned.
+                          </p>
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+
+                  <DialogFooter className="shrink-0 border-t px-5 py-4 sm:justify-between">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => {
+                        const target = viewingPurchase;
+                        setViewingPurchase(null);
+                        setPurchaseDetail(null);
+                        setDeletingPurchase(target);
+                      }}
+                    >
+                      <Trash2Icon className="mr-2 size-4" aria-hidden />
+                      Delete
+                    </Button>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {purchaseDetail?.editable ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => openEditPurchase(purchaseDetail)}
+                        >
+                          <PencilIcon className="mr-2 size-4" aria-hidden />
+                          Edit
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          setViewingPurchase(null);
+                          setPurchaseDetail(null);
+                        }}
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  </DialogFooter>
+                </>
+              ) : null}
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
+            open={purchaseDialogOpen}
+            onOpenChange={(open) => {
+              setPurchaseDialogOpen(open);
+              if (!open) resetPurchaseForm();
+            }}
+          >
             <DialogContent className="flex h-[min(92vh,880px)] w-[min(96vw,72rem)] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(96vw,72rem)]">
               <DialogHeader className="shrink-0 border-b px-6 py-4">
-                <DialogTitle>Record purchase</DialogTitle>
+                <DialogTitle>
+                  {editingPurchaseId
+                    ? `Edit purchase${editingPurchaseBatchRef ? ` ${editingPurchaseBatchRef}` : ""}`
+                    : "Record purchase"}
+                </DialogTitle>
               </DialogHeader>
               <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
                 <div className="grid gap-3 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label>Supplier</Label>
                     <SearchableSelect
-                      options={supplierSelectOptions(suppliers, true)}
+                      options={supplierSelectOptions(suppliers, !editingPurchaseId)}
                       value={purchase.supplierId}
                       onValueChange={(v) =>
                         setPurchase({ ...purchase, supplierId: v })
@@ -5078,6 +5876,16 @@ export default function AdminInventoryPage() {
                       />
                     </div>
                   ) : null}
+                  <div className="space-y-2 md:col-span-3">
+                    <Label>Notes (optional)</Label>
+                    <Input
+                      value={purchase.notes}
+                      onChange={(e) =>
+                        setPurchase({ ...purchase, notes: e.target.value })
+                      }
+                      placeholder="e.g. Invoice #, delivery note…"
+                    />
+                  </div>
                 </div>
 
                 <div className="rounded-lg border p-3">
@@ -5223,12 +6031,26 @@ export default function AdminInventoryPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => setPurchaseDialogOpen(false)}
+                  disabled={purchaseSubmitting}
+                  onClick={() => {
+                    setPurchaseDialogOpen(false);
+                    resetPurchaseForm();
+                  }}
                 >
                   Cancel
                 </Button>
-                <Button type="button" onClick={() => void submitPurchase()}>
-                  Post purchase
+                <Button
+                  type="button"
+                  disabled={purchaseSubmitting}
+                  onClick={() => void submitPurchase()}
+                >
+                  {purchaseSubmitting
+                    ? editingPurchaseId
+                      ? "Saving…"
+                      : "Posting…"
+                    : editingPurchaseId
+                      ? "Save changes"
+                      : "Post purchase"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -6487,6 +7309,186 @@ export default function AdminInventoryPage() {
                     searchPlaceholder="Search reasons…"
                   />
                 </div>
+              </StockActionCard>
+              ) : null}
+
+              {opsMenu === "recipe_reconcile" ? (
+              <StockActionCard
+                title="Fix stock after recipe change"
+                description="Pick the sales date range to check, preview ingredient differences, then apply corrections. Safe to run again for the same range — prior corrections are netted out."
+                whenToUse="You fixed wrong or missing recipes, and on-hand stock drifted because earlier sales used the old recipes."
+                action={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={recipeReconcileLoading || recipeReconcileApplying}
+                    onClick={() => void previewRecipeReconcile()}
+                  >
+                    {recipeReconcileLoading ? "Calculating…" : "Preview differences"}
+                  </Button>
+                }
+              >
+                <div className="space-y-2">
+                  <Label>Compare against</Label>
+                  <SearchableSelect
+                    options={RECIPE_RECONCILE_MODE_OPTIONS}
+                    value={recipeReconcileMode}
+                    onValueChange={(v) => {
+                      setRecipeReconcileMode(
+                        v === "at_sale" ? "at_sale" : "current",
+                      );
+                      setRecipeReconcilePreview(null);
+                      setRecipeReconcileConfirmed(false);
+                    }}
+                    placeholder="Choose…"
+                    searchPlaceholder="Search…"
+                  />
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    {recipeReconcileMode === "current"
+                      ? "Treats today's recipes as if they always applied. Also flags recipes that were added or changed after a sale, so expect larger numbers."
+                      : "Uses the recipe that was effective on each sale's own date, so planned recipe changes are ignored and only real mis-deductions show up."}
+                  </p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-reconcile-from">From date</Label>
+                    <Input
+                      id="recipe-reconcile-from"
+                      type="date"
+                      value={recipeReconcileFrom}
+                      onChange={(e) => {
+                        setRecipeReconcileFrom(e.target.value);
+                        setRecipeReconcilePreview(null);
+                        setRecipeReconcileConfirmed(false);
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="recipe-reconcile-to">To date</Label>
+                    <Input
+                      id="recipe-reconcile-to"
+                      type="date"
+                      value={recipeReconcileTo}
+                      onChange={(e) => {
+                        setRecipeReconcileTo(e.target.value);
+                        setRecipeReconcilePreview(null);
+                        setRecipeReconcileConfirmed(false);
+                      }}
+                    />
+                  </div>
+                </div>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  Inclusive IST business days. Leave From empty to start at the
+                  first sale (up to To). Leave To empty to end at today. Leave both
+                  empty for all sales. Only POS/web sales — not wastage or vendor
+                  sales.
+                </p>
+                {recipeReconcilePreview ? (
+                  <div className="space-y-3">
+                    <p className="text-sm">
+                      Range used:{" "}
+                      <span className="font-medium">
+                        {recipeReconcilePreview.fromDate ?? "all"}
+                        {" → "}
+                        {recipeReconcilePreview.toDate ?? "all"}
+                      </span>
+                      {" · "}
+                      Orders checked:{" "}
+                      <span className="font-medium">
+                        {recipeReconcilePreview.orderCount}
+                      </span>
+                      {" · "}
+                      Ingredients to change:{" "}
+                      <span className="font-medium">
+                        {recipeReconcilePreview.changeCount}
+                      </span>
+                    </p>
+                    {recipeReconcilePreview.changeCount === 0 ? (
+                      <p className="text-muted-foreground text-sm">
+                        No adjustments needed for this date range.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="max-h-80 overflow-auto rounded-md border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Ingredient</TableHead>
+                                <TableHead className="text-right">Was deducted</TableHead>
+                                <TableHead className="text-right">Should be</TableHead>
+                                <TableHead className="text-right">Fix</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {recipeReconcilePreview.lines
+                                .filter((l) => l.direction !== "none")
+                                .map((l) => (
+                                  <TableRow key={l.inventoryItemId}>
+                                    <TableCell>
+                                      <div className="font-medium">{l.name}</div>
+                                      <div className="text-muted-foreground text-xs">
+                                        {l.baseUnit}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-right tabular-nums">
+                                      {formatRecipeQtyBase(l.effectiveDeductedBase)}
+                                    </TableCell>
+                                    <TableCell className="text-right tabular-nums">
+                                      {formatRecipeQtyBase(l.shouldBase)}
+                                    </TableCell>
+                                    <TableCell className="text-right tabular-nums">
+                                      <Badge
+                                        variant={
+                                          l.direction === "up"
+                                            ? "default"
+                                            : "secondary"
+                                        }
+                                      >
+                                        {l.direction === "up" ? "Add" : "Remove"}{" "}
+                                        {formatRecipeQtyBase(l.qtyBase)}
+                                      </Badge>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                        <label className="flex items-start gap-2.5 rounded-md border bg-muted/30 px-3 py-2.5 text-sm leading-snug">
+                          <Checkbox
+                            className="mt-0.5"
+                            checked={recipeReconcileConfirmed}
+                            onCheckedChange={(v) =>
+                              setRecipeReconcileConfirmed(v === true)
+                            }
+                            disabled={recipeReconcileApplying}
+                          />
+                          <span>
+                            I have finished fixing recipes and reviewed the preview.
+                            Apply corrections to stock.
+                          </span>
+                        </label>
+                        <Button
+                          type="button"
+                          disabled={
+                            recipeReconcileLoading ||
+                            recipeReconcileApplying ||
+                            !recipeReconcileConfirmed
+                          }
+                          onClick={() => void applyRecipeReconcile()}
+                        >
+                          {recipeReconcileApplying
+                            ? "Applying…"
+                            : "Apply stock corrections"}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">
+                    Optionally set From / To, then Preview. Confirm and Apply appear
+                    after the preview.
+                  </p>
+                )}
               </StockActionCard>
               ) : null}
 

@@ -1,6 +1,11 @@
 import type { Prisma } from "@prisma/client";
 
+import type {
+  MenuConsumptionCache,
+  RecipeVersionWithIngredients,
+} from "@/lib/inventory/consumption-cache";
 import { D0, d } from "@/lib/inventory/decimal-utils";
+import { applyYieldLinksToConsumption } from "@/lib/inventory/yield-links";
 
 const MAX_RECIPE_NEST_DEPTH = 8;
 
@@ -23,27 +28,11 @@ export async function resolveRecipeVersion(
   menuItemId: string,
   variationId: string,
   at: Date,
+  cache?: MenuConsumptionCache,
 ): Promise<ResolvedRecipe | null> {
-  const specific = await tx.recipeVersion.findFirst({
-    where: {
-      menuItemId,
-      variationId,
-      effectiveFrom: { lte: at },
-    },
-    orderBy: { effectiveFrom: "desc" },
-    include: { ingredients: true },
-  });
-  const chosen = specific
-    ? specific
-    : await tx.recipeVersion.findFirst({
-        where: {
-          menuItemId,
-          variationId: null,
-          effectiveFrom: { lte: at },
-        },
-        orderBy: { effectiveFrom: "desc" },
-        include: { ingredients: true },
-      });
+  const chosen = cache
+    ? pickRecipeVersion(await cache.versionsFor(tx, menuItemId), variationId, at)
+    : await findRecipeVersion(tx, menuItemId, variationId, at);
   if (!chosen) return null;
 
   const ingredients: ResolvedRecipe["ingredients"] = [];
@@ -72,6 +61,48 @@ export async function resolveRecipeVersion(
   };
 }
 
+/** Latest version effective at `at`, preferring the variation-specific recipe. */
+function pickRecipeVersion(
+  versions: RecipeVersionWithIngredients[],
+  variationId: string,
+  at: Date,
+): RecipeVersionWithIngredients | null {
+  const effective = versions.filter((v) => v.effectiveFrom.getTime() <= at.getTime());
+  return (
+    effective.find((v) => v.variationId === variationId) ??
+    effective.find((v) => v.variationId === null) ??
+    null
+  );
+}
+
+async function findRecipeVersion(
+  tx: Prisma.TransactionClient,
+  menuItemId: string,
+  variationId: string,
+  at: Date,
+): Promise<RecipeVersionWithIngredients | null> {
+  const specific = await tx.recipeVersion.findFirst({
+    where: {
+      menuItemId,
+      variationId,
+      effectiveFrom: { lte: at },
+    },
+    orderBy: { effectiveFrom: "desc" },
+    include: { ingredients: true },
+  });
+  if (specific) return specific;
+
+  return tx.recipeVersion.findFirst({
+    where: {
+      menuItemId,
+      variationId: null,
+      effectiveFrom: { lte: at },
+    },
+    orderBy: { effectiveFrom: "desc" },
+    include: { ingredients: true },
+  });
+}
+
 /** Scale direct inventory lines only (ignores nested components). Prefer expandMenuItemConsumption. */
 export function scaleRecipe(
   recipe: ResolvedRecipe,
@@ -98,13 +129,14 @@ export async function expandMenuItemConsumption(
   at: Date,
   portions: Prisma.Decimal,
   stack: string[] = [],
+  cache?: MenuConsumptionCache,
 ): Promise<Map<string, Prisma.Decimal>> {
   const totals = new Map<string, Prisma.Decimal>();
   if (!portions.greaterThan(0)) return totals;
   if (stack.length >= MAX_RECIPE_NEST_DEPTH) return totals;
   if (stack.includes(menuItemId)) return totals;
 
-  const recipe = await resolveRecipeVersion(tx, menuItemId, variationId, at);
+  const recipe = await resolveRecipeVersion(tx, menuItemId, variationId, at, cache);
   if (!recipe) return totals;
 
   mergeConsumption(totals, scaleRecipe(recipe, portions));
@@ -118,6 +150,7 @@ export async function expandMenuItemConsumption(
       comp.componentMenuItemId,
       comp.componentVariationId ?? "",
       at,
+      cache,
     );
     if (!child) continue;
 
@@ -132,10 +165,15 @@ export async function expandMenuItemConsumption(
       at,
       childPortions,
       nextStack,
+      cache,
     );
     mergeConsumption(totals, nested);
   }
 
+  // Only rewrite at the top-level expand so nested passes do not double-apply.
+  if (stack.length === 0) {
+    return applyYieldLinksToConsumption(tx, totals, cache);
+  }
   return totals;
 }
 

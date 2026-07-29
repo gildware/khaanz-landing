@@ -75,6 +75,7 @@ export async function GET(request: Request) {
         minStockBase: true,
         avgCostPaisePerBase: true,
         lastPurchasePaisePerBase: true,
+        yieldSourceItemId: true,
       },
       orderBy: { name: "asc" },
     }),
@@ -146,18 +147,19 @@ export async function GET(request: Request) {
   ]);
 
   let stockValueRows: StockValueRankRow[];
+  const stockItems = items.filter((i) => !i.yieldSourceItemId);
   if (invSettings.costingMethod === "FIFO") {
     const values = await onHandValuesFifoPaiseByItem(
       prisma,
-      items.map((i) => i.id),
+      stockItems.map((i) => i.id),
     );
-    stockValueRows = items.map((item) => ({
+    stockValueRows = stockItems.map((item) => ({
       key: item.id,
       label: item.name,
       valuePaise: values.get(item.id) ?? 0,
     }));
   } else {
-    stockValueRows = items.map((item) => {
+    stockValueRows = stockItems.map((item) => {
       const unit = itemUnitCostPaisePerBase(item, invSettings.costingMethod);
       return {
         key: item.id,
@@ -173,7 +175,7 @@ export async function GET(request: Request) {
   let totalInventoryValuePaise = 0;
   const valueByCategory = new Map<string, number>();
 
-  for (const item of items) {
+  for (const item of stockItems) {
     const valuePaise = valueByKey.get(item.id) ?? 0;
     totalInventoryValuePaise += valuePaise;
     const cat = item.category.trim() || "Uncategorized";
@@ -181,7 +183,12 @@ export async function GET(request: Request) {
   }
 
   const lowStock = items
-    .filter((r) => r.stockOnHandBase.lessThan(r.minStockBase))
+    .filter(
+      (r) =>
+        !r.yieldSourceItemId &&
+        r.minStockBase.greaterThan(0) &&
+        r.stockOnHandBase.lessThan(r.minStockBase),
+    )
     .map((r) => ({
       id: r.id,
       name: r.name,

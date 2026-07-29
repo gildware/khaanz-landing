@@ -570,7 +570,7 @@ export default function AdminReportsPage() {
                     />
                     <YAxis tickFormatter={chartYAxisRupeeTick} width={56} tick={{ fontSize: 11 }} />
                     <Tooltip
-                      formatter={(v) => chartTooltipRupeePair(Number(v) * 100)[0]}
+                      formatter={(v) => chartTooltipRupeePair(Number(v))[0]}
                       labelFormatter={(_, payload) =>
                         payload?.[0]?.payload?.label ?? ""
                       }
@@ -654,7 +654,7 @@ export default function AdminReportsPage() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis type="number" tickFormatter={chartYAxisRupeeTick} tick={{ fontSize: 11 }} />
                     <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v) * 100)} />
+                    <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v))} />
                     <Bar dataKey="sales" fill="#4f46e5" radius={[0, 4, 4, 0]} name="Sales" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -686,7 +686,7 @@ export default function AdminReportsPage() {
                       formatter={(v, name) =>
                         name === "orders"
                           ? [String(v), "Orders"]
-                          : chartTooltipRupeePair(Number(v) * 100)
+                          : chartTooltipRupeePair(Number(v))
                       }
                     />
                     <Bar dataKey="sales" fill="#7c3aed" radius={[4, 4, 0, 0]} name="Sales" />
@@ -894,7 +894,7 @@ export default function AdminReportsPage() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis type="number" tickFormatter={chartYAxisRupeeTick} tick={{ fontSize: 11 }} />
                     <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
-                    <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v) * 100)} />
+                    <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v))} />
                     <Bar dataKey="amount" fill="#ea580c" radius={[0, 4, 4, 0]} name="Amount" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -921,7 +921,7 @@ export default function AdminReportsPage() {
                     />
                     <YAxis tickFormatter={chartYAxisRupeeTick} width={56} tick={{ fontSize: 11 }} />
                     <Tooltip
-                      formatter={(v) => chartTooltipRupeePair(Number(v) * 100)}
+                      formatter={(v) => chartTooltipRupeePair(Number(v))}
                       labelFormatter={(_, payload) =>
                         payload?.[0]?.payload?.label ?? ""
                       }
@@ -1078,7 +1078,7 @@ export default function AdminReportsPage() {
                   />
                   <YAxis tickFormatter={chartYAxisRupeeTick} width={56} tick={{ fontSize: 11 }} />
                   <Tooltip
-                    formatter={(v) => chartTooltipRupeePair(Number(v) * 100)}
+                    formatter={(v) => chartTooltipRupeePair(Number(v))}
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.label ?? ""}
                   />
                   <Bar dataKey="personal" fill="#64748b" radius={[4, 4, 0, 0]} name="Personal" />
@@ -1151,7 +1151,7 @@ export default function AdminReportsPage() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis type="number" tickFormatter={chartYAxisRupeeTick} tick={{ fontSize: 11 }} />
                     <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 10 }} />
-                    <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v) * 100)} />
+                    <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v))} />
                     <Bar dataKey="cost" fill="#e11d48" radius={[0, 4, 4, 0]} name="Cost" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -1178,7 +1178,7 @@ export default function AdminReportsPage() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={60} />
                     <YAxis tickFormatter={chartYAxisRupeeTick} width={56} tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v) * 100)} />
+                    <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v))} />
                     <Bar dataKey="cost" fill="#e11d48" radius={[4, 4, 0, 0]} name="Cost" />
                   </BarChart>
                 </ResponsiveContainer>

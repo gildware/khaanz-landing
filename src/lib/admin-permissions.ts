@@ -21,6 +21,7 @@ type AdminPermissionKey =
   | "inventory.recipes"
   | "inventory.sell"
   | "inventory.ops"
+  | "inventory.stock_usage"
   | "inventory.recipe_book"
   | "wastage"
   | "wastage.overview"
@@ -95,6 +96,7 @@ export const ADMIN_PERMISSION_TREE: PermissionNode[] = [
       { key: "inventory.recipes", label: "Recipes" },
       { key: "inventory.sell", label: "Sell / transfer" },
       { key: "inventory.ops", label: "Operations" },
+      { key: "inventory.stock_usage", label: "Daily stock usage" },
       { key: "inventory.recipe_book", label: "Recipe book (page)" },
     ],
   },
@@ -431,6 +433,7 @@ export function permissionForAdminPagePath(
     { prefix: "/admin/online-orders", permission: "online_orders" },
     { prefix: "/admin/orders", permission: "orders" },
     { prefix: "/admin/inventory", permission: "inventory.overview" },
+    { prefix: "/admin/stock-usage", permission: "inventory.stock_usage" },
     { prefix: "/admin/recipes", permission: "inventory.recipe_book" },
     { prefix: "/admin/wastage", permission: "wastage.overview" },
     { prefix: "/admin/vendors", permission: "vendors.overview" },
@@ -560,6 +563,7 @@ export const ADMIN_NAV_PERMISSION: Record<string, AdminPermission> = {
   "/admin/online-orders": "online_orders",
   "/admin/orders": "orders",
   "/admin/inventory": "inventory.overview",
+  "/admin/stock-usage": "inventory.stock_usage",
   "/admin/recipes": "inventory.recipe_book",
   "/admin/wastage": "wastage.overview",
   "/admin/vendors": "vendors.overview",

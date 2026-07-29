@@ -1,5 +1,9 @@
 import type { Prisma } from "@prisma/client";
 
+import type {
+  MenuComboWithComponents,
+  MenuConsumptionCache,
+} from "@/lib/inventory/consumption-cache";
 import { d } from "@/lib/inventory/decimal-utils";
 import {
   expandMenuItemConsumption,
@@ -12,6 +16,7 @@ export async function planOrderConsumption(
   tx: Prisma.TransactionClient,
   parsed: Pick<OrderCreateParsed, "lines">,
   at: Date,
+  cache?: MenuConsumptionCache,
 ): Promise<Map<string, Prisma.Decimal>> {
   const totals = new Map<string, Prisma.Decimal>();
   const lines = parsed.lines;
@@ -21,14 +26,23 @@ export async function planOrderConsumption(
     .map((l) => l.comboId)
     .filter((id, i, a) => a.indexOf(id) === i);
 
-  const combos =
-    comboIds.length > 0
-      ? await tx.menuCombo.findMany({
+  const comboById = new Map<string, MenuComboWithComponents>();
+  if (comboIds.length > 0) {
+    const combos: (MenuComboWithComponents | null)[] = [];
+    if (cache) {
+      for (const id of comboIds) combos.push(await cache.comboFor(tx, id));
+    } else {
+      combos.push(
+        ...(await tx.menuCombo.findMany({
           where: { id: { in: comboIds } },
           include: { components: true },
-        })
-      : [];
-  const comboById = new Map(combos.map((c) => [c.id, c]));
+        })),
+      );
+    }
+    for (const combo of combos) {
+      if (combo) comboById.set(combo.id, combo);
+    }
+  }
 
   for (const line of lines) {
     if (isCartOpenLine(line)) continue;
@@ -41,6 +55,8 @@ export async function planOrderConsumption(
         line.variation.id,
         at,
         portion,
+        [],
+        cache,
       );
       mergeConsumption(totals, consumption);
       continue;
@@ -58,6 +74,8 @@ export async function planOrderConsumption(
           comp.variationId,
           at,
           portions,
+          [],
+          cache,
         );
         mergeConsumption(totals, consumption);
       }

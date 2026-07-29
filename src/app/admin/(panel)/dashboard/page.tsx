@@ -23,7 +23,12 @@ import { AdminDashboardSkeleton } from "@/components/admin/admin-page-skeleton";
 import { formatRupees } from "@/lib/payroll/payroll-utils";
 import { cn } from "@/lib/utils";
 
-type SalesRankRow = { key: string; label: string; qty: number };
+type SalesRankRow = {
+  key: string;
+  label: string;
+  qty: number;
+  variations?: Array<{ key: string; label: string; qty: number }>;
+};
 type StockValueRankRow = { key: string; label: string; valuePaise: number };
 type VendorValueRankRow = { key: string; label: string; valuePaise: number };
 
@@ -85,7 +90,15 @@ const fetcher = async (url: string) => {
 };
 
 function salesToPillRows(rows: SalesRankRow[]): PillRankSourceRow[] {
-  return rows.map((r) => ({ key: r.key, label: r.label, value: r.qty }));
+  return rows.map((r) => ({
+    key: r.key,
+    label: r.label,
+    value: r.qty,
+    details: r.variations?.map((variation) => ({
+      label: variation.label,
+      value: variation.qty,
+    })),
+  }));
 }
 
 function stockToPillRows(rows: StockValueRankRow[]): PillRankSourceRow[] {
@@ -415,7 +428,6 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col gap-4 lg:flex-row">
         <PillRankChartCard
           title="Item sales this month"
-          subtitle="Top 5 by quantity — name on each bar."
           topTabLabel="Top movers"
           bottomTabLabel="Slow movers"
           topRows={salesToPillRows(top)}
@@ -427,10 +439,11 @@ export default function AdminDashboardPage() {
           valueTitle={(r) => `${r.label}: ${r.value} sold`}
           footnoteSuffix="units"
           filterTopPositive
+          maxItems={10}
+          variant="rank-bars"
         />
         <PillRankChartCard
           title="Top items by stock value"
-          subtitle="Top 5 on-hand value (qty × unit cost)."
           topTabLabel="Top value"
           bottomTabLabel="Low value"
           topRows={stockToPillRows(topStock)}
@@ -440,6 +453,8 @@ export default function AdminDashboardPage() {
           emptyMessage="No stock value to chart."
           formatValue={(v) => formatRupees(v)}
           valueTitle={(r) => `${r.label}: ${formatRupees(r.value)}`}
+          maxItems={10}
+          variant="rank-bars"
         />
       </div>
 

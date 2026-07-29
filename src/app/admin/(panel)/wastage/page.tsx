@@ -959,7 +959,7 @@ export default function AdminWastagePage() {
                     <Cell key={i} fill={SPLIT_COLORS[i % SPLIT_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v) * 100)} />
+                <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v))} />
               </PieChart>
             </ChartPanel>
 
@@ -972,7 +972,7 @@ export default function AdminWastagePage() {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis type="number" tickFormatter={chartYAxisRupeeTick} tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v) * 100)} />
+                <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v))} />
                 <Bar dataKey="cost" fill="#e11d48" radius={[0, 4, 4, 0]} name="Cost" />
               </BarChart>
             </ChartPanel>
@@ -994,7 +994,7 @@ export default function AdminWastagePage() {
                   height={60}
                 />
                 <YAxis tickFormatter={chartYAxisRupeeTick} width={56} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v) * 100)} />
+                <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v))} />
                 <Bar dataKey="cost" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Cost" />
               </BarChart>
             </ChartPanel>
@@ -1016,7 +1016,7 @@ export default function AdminWastagePage() {
                   height={60}
                 />
                 <YAxis tickFormatter={chartYAxisRupeeTick} width={56} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v) * 100)} />
+                <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v))} />
                 <Bar dataKey="cost" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Cost" />
               </BarChart>
             </ChartPanel>
@@ -1036,7 +1036,7 @@ export default function AdminWastagePage() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                     <YAxis tickFormatter={chartYAxisRupeeTick} width={56} tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v) * 100)} />
+                    <Tooltip formatter={(v) => chartTooltipRupeePair(Number(v))} />
                     <Line
                       type="monotone"
                       dataKey="cost"

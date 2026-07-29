@@ -8,6 +8,7 @@ import {
   computeOrderWorthPaise,
   computeStockWorthPaise,
 } from "@/lib/expenses/personal-use-worth";
+import { createMenuConsumptionCache } from "@/lib/inventory/consumption-cache";
 import { d } from "@/lib/inventory/decimal-utils";
 import {
   sumOrderConsumptionCostPaise,
@@ -372,94 +373,99 @@ export async function GET(request: Request) {
 
   const paymentLabels = new Map(settings.paymentMethods.map((p) => [p.id, p.name] as const));
 
-  await prisma.$transaction(async (tx) => {
-    for (const o of orders) {
-      const dayKey = istDayKey(o.createdAt);
-      const dayPrev = dailyMap.get(dayKey) ?? {
-        date: dayKey,
-        label: istDateLabel(o.createdAt),
-        salesPaise: 0,
-        orderCount: 0,
-      };
-      dailyMap.set(dayKey, {
-        ...dayPrev,
-        salesPaise: dayPrev.salesPaise + o.totalMinor,
-        orderCount: dayPrev.orderCount + 1,
-      });
+  const consumptionCache = createMenuConsumptionCache();
 
-      const hour = istHourFromDate(o.createdAt);
-      const hourPrev = hourlyMap.get(hour) ?? {
-        hour,
-        label: formatIstHourLabel(hour),
-        salesPaise: 0,
-        orderCount: 0,
-      };
-      hourlyMap.set(hour, {
-        ...hourPrev,
-        salesPaise: hourPrev.salesPaise + o.totalMinor,
-        orderCount: hourPrev.orderCount + 1,
-      });
+  for (const o of orders) {
+    const dayKey = istDayKey(o.createdAt);
+    const dayPrev = dailyMap.get(dayKey) ?? {
+      date: dayKey,
+      label: istDateLabel(o.createdAt),
+      salesPaise: 0,
+      orderCount: 0,
+    };
+    dailyMap.set(dayKey, {
+      ...dayPrev,
+      salesPaise: dayPrev.salesPaise + o.totalMinor,
+      orderCount: dayPrev.orderCount + 1,
+    });
 
-      const pmKey = (o.paymentMethod || "").trim() || "unknown";
-      const pmPrev = paymentMap.get(pmKey) ?? {
-        key: pmKey,
-        label:
-          pmKey === "unknown"
-            ? "Not recorded"
-            : paymentLabels.get(pmKey) || pmKey || "Not recorded",
-        salesPaise: 0,
-        orderCount: 0,
-      };
-      paymentMap.set(pmKey, {
-        ...pmPrev,
-        salesPaise: pmPrev.salesPaise + o.totalMinor,
-        orderCount: pmPrev.orderCount + 1,
-      });
+    const hour = istHourFromDate(o.createdAt);
+    const hourPrev = hourlyMap.get(hour) ?? {
+      hour,
+      label: formatIstHourLabel(hour),
+      salesPaise: 0,
+      orderCount: 0,
+    };
+    hourlyMap.set(hour, {
+      ...hourPrev,
+      salesPaise: hourPrev.salesPaise + o.totalMinor,
+      orderCount: hourPrev.orderCount + 1,
+    });
 
-      const lines: CartLine[] = o.lines.map((l) =>
-        migrateCartLine(l.payload as unknown as CartLine),
-      );
+    const pmKey = (o.paymentMethod || "").trim() || "unknown";
+    const pmPrev = paymentMap.get(pmKey) ?? {
+      key: pmKey,
+      label:
+        pmKey === "unknown"
+          ? "Not recorded"
+          : paymentLabels.get(pmKey) || pmKey || "Not recorded",
+      salesPaise: 0,
+      orderCount: 0,
+    };
+    paymentMap.set(pmKey, {
+      ...pmPrev,
+      salesPaise: pmPrev.salesPaise + o.totalMinor,
+      orderCount: pmPrev.orderCount + 1,
+    });
 
-      for (const line of lines) {
-        let key: string;
-        let label: string;
-        let qty: number;
-        let revenuePaise: number;
+    const lines: CartLine[] = o.lines.map((l) =>
+      migrateCartLine(l.payload as unknown as CartLine),
+    );
 
-        if (line.kind === "item") {
-          key = `item:${line.itemId}:${line.variation.id}`;
-          label = `${line.name}${line.variation.name ? ` • ${line.variation.name}` : ""}`;
-          qty = line.quantity;
-          revenuePaise = Math.round(line.unitPrice * line.quantity * 100);
-        } else if (line.kind === "combo") {
-          key = `combo:${line.comboId}`;
-          label = line.name || "Combo";
-          qty = line.quantity;
-          revenuePaise = Math.round(line.unitPrice * line.quantity * 100);
-        } else {
-          key = `open:${line.name.toLowerCase()}`;
-          label = `${line.name} (Open)`;
-          qty = line.quantity;
-          revenuePaise = Math.round(line.unitPrice * line.quantity * 100);
-        }
+    for (const line of lines) {
+      let key: string;
+      let label: string;
+      let qty: number;
+      let revenuePaise: number;
 
-        const prev = soldByKey.get(key) ?? { label, qty: 0, revenuePaise: 0 };
-        soldByKey.set(key, {
-          label: prev.label || label,
-          qty: prev.qty + qty,
-          revenuePaise: prev.revenuePaise + revenuePaise,
-        });
+      if (line.kind === "item") {
+        key = `item:${line.itemId}:${line.variation.id}`;
+        label = `${line.name}${line.variation.name ? ` • ${line.variation.name}` : ""}`;
+        qty = line.quantity;
+        revenuePaise = Math.round(line.unitPrice * line.quantity * 100);
+      } else if (line.kind === "combo") {
+        key = `combo:${line.comboId}`;
+        label = line.name || "Combo";
+        qty = line.quantity;
+        revenuePaise = Math.round(line.unitPrice * line.quantity * 100);
+      } else {
+        key = `open:${line.name.toLowerCase()}`;
+        label = `${line.name} (Open)`;
+        qty = line.quantity;
+        revenuePaise = Math.round(line.unitPrice * line.quantity * 100);
       }
 
-      const consumption = await planOrderConsumption(tx, { lines }, o.createdAt);
-      for (const [inventoryItemId, qtyBase] of consumption.entries()) {
-        periodConsumption.set(
-          inventoryItemId,
-          (periodConsumption.get(inventoryItemId) ?? d(0)).add(qtyBase),
-        );
-      }
+      const prev = soldByKey.get(key) ?? { label, qty: 0, revenuePaise: 0 };
+      soldByKey.set(key, {
+        label: prev.label || label,
+        qty: prev.qty + qty,
+        revenuePaise: prev.revenuePaise + revenuePaise,
+      });
     }
-  });
+
+    const consumption = await planOrderConsumption(
+      prisma,
+      { lines },
+      o.createdAt,
+      consumptionCache,
+    );
+    for (const [inventoryItemId, qtyBase] of consumption.entries()) {
+      periodConsumption.set(
+        inventoryItemId,
+        (periodConsumption.get(inventoryItemId) ?? d(0)).add(qtyBase),
+      );
+    }
+  }
 
   const invSettings = await ensureInventorySettings(prisma);
   let stockCostPaiseInt: number;

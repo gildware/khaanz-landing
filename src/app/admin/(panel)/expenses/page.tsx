@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import {
   BanknoteIcon,
   IndianRupeeIcon,
@@ -62,6 +62,17 @@ type ExpenseEntry = {
   note: string;
   createdAt: string;
   category: { name: string; group: ExpenseCategoryGroup };
+};
+
+type CategoryExpenseSummary = {
+  categoryId: string;
+  name: string;
+  group: ExpenseCategoryGroup;
+  count: number;
+  totalPaise: number;
+  operatingPaise: number;
+  capitalPaise: number;
+  entries: ExpenseEntry[];
 };
 
 type PersonalUseEntry = {
@@ -382,7 +393,9 @@ export default function AdminExpensesPage() {
   const [businessSearch, setBusinessSearch] = useState("");
   const [businessGroupFilter, setBusinessGroupFilter] = useState<"all" | ExpenseCategoryGroup>("all");
   const [businessKindFilter, setBusinessKindFilter] = useState<"all" | ExpenseKind>("all");
-  const [businessSort, setBusinessSort] = useState("date-desc");
+  const [businessSort, setBusinessSort] = useState("amount-desc");
+  const [businessView, setBusinessView] = useState<"ledger" | "category">("category");
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const [personalSearch, setPersonalSearch] = useState("");
   const [personalSort, setPersonalSort] = useState("date-desc");
 
@@ -531,6 +544,58 @@ export default function AdminExpensesPage() {
   const filteredBusinessExpenses = useMemo(
     () => filterAndSortExpenses(expenseEntries),
     [expenseEntries, filterAndSortExpenses],
+  );
+
+  const expensesByCategory = useMemo(() => {
+    const map = new Map<string, CategoryExpenseSummary>();
+    for (const e of filteredBusinessExpenses) {
+      const existing = map.get(e.categoryId);
+      if (existing) {
+        existing.count += 1;
+        existing.totalPaise += e.amountPaise;
+        if (e.kind === "CAPITAL") existing.capitalPaise += e.amountPaise;
+        else existing.operatingPaise += e.amountPaise;
+        existing.entries.push(e);
+      } else {
+        map.set(e.categoryId, {
+          categoryId: e.categoryId,
+          name: e.category.name,
+          group: e.category.group,
+          count: 1,
+          totalPaise: e.amountPaise,
+          operatingPaise: e.kind === "OPERATING" ? e.amountPaise : 0,
+          capitalPaise: e.kind === "CAPITAL" ? e.amountPaise : 0,
+          entries: [e],
+        });
+      }
+    }
+    const rows = [...map.values()];
+    rows.sort((a, b) => {
+      switch (businessSort) {
+        case "amount-asc":
+          return a.totalPaise - b.totalPaise;
+        case "category-asc":
+          return a.name.localeCompare(b.name);
+        case "date-asc": {
+          const aDate = a.entries[a.entries.length - 1]?.occurredAt ?? "";
+          const bDate = b.entries[b.entries.length - 1]?.occurredAt ?? "";
+          return aDate.localeCompare(bDate);
+        }
+        case "date-desc": {
+          const aDate = a.entries[0]?.occurredAt ?? "";
+          const bDate = b.entries[0]?.occurredAt ?? "";
+          return bDate.localeCompare(aDate);
+        }
+        default:
+          return b.totalPaise - a.totalPaise;
+      }
+    });
+    return rows;
+  }, [filteredBusinessExpenses, businessSort]);
+
+  const categoryCountTotal = useMemo(
+    () => new Set(expenseEntries.map((e) => e.categoryId)).size,
+    [expenseEntries],
   );
 
   const filterPersonalList = useCallback(
@@ -703,7 +768,27 @@ export default function AdminExpensesPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-muted-foreground text-sm">Business expense ledger</p>
+            <Tabs
+              value={businessView}
+              onValueChange={(v) => {
+                const next = v as "ledger" | "category";
+                setBusinessView(next);
+                setExpandedCategoryId(null);
+                setBusinessSort(next === "category" ? "amount-desc" : "date-desc");
+              }}
+            >
+              <TabsList>
+                <TabsTrigger value="ledger" className="data-[state=active]:font-semibold">
+                  Ledger
+                </TabsTrigger>
+                <TabsTrigger value="category" className="data-[state=active]:font-semibold">
+                  By category
+                  <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
+                    {expensesByCategory.length}
+                  </span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
             <Button type="button" onClick={openBusinessModal}>
               <PlusIcon className="mr-1.5 size-4" aria-hidden />
               Add expense
@@ -716,15 +801,31 @@ export default function AdminExpensesPage() {
             searchPlaceholder="Search category, note…"
             sort={businessSort}
             onSortChange={setBusinessSort}
-            sortOptions={[
-              { value: "date-desc", label: "Newest first" },
-              { value: "date-asc", label: "Oldest first" },
-              { value: "amount-desc", label: "Amount (high–low)" },
-              { value: "amount-asc", label: "Amount (low–high)" },
-              { value: "category-asc", label: "Category (A–Z)" },
-            ]}
-            filteredCount={filteredBusinessExpenses.length}
-            totalCount={expenseEntries.length}
+            sortOptions={
+              businessView === "category"
+                ? [
+                    { value: "amount-desc", label: "Amount (high–low)" },
+                    { value: "amount-asc", label: "Amount (low–high)" },
+                    { value: "category-asc", label: "Category (A–Z)" },
+                    { value: "date-desc", label: "Newest activity" },
+                    { value: "date-asc", label: "Oldest activity" },
+                  ]
+                : [
+                    { value: "date-desc", label: "Newest first" },
+                    { value: "date-asc", label: "Oldest first" },
+                    { value: "amount-desc", label: "Amount (high–low)" },
+                    { value: "amount-asc", label: "Amount (low–high)" },
+                    { value: "category-asc", label: "Category (A–Z)" },
+                  ]
+            }
+            filteredCount={
+              businessView === "category"
+                ? expensesByCategory.length
+                : filteredBusinessExpenses.length
+            }
+            totalCount={
+              businessView === "category" ? categoryCountTotal : expenseEntries.length
+            }
             showStatusFilter={false}
           >
             <div className="space-y-1">
@@ -763,6 +864,110 @@ export default function AdminExpensesPage() {
             </div>
           </DataTableToolbar>
 
+          {businessView === "category" ? (
+            <div className="rounded-xl border bg-card shadow-sm">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Group</TableHead>
+                    <TableHead className="text-right">Entries</TableHead>
+                    <TableHead className="text-right">Operating</TableHead>
+                    <TableHead className="text-right">Renovation</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {expenseEntries.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        No business expenses yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : expensesByCategory.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        No expenses match your search or filters.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    expensesByCategory.map((row) => {
+                      const isExpanded = expandedCategoryId === row.categoryId;
+                      return (
+                        <Fragment key={row.categoryId}>
+                          <TableRow
+                            className="cursor-pointer"
+                            onClick={() =>
+                              setExpandedCategoryId(isExpanded ? null : row.categoryId)
+                            }
+                          >
+                            <TableCell className="font-medium">
+                              {row.name}
+                              <span className="ml-2 text-muted-foreground text-xs">
+                                {isExpanded ? "▾" : "▸"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-xs">
+                              {BUSINESS_GROUP_LABELS[row.group]}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums text-muted-foreground">
+                              {row.count}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {formatRupees(row.operatingPaise)}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {formatRupees(row.capitalPaise)}
+                            </TableCell>
+                            <TableCell className="text-right font-medium tabular-nums">
+                              {formatRupees(row.totalPaise)}
+                            </TableCell>
+                          </TableRow>
+                          {isExpanded
+                            ? row.entries.map((e) => (
+                                <TableRow key={e.id} className="bg-muted/30">
+                                  <TableCell
+                                    colSpan={2}
+                                    className="pl-8 text-muted-foreground text-xs"
+                                  >
+                                    {e.occurredAt.slice(0, 16).replace("T", " ")}
+                                    {e.note ? ` · ${e.note}` : ""}
+                                  </TableCell>
+                                  <TableCell className="text-right text-xs">
+                                    {e.kind === "CAPITAL" ? "Renovation" : "Operating"}
+                                  </TableCell>
+                                  <TableCell
+                                    colSpan={2}
+                                    className="text-right font-medium tabular-nums"
+                                  >
+                                    {formatRupees(e.amountPaise)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                      onClick={(ev) => {
+                                        ev.stopPropagation();
+                                        setDeletingExpense(e);
+                                      }}
+                                    >
+                                      <Trash2Icon className="size-4" aria-hidden />
+                                      <span className="sr-only">Delete expense</span>
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            : null}
+                        </Fragment>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
           <div className="rounded-xl border bg-card shadow-sm">
             <Table>
               <TableHeader>
@@ -830,6 +1035,7 @@ export default function AdminExpensesPage() {
               </TableBody>
             </Table>
           </div>
+          )}
 
           <Dialog
             open={deletingExpense !== null}

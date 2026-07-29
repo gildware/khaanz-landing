@@ -8,6 +8,7 @@ import {
   computeOrderWorthPaise,
   computeStockWorthPaise,
 } from "@/lib/expenses/personal-use-worth";
+import { createMenuConsumptionCache } from "@/lib/inventory/consumption-cache";
 import { d } from "@/lib/inventory/decimal-utils";
 import {
   sumOrderConsumptionCostPaiseByDay,
@@ -195,33 +196,38 @@ export async function GET(request: Request) {
   const invSettings = await ensureInventorySettings(prisma);
   const consumptionByDay = new Map<string, Map<string, Prisma.Decimal>>();
 
-  await prisma.$transaction(async (tx) => {
-    for (const order of orders) {
-      const date = istDayKey(order.createdAt);
-      const row = rowsByDate.get(date);
-      if (!row) continue;
-      row.salesPaise += order.totalMinor;
-      row.orderCount += 1;
+  const consumptionCache = createMenuConsumptionCache();
 
-      if (invSettings.costingMethod === "FIFO") continue;
+  for (const order of orders) {
+    const date = istDayKey(order.createdAt);
+    const row = rowsByDate.get(date);
+    if (!row) continue;
+    row.salesPaise += order.totalMinor;
+    row.orderCount += 1;
 
-      const lines: CartLine[] = order.lines.map((l) =>
-        migrateCartLine(l.payload as unknown as CartLine),
-      );
-      const consumption = await planOrderConsumption(tx, { lines }, order.createdAt);
-      let dayMap = consumptionByDay.get(date);
-      if (!dayMap) {
-        dayMap = new Map();
-        consumptionByDay.set(date, dayMap);
-      }
-      for (const [inventoryItemId, qtyBase] of consumption.entries()) {
-        dayMap.set(
-          inventoryItemId,
-          (dayMap.get(inventoryItemId) ?? d(0)).add(qtyBase),
-        );
-      }
+    if (invSettings.costingMethod === "FIFO") continue;
+
+    const lines: CartLine[] = order.lines.map((l) =>
+      migrateCartLine(l.payload as unknown as CartLine),
+    );
+    const consumption = await planOrderConsumption(
+      prisma,
+      { lines },
+      order.createdAt,
+      consumptionCache,
+    );
+    let dayMap = consumptionByDay.get(date);
+    if (!dayMap) {
+      dayMap = new Map();
+      consumptionByDay.set(date, dayMap);
     }
-  });
+    for (const [inventoryItemId, qtyBase] of consumption.entries()) {
+      dayMap.set(
+        inventoryItemId,
+        (dayMap.get(inventoryItemId) ?? d(0)).add(qtyBase),
+      );
+    }
+  }
 
   if (invSettings.costingMethod === "FIFO") {
     const byDay = await prisma.$transaction((tx) =>

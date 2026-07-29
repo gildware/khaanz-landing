@@ -1,0 +1,2046 @@
+{
+  "saleDate": "2026-07-28",
+  "excelPath": "/Users/kamran/Downloads/Item_Wise_Sales_Report_2026_07_29_22_15_40.xlsx",
+  "excelHeaderDate": "2026-07-28 to 2026-07-28",
+  "existingOrders": 0,
+  "existingTotalRupees": 0,
+  "reportGrand": 21284,
+  "excelOpenTotal": 1494,
+  "notebookAllTotal": 1625,
+  "previewMenuTotal": 21415,
+  "previewOpenTotal": 0,
+  "previewGrand": 21415,
+  "adjustment": -131,
+  "discountToMatchExcel": 131,
+  "insertTotal": 21284,
+  "lines": [
+    {
+      "source": "excel",
+      "reportCategory": "Momo Mania",
+      "reportItem": "Fried Momos",
+      "qty": 42,
+      "unitPrice": 120,
+      "reportTotal": 5040,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "fried-chicken-momo",
+        "menuItemName": "Fried Chicken Momo",
+        "category": "Momo Mania",
+        "variationId": "fried-chicken-momo",
+        "variationName": "Plate",
+        "dbPrice": 120,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Fried Chicken Momo",
+          "score": 100,
+          "vars": "Plate:120|@ 100:100|@180:180"
+        },
+        {
+          "name": "Fried Chicken",
+          "score": 80,
+          "vars": "Half:250|Full:550"
+        },
+        {
+          "name": "Fried Chicken Biryani",
+          "score": 35,
+          "vars": "Half:100|Full:180"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Steamed Momos",
+      "qty": 12,
+      "unitPrice": 120,
+      "reportTotal": 1440,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "steamed-chicken-momo",
+        "menuItemName": "Steamed Chicken Momo",
+        "category": "Momo Mania",
+        "variationId": "steamed-chicken-momo",
+        "variationName": "Plate",
+        "dbPrice": 120,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Steamed Chicken Momo",
+          "score": 100,
+          "vars": "Plate:120|@100:100"
+        },
+        {
+          "name": "Fried Chicken Momo",
+          "score": 35,
+          "vars": "Plate:120|@ 100:100|@180:180"
+        },
+        {
+          "name": "Tandoori Chicken Momo",
+          "score": 35,
+          "vars": "Plate:160"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Tandoori Momos",
+      "qty": 3,
+      "unitPrice": 160,
+      "reportTotal": 480,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "tandoori-chicken-momo",
+        "menuItemName": "Tandoori Chicken Momo",
+        "category": "Momo Mania",
+        "variationId": "tandoori-chicken-momo",
+        "variationName": "Plate",
+        "dbPrice": 160,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Tandoori Chicken Momo",
+          "score": 100,
+          "vars": "Plate:160"
+        },
+        {
+          "name": "Tandoori Chicken",
+          "score": 80,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Fried Chicken Momo",
+          "score": 35,
+          "vars": "Plate:120|@ 100:100|@180:180"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Noodles Hub",
+      "reportItem": "Veg. Chowmein (Half)",
+      "qty": 3,
+      "unitPrice": 90,
+      "reportTotal": 270,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "veg-chowmein",
+        "menuItemName": "Veg. Chowmein",
+        "category": "Noodle Hub",
+        "variationId": "veg-chowmein-half",
+        "variationName": "Half",
+        "dbPrice": 90,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Veg. Chowmein",
+          "score": 100,
+          "vars": "Half:90|Full:170"
+        },
+        {
+          "name": "Egg Chowmein",
+          "score": 23,
+          "vars": "Half:110|Full:200"
+        },
+        {
+          "name": "Chicken Chowmein",
+          "score": 23,
+          "vars": "Half:120|Full:220"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Veg. Chowmein (Full)",
+      "qty": 1,
+      "unitPrice": 170,
+      "reportTotal": 170,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "veg-chowmein",
+        "menuItemName": "Veg. Chowmein",
+        "category": "Noodle Hub",
+        "variationId": "veg-chowmein-full",
+        "variationName": "Full",
+        "dbPrice": 170,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Veg. Chowmein",
+          "score": 100,
+          "vars": "Half:90|Full:170"
+        },
+        {
+          "name": "Egg Chowmein",
+          "score": 23,
+          "vars": "Half:110|Full:200"
+        },
+        {
+          "name": "Chicken Chowmein",
+          "score": 23,
+          "vars": "Half:120|Full:220"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Egg Chowmein (Half)",
+      "qty": 2,
+      "unitPrice": 110,
+      "reportTotal": 220,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "egg-chowmein",
+        "menuItemName": "Egg Chowmein",
+        "category": "Noodle Hub",
+        "variationId": "egg-chowmein-half",
+        "variationName": "Half",
+        "dbPrice": 110,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Egg Chowmein",
+          "score": 100,
+          "vars": "Half:110|Full:200"
+        },
+        {
+          "name": "Veg. Chowmein",
+          "score": 23,
+          "vars": "Half:90|Full:170"
+        },
+        {
+          "name": "Egg Roll",
+          "score": 23,
+          "vars": "Single:70"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Egg Chowmein (Full)",
+      "qty": 1,
+      "unitPrice": 200,
+      "reportTotal": 200,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "egg-chowmein",
+        "menuItemName": "Egg Chowmein",
+        "category": "Noodle Hub",
+        "variationId": "egg-chowmein-full",
+        "variationName": "Full",
+        "dbPrice": 200,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Egg Chowmein",
+          "score": 100,
+          "vars": "Half:110|Full:200"
+        },
+        {
+          "name": "Veg. Chowmein",
+          "score": 23,
+          "vars": "Half:90|Full:170"
+        },
+        {
+          "name": "Egg Roll",
+          "score": 23,
+          "vars": "Single:70"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Chicken Chowmein (Half)",
+      "qty": 11,
+      "unitPrice": 120,
+      "reportTotal": 1320,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "chicken-chowmein",
+        "menuItemName": "Chicken Chowmein",
+        "category": "Noodle Hub",
+        "variationId": "chicken-chowmein-half",
+        "variationName": "Half",
+        "dbPrice": 120,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Chicken Chowmein",
+          "score": 100,
+          "vars": "Half:120|Full:220"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Chicken Chowmein (Full)",
+      "qty": 1,
+      "unitPrice": 220,
+      "reportTotal": 220,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "chicken-chowmein",
+        "menuItemName": "Chicken Chowmein",
+        "category": "Noodle Hub",
+        "variationId": "chicken-chowmein-full",
+        "variationName": "Full",
+        "dbPrice": 220,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Chicken Chowmein",
+          "score": 100,
+          "vars": "Half:120|Full:220"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Chef Specials",
+      "reportItem": "Butter Chicken (Half)",
+      "qty": 3,
+      "unitPrice": 300,
+      "reportTotal": 900,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "butter-chicken",
+        "menuItemName": "Butter Chicken",
+        "category": "Chef Specials",
+        "variationId": "butter-chicken-half",
+        "variationName": "Half",
+        "dbPrice": 300,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Butter Chicken",
+          "score": 100,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Butter Chicken (Full)",
+      "qty": 1,
+      "unitPrice": 550,
+      "reportTotal": 550,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "butter-chicken",
+        "menuItemName": "Butter Chicken",
+        "category": "Chef Specials",
+        "variationId": "butter-chicken-full",
+        "variationName": "Full",
+        "dbPrice": 550,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Butter Chicken",
+          "score": 100,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Kadai Chicken (Full)",
+      "qty": 1,
+      "unitPrice": 550,
+      "reportTotal": 550,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "kadai-chicken",
+        "menuItemName": "Kadai Chicken",
+        "category": "Chef Specials",
+        "variationId": "kadai-chicken-full",
+        "variationName": "Full",
+        "dbPrice": 550,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Kadai Chicken",
+          "score": 100,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Special Chicken",
+          "score": 23,
+          "vars": "Half:350|Full:650"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Tandoori Chicken (Half)",
+      "qty": 1,
+      "unitPrice": 300,
+      "reportTotal": 300,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "tandoori-chicken",
+        "menuItemName": "Tandoori Chicken",
+        "category": "Chef Specials",
+        "variationId": "tandoori-chicken-half",
+        "variationName": "Half",
+        "dbPrice": 300,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Tandoori Chicken",
+          "score": 100,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Tandoori Chicken Momo",
+          "score": 80,
+          "vars": "Plate:160"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Tandoori Breads",
+      "reportItem": "Plain Naan",
+      "qty": 2,
+      "unitPrice": 30,
+      "reportTotal": 60,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "plain-naan",
+        "menuItemName": "Plain Naan",
+        "category": "Tandoor Breads",
+        "variationId": "plain-naan",
+        "variationName": "Single",
+        "dbPrice": 30,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Plain Naan",
+          "score": 100,
+          "vars": "Single:30"
+        },
+        {
+          "name": "Butter Naan",
+          "score": 23,
+          "vars": "Single:40"
+        },
+        {
+          "name": "Butter Garlic Naan",
+          "score": 18,
+          "vars": "Single:50"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Butter Naan",
+      "qty": 4,
+      "unitPrice": 40,
+      "reportTotal": 160,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "butter-naan",
+        "menuItemName": "Butter Naan",
+        "category": "Tandoor Breads",
+        "variationId": "butter-naan",
+        "variationName": "Single",
+        "dbPrice": 40,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Butter Naan",
+          "score": 100,
+          "vars": "Single:40"
+        },
+        {
+          "name": "Butter Garlic Naan",
+          "score": 47,
+          "vars": "Single:50"
+        },
+        {
+          "name": "Plain Naan",
+          "score": 23,
+          "vars": "Single:30"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Tawa Roti",
+      "qty": 8,
+      "unitPrice": 15,
+      "reportTotal": 120,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "tawa-roti",
+        "menuItemName": "Tawa Roti",
+        "category": "Tandoor Breads",
+        "variationId": "tawa-roti",
+        "variationName": "Single",
+        "dbPrice": 15,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Tawa Roti",
+          "score": 100,
+          "vars": "Single:15"
+        },
+        {
+          "name": "Butter Tawa Roti",
+          "score": 80,
+          "vars": "Single:20"
+        },
+        {
+          "name": "Tandoori Roti",
+          "score": 23,
+          "vars": "Single:20"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Rice Royale",
+      "reportItem": "Fried Chicken Biryani (Half)",
+      "qty": 3,
+      "unitPrice": 100,
+      "reportTotal": 300,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "fried-chicken-biryani",
+        "menuItemName": "Fried Chicken Biryani",
+        "category": "Rice Royale",
+        "variationId": "fried-chicken-biryani-half",
+        "variationName": "Half",
+        "dbPrice": 100,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Fried Chicken Biryani",
+          "score": 100,
+          "vars": "Half:100|Full:180"
+        },
+        {
+          "name": "Fried Chicken",
+          "score": 80,
+          "vars": "Half:250|Full:550"
+        },
+        {
+          "name": "Dum Chicken Biryani",
+          "score": 35,
+          "vars": "Half:100|Full:180"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Dum Chicken Biryani (Half)",
+      "qty": 5,
+      "unitPrice": 100,
+      "reportTotal": 500,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "dum-chicken-biryani",
+        "menuItemName": "Dum Chicken Biryani",
+        "category": "Rice Royale",
+        "variationId": "dum-chicken-biryani-half",
+        "variationName": "Half",
+        "dbPrice": 100,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Dum Chicken Biryani",
+          "score": 100,
+          "vars": "Half:100|Full:180"
+        },
+        {
+          "name": "Fried Chicken Biryani",
+          "score": 35,
+          "vars": "Half:100|Full:180"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 18,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Chicken Fried Rice (Half)",
+      "qty": 2,
+      "unitPrice": 120,
+      "reportTotal": 240,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "chicken-fried-rice",
+        "menuItemName": "Chicken Fried Rice",
+        "category": "Rice Royale",
+        "variationId": "chicken-fried-rice-half",
+        "variationName": "Half",
+        "dbPrice": 120,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Chicken Fried Rice",
+          "score": 100,
+          "vars": "Half:120|Full:220"
+        },
+        {
+          "name": "Fried Chicken",
+          "score": 47,
+          "vars": "Half:250|Full:550"
+        },
+        {
+          "name": "Fried Chicken Biryani",
+          "score": 35,
+          "vars": "Half:100|Full:180"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Veg. Fried Rice (Half)",
+      "qty": 2,
+      "unitPrice": 90,
+      "reportTotal": 180,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "veg-fried-rice",
+        "menuItemName": "Veg. Fried Rice",
+        "category": "Rice Royale",
+        "variationId": "veg-fried-rice-half",
+        "variationName": "Half",
+        "dbPrice": 90,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Veg. Fried Rice",
+          "score": 100,
+          "vars": "Half:90|Full:170"
+        },
+        {
+          "name": "Chicken Fried Rice",
+          "score": 35,
+          "vars": "Half:120|Full:220"
+        },
+        {
+          "name": "Egg Fried Rice",
+          "score": 35,
+          "vars": "Half:110|Full:200"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Pizza Zone",
+      "reportItem": "Cheesy Bliss Pizza (Regular)",
+      "qty": 6,
+      "unitPrice": 180,
+      "reportTotal": 1080,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "cheesy-bliss-pizza",
+        "menuItemName": "Cheesy Bliss Pizza",
+        "category": "Pizza Zone",
+        "variationId": "cheesy-bliss-pizza-small",
+        "variationName": "Small",
+        "dbPrice": 180,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Cheesy Bliss Pizza",
+          "score": 100,
+          "vars": "Small:180|Large:400"
+        },
+        {
+          "name": "Chicken Royale Pizza",
+          "score": 14,
+          "vars": "Small:350|Large:650"
+        },
+        {
+          "name": "Veg Royale Pizza",
+          "score": 14,
+          "vars": "Small:280|Large:600"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Veggie Supreme (Regular)",
+      "qty": 1,
+      "unitPrice": 250,
+      "reportTotal": 250,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "veggie-supreme",
+        "menuItemName": "Veggie Supreme",
+        "category": "Pizza Zone",
+        "variationId": "veggie-supreme-small",
+        "variationName": "Small",
+        "dbPrice": 250,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Veggie Supreme",
+          "score": 100,
+          "vars": "Small:250|Large:550"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 0,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Chicken Feast Pizza (Regular)",
+      "qty": 2,
+      "unitPrice": 280,
+      "reportTotal": 560,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "chicken-feast-pizza",
+        "menuItemName": "Chicken Feast Pizza",
+        "category": "Pizza Zone",
+        "variationId": "chicken-feast-pizza-small",
+        "variationName": "Small",
+        "dbPrice": 280,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Chicken Feast Pizza",
+          "score": 100,
+          "vars": "Small:280|Large:600"
+        },
+        {
+          "name": "Chicken Royale Pizza",
+          "score": 35,
+          "vars": "Small:350|Large:650"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 18,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Paratha & Rolls",
+      "reportItem": "Chicken Roll",
+      "qty": 4,
+      "unitPrice": 150,
+      "reportTotal": 600,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "chicken-roll",
+        "menuItemName": "Chicken Roll",
+        "category": "Parathas & Rolls",
+        "variationId": "chicken-roll",
+        "variationName": "Single",
+        "dbPrice": 150,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Chicken Roll",
+          "score": 100,
+          "vars": "Single:150"
+        },
+        {
+          "name": "Egg + Chicken Roll",
+          "score": 80,
+          "vars": "Single:170"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Aloo Paratha",
+      "qty": 14,
+      "unitPrice": 80,
+      "reportTotal": 1120,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "aloo-paratha",
+        "menuItemName": "Aloo Paratha",
+        "category": "Parathas & Rolls",
+        "variationId": "aloo-paratha",
+        "variationName": "Single",
+        "dbPrice": 80,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Aloo Paratha",
+          "score": 100,
+          "vars": "Single:80"
+        },
+        {
+          "name": "Chole Paratha",
+          "score": 23,
+          "vars": "Regular:100"
+        },
+        {
+          "name": "Chicken Paratha",
+          "score": 23,
+          "vars": "Single:150"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Spicy Chinese",
+      "reportItem": "Chicken Kanti (Full)",
+      "qty": 1,
+      "unitPrice": 550,
+      "reportTotal": 550,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "chicken-kanti",
+        "menuItemName": "Chicken Kanti",
+        "category": "Spicy Chinese",
+        "variationId": "chicken-kanti-full",
+        "variationName": "Full",
+        "dbPrice": 550,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Chicken Kanti",
+          "score": 100,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Fries & More",
+      "reportItem": "Peri Peri Fries (Large)",
+      "qty": 1,
+      "unitPrice": 140,
+      "reportTotal": 140,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "peri-peri-fries",
+        "menuItemName": "Peri Peri Fries",
+        "category": "Fries & Crispies",
+        "variationId": "peri-peri-fries-full",
+        "variationName": "Full",
+        "dbPrice": 140,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Peri Peri Fries",
+          "score": 100,
+          "vars": "Half:80|Full:140"
+        },
+        {
+          "name": "French Fries",
+          "score": 23,
+          "vars": "Half:70|Full:120"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Chilli Potato (Small)",
+      "qty": 3,
+      "unitPrice": 100,
+      "reportTotal": 300,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "chilli-potato",
+        "menuItemName": "Chilli Potato",
+        "category": "Fries & Crispies",
+        "variationId": "chilli-potato-half",
+        "variationName": "Half",
+        "dbPrice": 100,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Chilli Potato",
+          "score": 100,
+          "vars": "Half:100|Full:180"
+        },
+        {
+          "name": "Honey Chilli Potato",
+          "score": 80,
+          "vars": "Half:120|Full:220"
+        },
+        {
+          "name": "Chilli Chicken",
+          "score": 23,
+          "vars": "Half:280|Full:520"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Open Item",
+      "reportItem": "C Samosa",
+      "qty": 20,
+      "unitPrice": 74.7,
+      "reportTotal": 1494,
+      "action": "skip_excel_open_aggregate",
+      "match": null,
+      "note": "Excel open aggregate (₹1,494, qty 20) — replaced by notebook breakdown",
+      "topCandidates": [
+        {
+          "name": "Chicken Samosa",
+          "score": 100,
+          "vars": "Single:35"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Mojito",
+      "reportItem": "Strawberry Mojito",
+      "qty": 1,
+      "unitPrice": 150,
+      "reportTotal": 150,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "strawberry-mojito",
+        "menuItemName": "Strawberry Mojito",
+        "category": "Mojitos",
+        "variationId": "strawberry-mojito",
+        "variationName": "Regular",
+        "dbPrice": 150,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Strawberry Mojito",
+          "score": 100,
+          "vars": "Regular:150"
+        },
+        {
+          "name": "Strawberry Sweetness",
+          "score": 23,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Virgin Mojito",
+          "score": 23,
+          "vars": "Regular:150"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Green Apple",
+      "qty": 1,
+      "unitPrice": 150,
+      "reportTotal": 150,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "green-apple",
+        "menuItemName": "Green Apple",
+        "category": "Mojitos",
+        "variationId": "green-apple",
+        "variationName": "Regular",
+        "dbPrice": 150,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Green Apple",
+          "score": 100,
+          "vars": "Regular:150"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 0,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Shakes",
+      "reportItem": "Mango Blast",
+      "qty": 1,
+      "unitPrice": 160,
+      "reportTotal": 160,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "mango-blast",
+        "menuItemName": "Mango Blast",
+        "category": "Shakes",
+        "variationId": "mango-blast",
+        "variationName": "Regular",
+        "dbPrice": 160,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Mango Blast",
+          "score": 100,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Blackcurrent Blast",
+          "score": 23,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 0,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Oreo Biscuit",
+      "qty": 1,
+      "unitPrice": 160,
+      "reportTotal": 160,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "oreo-biscuit",
+        "menuItemName": "Oreo Biscuit",
+        "category": "Shakes",
+        "variationId": "oreo-biscuit",
+        "variationName": "Regular",
+        "dbPrice": 160,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Oreo Biscuit",
+          "score": 100,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 0,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Cold Drink",
+      "reportItem": "Cold Drink (Coca Cola @20)",
+      "qty": 6,
+      "unitPrice": 20,
+      "reportTotal": 120,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "item-ms4e07q7",
+        "menuItemName": "Coca Cola",
+        "category": "Soft Drinks",
+        "variationId": "v-ms4e07q7",
+        "variationName": "250 ml",
+        "dbPrice": 20,
+        "score": 120,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Coca Cola",
+          "score": 100,
+          "vars": "250 ml:20"
+        },
+        {
+          "name": "Cold Coffee",
+          "score": 12,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Cold Drink (Coca Cola Tin @ 40)",
+      "qty": 1,
+      "unitPrice": 40,
+      "reportTotal": 40,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "coke",
+        "menuItemName": "Coca-Cola Tin",
+        "category": "Soft Drinks",
+        "variationId": "coke-250",
+        "variationName": "300ml",
+        "dbPrice": 40,
+        "score": 145,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Coca Cola",
+          "score": 100,
+          "vars": "250 ml:20"
+        },
+        {
+          "name": "Coca-Cola Tin",
+          "score": 100,
+          "vars": "300ml:40"
+        },
+        {
+          "name": "Cold Coffee",
+          "score": 9,
+          "vars": "Regular:160"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Cold Drink (Thums Up @ 20)",
+      "qty": 6,
+      "unitPrice": 20,
+      "reportTotal": 120,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "item-ms4dzf4d",
+        "menuItemName": "Thumbs Up",
+        "category": "Soft Drinks",
+        "variationId": "v-ms4dzf4d",
+        "variationName": "250 ml",
+        "dbPrice": 20,
+        "score": 140,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Thumbs Up",
+          "score": 100,
+          "vars": "250 ml:20"
+        },
+        {
+          "name": "Cold Coffee",
+          "score": 10,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Cold Drink (Pepsi @ 20)",
+      "qty": 11,
+      "unitPrice": 20,
+      "reportTotal": 220,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "pepsi",
+        "menuItemName": "Pepsi",
+        "category": "Soft Drinks",
+        "variationId": "pepsi-250",
+        "variationName": "400 ml",
+        "dbPrice": 20,
+        "score": 130,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Pepsi",
+          "score": 100,
+          "vars": "400 ml:20"
+        },
+        {
+          "name": "Cold Coffee",
+          "score": 12,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Cold Drink (Dew @ 20)",
+      "qty": 5,
+      "unitPrice": 20,
+      "reportTotal": 100,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "mountain-dew",
+        "menuItemName": "Mountain Dew",
+        "category": "Soft Drinks",
+        "variationId": "dew-250",
+        "variationName": "250 ml",
+        "dbPrice": 20,
+        "score": 140,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Mountain Dew",
+          "score": 100,
+          "vars": "250 ml:20"
+        },
+        {
+          "name": "Cold Coffee",
+          "score": 12,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Water",
+      "reportItem": "Water (Large)",
+      "qty": 20,
+      "unitPrice": 20,
+      "reportTotal": 400,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "item-ms4eehgy",
+        "menuItemName": "Water",
+        "category": "Water",
+        "variationId": "v-ms4eeyyo",
+        "variationName": "Large",
+        "dbPrice": 20,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Water",
+          "score": 100,
+          "vars": "Regular:10|Large:20"
+        },
+        {
+          "name": "Watermelon Cooler",
+          "score": 80,
+          "vars": "Regular:150"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "Ice cream",
+      "reportItem": "Ice Cream (Cookey Crunch @ 50)",
+      "qty": 3,
+      "unitPrice": 50,
+      "reportTotal": 150,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "item-ms4erq9a",
+        "menuItemName": "Cookie Crunch",
+        "category": "Ice Cream",
+        "variationId": "v-ms4erq9a",
+        "variationName": "@50",
+        "dbPrice": 50,
+        "score": 140,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Cookie Crunch",
+          "score": 100,
+          "vars": "@50:50"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 0,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    },
+    {
+      "source": "excel",
+      "reportCategory": "(none)",
+      "reportItem": "Ice Cream (Choco Cone @ 40)",
+      "qty": 5,
+      "unitPrice": 40,
+      "reportTotal": 200,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "item-ms4er4w0",
+        "menuItemName": "Chocolate Cone",
+        "category": "Ice Cream",
+        "variationId": "v-ms4er4w0",
+        "variationName": "@ 40",
+        "dbPrice": 40,
+        "score": 140,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "Matched to menu; will use menu variation",
+      "topCandidates": [
+        {
+          "name": "Chocolate Cone",
+          "score": 100,
+          "vars": "@ 40:40"
+        },
+        {
+          "name": "Classic Chocolate",
+          "score": 23,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        }
+      ]
+    },
+    {
+      "source": "open_notebook",
+      "reportCategory": "Open Item (notebook)",
+      "reportItem": "Popcorn",
+      "qty": 4,
+      "unitPrice": 110,
+      "reportTotal": 440,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "khaanz-popcorn",
+        "menuItemName": "Popcorn Chicken",
+        "category": "Signature Chicken",
+        "variationId": "khaanz-popcorn-regular",
+        "variationName": "Regular",
+        "dbPrice": 110,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "From open-items notebook — C. Popcorn → Popcorn Chicken Regular → Popcorn Chicken (Regular)",
+      "topCandidates": [
+        {
+          "name": "Popcorn Chicken",
+          "score": 100,
+          "vars": "Regular:110|Large:199"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Special Chicken",
+          "score": 23,
+          "vars": "Half:350|Full:650"
+        }
+      ]
+    },
+    {
+      "source": "open_notebook",
+      "reportCategory": "Open Item (notebook)",
+      "reportItem": "Fried Chicken Momo",
+      "qty": 2,
+      "unitPrice": 100,
+      "reportTotal": 200,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "fried-chicken-momo",
+        "menuItemName": "Fried Chicken Momo",
+        "category": "Momo Mania",
+        "variationId": "v-ms4f06jd",
+        "variationName": "@ 100",
+        "dbPrice": 100,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "From open-items notebook — f. Momo ₹200 → 2× Fried Chicken Momo @100 → Fried Chicken Momo (@ 100)",
+      "topCandidates": [
+        {
+          "name": "Fried Chicken Momo",
+          "score": 100,
+          "vars": "Plate:120|@ 100:100|@180:180"
+        },
+        {
+          "name": "Fried Chicken",
+          "score": 80,
+          "vars": "Half:250|Full:550"
+        },
+        {
+          "name": "Fried Chicken Biryani",
+          "score": 35,
+          "vars": "Half:100|Full:180"
+        },
+        {
+          "name": "Steamed Chicken Momo",
+          "score": 35,
+          "vars": "Plate:120|@100:100"
+        }
+      ]
+    },
+    {
+      "source": "open_notebook",
+      "reportCategory": "Open Item (notebook)",
+      "reportItem": "C. Samosa",
+      "qty": 1,
+      "unitPrice": 35,
+      "reportTotal": 35,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "chicken-samosa",
+        "menuItemName": "Chicken Samosa",
+        "category": "Fries & Crispies",
+        "variationId": "chicken-samosa",
+        "variationName": "Single",
+        "dbPrice": 35,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "From open-items notebook — Chicken Samosa → Chicken Samosa (Single)",
+      "topCandidates": [
+        {
+          "name": "Chicken Samosa",
+          "score": 100,
+          "vars": "Single:35"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Special Chicken",
+          "score": 23,
+          "vars": "Half:350|Full:650"
+        }
+      ]
+    },
+    {
+      "source": "open_notebook",
+      "reportCategory": "Open Item (notebook)",
+      "reportItem": "C. Samosa",
+      "qty": 2,
+      "unitPrice": 35,
+      "reportTotal": 70,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "chicken-samosa",
+        "menuItemName": "Chicken Samosa",
+        "category": "Fries & Crispies",
+        "variationId": "chicken-samosa",
+        "variationName": "Single",
+        "dbPrice": 35,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "From open-items notebook — Chicken Samosa → Chicken Samosa (Single)",
+      "topCandidates": [
+        {
+          "name": "Chicken Samosa",
+          "score": 100,
+          "vars": "Single:35"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Special Chicken",
+          "score": 23,
+          "vars": "Half:350|Full:650"
+        }
+      ]
+    },
+    {
+      "source": "open_notebook",
+      "reportCategory": "Open Item (notebook)",
+      "reportItem": "Fried Chicken Momo",
+      "qty": 1,
+      "unitPrice": 180,
+      "reportTotal": 180,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "fried-chicken-momo",
+        "menuItemName": "Fried Chicken Momo",
+        "category": "Momo Mania",
+        "variationId": "v-ms6dqcd8",
+        "variationName": "@180",
+        "dbPrice": 180,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "From open-items notebook — f. momo @180 → Fried Chicken Momo @180 → Fried Chicken Momo (@180)",
+      "topCandidates": [
+        {
+          "name": "Fried Chicken Momo",
+          "score": 100,
+          "vars": "Plate:120|@ 100:100|@180:180"
+        },
+        {
+          "name": "Fried Chicken",
+          "score": 80,
+          "vars": "Half:250|Full:550"
+        },
+        {
+          "name": "Fried Chicken Biryani",
+          "score": 35,
+          "vars": "Half:100|Full:180"
+        },
+        {
+          "name": "Steamed Chicken Momo",
+          "score": 35,
+          "vars": "Plate:120|@100:100"
+        }
+      ]
+    },
+    {
+      "source": "open_notebook",
+      "reportCategory": "Open Item (notebook)",
+      "reportItem": "C. Samosa",
+      "qty": 2,
+      "unitPrice": 35,
+      "reportTotal": 70,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "chicken-samosa",
+        "menuItemName": "Chicken Samosa",
+        "category": "Fries & Crispies",
+        "variationId": "chicken-samosa",
+        "variationName": "Single",
+        "dbPrice": 35,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "From open-items notebook — Chicken Samosa → Chicken Samosa (Single)",
+      "topCandidates": [
+        {
+          "name": "Chicken Samosa",
+          "score": 100,
+          "vars": "Single:35"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Special Chicken",
+          "score": 23,
+          "vars": "Half:350|Full:650"
+        }
+      ]
+    },
+    {
+      "source": "open_notebook",
+      "reportCategory": "Open Item (notebook)",
+      "reportItem": "Chola puri",
+      "qty": 1,
+      "unitPrice": 60,
+      "reportTotal": 60,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "chole-poori",
+        "menuItemName": "Chole Poori",
+        "category": "Chole Poori/Bhature",
+        "variationId": "chole-poori",
+        "variationName": "Regular",
+        "dbPrice": 60,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "From open-items notebook — → Chole Poori Regular → Chole Poori (Regular)",
+      "topCandidates": [
+        {
+          "name": "Chole Poori",
+          "score": 100,
+          "vars": "Regular:60"
+        },
+        {
+          "name": "Chole",
+          "score": 80,
+          "vars": "Single:20"
+        },
+        {
+          "name": "Poori",
+          "score": 80,
+          "vars": "Single:10"
+        },
+        {
+          "name": "Chole Bhature",
+          "score": 23,
+          "vars": "Regular:80"
+        }
+      ]
+    },
+    {
+      "source": "open_notebook",
+      "reportCategory": "Open Item (notebook)",
+      "reportItem": "Popcorn",
+      "qty": 3,
+      "unitPrice": 110,
+      "reportTotal": 330,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "khaanz-popcorn",
+        "menuItemName": "Popcorn Chicken",
+        "category": "Signature Chicken",
+        "variationId": "khaanz-popcorn-regular",
+        "variationName": "Regular",
+        "dbPrice": 110,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "From open-items notebook — Popcorn → Popcorn Chicken Regular → Popcorn Chicken (Regular)",
+      "topCandidates": [
+        {
+          "name": "Popcorn Chicken",
+          "score": 100,
+          "vars": "Regular:110|Large:199"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 23,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Special Chicken",
+          "score": 23,
+          "vars": "Half:350|Full:650"
+        }
+      ]
+    },
+    {
+      "source": "open_notebook",
+      "reportCategory": "Open Item (notebook)",
+      "reportItem": "C. Burger",
+      "qty": 2,
+      "unitPrice": 100,
+      "reportTotal": 200,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "khaanz-chicken-tikki-burger",
+        "menuItemName": "Chicken Tikki Burger",
+        "category": "Burgers",
+        "variationId": "khaanz-chicken-tikki-burger-single",
+        "variationName": "Single",
+        "dbPrice": 100,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "From open-items notebook — → Chicken Tikki Burger → Chicken Tikki Burger (Single)",
+      "topCandidates": [
+        {
+          "name": "Chicken Tikki Burger",
+          "score": 100,
+          "vars": "Single:100"
+        },
+        {
+          "name": "Veg Tikki Burger",
+          "score": 35,
+          "vars": "Single:80"
+        },
+        {
+          "name": "Zinger Burger",
+          "score": 23,
+          "vars": "Single:149"
+        },
+        {
+          "name": "Tandoori Burger",
+          "score": 23,
+          "vars": "Single:169"
+        }
+      ]
+    },
+    {
+      "source": "open_notebook",
+      "reportCategory": "Open Item (notebook)",
+      "reportItem": "Chilly Almond",
+      "qty": 1,
+      "unitPrice": 40,
+      "reportTotal": 40,
+      "action": "menu_item",
+      "match": {
+        "menuItemId": "item-ms4eqfis",
+        "menuItemName": "Chillz Almond",
+        "category": "Ice Cream",
+        "variationId": "v-ms4eqfis",
+        "variationName": "@ 40",
+        "dbPrice": 40,
+        "score": 100,
+        "priceDiff": 0,
+        "available": true,
+        "notForSale": false
+      },
+      "note": "From open-items notebook — → Chillz Almond → Chillz Almond (@ 40)",
+      "topCandidates": [
+        {
+          "name": "Chillz Almond",
+          "score": 100,
+          "vars": "@ 40:40"
+        },
+        {
+          "name": "Mango Blast",
+          "score": 0,
+          "vars": "Regular:160"
+        },
+        {
+          "name": "Kadai Chicken",
+          "score": 0,
+          "vars": "Half:300|Full:550"
+        },
+        {
+          "name": "Masala Chicken",
+          "score": 0,
+          "vars": "Half:300|Full:550"
+        }
+      ]
+    }
+  ]
+}

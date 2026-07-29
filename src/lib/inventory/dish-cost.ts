@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 
+import type { MenuConsumptionCache } from "@/lib/inventory/consumption-cache";
 import { D0 } from "@/lib/inventory/decimal-utils";
 import {
   itemUnitCostPaisePerBase,
@@ -26,6 +27,7 @@ export async function computeDishCostBreakdown(
   menuItemId: string,
   variationId: string,
   at: Date,
+  cache?: MenuConsumptionCache,
 ): Promise<DishCostBreakdown | null> {
   const settings = await ensureInventorySettings(tx);
   const consumption = await expandMenuItemConsumption(
@@ -34,6 +36,8 @@ export async function computeDishCostBreakdown(
     variationId,
     at,
     new Prisma.Decimal(1),
+    [],
+    cache,
   );
   if (consumption.size === 0) return null;
 

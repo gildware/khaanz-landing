@@ -15,7 +15,13 @@ import {
 import { getPrisma } from "@/lib/prisma";
 import type { CartLine } from "@/types/menu";
 
-type SalesRow = { key: string; label: string; qty: number };
+type SalesBreakdownRow = { key: string; label: string; qty: number };
+type SalesRow = {
+  key: string;
+  label: string;
+  qty: number;
+  variations?: SalesBreakdownRow[];
+};
 type ValueRankRow = { key: string; label: string; valuePaise: number };
 
 export const runtime = "nodejs";
@@ -60,13 +66,14 @@ function istStartOfNextMonth(now: Date): Date {
 }
 
 const CHART_ITEMS_LIMIT = 5;
+const ITEM_AND_STOCK_CHART_LIMIT = 10;
 
-function splitTopBottom(rows: SalesRow[]) {
+function splitTopBottom(rows: SalesRow[], limit = CHART_ITEMS_LIMIT) {
   const sorted = [...rows].sort((a, b) => b.qty - a.qty || a.label.localeCompare(b.label));
   const bottom = [...sorted].reverse();
   return {
-    top: sorted.slice(0, CHART_ITEMS_LIMIT),
-    bottom: bottom.slice(0, CHART_ITEMS_LIMIT),
+    top: sorted.slice(0, limit),
+    bottom: bottom.slice(0, limit),
   };
 }
 
@@ -201,13 +208,16 @@ async function buildMenuCatalogRows(): Promise<SalesRow[]> {
 
   const rows: SalesRow[] = [];
   for (const item of items) {
-    for (const v of item.variations) {
-      rows.push({
-        key: `item:${item.id}:${v.id}`,
-        label: `${item.name}${v.name ? ` • ${v.name}` : ""}`,
+    rows.push({
+      key: `item:${item.id}`,
+      label: item.name,
+      qty: 0,
+      variations: item.variations.map((variation) => ({
+        key: variation.id,
+        label: variation.name || "Standard",
         qty: 0,
-      });
-    }
+      })),
+    });
   }
   for (const combo of combos) {
     rows.push({
@@ -221,7 +231,7 @@ async function buildMenuCatalogRows(): Promise<SalesRow[]> {
 
 function mergeSalesIntoCatalog(
   catalog: SalesRow[],
-  soldByKey: Map<string, { label: string; qty: number }>,
+  soldByKey: Map<string, SalesRow>,
 ) {
   const byKey = new Map(catalog.map((r) => [r.key, r]));
   for (const [key, sold] of soldByKey) {
@@ -229,8 +239,15 @@ function mergeSalesIntoCatalog(
     if (row) {
       row.qty = sold.qty;
       if (sold.label) row.label = sold.label;
+      const variationsByKey = new Map(
+        (row.variations ?? []).map((variation) => [variation.key, variation]),
+      );
+      for (const variation of sold.variations ?? []) {
+        variationsByKey.set(variation.key, variation);
+      }
+      row.variations = [...variationsByKey.values()];
     } else {
-      byKey.set(key, { key, label: sold.label, qty: sold.qty });
+      byKey.set(key, sold);
     }
   }
   return [...byKey.values()];
@@ -403,24 +420,42 @@ export async function GET(request: Request) {
       0,
     ) ?? 0;
 
-  const soldByKey = new Map<string, { label: string; qty: number }>();
+  const soldByKey = new Map<string, SalesRow>();
   for (const lineRow of monthOrderLines) {
     const line = migrateCartLine(lineRow.payload as unknown as CartLine);
     if (line.kind === "item") {
-      const key = `item:${line.itemId}:${line.variation.id}`;
-      const label = `${line.name}${line.variation.name ? ` • ${line.variation.name}` : ""}`;
-      const prev = soldByKey.get(key) ?? { label, qty: 0 };
+      const key = `item:${line.itemId}`;
+      const variationKey = line.variation.id;
+      const variationLabel = line.variation.name || "Standard";
+      const prev = soldByKey.get(key) ?? {
+        key,
+        label: line.name,
+        qty: 0,
+        variations: [],
+      };
+      const variations = new Map(
+        (prev.variations ?? []).map((variation) => [variation.key, variation]),
+      );
+      const previousVariation = variations.get(variationKey);
+      variations.set(variationKey, {
+        key: variationKey,
+        label: previousVariation?.label || variationLabel,
+        qty: (previousVariation?.qty ?? 0) + line.quantity,
+      });
       soldByKey.set(key, {
-        label: prev.label || label,
+        key,
+        label: prev.label || line.name,
         qty: prev.qty + line.quantity,
+        variations: [...variations.values()],
       });
       continue;
     }
     if (line.kind === "combo") {
       const key = `combo:${line.comboId}`;
       const label = line.name || "Combo";
-      const prev = soldByKey.get(key) ?? { label, qty: 0 };
+      const prev = soldByKey.get(key) ?? { key, label, qty: 0 };
       soldByKey.set(key, {
+        key,
         label: prev.label || label,
         qty: prev.qty + line.quantity,
       });
@@ -438,9 +473,12 @@ export async function GET(request: Request) {
   const netProfitPaise = grossMarginPaise - monthExpensesPaise - salariesPaise;
 
   const soldRows = mergeSalesIntoCatalog(catalog, soldByKey);
-  const { top: topSelling, bottom: leastSelling } = splitTopBottom(soldRows);
+  const { top: topSelling, bottom: leastSelling } = splitTopBottom(
+    soldRows,
+    ITEM_AND_STOCK_CHART_LIMIT,
+  );
   const { topByValue: topStockValue, lowestByValue: lowestStockValue } =
-    splitStockValueRanks(stockValueRows);
+    splitStockValueRanks(stockValueRows, ITEM_AND_STOCK_CHART_LIMIT);
   const {
     topVendorsBySales,
     bottomVendorsBySales,

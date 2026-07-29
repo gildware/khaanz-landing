@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sales preview · 2026-07-28 (NOT inserted)</title>
+<style>
+  :root {
+    --bg: #f6f1e8; --ink: #1c1917; --muted: #57534e; --line: #d6d3d1;
+    --ok: #166534; --ok-bg: #dcfce7; --warn: #9a3412; --warn-bg: #ffedd5;
+    --card: #fffdf9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #ccfbf1 0%, transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, #fde68a 0%, transparent 50%),
+      var(--bg);
+    color: var(--ink); line-height: 1.45;
+  }
+  header { padding: 2rem 1.5rem 1rem; max-width: 1100px; margin: 0 auto; }
+  header h1 {
+    font-family: "Fraunces", Georgia, serif; font-weight: 600;
+    font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0 0 0.35rem;
+  }
+  .badge {
+    display: inline-block; background: var(--warn-bg); color: var(--warn);
+    border: 1px solid #fdba74; padding: 0.2rem 0.65rem; font-size: 0.8rem;
+    font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .sub { color: var(--muted); max-width: 52rem; }
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem; max-width: 1100px; margin: 0 auto 1.5rem; padding: 0 1.5rem;
+  }
+  .stat { background: var(--card); border: 1px solid var(--line); padding: 0.9rem 1rem; }
+  .stat .k { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat .v { font-size: 1.25rem; font-weight: 650; margin-top: 0.15rem; font-variant-numeric: tabular-nums; }
+  section { max-width: 1100px; margin: 0 auto 2rem; padding: 0 1.5rem; }
+  h2 { font-family: "Fraunces", Georgia, serif; font-size: 1.25rem; margin: 0 0 0.75rem; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.55rem 0.65rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); background: #fafaf9; }
+  .num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .pill { display: inline-block; font-size: 0.72rem; font-weight: 650; padding: 0.12rem 0.45rem; }
+  .pill-menu { background: var(--ok-bg); color: var(--ok); }
+  .pill-open { background: var(--warn-bg); color: var(--warn); }
+  .muted { color: var(--muted); font-size: 0.8rem; }
+  .diff-bad { color: #b91c1c; font-weight: 600; }
+  .diff-ok { color: var(--ok); }
+  .notice { max-width: 1100px; margin: 0 auto 1.25rem; padding: 0 1.5rem; }
+  .notice > div { border: 1px solid #fdba74; background: #fff7ed; padding: 0.85rem 1rem; color: #9a3412; }
+  footer { max-width: 1100px; margin: 0 auto 3rem; padding: 0 1.5rem; color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+  <header>
+    <span class="badge">Preview only · nothing inserted</span>
+    <h1>Sales import preview · 2026-07-28</h1>
+    <p class="sub">
+      Excel header date: <strong>2026-07-28 to 2026-07-28</strong>.
+      File: <code>/Users/kamran/Downloads/Item_Wise_Sales_Report_2026_07_29_22_15_40.xlsx</code>.
+      Menu items in DB: 122.
+      Existing orders that day: <strong>0</strong>
+      (₹0).
+    </p>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="k">Excel report total</div><div class="v">₹21,284</div></div>
+    <div class="stat"><div class="k">Would add (menu @ DB)</div><div class="v">₹21,415</div></div>
+    <div class="stat"><div class="k">Would add (open)</div><div class="v">₹0</div></div>
+    <div class="stat"><div class="k">Preview grand total</div><div class="v">₹21,415</div></div>
+  </div>
+
+  <div class="notice"><div>
+        <strong>Open-item reconciliation:</strong>
+        Excel open aggregate ₹1,494.
+        Notebook breakdown ₹1,625
+        (19 units).
+        Notebook lines exceed the POS open bucket by ₹131; a discount of that amount is applied at insert so the day = Excel ₹21,284.
+        Onion Flour / stock notes are not included as sales.
+      </div></div>
+
+  <section>
+    <h2>1. Menu-matched lines</h2>
+    <p class="muted">50 lines · qty 220 · ₹21,415</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Report item</th><th></th><th class="num">Qty</th>
+          <th class="num">Report ₹</th><th>DB match</th>
+          <th class="num">DB ₹</th><th class="num">Line ₹</th><th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+              <td>Fried Momos<div class="muted">Momo Mania</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">42</td>
+              <td class="num">₹120<div class="muted">= ₹5,040</div></td>
+              <td>Fried Chicken Momo
+                <div class="muted">Plate · fried-chicken-momo</div>
+              </td>
+              <td class="num diff-ok">₹120</td>
+              <td class="num">₹5,040</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Steamed Momos<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">12</td>
+              <td class="num">₹120<div class="muted">= ₹1,440</div></td>
+              <td>Steamed Chicken Momo
+                <div class="muted">Plate · steamed-chicken-momo</div>
+              </td>
+              <td class="num diff-ok">₹120</td>
+              <td class="num">₹1,440</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Tandoori Momos<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">3</td>
+              <td class="num">₹160<div class="muted">= ₹480</div></td>
+              <td>Tandoori Chicken Momo
+                <div class="muted">Plate · tandoori-chicken-momo</div>
+              </td>
+              <td class="num diff-ok">₹160</td>
+              <td class="num">₹480</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Veg. Chowmein (Half)<div class="muted">Noodles Hub</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">3</td>
+              <td class="num">₹90<div class="muted">= ₹270</div></td>
+              <td>Veg. Chowmein
+                <div class="muted">Half · veg-chowmein</div>
+              </td>
+              <td class="num diff-ok">₹90</td>
+              <td class="num">₹270</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Veg. Chowmein (Full)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹170<div class="muted">= ₹170</div></td>
+              <td>Veg. Chowmein
+                <div class="muted">Full · veg-chowmein</div>
+              </td>
+              <td class="num diff-ok">₹170</td>
+              <td class="num">₹170</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Egg Chowmein (Half)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">2</td>
+              <td class="num">₹110<div class="muted">= ₹220</div></td>
+              <td>Egg Chowmein
+                <div class="muted">Half · egg-chowmein</div>
+              </td>
+              <td class="num diff-ok">₹110</td>
+              <td class="num">₹220</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Egg Chowmein (Full)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹200<div class="muted">= ₹200</div></td>
+              <td>Egg Chowmein
+                <div class="muted">Full · egg-chowmein</div>
+              </td>
+              <td class="num diff-ok">₹200</td>
+              <td class="num">₹200</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Chicken Chowmein (Half)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">11</td>
+              <td class="num">₹120<div class="muted">= ₹1,320</div></td>
+              <td>Chicken Chowmein
+                <div class="muted">Half · chicken-chowmein</div>
+              </td>
+              <td class="num diff-ok">₹120</td>
+              <td class="num">₹1,320</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Chicken Chowmein (Full)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹220<div class="muted">= ₹220</div></td>
+              <td>Chicken Chowmein
+                <div class="muted">Full · chicken-chowmein</div>
+              </td>
+              <td class="num diff-ok">₹220</td>
+              <td class="num">₹220</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Butter Chicken (Half)<div class="muted">Chef Specials</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">3</td>
+              <td class="num">₹300<div class="muted">= ₹900</div></td>
+              <td>Butter Chicken
+                <div class="muted">Half · butter-chicken</div>
+              </td>
+              <td class="num diff-ok">₹300</td>
+              <td class="num">₹900</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Butter Chicken (Full)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹550<div class="muted">= ₹550</div></td>
+              <td>Butter Chicken
+                <div class="muted">Full · butter-chicken</div>
+              </td>
+              <td class="num diff-ok">₹550</td>
+              <td class="num">₹550</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Kadai Chicken (Full)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹550<div class="muted">= ₹550</div></td>
+              <td>Kadai Chicken
+                <div class="muted">Full · kadai-chicken</div>
+              </td>
+              <td class="num diff-ok">₹550</td>
+              <td class="num">₹550</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Tandoori Chicken (Half)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹300<div class="muted">= ₹300</div></td>
+              <td>Tandoori Chicken
+                <div class="muted">Half · tandoori-chicken</div>
+              </td>
+              <td class="num diff-ok">₹300</td>
+              <td class="num">₹300</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Plain Naan<div class="muted">Tandoori Breads</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">2</td>
+              <td class="num">₹30<div class="muted">= ₹60</div></td>
+              <td>Plain Naan
+                <div class="muted">Single · plain-naan</div>
+              </td>
+              <td class="num diff-ok">₹30</td>
+              <td class="num">₹60</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Butter Naan<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">4</td>
+              <td class="num">₹40<div class="muted">= ₹160</div></td>
+              <td>Butter Naan
+                <div class="muted">Single · butter-naan</div>
+              </td>
+              <td class="num diff-ok">₹40</td>
+              <td class="num">₹160</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Tawa Roti<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">8</td>
+              <td class="num">₹15<div class="muted">= ₹120</div></td>
+              <td>Tawa Roti
+                <div class="muted">Single · tawa-roti</div>
+              </td>
+              <td class="num diff-ok">₹15</td>
+              <td class="num">₹120</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Fried Chicken Biryani (Half)<div class="muted">Rice Royale</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">3</td>
+              <td class="num">₹100<div class="muted">= ₹300</div></td>
+              <td>Fried Chicken Biryani
+                <div class="muted">Half · fried-chicken-biryani</div>
+              </td>
+              <td class="num diff-ok">₹100</td>
+              <td class="num">₹300</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Dum Chicken Biryani (Half)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">5</td>
+              <td class="num">₹100<div class="muted">= ₹500</div></td>
+              <td>Dum Chicken Biryani
+                <div class="muted">Half · dum-chicken-biryani</div>
+              </td>
+              <td class="num diff-ok">₹100</td>
+              <td class="num">₹500</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Chicken Fried Rice (Half)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">2</td>
+              <td class="num">₹120<div class="muted">= ₹240</div></td>
+              <td>Chicken Fried Rice
+                <div class="muted">Half · chicken-fried-rice</div>
+              </td>
+              <td class="num diff-ok">₹120</td>
+              <td class="num">₹240</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Veg. Fried Rice (Half)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">2</td>
+              <td class="num">₹90<div class="muted">= ₹180</div></td>
+              <td>Veg. Fried Rice
+                <div class="muted">Half · veg-fried-rice</div>
+              </td>
+              <td class="num diff-ok">₹90</td>
+              <td class="num">₹180</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Cheesy Bliss Pizza (Regular)<div class="muted">Pizza Zone</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">6</td>
+              <td class="num">₹180<div class="muted">= ₹1,080</div></td>
+              <td>Cheesy Bliss Pizza
+                <div class="muted">Small · cheesy-bliss-pizza</div>
+              </td>
+              <td class="num diff-ok">₹180</td>
+              <td class="num">₹1,080</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Veggie Supreme (Regular)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹250<div class="muted">= ₹250</div></td>
+              <td>Veggie Supreme
+                <div class="muted">Small · veggie-supreme</div>
+              </td>
+              <td class="num diff-ok">₹250</td>
+              <td class="num">₹250</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Chicken Feast Pizza (Regular)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">2</td>
+              <td class="num">₹280<div class="muted">= ₹560</div></td>
+              <td>Chicken Feast Pizza
+                <div class="muted">Small · chicken-feast-pizza</div>
+              </td>
+              <td class="num diff-ok">₹280</td>
+              <td class="num">₹560</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Chicken Roll<div class="muted">Paratha &amp; Rolls</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">4</td>
+              <td class="num">₹150<div class="muted">= ₹600</div></td>
+              <td>Chicken Roll
+                <div class="muted">Single · chicken-roll</div>
+              </td>
+              <td class="num diff-ok">₹150</td>
+              <td class="num">₹600</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Aloo Paratha<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">14</td>
+              <td class="num">₹80<div class="muted">= ₹1,120</div></td>
+              <td>Aloo Paratha
+                <div class="muted">Single · aloo-paratha</div>
+              </td>
+              <td class="num diff-ok">₹80</td>
+              <td class="num">₹1,120</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Chicken Kanti (Full)<div class="muted">Spicy Chinese</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹550<div class="muted">= ₹550</div></td>
+              <td>Chicken Kanti
+                <div class="muted">Full · chicken-kanti</div>
+              </td>
+              <td class="num diff-ok">₹550</td>
+              <td class="num">₹550</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Peri Peri Fries (Large)<div class="muted">Fries &amp; More</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹140<div class="muted">= ₹140</div></td>
+              <td>Peri Peri Fries
+                <div class="muted">Full · peri-peri-fries</div>
+              </td>
+              <td class="num diff-ok">₹140</td>
+              <td class="num">₹140</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Chilli Potato (Small)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">3</td>
+              <td class="num">₹100<div class="muted">= ₹300</div></td>
+              <td>Chilli Potato
+                <div class="muted">Half · chilli-potato</div>
+              </td>
+              <td class="num diff-ok">₹100</td>
+              <td class="num">₹300</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Strawberry Mojito<div class="muted">Mojito</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹150<div class="muted">= ₹150</div></td>
+              <td>Strawberry Mojito
+                <div class="muted">Regular · strawberry-mojito</div>
+              </td>
+              <td class="num diff-ok">₹150</td>
+              <td class="num">₹150</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Green Apple<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹150<div class="muted">= ₹150</div></td>
+              <td>Green Apple
+                <div class="muted">Regular · green-apple</div>
+              </td>
+              <td class="num diff-ok">₹150</td>
+              <td class="num">₹150</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Mango Blast<div class="muted">Shakes</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹160<div class="muted">= ₹160</div></td>
+              <td>Mango Blast
+                <div class="muted">Regular · mango-blast</div>
+              </td>
+              <td class="num diff-ok">₹160</td>
+              <td class="num">₹160</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Oreo Biscuit<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹160<div class="muted">= ₹160</div></td>
+              <td>Oreo Biscuit
+                <div class="muted">Regular · oreo-biscuit</div>
+              </td>
+              <td class="num diff-ok">₹160</td>
+              <td class="num">₹160</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Cold Drink (Coca Cola @20)<div class="muted">Cold Drink</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">6</td>
+              <td class="num">₹20<div class="muted">= ₹120</div></td>
+              <td>Coca Cola
+                <div class="muted">250 ml · item-ms4e07q7</div>
+              </td>
+              <td class="num diff-ok">₹20</td>
+              <td class="num">₹120</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Cold Drink (Coca Cola Tin @ 40)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹40<div class="muted">= ₹40</div></td>
+              <td>Coca-Cola Tin
+                <div class="muted">300ml · coke</div>
+              </td>
+              <td class="num diff-ok">₹40</td>
+              <td class="num">₹40</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Cold Drink (Thums Up @ 20)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">6</td>
+              <td class="num">₹20<div class="muted">= ₹120</div></td>
+              <td>Thumbs Up
+                <div class="muted">250 ml · item-ms4dzf4d</div>
+              </td>
+              <td class="num diff-ok">₹20</td>
+              <td class="num">₹120</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Cold Drink (Pepsi @ 20)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">11</td>
+              <td class="num">₹20<div class="muted">= ₹220</div></td>
+              <td>Pepsi
+                <div class="muted">400 ml · pepsi</div>
+              </td>
+              <td class="num diff-ok">₹20</td>
+              <td class="num">₹220</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Cold Drink (Dew @ 20)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">5</td>
+              <td class="num">₹20<div class="muted">= ₹100</div></td>
+              <td>Mountain Dew
+                <div class="muted">250 ml · mountain-dew</div>
+              </td>
+              <td class="num diff-ok">₹20</td>
+              <td class="num">₹100</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Water (Large)<div class="muted">Water</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">20</td>
+              <td class="num">₹20<div class="muted">= ₹400</div></td>
+              <td>Water
+                <div class="muted">Large · item-ms4eehgy</div>
+              </td>
+              <td class="num diff-ok">₹20</td>
+              <td class="num">₹400</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Ice Cream (Cookey Crunch @ 50)<div class="muted">Ice cream</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">3</td>
+              <td class="num">₹50<div class="muted">= ₹150</div></td>
+              <td>Cookie Crunch
+                <div class="muted">@50 · item-ms4erq9a</div>
+              </td>
+              <td class="num diff-ok">₹50</td>
+              <td class="num">₹150</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Ice Cream (Choco Cone @ 40)<div class="muted">(none)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">5</td>
+              <td class="num">₹40<div class="muted">= ₹200</div></td>
+              <td>Chocolate Cone
+                <div class="muted">@ 40 · item-ms4er4w0</div>
+              </td>
+              <td class="num diff-ok">₹40</td>
+              <td class="num">₹200</td>
+              <td class="muted">Matched to menu; will use menu variation</td>
+            </tr>
+<tr>
+              <td>Popcorn<div class="muted">Open Item (notebook)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">4</td>
+              <td class="num">₹110<div class="muted">= ₹440</div></td>
+              <td>Popcorn Chicken
+                <div class="muted">Regular · khaanz-popcorn</div>
+              </td>
+              <td class="num diff-ok">₹110</td>
+              <td class="num">₹440</td>
+              <td class="muted">From open-items notebook — C. Popcorn → Popcorn Chicken Regular → Popcorn Chicken (Regular)</td>
+            </tr>
+<tr>
+              <td>Fried Chicken Momo<div class="muted">Open Item (notebook)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">2</td>
+              <td class="num">₹100<div class="muted">= ₹200</div></td>
+              <td>Fried Chicken Momo
+                <div class="muted">@ 100 · fried-chicken-momo</div>
+              </td>
+              <td class="num diff-ok">₹100</td>
+              <td class="num">₹200</td>
+              <td class="muted">From open-items notebook — f. Momo ₹200 → 2× Fried Chicken Momo @100 → Fried Chicken Momo (@ 100)</td>
+            </tr>
+<tr>
+              <td>C. Samosa<div class="muted">Open Item (notebook)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹35<div class="muted">= ₹35</div></td>
+              <td>Chicken Samosa
+                <div class="muted">Single · chicken-samosa</div>
+              </td>
+              <td class="num diff-ok">₹35</td>
+              <td class="num">₹35</td>
+              <td class="muted">From open-items notebook — Chicken Samosa → Chicken Samosa (Single)</td>
+            </tr>
+<tr>
+              <td>C. Samosa<div class="muted">Open Item (notebook)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">2</td>
+              <td class="num">₹35<div class="muted">= ₹70</div></td>
+              <td>Chicken Samosa
+                <div class="muted">Single · chicken-samosa</div>
+              </td>
+              <td class="num diff-ok">₹35</td>
+              <td class="num">₹70</td>
+              <td class="muted">From open-items notebook — Chicken Samosa → Chicken Samosa (Single)</td>
+            </tr>
+<tr>
+              <td>Fried Chicken Momo<div class="muted">Open Item (notebook)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹180<div class="muted">= ₹180</div></td>
+              <td>Fried Chicken Momo
+                <div class="muted">@180 · fried-chicken-momo</div>
+              </td>
+              <td class="num diff-ok">₹180</td>
+              <td class="num">₹180</td>
+              <td class="muted">From open-items notebook — f. momo @180 → Fried Chicken Momo @180 → Fried Chicken Momo (@180)</td>
+            </tr>
+<tr>
+              <td>C. Samosa<div class="muted">Open Item (notebook)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">2</td>
+              <td class="num">₹35<div class="muted">= ₹70</div></td>
+              <td>Chicken Samosa
+                <div class="muted">Single · chicken-samosa</div>
+              </td>
+              <td class="num diff-ok">₹35</td>
+              <td class="num">₹70</td>
+              <td class="muted">From open-items notebook — Chicken Samosa → Chicken Samosa (Single)</td>
+            </tr>
+<tr>
+              <td>Chola puri<div class="muted">Open Item (notebook)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹60<div class="muted">= ₹60</div></td>
+              <td>Chole Poori
+                <div class="muted">Regular · chole-poori</div>
+              </td>
+              <td class="num diff-ok">₹60</td>
+              <td class="num">₹60</td>
+              <td class="muted">From open-items notebook — → Chole Poori Regular → Chole Poori (Regular)</td>
+            </tr>
+<tr>
+              <td>Popcorn<div class="muted">Open Item (notebook)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">3</td>
+              <td class="num">₹110<div class="muted">= ₹330</div></td>
+              <td>Popcorn Chicken
+                <div class="muted">Regular · khaanz-popcorn</div>
+              </td>
+              <td class="num diff-ok">₹110</td>
+              <td class="num">₹330</td>
+              <td class="muted">From open-items notebook — Popcorn → Popcorn Chicken Regular → Popcorn Chicken (Regular)</td>
+            </tr>
+<tr>
+              <td>C. Burger<div class="muted">Open Item (notebook)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">2</td>
+              <td class="num">₹100<div class="muted">= ₹200</div></td>
+              <td>Chicken Tikki Burger
+                <div class="muted">Single · khaanz-chicken-tikki-burger</div>
+              </td>
+              <td class="num diff-ok">₹100</td>
+              <td class="num">₹200</td>
+              <td class="muted">From open-items notebook — → Chicken Tikki Burger → Chicken Tikki Burger (Single)</td>
+            </tr>
+<tr>
+              <td>Chilly Almond<div class="muted">Open Item (notebook)</div></td>
+              <td><span class="pill pill-menu">MENU</span></td>
+              <td class="num">1</td>
+              <td class="num">₹40<div class="muted">= ₹40</div></td>
+              <td>Chillz Almond
+                <div class="muted">@ 40 · item-ms4eqfis</div>
+              </td>
+              <td class="num diff-ok">₹40</td>
+              <td class="num">₹40</td>
+              <td class="muted">From open-items notebook — → Chillz Almond → Chillz Almond (@ 40)</td>
+            </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>2. Open items</h2>
+    <p class="muted">0 lines · ₹0</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th><th></th><th class="num">Qty</th>
+          <th class="num">Unit ₹</th><th class="num">Line ₹</th><th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="6" class="muted">None</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Generated 2026-07-29T18:11:48.059Z · preview only · no DB writes.
+  </footer>
+</body>
+</html>

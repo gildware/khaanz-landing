@@ -7,7 +7,7 @@ import {
 import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 import { getPrisma } from "@/lib/prisma";
 
-export const STOCK_VALUE_CHART_LIMIT = 5;
+export const STOCK_VALUE_CHART_LIMIT = 10;
 
 export type StockValueRankRow = {
   key: string;
@@ -31,24 +31,28 @@ export async function loadStockValueRankRows(): Promise<StockValueRankRow[]> {
         stockOnHandBase: true,
         avgCostPaisePerBase: true,
         lastPurchasePaisePerBase: true,
+        yieldSourceItemId: true,
       },
       orderBy: { name: "asc" },
     }),
   ]);
 
+  // Cook items with a yield link don't hold stock — value is on the source.
+  const stockItems = items.filter((i) => !i.yieldSourceItemId);
+
   if (invSettings.costingMethod === "FIFO") {
     const values = await onHandValuesFifoPaiseByItem(
       prisma,
-      items.map((i) => i.id),
+      stockItems.map((i) => i.id),
     );
-    return items.map((item) => ({
+    return stockItems.map((item) => ({
       key: item.id,
       label: item.name,
       valuePaise: values.get(item.id) ?? 0,
     }));
   }
 
-  return items.map((item) => {
+  return stockItems.map((item) => {
     const unit = itemUnitCostPaisePerBase(item, invSettings.costingMethod);
     return {
       key: item.id,

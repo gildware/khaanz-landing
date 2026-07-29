@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
+import { createMenuConsumptionCache } from "@/lib/inventory/consumption-cache";
 import { computeDishCostBreakdown, marginPercentPaise } from "@/lib/inventory/dish-cost";
 import { getPrisma } from "@/lib/prisma";
 
@@ -35,10 +36,17 @@ export async function GET(request: Request) {
       marginPct: number | null;
     }[] = [];
 
+    const cache = createMenuConsumptionCache();
     for (const it of items) {
       for (const v of it.variations) {
         const sellingPricePaise = Math.round(v.price * 100);
-        const breakdown = await computeDishCostBreakdown(tx, it.id, v.id, at);
+        const breakdown = await computeDishCostBreakdown(
+          tx,
+          it.id,
+          v.id,
+          at,
+          cache,
+        );
         out.push({
           menuItemId: it.id,
           menuItemName: it.name,

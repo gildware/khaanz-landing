@@ -59,25 +59,29 @@ type PillChartRow = {
   value: number;
   displayValue: string;
   fill: string;
+  details?: Array<{ label: string; value: number }>;
 };
 
 export type PillRankSourceRow = {
   key?: string;
   label: string;
   value: number;
+  details?: Array<{ label: string; value: number }>;
 };
 
 function toPillChartRows(
   rows: PillRankSourceRow[],
   sortDesc: boolean,
   formatValue: (value: number) => string,
+  maxItems: number,
 ): PillChartRow[] {
   const sorted = [...rows].sort((a, b) => (sortDesc ? b.value - a.value : a.value - b.value));
-  return sorted.slice(0, PILL_CHART_ITEMS_MAX).map((r, i) => ({
+  return sorted.slice(0, maxItems).map((r, i) => ({
     fullLabel: r.label,
     value: r.value,
     displayValue: formatValue(r.value),
     fill: barColor(i),
+    details: r.details,
   }));
 }
 
@@ -122,8 +126,45 @@ function PillVerticalName(props: {
   );
 }
 
-function PillRankChart(props: { rows: PillChartRow[]; valueTitle: (row: PillChartRow) => string }) {
-  const { rows, valueTitle } = props;
+function RankDetailsTooltip(props: {
+  row: PillChartRow;
+  formatValue: (value: number) => string;
+}) {
+  const { row, formatValue } = props;
+  if (!row.details || row.details.length === 0) return null;
+
+  return (
+    <div
+      className="pointer-events-none absolute top-full left-1/2 z-30 mt-2 hidden w-48 -translate-x-1/2 rounded-lg border bg-popover p-3 text-popover-foreground shadow-lg group-hover:block group-focus-within:block"
+      role="tooltip"
+    >
+      <p className="font-semibold text-xs">{row.fullLabel}</p>
+      <p className="mt-0.5 text-muted-foreground text-[11px]">
+        {row.displayValue} total
+      </p>
+      <div className="mt-2 space-y-1">
+        {row.details.map((detail) => (
+          <div
+            key={detail.label}
+            className="flex items-center justify-between gap-3 text-xs"
+          >
+            <span className="min-w-0 truncate">{detail.label}</span>
+            <span className="shrink-0 font-medium tabular-nums">
+              {formatValue(detail.value)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PillRankChart(props: {
+  rows: PillChartRow[];
+  valueTitle: (row: PillChartRow) => string;
+  formatValue: (value: number) => string;
+}) {
+  const { rows, valueTitle, formatValue } = props;
   const maxValue = Math.max(1, ...rows.map((r) => r.value));
 
   return (
@@ -138,7 +179,7 @@ function PillRankChart(props: { rows: PillChartRow[]; valueTitle: (row: PillChar
         return (
           <div
             key={row.fullLabel}
-            className="relative flex shrink-0 flex-col items-center gap-2.5"
+            className="group relative flex shrink-0 flex-col items-center gap-2.5"
             style={{ width: PILL_WIDTH_PX }}
           >
             <span className="font-bold font-sans text-foreground text-sm tabular-nums leading-none">
@@ -149,6 +190,7 @@ function PillRankChart(props: { rows: PillChartRow[]; valueTitle: (row: PillChar
               className="relative rounded-full bg-[#ececef] dark:bg-muted/50"
               style={{ width: PILL_WIDTH_PX, height: PILL_TRACK_HEIGHT_PX }}
               title={valueTitle(row)}
+              tabIndex={0}
             >
               <div
                 className="absolute right-0 bottom-0 left-0 rounded-full"
@@ -163,6 +205,7 @@ function PillRankChart(props: { rows: PillChartRow[]; valueTitle: (row: PillChar
                 fillHeightPx={fillHeightPx}
               />
             </div>
+            <RankDetailsTooltip row={row} formatValue={formatValue} />
           </div>
         );
       })}
@@ -170,9 +213,70 @@ function PillRankChart(props: { rows: PillChartRow[]; valueTitle: (row: PillChar
   );
 }
 
+function HorizontalRankChart(props: {
+  rows: PillChartRow[];
+  valueTitle: (row: PillChartRow) => string;
+  formatValue: (value: number) => string;
+}) {
+  const { rows, valueTitle, formatValue } = props;
+  const maxValue = Math.max(1, ...rows.map((row) => row.value));
+  const splitAt = Math.ceil(rows.length / 2);
+  const columns = [rows.slice(0, splitAt), rows.slice(splitAt)].filter(
+    (column) => column.length > 0,
+  );
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {columns.map((column, columnIndex) => (
+        <div key={columnIndex} className="space-y-2">
+          {column.map((row, rowIndex) => {
+            const rank = columnIndex * splitAt + rowIndex + 1;
+            const widthPercent =
+              row.value > 0 ? Math.max(4, (row.value / maxValue) * 100) : 0;
+
+            return (
+              <div
+                key={row.fullLabel}
+                className="group relative rounded-xl border bg-card px-3 py-2.5 shadow-xs transition-colors hover:border-foreground/20 hover:bg-muted/20"
+                tabIndex={0}
+                title={valueTitle(row)}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                    style={{ backgroundColor: row.fill }}
+                  >
+                    {rank}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-medium text-xs">
+                    {row.fullLabel}
+                  </span>
+                  <span className="shrink-0 font-bold text-xs tabular-nums">
+                    {row.displayValue}
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full transition-[width]"
+                    style={{
+                      width: `${widthPercent}%`,
+                      backgroundColor: row.fill,
+                    }}
+                  />
+                </div>
+                <RankDetailsTooltip row={row} formatValue={formatValue} />
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export type PillRankChartCardProps = {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   topTabLabel: string;
   bottomTabLabel: string;
   topRows: PillRankSourceRow[];
@@ -184,6 +288,8 @@ export type PillRankChartCardProps = {
   valueTitle: (row: PillRankSourceRow) => string;
   footnoteSuffix?: string;
   filterTopPositive?: boolean;
+  maxItems?: number;
+  variant?: "pills" | "rank-bars";
   className?: string;
 };
 
@@ -202,6 +308,8 @@ export function PillRankChartCard(props: PillRankChartCardProps) {
     valueTitle,
     footnoteSuffix = "",
     filterTopPositive = false,
+    maxItems = PILL_CHART_ITEMS_MAX,
+    variant = "pills",
     className,
   } = props;
 
@@ -213,8 +321,8 @@ export function PillRankChartCard(props: PillRankChartCardProps) {
       view === "top" && filterTopPositive
         ? source.filter((r) => r.value > 0)
         : source;
-    return toPillChartRows(filtered, view === "top", formatValue);
-  }, [view, topRows, bottomRows, filterTopPositive, formatValue]);
+    return toPillChartRows(filtered, view === "top", formatValue, maxItems);
+  }, [view, topRows, bottomRows, filterTopPositive, formatValue, maxItems]);
 
   const totalValue = useMemo(
     () => chartData.reduce((sum, r) => sum + r.value, 0),
@@ -238,7 +346,9 @@ export function PillRankChartCard(props: PillRankChartCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-semibold text-base tracking-tight">{title}</p>
-          <p className="mt-1 text-muted-foreground text-sm">{subtitle}</p>
+          {subtitle ? (
+            <p className="mt-1 text-muted-foreground text-sm">{subtitle}</p>
+          ) : null}
         </div>
         <div
           className="inline-flex shrink-0 rounded-lg border bg-muted/40 p-0.5"
@@ -291,14 +401,31 @@ export function PillRankChartCard(props: PillRankChartCardProps) {
             {footnoteTotal}
           </p>
           <div className="mt-4 rounded-2xl bg-background">
-            <PillRankChart
-              rows={chartData}
-              valueTitle={(row) => {
-                const src = topRows.find((r) => r.label === row.fullLabel) ??
-                  bottomRows.find((r) => r.label === row.fullLabel);
-                return src ? valueTitle(src) : row.fullLabel;
-              }}
-            />
+            {variant === "rank-bars" ? (
+              <HorizontalRankChart
+                rows={chartData}
+                formatValue={formatValue}
+                valueTitle={(row) => {
+                  const src =
+                    topRows.find((r) => r.label === row.fullLabel) ??
+                    bottomRows.find((r) => r.label === row.fullLabel);
+                  return src ? valueTitle(src) : row.fullLabel;
+                }}
+              />
+            ) : (
+              <div className="overflow-x-auto">
+                <PillRankChart
+                  rows={chartData}
+                  formatValue={formatValue}
+                  valueTitle={(row) => {
+                    const src =
+                      topRows.find((r) => r.label === row.fullLabel) ??
+                      bottomRows.find((r) => r.label === row.fullLabel);
+                    return src ? valueTitle(src) : row.fullLabel;
+                  }}
+                />
+              </div>
+            )}
           </div>
         </>
       )}

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
 import { formatRecipeQtyBase } from "@/lib/inventory/decimal-utils";
 import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
+import { serializeYieldLink } from "@/lib/inventory/yield-links";
 import { getPrisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -79,6 +80,9 @@ async function loadItems() {
       avgCostPaisePerBase: true,
       lastPurchasePaisePerBase: true,
       active: true,
+      yieldSourceItemId: true,
+      yieldPercent: true,
+      yieldSourceItem: { select: { id: true, name: true } },
     },
     orderBy: { name: "asc" },
   });
@@ -94,6 +98,7 @@ async function loadItems() {
     avgCostPaisePerBase: r.avgCostPaisePerBase.toString(),
     lastPurchasePaisePerBase: r.lastPurchasePaisePerBase.toString(),
     active: r.active,
+    yieldLink: serializeYieldLink(r),
   }));
 }
 

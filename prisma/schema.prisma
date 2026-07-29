@@ -456,10 +456,16 @@ model InventoryItem {
   /// Moving average ingredient cost: paise per 1 base unit (decimal for sub-paise precision).
   avgCostPaisePerBase      Decimal  @default(0) @map("avg_cost_paise_per_base") @db.Decimal(24, 6)
   lastPurchasePaisePerBase Decimal  @default(0) @map("last_purchase_paise_per_base") @db.Decimal(24, 6)
+  /// When set, recipe use of this item deducts from the source at yieldPercent.
+  yieldSourceItemId        String?  @map("yield_source_item_id")
+  /// Usable % of source weight (e.g. 80 → 1 kg source yields 800 g of this item).
+  yieldPercent             Decimal? @map("yield_percent") @db.Decimal(5, 2)
   active                   Boolean  @default(true)
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @updatedAt @map("updated_at")
 
+  yieldSourceItem    InventoryItem?  @relation("InventoryYieldSource", fields: [yieldSourceItemId], references: [id], onDelete: SetNull)
+  yieldDerivedItems  InventoryItem[] @relation("InventoryYieldSource")
   purchaseLines      PurchaseLine[]
   returnLines        PurchaseReturnLine[]
   batches            InventoryBatch[]
@@ -474,6 +480,7 @@ model InventoryItem {
   personalUseEntries PersonalUseEntry[]
 
   @@index([name])
+  @@index([yieldSourceItemId])
   @@map("inventory_items")
 }
 

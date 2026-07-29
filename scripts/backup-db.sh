@@ -26,10 +26,55 @@ BACKUP_FILE="$BACKUP_DIR/khaanz-$TIMESTAMP.sql.gz"
 
 mkdir -p "$BACKUP_DIR"
 
+# Homebrew's postgresql@NN kegs are not linked into PATH; prefer the newest one
+# so pg_dump matches the server instead of failing on a version mismatch.
+for prefix in /opt/homebrew/opt /usr/local/opt; do
+  for version in 19 18; do
+    if [[ -x "$prefix/postgresql@$version/bin/pg_dump" ]]; then
+      PATH="$prefix/postgresql@$version/bin:$PATH"
+      break 2
+    fi
+  done
+done
+export PATH
+
 if [[ -z "${DATABASE_URL:-}" && -f "$PROJECT_ROOT/.env" ]]; then
   DATABASE_URL="$(grep -E '^DATABASE_URL=' "$PROJECT_ROOT/.env" | head -1 | cut -d '=' -f2- | tr -d '"' | tr -d "'")"
   export DATABASE_URL
 fi
+
+MIN_BACKUP_BYTES="${MIN_BACKUP_BYTES:-1024}"
+
+# A gzip of an empty dump is ~20 bytes and still exits 0, which silently produced
+# useless backups in the past. Never leave a file behind that we can't read back.
+verify_backup() {
+  if [[ ! -s "$BACKUP_FILE" ]]; then
+    echo "Error: backup file was not created: $BACKUP_FILE" >&2
+    rm -f "$BACKUP_FILE"
+    return 1
+  fi
+  local size
+  size="$(wc -c < "$BACKUP_FILE" | tr -d ' ')"
+  if (( size < MIN_BACKUP_BYTES )); then
+    echo "Error: backup is only ${size} bytes — the dump produced no data." >&2
+    rm -f "$BACKUP_FILE"
+    return 1
+  fi
+  if ! gzip -t "$BACKUP_FILE" 2>/dev/null; then
+    echo "Error: backup is not a valid gzip archive." >&2
+    rm -f "$BACKUP_FILE"
+    return 1
+  fi
+  # Read the header into a variable: piping into grep -q would close the pipe
+  # early and trip `pipefail` on the gzip side.
+  local header
+  header="$(gzip -dc "$BACKUP_FILE" 2>/dev/null | head -c 4096 || true)"
+  if [[ "$header" != *"PostgreSQL database dump"* ]]; then
+    echo "Error: backup does not look like a pg_dump output." >&2
+    rm -f "$BACKUP_FILE"
+    return 1
+  fi
+}
 
 dump_via_docker_client() {
   if ! docker info >/dev/null 2>&1; then
@@ -60,7 +105,7 @@ dump_via_url() {
       echo "pg_dump version mismatch — using Docker postgres:18 client..." >&2
       rm -f "$tmp" "$err_file"
       dump_via_docker_client
-      return 0
+      return
     fi
     cat "$err_file" >&2
     rm -f "$tmp" "$err_file"
@@ -70,7 +115,7 @@ dump_via_url() {
   if command -v docker >/dev/null 2>&1; then
     rm -f "$tmp" "$err_file"
     dump_via_docker_client
-    return 0
+    return
   fi
 
   echo "Error: pg_dump not found. Install PostgreSQL client tools or Docker." >&2
@@ -93,6 +138,9 @@ else
   exit 1
 fi
 
+verify_backup
+
+# Only prune old backups once the new one is known to be good.
 find "$BACKUP_DIR" -name 'khaanz-*.sql.gz' -type f -mtime +"$RETENTION_DAYS" -delete 2>/dev/null || true
 
 echo "Backup saved: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"

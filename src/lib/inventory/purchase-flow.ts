@@ -40,6 +40,8 @@ export type CreatePurchaseInput = {
   notes?: string;
   createdByUserId?: string | null;
   lines: PurchaseLineInput[];
+  /** Edit path: keep the same purchase id and batch ref after reverse. */
+  reuse?: { id: string; batchRef: string };
 };
 
 function addDays(d: Date, days: number): Date {
@@ -73,7 +75,9 @@ export async function createPurchaseInTransaction(
   }
 
   const supplier = await tx.supplier.findFirst({
-    where: { id: input.supplierId, active: true },
+    where: input.reuse
+      ? { id: input.supplierId }
+      : { id: input.supplierId, active: true },
   });
   if (!supplier) {
     throw new Error("SUPPLIER_NOT_FOUND");
@@ -81,8 +85,9 @@ export async function createPurchaseInTransaction(
 
   const invSettings = await ensureInventorySettings(tx);
   const now = input.purchasedAt;
-  const seq = await allocateNextPurchaseSequence(tx, now);
-  const batchRef = nextPurchaseBatchRef(now, seq);
+  const batchRef = input.reuse?.batchRef
+    ? input.reuse.batchRef
+    : nextPurchaseBatchRef(now, await allocateNextPurchaseSequence(tx, now));
 
   const creditDaysResolved =
     input.paymentType === "CREDIT"
@@ -99,7 +104,9 @@ export async function createPurchaseInTransaction(
 
   for (const ln of input.lines) {
     const item = await tx.inventoryItem.findFirst({
-      where: { id: ln.inventoryItemId, active: true },
+      where: input.reuse
+        ? { id: ln.inventoryItemId }
+        : { id: ln.inventoryItemId, active: true },
     });
     if (!item) throw new Error("INVENTORY_ITEM_NOT_FOUND");
 
@@ -126,6 +133,7 @@ export async function createPurchaseInTransaction(
 
   const purchase = await tx.purchase.create({
     data: {
+      ...(input.reuse ? { id: input.reuse.id } : {}),
       batchRef,
       supplierId: supplier.id,
       purchasedAt: now,
@@ -417,4 +425,29 @@ export async function deletePurchaseInTransaction(
 
   // Cascade-deletes the purchase lines.
   await tx.purchase.delete({ where: { id: purchaseId } });
+}
+
+/**
+ * Replace a purchase in place (same id + batch ref) when its stock is still
+ * fully on hand. Reverses the original receipt, then posts the new lines.
+ */
+export async function updatePurchaseInTransaction(
+  tx: Prisma.TransactionClient,
+  purchaseId: string,
+  input: CreatePurchaseInput,
+): Promise<{ purchaseId: string; batchRef: string }> {
+  const existing = await tx.purchase.findUnique({
+    where: { id: purchaseId },
+    select: { id: true, batchRef: true },
+  });
+  if (!existing) {
+    throw new Error("PURCHASE_NOT_FOUND");
+  }
+
+  await deletePurchaseInTransaction(tx, purchaseId);
+
+  return createPurchaseInTransaction(tx, {
+    ...input,
+    reuse: { id: existing.id, batchRef: existing.batchRef },
+  });
 }

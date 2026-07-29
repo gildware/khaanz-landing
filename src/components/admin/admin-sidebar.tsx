@@ -27,6 +27,7 @@ import {
   KeyRoundIcon,
   WalletIcon,
   ScrollTextIcon,
+  PackageSearchIcon,
 } from "lucide-react";
 
 import { useAdminSession } from "@/components/admin/admin-session-provider";
@@ -65,6 +66,12 @@ const links: {
   { href: "/admin/online-orders", label: "Online orders", icon: ShoppingBagIcon, permission: "online_orders" },
   { href: "/admin/orders", label: "Orders", icon: ClipboardListIcon, permission: "orders" },
   { href: "/admin/inventory", label: "Inventory", icon: WarehouseIcon, permission: "inventory.overview", tabHub: true },
+  {
+    href: "/admin/stock-usage",
+    label: "Stock usage",
+    icon: PackageSearchIcon,
+    permission: "inventory.stock_usage",
+  },
   { href: "/admin/recipes", label: "Recipe book", icon: BookOpenIcon, permission: "inventory.recipe_book" },
   { href: "/admin/wastage", label: "Wastage", icon: Trash2Icon, permission: "wastage.overview", tabHub: true },
   { href: "/admin/vendors", label: "Vendors", icon: HandshakeIcon, permission: "vendors.overview", tabHub: true },

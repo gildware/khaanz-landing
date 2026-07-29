@@ -1,0 +1,67 @@
+{
+  "saleDate": "2026-07-28",
+  "notes": "From open-items notebook 28/7/26",
+  "lines": [
+    {
+      "name": "Popcorn",
+      "qty": 4,
+      "unitPrice": 110,
+      "detail": "C. Popcorn → Popcorn Chicken Regular"
+    },
+    {
+      "name": "Fried Chicken Momo",
+      "qty": 2,
+      "unitPrice": 100,
+      "detail": "f. Momo ₹200 → 2× Fried Chicken Momo @100"
+    },
+    {
+      "name": "C. Samosa",
+      "qty": 1,
+      "unitPrice": 35,
+      "detail": "Chicken Samosa"
+    },
+    {
+      "name": "C. Samosa",
+      "qty": 2,
+      "unitPrice": 35,
+      "detail": "Chicken Samosa"
+    },
+    {
+      "name": "Fried Chicken Momo",
+      "qty": 1,
+      "unitPrice": 180,
+      "detail": "f. momo @180 → Fried Chicken Momo @180"
+    },
+    {
+      "name": "C. Samosa",
+      "qty": 2,
+      "unitPrice": 35,
+      "detail": "Chicken Samosa"
+    },
+    {
+      "name": "Chola puri",
+      "qty": 1,
+      "unitPrice": 60,
+      "detail": "→ Chole Poori Regular"
+    },
+    {
+      "name": "Popcorn",
+      "qty": 3,
+      "unitPrice": 110,
+      "detail": "Popcorn → Popcorn Chicken Regular"
+    },
+    {
+      "name": "C. Burger",
+      "qty": 2,
+      "unitPrice": 100,
+      "detail": "→ Chicken Tikki Burger"
+    },
+    {
+      "name": "Chilly Almond",
+      "qty": 1,
+      "unitPrice": 40,
+      "detail": "→ Chillz Almond"
+    }
+  ],
+  "notebookSum": 1625
+}
