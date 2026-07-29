@@ -11,7 +11,12 @@ import {
 } from "@/lib/admin-permissions";
 import { isMobileUserAgent } from "@/lib/is-mobile";
 
-/** POS register needs read access to settings / menu / floor plan. */
+/**
+ * Restaurant config (settings / menu / floor plan) is read by almost every
+ * screen — POS, Orders, Previous day sales — for payment methods, tables and
+ * dish names. Reading it needs only a signed-in admin; writing still needs the
+ * owning permission.
+ */
 function apiPermissionsForRequest(
   pathname: string,
   method: string,
@@ -20,14 +25,13 @@ function apiPermissionsForRequest(
   if (!base) return null;
 
   const isGet = method === "GET" || method === "HEAD";
-  if (isGet) {
-    if (
-      pathname === "/api/admin/settings" ||
+  if (
+    isGet &&
+    (pathname === "/api/admin/settings" ||
       pathname.startsWith("/api/admin/floor-plan") ||
-      pathname === "/api/admin/menu"
-    ) {
-      return [...base, "pos", "orders", "reports"];
-    }
+      pathname === "/api/admin/menu")
+  ) {
+    return null;
   }
 
   return base;

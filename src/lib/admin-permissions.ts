@@ -361,6 +361,17 @@ export function leafPermissionsUnder(node: PermissionNode): AdminPermission[] {
   return flattenTree(node.children) as AdminPermission[];
 }
 
+/**
+ * Every submenu key inside a module. API rules use this so adding a submenu to
+ * the tree never leaves an endpoint silently rejecting it.
+ */
+export function moduleLeafPermissions(
+  module: AdminPermission,
+): AdminPermission[] {
+  const node = findPermissionNode(module);
+  return node ? leafPermissionsUnder(node) : [module];
+}
+
 /** First panel home the user can open after login. */
 export function defaultAdminHomePath(
   bearer: PermissionBearer,
@@ -466,6 +477,55 @@ export function canAccessAdminPagePath(
   return false;
 }
 
+/** Longest-prefix-first rules mapping `/api/admin/*` to accepted keys. */
+const ADMIN_API_PERMISSION_RULES: {
+  prefix: string;
+  permissions: AdminPermission[];
+}[] = [
+  { prefix: "/api/admin/staff", permissions: ["staff"] },
+  {
+    prefix: "/api/admin/inventory/wastage",
+    permissions: moduleLeafPermissions("wastage"),
+  },
+  {
+    prefix: "/api/admin/inventory/menu-wastage",
+    permissions: moduleLeafPermissions("wastage"),
+  },
+  {
+    prefix: "/api/admin/inventory",
+    permissions: moduleLeafPermissions("inventory"),
+  },
+  { prefix: "/api/admin/orders/pos", permissions: ["pos"] },
+  {
+    // Previous day sales is the only screen reading this.
+    prefix: "/api/admin/orders/historical",
+    permissions: [
+      "orders",
+      "reports.previous_sales",
+      "reports.overview",
+      "reports.sales",
+    ],
+  },
+  { prefix: "/api/admin/pos", permissions: ["pos"] },
+  { prefix: "/api/admin/orders", permissions: ["orders", "online_orders"] },
+  { prefix: "/api/admin/vendors", permissions: moduleLeafPermissions("vendors") },
+  {
+    prefix: "/api/admin/expenses",
+    permissions: moduleLeafPermissions("expenses"),
+  },
+  { prefix: "/api/admin/payroll", permissions: moduleLeafPermissions("payroll") },
+  { prefix: "/api/admin/floor-plan", permissions: ["floor_plan"] },
+  { prefix: "/api/admin/menu/layout", permissions: ["home_layout"] },
+  { prefix: "/api/admin/menu", permissions: moduleLeafPermissions("menu") },
+  {
+    prefix: "/api/admin/settings",
+    permissions: moduleLeafPermissions("settings"),
+  },
+  { prefix: "/api/admin/dashboard", permissions: ["dashboard"] },
+  { prefix: "/api/admin/reports", permissions: moduleLeafPermissions("reports") },
+  { prefix: "/api/admin/cash", permissions: ["reports.cash"] },
+];
+
 /**
  * Map an `/api/admin/*` path to required permission(s).
  * `null` = auth only. Non-empty array = user needs any one of the listed keys.
@@ -481,92 +541,7 @@ export function permissionsForAdminApiPath(
     return null;
   }
 
-  const rules: { prefix: string; permissions: AdminPermission[] }[] = [
-    { prefix: "/api/admin/staff", permissions: ["staff"] },
-    { prefix: "/api/admin/inventory/wastage", permissions: ["wastage.overview", "wastage.reports"] },
-    { prefix: "/api/admin/inventory/menu-wastage", permissions: ["wastage.overview", "wastage.reports"] },
-    {
-      prefix: "/api/admin/inventory",
-      permissions: [
-        "inventory.overview",
-        "inventory.items",
-        "inventory.suppliers",
-        "inventory.purchase",
-        "inventory.recipes",
-        "inventory.sell",
-        "inventory.ops",
-        "inventory.recipe_book",
-      ],
-    },
-    { prefix: "/api/admin/orders/pos", permissions: ["pos"] },
-    {
-      prefix: "/api/admin/orders/historical",
-      permissions: ["orders", "reports.sales", "reports.overview"],
-    },
-    { prefix: "/api/admin/pos", permissions: ["pos"] },
-    {
-      prefix: "/api/admin/orders",
-      permissions: ["orders", "online_orders"],
-    },
-    {
-      prefix: "/api/admin/vendors",
-      permissions: [
-        "vendors.overview",
-        "vendors.vendors",
-        "vendors.sellable",
-        "vendors.sales",
-        "vendors.payments",
-      ],
-    },
-    {
-      prefix: "/api/admin/expenses",
-      permissions: ["expenses.business", "expenses.personal"],
-    },
-    {
-      prefix: "/api/admin/payroll",
-      permissions: [
-        "payroll.employees",
-        "payroll.attendance",
-        "payroll.advances",
-        "payroll.payrun",
-      ],
-    },
-    { prefix: "/api/admin/floor-plan", permissions: ["floor_plan"] },
-    { prefix: "/api/admin/menu/layout", permissions: ["home_layout"] },
-    {
-      prefix: "/api/admin/menu",
-      permissions: ["menu.categories", "menu.items", "menu.combos", "menu.addons", "menu.board"],
-    },
-    {
-      prefix: "/api/admin/settings",
-      permissions: [
-        "settings.general",
-        "settings.timing",
-        "settings.delivery",
-        "settings.bill",
-        "settings.payment",
-        "settings.desktop",
-      ],
-    },
-    { prefix: "/api/admin/dashboard", permissions: ["dashboard"] },
-    {
-      prefix: "/api/admin/reports",
-      permissions: [
-        "reports.overview",
-        "reports.sales",
-        "reports.items",
-        "reports.expenses",
-        "reports.personal",
-        "reports.wastage",
-        "reports.daily_report",
-        "reports.previous_sales",
-        "reports.cash",
-      ],
-    },
-    { prefix: "/api/admin/cash", permissions: ["reports.cash"] },
-  ];
-
-  for (const rule of rules) {
+  for (const rule of ADMIN_API_PERMISSION_RULES) {
     if (pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`)) {
       return rule.permissions;
     }
