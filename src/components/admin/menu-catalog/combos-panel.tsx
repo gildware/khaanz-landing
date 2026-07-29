@@ -32,6 +32,7 @@ import {
   persistMenuCombo,
 } from "@/lib/persist-menu-client";
 import type { MenuCombo } from "@/types/menu";
+import { EMPTY_MENU_PAYLOAD } from "@/types/menu-payload";
 
 export function MenuCatalogCombosPanel() {
   const { data, mutate } = useMenuData();
@@ -88,8 +89,8 @@ export function MenuCatalogCombosPanel() {
             return { ...current, combos: nextCombos };
           },
           {
-            optimisticData: (current) => {
-              if (!current) return current;
+            optimisticData: (input) => {
+              const current = input ?? EMPTY_MENU_PAYLOAD;
               const idx = current.combos.findIndex((c) => c.id === combo.id);
               const nextCombos =
                 idx === -1
@@ -123,13 +124,10 @@ export function MenuCatalogCombosPanel() {
             };
           },
           {
-            optimisticData: (current) =>
-              current
-                ? {
-                    ...current,
-                    combos: current.combos.filter((c) => c.id !== comboId),
-                  }
-                : current,
+            optimisticData: (current) => {
+              const base = current ?? EMPTY_MENU_PAYLOAD;
+              return { ...base, combos: base.combos.filter((c) => c.id !== comboId) };
+            },
             rollbackOnError: true,
             populateCache: true,
             revalidate: false,

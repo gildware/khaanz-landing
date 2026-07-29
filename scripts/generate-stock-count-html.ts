@@ -398,10 +398,12 @@ function mergedListQty(listBase: number | null, unit: string): string {
   return `${fmtNum(listBase)} ${unit}`;
 }
 
+type CostableItem = Parameters<typeof itemUnitCostPaisePerBase>[0];
+
 function resolveRatePaisePerBase(
   row: SheetRow,
-  db: { avgCostPaisePerBase: { toString(): string }; lastPurchasePaisePerBase: { toString(): string } } | undefined,
-  dbByName: Map<string, { avgCostPaisePerBase: { toString(): string }; lastPurchasePaisePerBase: { toString(): string } }>,
+  db: CostableItem | undefined,
+  dbByName: Map<string, CostableItem>,
   costingMethod: Parameters<typeof itemUnitCostPaisePerBase>[1],
 ): number {
   if (db) {
@@ -421,7 +423,10 @@ function isPendingDbRow(row: SheetRow, db: unknown): boolean {
 }
 
 function finalizeFlatRow(
-  fr: Omit<FlatRow, "status" | "delta" | "newAmountPaise" | "oldAmountPaise"> & { pendingDb?: boolean },
+  fr: Omit<
+    FlatRow,
+    "status" | "delta" | "newAmountPaise" | "oldAmountPaise" | "sourceCategories"
+  > & { sourceCategories?: string[]; pendingDb?: boolean },
 ): FlatRow {
   let { status, delta } = compare(fr.row.listBase, fr.row.listUnit, fr.oldStock, fr.oldUnit);
   if (fr.pendingDb && fr.row.listBase !== null) {
@@ -437,14 +442,21 @@ function finalizeFlatRow(
   const oldAmountPaise =
     fr.oldStock !== null && fr.oldUnit ? stockValuePaise(fr.oldStock, fr.ratePaisePerBase) : null;
   const { pendingDb: _pending, ...rest } = fr;
-  return { ...rest, status, delta, newAmountPaise, oldAmountPaise };
+  return {
+    ...rest,
+    sourceCategories: fr.sourceCategories ?? [fr.category],
+    status,
+    delta,
+    newAmountPaise,
+    oldAmountPaise,
+  };
 }
 
 /** Combine duplicate DB lines (e.g. same item on multiple count sheets). */
 function mergeFlatRows(rows: FlatRow[]): FlatRow[] {
   const map = new Map<
     string,
-    FlatRow & { sourceCategories: Set<string>; writings: string[] }
+    Omit<FlatRow, "sourceCategories"> & { sourceCategories: Set<string>; writings: string[] }
   >();
 
   for (const fr of rows) {

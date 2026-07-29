@@ -9,8 +9,9 @@ import { MenuCatalogAddonsPanel } from "@/components/admin/menu-catalog/addons-p
 import { MenuCatalogCategoriesPanel } from "@/components/admin/menu-catalog/categories-panel";
 import { MenuCatalogCombosPanel } from "@/components/admin/menu-catalog/combos-panel";
 import { MenuCatalogItemsPanel } from "@/components/admin/menu-catalog/items-panel";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 const MENU_CATALOG_TABS = ["categories", "items", "combos", "addons"] as const;
 type MenuCatalogTab = (typeof MENU_CATALOG_TABS)[number];
@@ -48,12 +49,15 @@ function MenuCatalogPageContent() {
             Categories, dishes, combos, and add-ons in one place.
           </p>
         </div>
-        <Button variant="outline" asChild>
-          <Link href="/admin/menu-board" target="_blank" rel="noopener noreferrer">
-            <ScrollTextIcon className="mr-2 size-4" aria-hidden />
-            View menu board
-          </Link>
-        </Button>
+        <Link
+          href="/admin/menu-board"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(buttonVariants({ variant: "outline" }), "inline-flex items-center")}
+        >
+          <ScrollTextIcon className="mr-2 size-4" aria-hidden />
+          View menu board
+        </Link>
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="w-full gap-6">

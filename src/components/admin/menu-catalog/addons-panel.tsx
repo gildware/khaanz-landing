@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { MenuAddon } from "@/types/menu";
+import { EMPTY_MENU_PAYLOAD } from "@/types/menu-payload";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { persistGlobalAddons } from "@/lib/persist-menu-client";
 
@@ -66,8 +67,10 @@ export function MenuCatalogAddonsPanel() {
           return { ...current, globalAddons: cleaned };
         },
         {
-          optimisticData: (current) =>
-            current ? { ...current, globalAddons: cleaned } : current,
+          optimisticData: (current) => ({
+            ...(current ?? EMPTY_MENU_PAYLOAD),
+            globalAddons: cleaned,
+          }),
           rollbackOnError: true,
           populateCache: true,
           revalidate: false,

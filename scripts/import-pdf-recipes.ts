@@ -358,7 +358,7 @@ async function main() {
     const label = recipe.title.slice(0, 120);
     const effectiveFrom = parseEffectiveFrom(recipe.effectiveFrom);
     // Fix obvious PDF typo: Momos Dough yield listed as thousands of kg
-    let yieldQty = recipe.yieldQty;
+    const yieldQty = recipe.yieldQty;
     let yieldUnit = recipe.yieldUnit;
     if (
       recipe.dish === "Momos Dough" &&

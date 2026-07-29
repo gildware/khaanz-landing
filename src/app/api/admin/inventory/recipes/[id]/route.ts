@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
@@ -18,7 +19,7 @@ function serializeIngredient(i: {
   inventoryItemId: string | null;
   componentMenuItemId: string | null;
   componentVariationId: string | null;
-  qtyBase: { toString(): string };
+  qtyBase: Prisma.Decimal;
   componentMenuItem?: { name: string } | null;
 }) {
   if (i.componentMenuItemId) {

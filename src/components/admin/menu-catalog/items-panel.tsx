@@ -27,7 +27,7 @@ import { deleteMenuItemClient, persistMenuItem, persistMenuItemFlags } from "@/l
 import { isMenuItemNotForSale } from "@/lib/menu-availability";
 import type { MenuCategoryDef } from "@/types/menu-category";
 import type { MenuItem } from "@/types/menu";
-import type { MenuPayload } from "@/types/menu-payload";
+import { EMPTY_MENU_PAYLOAD, type MenuPayload } from "@/types/menu-payload";
 
 const EMPTY_ITEMS: MenuItem[] = [];
 const EMPTY_CATEGORIES: MenuCategoryDef[] = [];
@@ -83,8 +83,7 @@ export function MenuCatalogItemsPanel() {
             return next;
           },
           {
-            optimisticData: (current) =>
-              current ? buildNext(current) : current,
+            optimisticData: (current) => buildNext(current ?? EMPTY_MENU_PAYLOAD),
             rollbackOnError: true,
             populateCache: true,
             revalidate: options?.revalidate ?? false,
@@ -113,8 +112,8 @@ export function MenuCatalogItemsPanel() {
             return { ...current, items: nextItems };
           },
           {
-            optimisticData: (current) => {
-              if (!current) return current;
+            optimisticData: (input) => {
+              const current = input ?? EMPTY_MENU_PAYLOAD;
               const idx = current.items.findIndex((i) => i.id === item.id);
               const nextItems =
                 idx === -1
@@ -148,13 +147,10 @@ export function MenuCatalogItemsPanel() {
             };
           },
           {
-            optimisticData: (current) =>
-              current
-                ? {
-                    ...current,
-                    items: current.items.filter((i) => i.id !== itemId),
-                  }
-                : current,
+            optimisticData: (current) => {
+              const base = current ?? EMPTY_MENU_PAYLOAD;
+              return { ...base, items: base.items.filter((i) => i.id !== itemId) };
+            },
             rollbackOnError: true,
             populateCache: true,
             revalidate: false,

@@ -8,3 +8,10 @@ export interface MenuPayload {
   items: MenuItem[];
   combos: MenuCombo[];
 }
+
+export const EMPTY_MENU_PAYLOAD: MenuPayload = {
+  categories: [],
+  globalAddons: [],
+  items: [],
+  combos: [],
+};
