@@ -333,21 +333,6 @@ export function hasPermission(
   return false;
 }
 
-/** User can open any screen inside this module (parent or ≥1 submenu). */
-export function hasModuleAccess(
-  bearer: PermissionBearer | null | undefined,
-  module: LegacyModulePermission,
-): boolean {
-  if (!bearer) return false;
-  if (bearer.role === "SUPER_ADMIN") return true;
-  if (bearer.role === "ADMIN" && bearer.permissions.length === 0) return true;
-
-  if (hasPermission(bearer, module as AdminPermission)) return true;
-
-  const prefix = `${module}.`;
-  return bearer.permissions.some((p) => p.startsWith(prefix));
-}
-
 export function hasAnyPermission(
   bearer: PermissionBearer | null | undefined,
   permissions: AdminPermission[],

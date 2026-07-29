@@ -41,8 +41,8 @@ const links: {
   label: string;
   icon: LucideIcon;
   permission: AdminPermission;
-  /** Show link when user has any permission in this module (for multi-tab pages). */
-  module?: LegacyModulePermission;
+  /** Page with `?tab=` sections: also show when any of its tabs is permitted. */
+  tabHub?: boolean;
   /** Open in a new tab (e.g. POS fullscreen register). */
   openInNewTab?: boolean;
 }[] = [
@@ -52,7 +52,7 @@ const links: {
     label: "Reports",
     icon: BarChart3Icon,
     permission: "reports.overview",
-    module: "reports",
+    tabHub: true,
   },
   { href: "/admin/daily-report", label: "Daily report", icon: CalendarDaysIcon, permission: "reports.daily_report" },
   {
@@ -64,11 +64,11 @@ const links: {
   { href: "/admin/cash", label: "Money available", icon: WalletIcon, permission: "reports.cash" },
   { href: "/admin/online-orders", label: "Online orders", icon: ShoppingBagIcon, permission: "online_orders" },
   { href: "/admin/orders", label: "Orders", icon: ClipboardListIcon, permission: "orders" },
-  { href: "/admin/inventory", label: "Inventory", icon: WarehouseIcon, permission: "inventory.overview", module: "inventory" },
+  { href: "/admin/inventory", label: "Inventory", icon: WarehouseIcon, permission: "inventory.overview", tabHub: true },
   { href: "/admin/recipes", label: "Recipe book", icon: BookOpenIcon, permission: "inventory.recipe_book" },
-  { href: "/admin/wastage", label: "Wastage", icon: Trash2Icon, permission: "wastage.overview", module: "wastage" },
-  { href: "/admin/vendors", label: "Vendors", icon: HandshakeIcon, permission: "vendors.overview", module: "vendors" },
-  { href: "/admin/expenses", label: "Expenses", icon: IndianRupeeIcon, permission: "expenses.business", module: "expenses" },
+  { href: "/admin/wastage", label: "Wastage", icon: Trash2Icon, permission: "wastage.overview", tabHub: true },
+  { href: "/admin/vendors", label: "Vendors", icon: HandshakeIcon, permission: "vendors.overview", tabHub: true },
+  { href: "/admin/expenses", label: "Expenses", icon: IndianRupeeIcon, permission: "expenses.business", tabHub: true },
   { href: "/admin/floor-plan", label: "Table layout", icon: LayoutGridIcon, permission: "floor_plan" },
   { href: "/admin/pos", label: "POS", icon: StoreIcon, permission: "pos", openInNewTab: true },
   {
@@ -83,7 +83,7 @@ const links: {
     label: "Menu catalogue",
     icon: UtensilsCrossedIcon,
     permission: "menu.categories",
-    module: "menu",
+    tabHub: true,
   },
   {
     href: "/admin/menu-board",
@@ -93,9 +93,9 @@ const links: {
     openInNewTab: true,
   },
   { href: "/admin/home-layout", label: "Home layout", icon: LayoutTemplateIcon, permission: "home_layout" },
-  { href: "/admin/payroll", label: "Payroll", icon: UsersIcon, permission: "payroll.employees", module: "payroll" },
+  { href: "/admin/payroll", label: "Payroll", icon: UsersIcon, permission: "payroll.employees", tabHub: true },
   { href: "/admin/staff", label: "Staff & logins", icon: KeyRoundIcon, permission: "staff" },
-  { href: "/admin/settings", label: "Settings", icon: SettingsIcon, permission: "settings.general", module: "settings" },
+  { href: "/admin/settings", label: "Settings", icon: SettingsIcon, permission: "settings.general", tabHub: true },
 ];
 
 export function AdminSidebar() {
@@ -109,12 +109,12 @@ export function AdminSidebar() {
     router.refresh();
   };
 
-  // Exact permission for each link. Hub pages (module set) also show when the
-  // user has any in-page tab under that hub — not sibling standalone pages.
+  // Exact permission per link, so a sibling page like Daily report never
+  // unlocks Previous day sales. Tab hubs additionally open on any allowed tab.
   const visibleLinks = user
     ? links.filter((l) => {
         if (can(l.permission)) return true;
-        if (!l.module) return false;
+        if (!l.tabHub) return false;
         const tabs = permittedTabsForPage(
           { role: user.role, permissions: user.permissions },
           l.href,
