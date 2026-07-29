@@ -128,6 +128,8 @@ export async function sumCashMovementsInRange(
   const out = emptyMovement();
   if (!(rangeStart < toExclusive)) return out;
 
+  // Aggregates only — avoid loading every historical row into Node (was a major
+  // dashboard / cash-page bottleneck as history grew).
   const [
     orders,
     vendorPayments,
@@ -138,58 +140,58 @@ export async function sumCashMovementsInRange(
     advances,
     adjustments,
   ] = await Promise.all([
-    prisma.order.findMany({
+    prisma.order.aggregate({
       where: {
         createdAt: { gte: rangeStart, lt: toExclusive },
         status: { not: "CANCELLED" },
         paymentMethod: { not: "" },
       },
-      select: { totalMinor: true },
+      _sum: { totalMinor: true },
     }),
-    prisma.vendorPayment.findMany({
+    prisma.vendorPayment.aggregate({
       where: { paidAt: { gte: rangeStart, lt: toExclusive } },
-      select: { amountPaise: true },
+      _sum: { amountPaise: true },
     }),
-    prisma.stockSaleEntry.findMany({
+    prisma.stockSaleEntry.aggregate({
       where: { soldAt: { gte: rangeStart, lt: toExclusive } },
-      select: { totalPaise: true },
+      _sum: { totalPaise: true },
     }),
-    prisma.expenseEntry.findMany({
+    prisma.expenseEntry.aggregate({
       where: { occurredAt: { gte: rangeStart, lt: toExclusive } },
-      select: { amountPaise: true },
+      _sum: { amountPaise: true },
     }),
-    prisma.personalUseEntry.findMany({
+    prisma.personalUseEntry.aggregate({
       where: {
         occurredAt: { gte: rangeStart, lt: toExclusive },
         kind: "CASH",
       },
-      select: { cashAmountPaise: true },
+      _sum: { cashAmountPaise: true },
     }),
-    prisma.supplierPayment.findMany({
+    prisma.supplierPayment.aggregate({
       where: { paidAt: { gte: rangeStart, lt: toExclusive } },
-      select: { amountPaise: true },
+      _sum: { amountPaise: true },
     }),
-    prisma.employeeAdvance.findMany({
+    prisma.employeeAdvance.aggregate({
       where: {
         occurredAt: { gte: rangeStart, lt: toExclusive },
         method: { in: ["CASH", "RECHARGE"] },
       },
-      select: { amountPaise: true },
+      _sum: { amountPaise: true },
     }),
-    prisma.cashAdjustment.findMany({
+    prisma.cashAdjustment.aggregate({
       where: { occurredAt: { gte: rangeStart, lt: toExclusive } },
-      select: { amountPaise: true },
+      _sum: { amountPaise: true },
     }),
   ]);
 
-  for (const o of orders) out.salesCollectedPaise += o.totalMinor;
-  for (const p of vendorPayments) out.vendorCollectionsPaise += p.amountPaise;
-  for (const s of stockSales) out.salesCollectedPaise += s.totalPaise;
-  for (const e of expenses) out.expensesPaise += e.amountPaise;
-  for (const p of personalCash) out.personalCashPaise += p.cashAmountPaise;
-  for (const p of supplierPayments) out.supplierPaymentsPaise += p.amountPaise;
-  for (const a of advances) out.advancesPaise += a.amountPaise;
-  for (const a of adjustments) out.adjustmentsPaise += a.amountPaise;
+  out.salesCollectedPaise =
+    (orders._sum.totalMinor ?? 0) + (stockSales._sum.totalPaise ?? 0);
+  out.vendorCollectionsPaise = vendorPayments._sum.amountPaise ?? 0;
+  out.expensesPaise = expenses._sum.amountPaise ?? 0;
+  out.personalCashPaise = personalCash._sum.cashAmountPaise ?? 0;
+  out.supplierPaymentsPaise = supplierPayments._sum.amountPaise ?? 0;
+  out.advancesPaise = advances._sum.amountPaise ?? 0;
+  out.adjustmentsPaise = adjustments._sum.amountPaise ?? 0;
 
   return out;
 }

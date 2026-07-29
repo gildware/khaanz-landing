@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { AdminExpensesSkeleton } from "@/components/admin/admin-page-skeleton";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -253,6 +254,7 @@ function resetBusinessDraft(): {
 
 export default function AdminExpensesPage() {
   const [activeTab, setActiveTab] = useTabParam("business");
+  const [initialLoading, setInitialLoading] = useState(true);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [expenseEntries, setExpenseEntries] = useState<ExpenseEntry[]>([]);
   const [personalEntries, setPersonalEntries] = useState<PersonalUseEntry[]>([]);
@@ -343,6 +345,8 @@ export default function AdminExpensesPage() {
         ]);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Failed to load expenses");
+      } finally {
+        setInitialLoading(false);
       }
     })();
   }, [loadCategories, loadExpenses, loadInventoryItems, loadMenu, loadPersonal, loadSummary]);
@@ -628,6 +632,10 @@ export default function AdminExpensesPage() {
       setPersonalDeleteSubmitting(false);
     }
   };
+
+  if (initialLoading) {
+    return <AdminExpensesSkeleton />;
+  }
 
   return (
     <div className="space-y-6">

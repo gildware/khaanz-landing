@@ -98,3 +98,22 @@ test("unmarked days default to present", () => {
   assert.equal(attendance[0]?.kind, "LEAVE");
   assert.equal(attendance[1]?.kind, "WORKED");
 });
+
+test("partial month period pro-rates salary and paid leaves", () => {
+  const attendance = buildPayrollAttendance(
+    "2026-07",
+    [],
+    { startDayKey: "2026-07-15", endDayKey: "2026-07-31" },
+  );
+  const r = computePayroll({
+    ...base,
+    startDayKey: "2026-07-15",
+    endDayKey: "2026-07-31",
+    attendance,
+  });
+  assert.equal(r.totalDays, 17);
+  const periodSalary = Math.round(1800000 * (17 / 31));
+  const paidLeaves = 4 * (17 / 31);
+  assert.equal(r.extraLeaveDays, paidLeaves);
+  assert.equal(r.netPayPaise, periodSalary + Math.round(paidLeaves * 60000));
+});

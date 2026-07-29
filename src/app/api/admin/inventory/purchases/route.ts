@@ -19,8 +19,17 @@ export async function GET() {
   const prisma = getPrisma();
   const rows = await prisma.purchase.findMany({
     orderBy: { purchasedAt: "desc" },
-    take: 500,
-    include: {
+    take: 200,
+    select: {
+      id: true,
+      batchRef: true,
+      supplierId: true,
+      purchasedAt: true,
+      paymentType: true,
+      creditDays: true,
+      dueAt: true,
+      totalPaise: true,
+      notes: true,
       supplier: { select: { id: true, name: true } },
       _count: { select: { lines: true } },
     },

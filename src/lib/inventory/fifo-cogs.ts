@@ -2,28 +2,21 @@ import { Prisma } from "@prisma/client";
 
 import { D0, d } from "@/lib/inventory/decimal-utils";
 
-/**
- * Sum recipe COGS for orders from batch consumption snapshots.
- * Rows with costPaise=0 (pre-FIFO data) fall back to qty × item avg cost.
- */
-export async function sumOrderConsumptionCostPaise(
-  tx: Prisma.TransactionClient,
-  orderIds: string[],
+type ConsumptionCostClient = {
+  inventoryBatchConsumption: Prisma.TransactionClient["inventoryBatchConsumption"];
+  inventoryItem: Prisma.TransactionClient["inventoryItem"];
+};
+
+type ConsumptionCostRow = {
+  costPaise: number;
+  qtyBase: Prisma.Decimal;
+  inventoryItemId: string;
+};
+
+async function sumConsumptionRows(
+  tx: ConsumptionCostClient,
+  rows: ConsumptionCostRow[],
 ): Promise<number> {
-  if (orderIds.length === 0) return 0;
-
-  const rows = await tx.inventoryBatchConsumption.findMany({
-    where: {
-      referenceType: "order",
-      orderId: { in: orderIds },
-    },
-    select: {
-      costPaise: true,
-      qtyBase: true,
-      inventoryItemId: true,
-    },
-  });
-
   if (rows.length === 0) return 0;
 
   const needFallbackIds = new Set<string>();
@@ -50,6 +43,55 @@ export async function sumOrderConsumptionCostPaise(
     total += Math.round(Number(r.qtyBase.mul(rate).toString()));
   }
   return total;
+}
+
+/**
+ * Sum recipe COGS for orders from batch consumption snapshots.
+ * Rows with costPaise=0 (pre-FIFO data) fall back to qty × item avg cost.
+ */
+export async function sumOrderConsumptionCostPaise(
+  tx: ConsumptionCostClient,
+  orderIds: string[],
+): Promise<number> {
+  if (orderIds.length === 0) return 0;
+
+  const rows = await tx.inventoryBatchConsumption.findMany({
+    where: {
+      referenceType: "order",
+      orderId: { in: orderIds },
+    },
+    select: {
+      costPaise: true,
+      qtyBase: true,
+      inventoryItemId: true,
+    },
+  });
+
+  return sumConsumptionRows(tx, rows);
+}
+
+/**
+ * Same as {@link sumOrderConsumptionCostPaise} but by consumption time range
+ * (avoids loading all month order ids first).
+ */
+export async function sumOrderConsumptionCostPaiseInRange(
+  tx: ConsumptionCostClient,
+  from: Date,
+  toExclusive: Date,
+): Promise<number> {
+  const rows = await tx.inventoryBatchConsumption.findMany({
+    where: {
+      referenceType: "order",
+      occurredAt: { gte: from, lt: toExclusive },
+    },
+    select: {
+      costPaise: true,
+      qtyBase: true,
+      inventoryItemId: true,
+    },
+  });
+
+  return sumConsumptionRows(tx, rows);
 }
 
 /**

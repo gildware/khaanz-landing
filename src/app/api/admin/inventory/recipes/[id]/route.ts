@@ -96,9 +96,26 @@ export async function PATCH(request: Request, context: Ctx) {
     return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
   }
 
-  const menu = await prisma.menuItem.findUnique({ where: { id: menuItemId } });
+  const menu = await prisma.menuItem.findUnique({
+    where: { id: menuItemId },
+    include: { variations: { select: { id: true } } },
+  });
   if (!menu) {
     return NextResponse.json({ error: "Menu item not found" }, { status: 404 });
+  }
+  if (menu.variations.length > 0) {
+    if (!variationId) {
+      return NextResponse.json(
+        { error: "variationId required — each variation needs its own recipe" },
+        { status: 400 },
+      );
+    }
+    if (!menu.variations.some((v) => v.id === variationId)) {
+      return NextResponse.json(
+        { error: "variationId does not belong to this menu item" },
+        { status: 400 },
+      );
+    }
   }
 
   const inventoryIds = ingredients

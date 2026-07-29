@@ -11,11 +11,11 @@ export default function AdminPanelLayout({
   return (
     <AdminSessionProvider>
       <AdminMobilePosRedirect>
-        <div className="flex min-h-[100dvh]">
+        <div className="admin-panel-root flex h-dvh max-h-dvh overflow-hidden">
           <AdminSidebar />
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <AdminNewOrderNotifier />
-            <div className="min-h-0 flex-1 overflow-auto p-6">{children}</div>
+            <div className="admin-panel-content min-h-0 flex-1 overflow-auto p-6">{children}</div>
           </div>
         </div>
       </AdminMobilePosRedirect>

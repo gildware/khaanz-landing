@@ -37,7 +37,15 @@ export async function GET(request: Request) {
   const rows = await prisma.inventoryMovement.findMany({
     orderBy: { occurredAt: "desc" },
     take: limit,
-    include: {
+    select: {
+      id: true,
+      inventoryItemId: true,
+      occurredAt: true,
+      type: true,
+      qtyDeltaBase: true,
+      referenceType: true,
+      referenceId: true,
+      note: true,
       item: { select: { id: true, name: true, baseUnit: true } },
     },
   });

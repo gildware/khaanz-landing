@@ -121,9 +121,12 @@ export function AdminNewOrderNotifier() {
   const poll = useCallback(async () => {
     if (!canWatchOnline) return;
     try {
-      const res = await fetch("/api/admin/orders?limit=100&offset=0", {
-        credentials: "include",
-      });
+      const res = await fetch(
+        "/api/admin/orders?view=online_pending&limit=50&offset=0",
+        {
+          credentials: "include",
+        },
+      );
       if (res.status === 401) return;
       if (!res.ok) return;
 

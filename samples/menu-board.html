@@ -1,0 +1,3348 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KHAANZ — Menu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Outfit:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --red: #dc2626;
+        --red-deep: #991b1b;
+        --cream: #f8fafc;
+        --cream-2: #ffffff;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #e2e8f0;
+        --veg: #059669;
+        --nonveg: #dc2626;
+        --gold: #d97706;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: "Outfit", ui-sans-serif, system-ui, sans-serif;
+        background: linear-gradient(180deg, #e2e8f0 0%, #f1f5f9 45%, #f8fafc 100%);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.65rem 1.25rem;
+        background: rgba(12, 10, 9, 0.92);
+        color: #fafaf9;
+      }
+
+      .toolbar strong { font-size: 0.88rem; display: block; }
+      .toolbar span { font-size: 0.72rem; color: #a8a29e; display: block; margin-top: 0.1rem; }
+      .toolbar-actions { display: flex; gap: 0.45rem; align-items: center; flex-shrink: 0; }
+
+      .menu-tabs {
+        display: flex;
+        gap: 0.35rem;
+        margin-top: 0.55rem;
+      }
+
+      .menu-tab {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        color: #d6d3d1;
+        font: inherit;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.35rem 0.75rem;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+      }
+
+      .menu-tab:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fafaf9;
+      }
+
+      .menu-tab.active {
+        background: #fff;
+        color: #0f172a;
+        border-color: #fff;
+      }
+
+      .menu-panel { display: none; }
+      .menu-panel.active { display: block; }
+
+      .toolbar button {
+        border: none;
+        border-radius: 0.45rem;
+        background: var(--red);
+        color: #fff;
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.45rem 0.9rem;
+        cursor: pointer;
+      }
+
+      .toolbar button.ghost { background: rgba(255,255,255,0.1); }
+
+      .book {
+        max-width: 210mm;
+        margin: 0 auto;
+        padding: 1rem 0.6rem 2rem;
+      }
+
+      .sheet {
+        background: var(--cream-2);
+        min-height: 297mm;
+        padding: 3.5mm;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .cover {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3mm;
+        padding: 1.2mm 1.5mm 2mm;
+        margin-bottom: 2mm;
+        border-bottom: 1px solid var(--line);
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+      }
+
+      .cover-logo { width: 16mm; height: auto; }
+      .cover-title {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 14pt;
+        font-weight: 700;
+        color: var(--red-deep);
+      }
+      .cover-sub {
+        font-size: 6pt;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      /* 3 columns — bin-packed so boxes fill each column with minimal gaps */
+      .cat-grid {
+        flex: 1;
+        display: flex;
+        align-items: flex-start;
+        gap: 1.6mm;
+      }
+
+      .cat-col {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1.6mm;
+      }
+
+      .cat-box {
+        background: var(--cat-bg);
+        border: 1px solid var(--cat-border);
+        border-radius: 2mm;
+        overflow: hidden;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .cat-box-head {
+        position: relative;
+        aspect-ratio: 5 / 3;
+        min-height: 22mm;
+        flex-shrink: 0;
+        overflow: hidden;
+        background: var(--cat-banner);
+      }
+
+      .cat-box-head--compact {
+        aspect-ratio: 16 / 7;
+        min-height: 14mm;
+      }
+
+      .cat-box-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+      }
+
+      .cat-box-title {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-end;
+        padding: 1.2mm 1.4mm;
+        background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.18) 55%, transparent 100%);
+      }
+
+      .cat-box-title h2 {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 9pt;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #fff;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+        line-height: 1.1;
+      }
+
+      .cat-count {
+        font-size: 6pt;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.85);
+        margin-top: 0.2mm;
+      }
+
+      .cat-box-body {
+        padding: 0.8mm 1.2mm 1mm;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .item-row {
+        padding: 0.5mm 0;
+        border-bottom: 1px dashed #e2e8f0;
+      }
+
+      .item-row:last-child { border-bottom: none; }
+
+      .item-row--pick {
+        background: #f8fafc;
+        margin: 0 -1.2mm;
+        padding: 0.5mm 1.2mm;
+        border-radius: 1mm;
+        border-bottom: none;
+      }
+
+      .item-row-inner {
+        display: flex;
+        align-items: flex-start;
+        gap: 1mm;
+      }
+
+      .item-row-inner--compact {
+        gap: 0;
+      }
+
+      .item-thumb {
+        width: 8.5mm;
+        height: 8.5mm;
+        border-radius: 1.2mm;
+        object-fit: cover;
+        object-position: center;
+        flex-shrink: 0;
+        border: 1px solid #e2e8f0;
+        background: #f1f5f9;
+      }
+
+      .item-detail {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .item-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1.2mm;
+      }
+
+      .item-title {
+        display: flex;
+        align-items: center;
+        gap: 0.9mm;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .pick { color: var(--gold); font-size: 9pt; flex-shrink: 0; line-height: 1; }
+
+      .item-name {
+        font-size: 9.5pt;
+        font-weight: 700;
+        color: var(--ink);
+        line-height: 1.18;
+      }
+
+      .price-stack {
+        flex-shrink: 0;
+        text-align: right;
+        min-width: 16mm;
+      }
+
+      .price-line {
+        display: flex;
+        align-items: baseline;
+        justify-content: flex-end;
+        gap: 1mm;
+        font-size: 9pt;
+        line-height: 1.32;
+      }
+
+      .price-size {
+        color: var(--muted);
+        font-weight: 500;
+        white-space: nowrap;
+        font-size: 8pt;
+      }
+
+      .price-amt {
+        font-weight: 700;
+        font-size: 9.5pt;
+        color: var(--cat-accent);
+        white-space: nowrap;
+      }
+
+      .price-amt.muted { color: var(--muted); font-weight: 500; font-size: 9pt; }
+
+      .combo-amt .price-amt {
+        font-size: 9.5pt;
+      }
+
+      .combo-block {
+        margin-top: 0.6mm;
+        padding-top: 0.8mm;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .combo-label {
+        font-size: 6.2pt;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--cat-accent);
+        margin-bottom: 0.6mm;
+      }
+
+      .item-row--combo .combo-desc {
+        font-size: 6pt;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 0.3mm;
+      }
+
+      .diet {
+        width: 9px;
+        height: 9px;
+        border: 1.5px solid;
+        flex-shrink: 0;
+        position: relative;
+        margin-left: 0.2mm;
+      }
+
+      .diet-veg { border-color: var(--veg); }
+      .diet-veg::after {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        background: var(--veg);
+        border-radius: 50%;
+      }
+
+      .diet-nonveg { border-color: var(--nonveg); }
+      .diet-nonveg::after {
+        content: "";
+        position: absolute;
+        left: 50%; top: 50%;
+        transform: translate(-50%, -28%);
+        border-left: 2.5px solid transparent;
+        border-right: 2.5px solid transparent;
+        border-bottom: 4px solid var(--nonveg);
+      }
+
+      .sheet-foot {
+        margin-top: 2mm;
+        padding-top: 1.5mm;
+        border-top: 1px solid var(--line);
+        text-align: center;
+      }
+
+      .foot-brand {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 9pt;
+        font-weight: 700;
+        color: var(--red-deep);
+      }
+
+      .foot-legend {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 2mm 4mm;
+        margin-top: 1.5mm;
+        font-size: 6pt;
+        color: var(--muted);
+      }
+
+      .foot-legend span { display: inline-flex; align-items: center; gap: 1mm; }
+      .foot-star { color: var(--gold); font-style: normal; }
+      .foot-fine { margin-top: 1.5mm; font-size: 5.5pt; color: #94a3b8; }
+      .muted { color: var(--muted); }
+
+      @page { size: A4 portrait; margin: 0; }
+
+      @media print {
+        body { background: white; }
+        .toolbar { display: none !important; }
+        .menu-tabs { display: none !important; }
+        .menu-panel:not(.active) { display: none !important; }
+        .book { padding: 0; max-width: none; }
+        .sheet {
+          min-height: 0;
+          height: auto;
+          margin: 0;
+          box-shadow: none;
+          page-break-after: always;
+        }
+        .sheet:last-child { page-break-after: auto; }
+        .cat-box { box-shadow: none; }
+        .cat-grid { display: flex; gap: 1.6mm; }
+        .cat-col { gap: 1.6mm; }
+      }
+
+      @media screen and (max-width: 900px) {
+        .cat-grid { gap: 2mm; }
+        .cat-col { gap: 2mm; }
+      }
+
+      @media screen and (max-width: 640px) {
+        .cat-grid { flex-direction: column; }
+        .cover { flex-direction: column; text-align: center; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <div>
+        <strong>KHAANZ — Customer Menu</strong>
+        <span>2-page layout · Updated 27 Jul 2026</span>
+        <div class="menu-tabs" role="tablist" aria-label="Menu layout">
+          <button type="button" class="menu-tab active" role="tab" aria-selected="true" data-tab="with-images">With item photos</button>
+          <button type="button" class="menu-tab" role="tab" aria-selected="false" data-tab="no-images">No item photos</button>
+        </div>
+      </div>
+      <div class="toolbar-actions">
+        <button type="button" class="ghost" onclick="window.scrollTo({top:0,behavior:'smooth'})">Top</button>
+        <button type="button" onclick="window.print()">Print menu</button>
+      </div>
+    </div>
+
+    
+    <div class="menu-panel" data-variant="with-images" role="tabpanel">
+      <div class="book">
+        
+    <div class="sheet sheet--1">
+      
+      <header class="cover">
+        <img class="cover-logo" src="/brand/khaanz-logo.png" alt="KHAANZ" />
+        <div class="cover-text">
+          <h1 class="cover-title">KHAANZ Menu</h1>
+          <p class="cover-sub">Crunchy · Spicy · Irresistible · Prices in ₹</p>
+        </div>
+      </header>
+      <main class="cat-grid"><div class="cat-col">
+      <section
+        class="cat-box cat-box--combos"
+        id="signature-chicken-combos"
+        style="--cat-bg:#ffffff;--cat-accent:#6d28d9;--cat-border:#e2e8f0;--cat-banner:#f5f3ff"
+      >
+        <header class="cat-box-head cat-box-head--compact">
+          <img class="cat-box-img" src="/menu/crispy-chicken.jpg" alt="Chicken Combos" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Chicken Combos</h2>
+            <span class="cat-count">9 combos</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+          
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/combo-student-box.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">KHAANZ Student Box</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹299</span></div></div>
+          </div>
+          <p class="combo-desc">2 Pc Crispy Chicken, Fries, Popcorn &amp; Drink</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/combo-solo-meal.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Solo Meal</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹199</span></div></div>
+          </div>
+          <p class="combo-desc">Burger + Fries + Drink</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/combo-duo-meal.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Duo Meal</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹449</span></div></div>
+          </div>
+          <p class="combo-desc">4 Pc Chicken + Fries + Popcorn + 2 Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/combo-zinger-meal.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Zinger Meal</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹549</span></div></div>
+          </div>
+          <p class="combo-desc">2 Zinger Burgers, 4 Wings, 1 Large Fries &amp; 2 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/combo-chicken-bucket.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Bucket</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹749</span></div></div>
+          </div>
+          <p class="combo-desc">6 Pc Signature Chicken, 4 Strips, 1 Popcorn &amp; 2 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/combo-variety-box.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Variety Box</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹499</span></div></div>
+          </div>
+          <p class="combo-desc">2 Pc Chicken (Any), 3 Strips, 3 Wings, 1 Popcorn &amp; 2 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/combo-all-in-one-box.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">All In One Box</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹629</span></div></div>
+          </div>
+          <p class="combo-desc">2 Pc Chicken (Any), 2 Strips, 2 Wings, 1 Burger, 1 Medium Fries, 1 Popcorn &amp; 2 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/combo-family-feast.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Family Feast</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹1,249</span></div></div>
+          </div>
+          <p class="combo-desc">8 Pc Chicken, 6 Strips, 6 Wings, 1 Large Popcorn, 2 Medium Fries &amp; 4 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/combo-jumbo-party-meal.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Jumbo Party Meal</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹1,599</span></div></div>
+          </div>
+          <p class="combo-desc">12 Pc Chicken, 6 Strips, 6 Wings, 2 Medium Popcorn, 2 Medium Fries &amp; 5 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="mojitos"
+        style="--cat-bg:#ffffff;--cat-accent:#65a30d;--cat-border:#e2e8f0;--cat-banner:#f7fee7"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/virgin-mojito.jpg" alt="Mojitos" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Mojitos</h2>
+            <span class="cat-count">5 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/virgin-mojito.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Virgin Mojito</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/watermelon-cooler.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Watermelon Cooler</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/blue-thunder.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Blue Thunder</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/strawberry-mojito.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Strawberry Mojito</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/green-apple.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Green Apple</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div><div class="cat-col">
+      <section
+        class="cat-box"
+        id="shakes"
+        style="--cat-bg:#fafafa;--cat-accent:#ca8a04;--cat-border:#e2e8f0;--cat-banner:#fefce8"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/classic-chocolate.jpg" alt="Shakes" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Shakes</h2>
+            <span class="cat-count">8 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/mango-blast.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Mango Blast</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/blackcurrent-blast.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Blackcurrent Blast</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/true-vanilla.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">True Vanilla</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/classic-chocolate.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Classic Chocolate</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/kit-kat-milkshake.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Kit Kat Milkshake</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/cold-coffee.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Cold Coffee</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/strawberry-sweetness.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Strawberry Sweetness</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/oreo-biscuit.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Oreo Biscuit</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="signature-chicken"
+        style="--cat-bg:#ffffff;--cat-accent:#6d28d9;--cat-border:#e2e8f0;--cat-banner:#f5f3ff"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/crispy-chicken.jpg" alt="Signature Chicken" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Signature Chicken</h2>
+            <span class="cat-count">4 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row item-row--pick">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/crispy-chicken.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="pick">★</span><span class="item-name">Crispy Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">2 Pcs</span><span class="price-amt">₹169</span></div><div class="price-line"><span class="price-size">4 Pcs</span><span class="price-amt">₹319</span></div><div class="price-line"><span class="price-size">8 Pcs</span><span class="price-amt">₹599</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/wings.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Wings</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">4 Pcs</span><span class="price-amt">₹119</span></div><div class="price-line"><span class="price-size">6 Pcs</span><span class="price-amt">₹169</span></div><div class="price-line"><span class="price-size">8 Pcs</span><span class="price-amt">₹219</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/strips.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Strips</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">4 Pcs</span><span class="price-amt">₹159</span></div><div class="price-line"><span class="price-size">6 Pcs</span><span class="price-amt">₹229</span></div><div class="price-line"><span class="price-size">8 Pcs</span><span class="price-amt">₹279</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/popcorn-chicken.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Popcorn Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Regular</span><span class="price-amt">₹110</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹199</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div><div class="cat-col">
+      <section
+        class="cat-box"
+        id="fries-crispies"
+        style="--cat-bg:#fafafa;--cat-accent:#7c3aed;--cat-border:#e2e8f0;--cat-banner:#f5f3ff"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/peri-peri-fries.jpg" alt="Fries &amp; Crispies" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Fries &amp; Crispies</h2>
+            <span class="cat-count">6 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/french-fries.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">French Fries</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹70</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹120</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/peri-peri-fries.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Peri Peri Fries</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹80</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹140</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chilli-potato.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chilli Potato</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹100</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹180</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/honey-chilli-potato.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Honey Chilli Potato</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹120</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹220</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/fried-chicken.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Fried Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹250</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/fried-fish.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Fried Fish</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">1 KG</span><span class="price-amt">₹500</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="chef-specials"
+        style="--cat-bg:#fafafa;--cat-accent:#c2410c;--cat-border:#e2e8f0;--cat-banner:#fff7ed"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/butter-chicken.jpg" alt="Chef Specials" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Chef Specials</h2>
+            <span class="cat-count">5 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/butter-chicken.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Butter Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/kadai-chicken.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Kadai Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/masala-chicken.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Masala Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/special-chicken.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Special Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹350</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹650</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/tandoori-chicken.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Tandoori Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div></main>
+      
+    </div>
+        
+    <div class="sheet sheet--2">
+      
+      <main class="cat-grid"><div class="cat-col">
+      <section
+        class="cat-box"
+        id="parathas-rolls"
+        style="--cat-bg:#ffffff;--cat-accent:#475569;--cat-border:#e2e8f0;--cat-banner:#f8fafc"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/chicken-paratha.jpg" alt="Parathas &amp; Rolls" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Parathas &amp; Rolls</h2>
+            <span class="cat-count">6 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chicken-paratha.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Paratha</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/cheese-paratha.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Cheese Paratha</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹120</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/aloo-paratha.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Aloo Paratha</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹80</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/egg-roll.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg Roll</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹70</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chicken-roll.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Roll</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/egg-chicken-roll.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg + Chicken Roll</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹170</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="burgers"
+        style="--cat-bg:#fafafa;--cat-accent:#ea580c;--cat-border:#e2e8f0;--cat-banner:#fff7ed"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/zinger-burger.jpg" alt="Burgers" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Burgers</h2>
+            <span class="cat-count">4 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row item-row--pick">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/zinger-burger.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="pick">★</span><span class="item-name">Zinger Burger</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹149</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/tandoori-burger.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Tandoori Burger</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹169</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chicken-tikki-burger.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Tikki Burger</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹100</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/veg-tikki-burger.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veg Tikki Burger</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹80</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="noodle-hub"
+        style="--cat-bg:#ffffff;--cat-accent:#db2777;--cat-border:#e2e8f0;--cat-banner:#fdf2f8"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/chicken-chowmein.jpg" alt="Noodle Hub" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Noodle Hub</h2>
+            <span class="cat-count">5 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/veg-chowmein.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veg. Chowmein</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹90</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹170</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/veg-schezwan-noodles.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veg Schezwan Noodles</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹100</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹180</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/egg-chowmein.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg Chowmein</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹110</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹200</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chicken-chowmein.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Chowmein</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹120</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹220</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chicken-schezwan-noodles.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Schezwan Noodles</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹140</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹250</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div><div class="cat-col">
+      <section
+        class="cat-box"
+        id="rice-royale"
+        style="--cat-bg:#fafafa;--cat-accent:#059669;--cat-border:#e2e8f0;--cat-banner:#ecfdf5"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/dum-chicken-biryani.jpg" alt="Rice Royale" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Rice Royale</h2>
+            <span class="cat-count">7 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/fried-chicken-biryani.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Fried Chicken Biryani</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹100</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹180</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/dum-chicken-biryani.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Dum Chicken Biryani</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹100</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹180</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/veg-fried-rice.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veg. Fried Rice</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹90</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹170</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/schezwan-fried-rice-veg.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Schezwan Fried Rice (V)</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹100</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹180</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chicken-fried-rice.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Fried Rice</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹120</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹220</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/schezwan-fried-rice-nonveg.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Schezwan Fried Rice (N)</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹130</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹240</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/egg-fried-rice.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg Fried Rice</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹110</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹200</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="pizza-zone"
+        style="--cat-bg:#ffffff;--cat-accent:#be123c;--cat-border:#e2e8f0;--cat-banner:#fff1f2"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/cheesy-bliss-pizza.jpg" alt="Pizza Zone" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Pizza Zone</h2>
+            <span class="cat-count">6 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/cheesy-bliss-pizza.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Cheesy Bliss Pizza</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹180</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹400</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/cheesy-corn-burst.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Cheesy Corn Burst</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹200</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹450</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/veggie-supreme.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veggie Supreme</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹250</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chicken-feast-pizza.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Feast Pizza</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹280</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹600</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chicken-royale-pizza.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Royale Pizza</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹350</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹650</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/veg-royale-pizza.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veg Royale Pizza</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹280</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹600</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="momo-mania"
+        style="--cat-bg:#ffffff;--cat-accent:#b45309;--cat-border:#e2e8f0;--cat-banner:#fffbeb"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/steamed-chicken-momo.jpg" alt="Momo Mania" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Momo Mania</h2>
+            <span class="cat-count">3 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/fried-chicken-momo.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Fried Chicken Momo</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹120</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/steamed-chicken-momo.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Steamed Chicken Momo</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹120</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/tandoori-chicken-momo.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Tandoori Chicken Momo</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div><div class="cat-col">
+      <section
+        class="cat-box"
+        id="spicy-chinese"
+        style="--cat-bg:#fafafa;--cat-accent:#0891b2;--cat-border:#e2e8f0;--cat-banner:#ecfeff"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/chilli-chicken.jpg" alt="Spicy Chinese" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Spicy Chinese</h2>
+            <span class="cat-count">7 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/egg-chilli.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg Chilli</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹150</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹280</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/egg-manchurian.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg Manchurian</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹180</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹320</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chilli-chicken.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chilli Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹280</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹520</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chicken-kanti.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Kanti</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/crispy-chilli-chicken.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Crispy Chilli Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chicken-manchurian.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Manchurian</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/fish-chilli.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Fish Chilli</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹280</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹520</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="tandoor-breads"
+        style="--cat-bg:#ffffff;--cat-accent:#2563eb;--cat-border:#e2e8f0;--cat-banner:#eff6ff"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/butter-garlic-naan.jpg" alt="Tandoor Breads" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Tandoor Breads</h2>
+            <span class="cat-count">7 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/plain-naan.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Plain Naan</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹30</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/butter-naan.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Butter Naan</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹40</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/butter-garlic-naan.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Butter Garlic Naan</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹50</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/tandoori-roti.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Tandoori Roti</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹20</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/butter-tandoori-roti.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Butter Tandoori Roti</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹25</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/tawa-roti.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Tawa Roti</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹15</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/butter-tawa-roti.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Butter Tawa Roti</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹20</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="chole-poori-bhature"
+        style="--cat-bg:#fafafa;--cat-accent:#e11d48;--cat-border:#e2e8f0;--cat-banner:#fff1f2"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/chole-bhature.jpg" alt="Chole Poori/Bhature" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Chole Poori/Bhature</h2>
+            <span class="cat-count">5 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/poori.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Poori</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹10</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/bhature.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Bhature</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹15</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chole-poori.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chole Poori</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹60</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chole-bhature.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chole Bhature</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹80</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner">
+        <img class="item-thumb" src="/menu/chole-paratha.jpg" alt="" loading="lazy" decoding="async" />
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chole Paratha</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹100</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div></main>
+      
+      <footer class="sheet-foot">
+        <div class="foot-brand">KHAANZ</div>
+        <div class="foot-legend">
+          <span><span class="diet diet-veg" title="Vegetarian"></span> Vegetarian</span>
+          <span><span class="diet diet-nonveg" title="Non-Vegetarian"></span> Non-Vegetarian</span>
+          <span><em class="foot-star">★</em> Chef's pick</span>
+        </div>
+        <p class="foot-fine">Prices subject to change · Photos for reference</p>
+      </footer>
+    </div>
+      </div>
+    </div>
+    
+    <div class="menu-panel" data-variant="no-images" role="tabpanel">
+      <div class="book">
+        
+    <div class="sheet sheet--1">
+      
+      <header class="cover">
+        <img class="cover-logo" src="/brand/khaanz-logo.png" alt="KHAANZ" />
+        <div class="cover-text">
+          <h1 class="cover-title">KHAANZ Menu</h1>
+          <p class="cover-sub">Crunchy · Spicy · Irresistible · Prices in ₹</p>
+        </div>
+      </header>
+      <main class="cat-grid"><div class="cat-col">
+      <section
+        class="cat-box cat-box--combos"
+        id="signature-chicken-combos"
+        style="--cat-bg:#ffffff;--cat-accent:#6d28d9;--cat-border:#e2e8f0;--cat-banner:#f5f3ff"
+      >
+        <header class="cat-box-head cat-box-head--compact">
+          <img class="cat-box-img" src="/menu/crispy-chicken.jpg" alt="Chicken Combos" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Chicken Combos</h2>
+            <span class="cat-count">9 combos</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+          
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">KHAANZ Student Box</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹299</span></div></div>
+          </div>
+          <p class="combo-desc">2 Pc Crispy Chicken, Fries, Popcorn &amp; Drink</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Solo Meal</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹199</span></div></div>
+          </div>
+          <p class="combo-desc">Burger + Fries + Drink</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Duo Meal</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹449</span></div></div>
+          </div>
+          <p class="combo-desc">4 Pc Chicken + Fries + Popcorn + 2 Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Zinger Meal</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹549</span></div></div>
+          </div>
+          <p class="combo-desc">2 Zinger Burgers, 4 Wings, 1 Large Fries &amp; 2 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Bucket</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹749</span></div></div>
+          </div>
+          <p class="combo-desc">6 Pc Signature Chicken, 4 Strips, 1 Popcorn &amp; 2 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Variety Box</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹499</span></div></div>
+          </div>
+          <p class="combo-desc">2 Pc Chicken (Any), 3 Strips, 3 Wings, 1 Popcorn &amp; 2 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">All In One Box</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹629</span></div></div>
+          </div>
+          <p class="combo-desc">2 Pc Chicken (Any), 2 Strips, 2 Wings, 1 Burger, 1 Medium Fries, 1 Popcorn &amp; 2 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Family Feast</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹1,249</span></div></div>
+          </div>
+          <p class="combo-desc">8 Pc Chicken, 6 Strips, 6 Wings, 1 Large Popcorn, 2 Medium Fries &amp; 4 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+    <div class="item-row item-row--combo">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Jumbo Party Meal</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack combo-amt"><div class="price-line"><span class="price-size">Combo</span><span class="price-amt">₹1,599</span></div></div>
+          </div>
+          <p class="combo-desc">12 Pc Chicken, 6 Strips, 6 Wings, 2 Medium Popcorn, 2 Medium Fries &amp; 5 Cold Drinks</p>
+        </div>
+      </div>
+    </div>
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="mojitos"
+        style="--cat-bg:#ffffff;--cat-accent:#65a30d;--cat-border:#e2e8f0;--cat-banner:#f7fee7"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/virgin-mojito.jpg" alt="Mojitos" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Mojitos</h2>
+            <span class="cat-count">5 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Virgin Mojito</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Watermelon Cooler</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Blue Thunder</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Strawberry Mojito</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Green Apple</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div><div class="cat-col">
+      <section
+        class="cat-box"
+        id="pizza-zone"
+        style="--cat-bg:#ffffff;--cat-accent:#be123c;--cat-border:#e2e8f0;--cat-banner:#fff1f2"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/cheesy-bliss-pizza.jpg" alt="Pizza Zone" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Pizza Zone</h2>
+            <span class="cat-count">6 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Cheesy Bliss Pizza</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹180</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹400</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Cheesy Corn Burst</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹200</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹450</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veggie Supreme</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹250</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Feast Pizza</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹280</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹600</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Royale Pizza</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹350</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹650</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veg Royale Pizza</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Small</span><span class="price-amt">₹280</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹600</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="signature-chicken"
+        style="--cat-bg:#ffffff;--cat-accent:#6d28d9;--cat-border:#e2e8f0;--cat-banner:#f5f3ff"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/crispy-chicken.jpg" alt="Signature Chicken" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Signature Chicken</h2>
+            <span class="cat-count">4 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row item-row--pick">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="pick">★</span><span class="item-name">Crispy Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">2 Pcs</span><span class="price-amt">₹169</span></div><div class="price-line"><span class="price-size">4 Pcs</span><span class="price-amt">₹319</span></div><div class="price-line"><span class="price-size">8 Pcs</span><span class="price-amt">₹599</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Wings</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">4 Pcs</span><span class="price-amt">₹119</span></div><div class="price-line"><span class="price-size">6 Pcs</span><span class="price-amt">₹169</span></div><div class="price-line"><span class="price-size">8 Pcs</span><span class="price-amt">₹219</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Strips</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">4 Pcs</span><span class="price-amt">₹159</span></div><div class="price-line"><span class="price-size">6 Pcs</span><span class="price-amt">₹229</span></div><div class="price-line"><span class="price-size">8 Pcs</span><span class="price-amt">₹279</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Popcorn Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Regular</span><span class="price-amt">₹110</span></div><div class="price-line"><span class="price-size">Large</span><span class="price-amt">₹199</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div><div class="cat-col">
+      <section
+        class="cat-box"
+        id="fries-crispies"
+        style="--cat-bg:#fafafa;--cat-accent:#7c3aed;--cat-border:#e2e8f0;--cat-banner:#f5f3ff"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/peri-peri-fries.jpg" alt="Fries &amp; Crispies" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Fries &amp; Crispies</h2>
+            <span class="cat-count">6 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">French Fries</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹70</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹120</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Peri Peri Fries</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹80</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹140</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chilli Potato</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹100</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹180</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Honey Chilli Potato</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹120</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹220</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Fried Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹250</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Fried Fish</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">1 KG</span><span class="price-amt">₹500</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="chef-specials"
+        style="--cat-bg:#fafafa;--cat-accent:#c2410c;--cat-border:#e2e8f0;--cat-banner:#fff7ed"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/butter-chicken.jpg" alt="Chef Specials" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Chef Specials</h2>
+            <span class="cat-count">5 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Butter Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Kadai Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Masala Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Special Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹350</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹650</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Tandoori Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div></main>
+      
+    </div>
+        
+    <div class="sheet sheet--2">
+      
+      <main class="cat-grid"><div class="cat-col">
+      <section
+        class="cat-box"
+        id="parathas-rolls"
+        style="--cat-bg:#ffffff;--cat-accent:#475569;--cat-border:#e2e8f0;--cat-banner:#f8fafc"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/chicken-paratha.jpg" alt="Parathas &amp; Rolls" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Parathas &amp; Rolls</h2>
+            <span class="cat-count">6 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Paratha</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Cheese Paratha</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹120</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Aloo Paratha</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹80</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg Roll</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹70</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Roll</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹150</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg + Chicken Roll</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹170</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="burgers"
+        style="--cat-bg:#fafafa;--cat-accent:#ea580c;--cat-border:#e2e8f0;--cat-banner:#fff7ed"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/zinger-burger.jpg" alt="Burgers" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Burgers</h2>
+            <span class="cat-count">4 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row item-row--pick">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="pick">★</span><span class="item-name">Zinger Burger</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹149</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Tandoori Burger</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹169</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Tikki Burger</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹100</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veg Tikki Burger</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹80</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="noodle-hub"
+        style="--cat-bg:#ffffff;--cat-accent:#db2777;--cat-border:#e2e8f0;--cat-banner:#fdf2f8"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/chicken-chowmein.jpg" alt="Noodle Hub" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Noodle Hub</h2>
+            <span class="cat-count">5 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veg. Chowmein</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹90</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹170</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veg Schezwan Noodles</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹100</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹180</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg Chowmein</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹110</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹200</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Chowmein</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹120</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹220</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Schezwan Noodles</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹140</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹250</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div><div class="cat-col">
+      <section
+        class="cat-box"
+        id="rice-royale"
+        style="--cat-bg:#fafafa;--cat-accent:#059669;--cat-border:#e2e8f0;--cat-banner:#ecfdf5"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/dum-chicken-biryani.jpg" alt="Rice Royale" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Rice Royale</h2>
+            <span class="cat-count">7 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Fried Chicken Biryani</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹100</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹180</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Dum Chicken Biryani</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹100</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹180</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Veg. Fried Rice</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹90</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹170</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Schezwan Fried Rice (V)</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹100</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹180</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Fried Rice</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹120</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹220</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Schezwan Fried Rice (N)</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹130</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹240</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg Fried Rice</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹110</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹200</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="shakes"
+        style="--cat-bg:#fafafa;--cat-accent:#ca8a04;--cat-border:#e2e8f0;--cat-banner:#fefce8"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/classic-chocolate.jpg" alt="Shakes" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Shakes</h2>
+            <span class="cat-count">8 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Mango Blast</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Blackcurrent Blast</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">True Vanilla</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Classic Chocolate</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Kit Kat Milkshake</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Cold Coffee</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Strawberry Sweetness</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Oreo Biscuit</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="momo-mania"
+        style="--cat-bg:#ffffff;--cat-accent:#b45309;--cat-border:#e2e8f0;--cat-banner:#fffbeb"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/steamed-chicken-momo.jpg" alt="Momo Mania" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Momo Mania</h2>
+            <span class="cat-count">3 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Fried Chicken Momo</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹120</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Steamed Chicken Momo</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹120</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Tandoori Chicken Momo</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹160</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div><div class="cat-col">
+      <section
+        class="cat-box"
+        id="spicy-chinese"
+        style="--cat-bg:#fafafa;--cat-accent:#0891b2;--cat-border:#e2e8f0;--cat-banner:#ecfeff"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/chilli-chicken.jpg" alt="Spicy Chinese" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Spicy Chinese</h2>
+            <span class="cat-count">7 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg Chilli</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹150</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹280</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Egg Manchurian</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹180</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹320</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chilli Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹280</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹520</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Kanti</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Crispy Chilli Chicken</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chicken Manchurian</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹300</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹550</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Fish Chilli</span><span class="diet diet-nonveg" title="Non-Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-size">Half</span><span class="price-amt">₹280</span></div><div class="price-line"><span class="price-size">Full</span><span class="price-amt">₹520</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="tandoor-breads"
+        style="--cat-bg:#ffffff;--cat-accent:#2563eb;--cat-border:#e2e8f0;--cat-banner:#eff6ff"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/butter-garlic-naan.jpg" alt="Tandoor Breads" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Tandoor Breads</h2>
+            <span class="cat-count">7 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Plain Naan</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹30</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Butter Naan</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹40</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Butter Garlic Naan</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹50</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Tandoori Roti</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹20</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Butter Tandoori Roti</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹25</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Tawa Roti</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹15</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Butter Tawa Roti</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹20</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section>
+      <section
+        class="cat-box"
+        id="chole-poori-bhature"
+        style="--cat-bg:#fafafa;--cat-accent:#e11d48;--cat-border:#e2e8f0;--cat-banner:#fff1f2"
+      >
+        <header class="cat-box-head">
+          <img class="cat-box-img" src="/menu/chole-bhature.jpg" alt="Chole Poori/Bhature" loading="lazy" decoding="async" />
+          <div class="cat-box-title">
+            <h2>Chole Poori/Bhature</h2>
+            <span class="cat-count">5 items</span>
+          </div>
+        </header>
+        <div class="cat-box-body">
+          
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Poori</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹10</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Bhature</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹15</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chole Poori</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹60</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chole Bhature</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹80</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="item-row">
+      <div class="item-row-inner item-row-inner--compact">
+        
+        <div class="item-detail">
+          <div class="item-head">
+            <div class="item-title">
+              <span class="item-name">Chole Paratha</span><span class="diet diet-veg" title="Vegetarian"></span>
+            </div>
+            <div class="price-stack"><div class="price-line"><span class="price-amt">₹100</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+          
+        </div>
+      </section></div></main>
+      
+      <footer class="sheet-foot">
+        <div class="foot-brand">KHAANZ</div>
+        <div class="foot-legend">
+          <span><span class="diet diet-veg" title="Vegetarian"></span> Vegetarian</span>
+          <span><span class="diet diet-nonveg" title="Non-Vegetarian"></span> Non-Vegetarian</span>
+          <span><em class="foot-star">★</em> Chef's pick</span>
+        </div>
+        <p class="foot-fine">Prices subject to change</p>
+      </footer>
+    </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var tabs = document.querySelectorAll(".menu-tab");
+        var panels = document.querySelectorAll(".menu-panel");
+        var storageKey = "khaanz-menu-board-tab";
+
+        function activate(id) {
+          tabs.forEach(function (tab) {
+            var on = tab.getAttribute("data-tab") === id;
+            tab.classList.toggle("active", on);
+            tab.setAttribute("aria-selected", on ? "true" : "false");
+          });
+          panels.forEach(function (panel) {
+            panel.classList.toggle("active", panel.getAttribute("data-variant") === id);
+          });
+          try { sessionStorage.setItem(storageKey, id); } catch (_) {}
+        }
+
+        tabs.forEach(function (tab) {
+          tab.addEventListener("click", function () {
+            activate(tab.getAttribute("data-tab"));
+          });
+        });
+
+        var saved = null;
+        try { saved = sessionStorage.getItem(storageKey); } catch (_) {}
+        activate(saved === "no-images" ? "no-images" : "with-images");
+      })();
+    </script>
+  </body>
+</html>

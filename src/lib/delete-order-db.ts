@@ -1,5 +1,6 @@
 import { migrateCartLine } from "@/lib/cart-line";
 import { applyOrderInventoryRestore } from "@/lib/inventory/apply-order-inventory";
+import { ORDER_TX_OPTIONS } from "@/lib/order-tx-options";
 import { getPrisma } from "@/lib/prisma";
 import type { CartLine } from "@/types/menu";
 
@@ -43,7 +44,7 @@ export async function deleteOrder(
       }
 
       await tx.order.delete({ where: { id: orderId } });
-    });
+    }, ORDER_TX_OPTIONS);
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error("deleteOrder failed:", message);

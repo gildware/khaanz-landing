@@ -14,6 +14,19 @@ export async function GET() {
   }
   const prisma = getPrisma();
   const rows = await prisma.inventoryItem.findMany({
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      baseUnit: true,
+      purchaseUnit: true,
+      baseUnitsPerPurchaseUnit: true,
+      stockOnHandBase: true,
+      minStockBase: true,
+      avgCostPaisePerBase: true,
+      lastPurchasePaisePerBase: true,
+      active: true,
+    },
     orderBy: { name: "asc" },
   });
   return NextResponse.json({

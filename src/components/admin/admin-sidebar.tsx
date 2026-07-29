@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
+  BookOpenIcon,
   LayoutDashboardIcon,
   UtensilsCrossedIcon,
   LogOutIcon,
@@ -20,10 +21,12 @@ import {
   Trash2Icon,
   BarChart3Icon,
   CalendarDaysIcon,
+  HistoryIcon,
   LayoutTemplateIcon,
   SmartphoneIcon,
   KeyRoundIcon,
   WalletIcon,
+  ScrollTextIcon,
 } from "lucide-react";
 
 import { useAdminSession } from "@/components/admin/admin-session-provider";
@@ -43,10 +46,17 @@ const links: {
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboardIcon, permission: "dashboard" },
   { href: "/admin/reports", label: "Reports", icon: BarChart3Icon, permission: "reports" },
   { href: "/admin/daily-report", label: "Daily report", icon: CalendarDaysIcon, permission: "reports" },
+  {
+    href: "/admin/previous-sales",
+    label: "Previous day sales",
+    icon: HistoryIcon,
+    permission: "reports",
+  },
   { href: "/admin/cash", label: "Money available", icon: WalletIcon, permission: "reports" },
   { href: "/admin/online-orders", label: "Online orders", icon: ShoppingBagIcon, permission: "online_orders" },
   { href: "/admin/orders", label: "Orders", icon: ClipboardListIcon, permission: "orders" },
   { href: "/admin/inventory", label: "Inventory", icon: WarehouseIcon, permission: "inventory" },
+  { href: "/admin/recipes", label: "Recipe book", icon: BookOpenIcon, permission: "inventory" },
   { href: "/admin/wastage", label: "Wastage", icon: Trash2Icon, permission: "wastage" },
   { href: "/admin/vendors", label: "Vendors", icon: HandshakeIcon, permission: "vendors" },
   { href: "/admin/expenses", label: "Expenses", icon: IndianRupeeIcon, permission: "expenses" },
@@ -64,6 +74,13 @@ const links: {
     label: "Menu catalogue",
     icon: UtensilsCrossedIcon,
     permission: "menu",
+  },
+  {
+    href: "/admin/menu-board",
+    label: "Menu board",
+    icon: ScrollTextIcon,
+    permission: "menu",
+    openInNewTab: true,
   },
   { href: "/admin/home-layout", label: "Home layout", icon: LayoutTemplateIcon, permission: "home_layout" },
   { href: "/admin/payroll", label: "Payroll", icon: UsersIcon, permission: "payroll" },

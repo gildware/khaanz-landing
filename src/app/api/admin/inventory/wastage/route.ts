@@ -4,21 +4,14 @@ import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
 import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 import { parseDecimalQty } from "@/lib/inventory/parse-quantity";
 import { recordWastage } from "@/lib/inventory/stock-ops";
+import {
+  isFutureWastedAt,
+  isWastageType,
+  resolveWastedAt,
+} from "@/lib/inventory/wastage-parse";
 import { getPrisma } from "@/lib/prisma";
-import type { WastageType } from "@prisma/client";
 
 export const runtime = "nodejs";
-
-const TYPES: WastageType[] = [
-  "SPOILAGE",
-  "PREPARATION",
-  "OVERPRODUCTION",
-  "OTHER",
-];
-
-function isWastageType(x: unknown): x is WastageType {
-  return typeof x === "string" && TYPES.includes(x as WastageType);
-}
 
 export async function POST(request: Request) {
   const session = await requireAdminInventorySession();
@@ -45,12 +38,15 @@ export async function POST(request: Request) {
   if ("error" in qty) {
     return NextResponse.json({ error: qty.error }, { status: 400 });
   }
-  const wastedAt =
-    typeof body.wastedAt === "string" && body.wastedAt
-      ? new Date(body.wastedAt)
-      : new Date();
-  if (Number.isNaN(wastedAt.getTime())) {
+  const wastedAt = resolveWastedAt(body.wastedAt);
+  if (!wastedAt) {
     return NextResponse.json({ error: "Invalid wastedAt" }, { status: 400 });
+  }
+  if (isFutureWastedAt(wastedAt)) {
+    return NextResponse.json(
+      { error: "Waste date can’t be in the future" },
+      { status: 400 },
+    );
   }
   const note = typeof body.note === "string" ? body.note : "";
 

@@ -19,8 +19,8 @@ import {
   PillRankChartCard,
   type PillRankSourceRow,
 } from "@/components/admin/pill-rank-chart";
+import { AdminDashboardSkeleton } from "@/components/admin/admin-page-skeleton";
 import { formatRupees } from "@/lib/payroll/payroll-utils";
-import { useMenuData } from "@/contexts/menu-data-context";
 import { cn } from "@/lib/utils";
 
 type SalesRankRow = { key: string; label: string; qty: number };
@@ -59,6 +59,12 @@ type DashboardSummary = {
     vendorReceivablePaise: number;
     overdueVendorSalesCount: number;
     monthVendorPaymentsPaise: number;
+  };
+  menuCounts?: {
+    categories: number;
+    items: number;
+    combos: number;
+    globalAddons: number;
   };
   charts: {
     topSelling: SalesRankRow[];
@@ -139,17 +145,11 @@ function KpiCard(props: {
 }
 
 export default function AdminDashboardPage() {
-  const { data } = useMenuData();
   const { data: summary, isLoading } = useSWR<DashboardSummary>(
     "/api/admin/dashboard/summary",
     fetcher,
-    { refreshInterval: 30_000 },
+    { refreshInterval: 60_000, keepPreviousData: true },
   );
-
-  const categories = data?.categories ?? [];
-  const items = data?.items ?? [];
-  const addons = data?.globalAddons ?? [];
-  const combos = data?.combos ?? [];
 
   const top = summary?.charts.topSelling ?? [];
   const least = summary?.charts.leastSelling ?? [];
@@ -159,6 +159,13 @@ export default function AdminDashboardPage() {
   const bottomVendors = summary?.charts.bottomVendorsBySales ?? [];
   const topVendorItems = summary?.charts.topVendorItemsByQty ?? [];
   const bottomVendorItems = summary?.charts.bottomVendorItemsByQty ?? [];
+
+  const menuCount = (n: number | undefined) =>
+    summary?.menuCounts == null && isLoading ? "…" : String(n ?? 0);
+
+  if (isLoading && !summary) {
+    return <AdminDashboardSkeleton />;
+  }
 
   return (
     <div className="space-y-6">
@@ -472,20 +479,26 @@ export default function AdminDashboardPage() {
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <p className="text-muted-foreground text-sm">Categories</p>
           <p className="font-semibold text-3xl tabular-nums">
-            {categories.length}
+            {menuCount(summary?.menuCounts?.categories)}
           </p>
         </div>
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <p className="text-muted-foreground text-sm">Menu items</p>
-          <p className="font-semibold text-3xl tabular-nums">{items.length}</p>
+          <p className="font-semibold text-3xl tabular-nums">
+            {menuCount(summary?.menuCounts?.items)}
+          </p>
         </div>
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <p className="text-muted-foreground text-sm">Combos</p>
-          <p className="font-semibold text-3xl tabular-nums">{combos.length}</p>
+          <p className="font-semibold text-3xl tabular-nums">
+            {menuCount(summary?.menuCounts?.combos)}
+          </p>
         </div>
         <div className="rounded-xl border bg-card p-4 shadow-sm">
           <p className="text-muted-foreground text-sm">Global add-ons</p>
-          <p className="font-semibold text-3xl tabular-nums">{addons.length}</p>
+          <p className="font-semibold text-3xl tabular-nums">
+            {menuCount(summary?.menuCounts?.globalAddons)}
+          </p>
         </div>
       </div>
     </div>

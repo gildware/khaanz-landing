@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import { migrateCartLine } from "@/lib/cart-line";
@@ -8,15 +7,11 @@ import {
   cashBalanceBefore,
   ensureCashPoolSettings,
 } from "@/lib/cash/cash-pool";
-import { d } from "@/lib/inventory/decimal-utils";
-import { sumOrderConsumptionCostPaise } from "@/lib/inventory/fifo-cogs";
-import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
-import { planOrderConsumption } from "@/lib/inventory/plan-order-consumption";
+import { sumOrderConsumptionCostPaiseInRange } from "@/lib/inventory/fifo-cogs";
 import {
   loadStockValueRankRows,
   splitStockValueRanks,
 } from "@/lib/inventory/stock-value-charts";
-import { readMenuPayload } from "@/lib/menu-repository";
 import { getPrisma } from "@/lib/prisma";
 import type { CartLine } from "@/types/menu";
 
@@ -183,11 +178,29 @@ async function sumSupplierPayablePaise(): Promise<number> {
   }, 0);
 }
 
+/** Slim catalog for sales rank charts — skips addons / full menu payload. */
 async function buildMenuCatalogRows(): Promise<SalesRow[]> {
-  const menu = await readMenuPayload();
-  const rows: SalesRow[] = [];
+  const prisma = getPrisma();
+  const [items, combos] = await Promise.all([
+    prisma.menuItem.findMany({
+      select: {
+        id: true,
+        name: true,
+        variations: {
+          select: { id: true, name: true },
+          orderBy: { sortOrder: "asc" },
+        },
+      },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    }),
+    prisma.menuCombo.findMany({
+      select: { id: true, name: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    }),
+  ]);
 
-  for (const item of menu.items) {
+  const rows: SalesRow[] = [];
+  for (const item of items) {
     for (const v of item.variations) {
       rows.push({
         key: `item:${item.id}:${v.id}`,
@@ -196,7 +209,7 @@ async function buildMenuCatalogRows(): Promise<SalesRow[]> {
       });
     }
   }
-  for (const combo of menu.combos) {
+  for (const combo of combos) {
     rows.push({
       key: `combo:${combo.id}`,
       label: combo.name || "Combo",
@@ -206,7 +219,10 @@ async function buildMenuCatalogRows(): Promise<SalesRow[]> {
   return rows;
 }
 
-function mergeSalesIntoCatalog(catalog: SalesRow[], soldByKey: Map<string, { label: string; qty: number }>) {
+function mergeSalesIntoCatalog(
+  catalog: SalesRow[],
+  soldByKey: Map<string, { label: string; qty: number }>,
+) {
   const byKey = new Map(catalog.map((r) => [r.key, r]));
   for (const [key, sold] of soldByKey) {
     const row = byKey.get(key);
@@ -230,7 +246,9 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const at = url.searchParams.get("at") ? new Date(url.searchParams.get("at")!) : new Date();
+  const at = url.searchParams.get("at")
+    ? new Date(url.searchParams.get("at")!)
+    : new Date();
   if (Number.isNaN(at.getTime())) {
     return NextResponse.json({ error: "Invalid at" }, { status: 400 });
   }
@@ -243,175 +261,172 @@ export async function GET(request: Request) {
 
   const prisma = getPrisma();
 
-  const [todaySalesAgg, monthSalesAgg, todayExpenseAgg, monthExpenseAgg, monthCapitalExpenseAgg, monthKitchenUseAgg, payroll, todayVendorSalesAgg, monthVendorSalesAgg, monthVendorPaymentsAgg, overdueVendorSalesCount, todayPurchasesAgg, monthPurchasesAgg, monthSupplierPaymentsAgg, overduePurchasesCount] =
-    await prisma.$transaction([
-      prisma.order.aggregate({
-        where: {
-          createdAt: { gte: todayStart, lt: tomorrowStart },
-          status: { not: "CANCELLED" },
-        },
-        _sum: { totalMinor: true },
-        _count: { _all: true },
-      }),
-      prisma.order.aggregate({
-        where: {
+  // All independent reads in parallel — a $transaction would force them sequential.
+  const [
+    todaySalesAgg,
+    monthSalesAgg,
+    todayExpenseAgg,
+    monthExpenseAgg,
+    monthCapitalExpenseAgg,
+    monthKitchenUseAgg,
+    payroll,
+    todayVendorSalesAgg,
+    monthVendorSalesAgg,
+    monthVendorPaymentsAgg,
+    overdueVendorSalesCount,
+    todayPurchasesAgg,
+    monthPurchasesAgg,
+    monthSupplierPaymentsAgg,
+    overduePurchasesCount,
+    monthOrderLines,
+    stockCostPaiseInt,
+    catalog,
+    stockValueRows,
+    vendorReceivablePaise,
+    supplierPayablePaise,
+    vendorCharts,
+    cashAvailablePaise,
+    categoryCount,
+    itemCount,
+    comboCount,
+    addonCount,
+  ] = await Promise.all([
+    prisma.order.aggregate({
+      where: {
+        createdAt: { gte: todayStart, lt: tomorrowStart },
+        status: { not: "CANCELLED" },
+      },
+      _sum: { totalMinor: true },
+      _count: { _all: true },
+    }),
+    prisma.order.aggregate({
+      where: {
+        createdAt: { gte: monthStart, lt: monthEndExclusive },
+        status: { not: "CANCELLED" },
+      },
+      _sum: { totalMinor: true },
+      _count: { _all: true },
+    }),
+    prisma.expenseEntry.aggregate({
+      where: {
+        occurredAt: { gte: todayStart, lt: tomorrowStart },
+        kind: "OPERATING",
+      },
+      _sum: { amountPaise: true },
+    }),
+    prisma.expenseEntry.aggregate({
+      where: {
+        occurredAt: { gte: monthStart, lt: monthEndExclusive },
+        kind: "OPERATING",
+      },
+      _sum: { amountPaise: true },
+    }),
+    prisma.expenseEntry.aggregate({
+      where: {
+        occurredAt: { gte: monthStart, lt: monthEndExclusive },
+        kind: "CAPITAL",
+      },
+      _sum: { amountPaise: true },
+      _count: { _all: true },
+    }),
+    prisma.kitchenUseEntry.aggregate({
+      where: { usedAt: { gte: monthStart, lt: monthEndExclusive } },
+      _sum: { costPaise: true },
+      _count: { _all: true },
+    }),
+    prisma.payrollRun.findMany({
+      where: { monthKey },
+      select: { lines: { select: { netPayPaise: true } } },
+    }),
+    prisma.vendorSale.aggregate({
+      where: { soldAt: { gte: todayStart, lt: tomorrowStart } },
+      _sum: { totalPaise: true },
+      _count: { _all: true },
+    }),
+    prisma.vendorSale.aggregate({
+      where: { soldAt: { gte: monthStart, lt: monthEndExclusive } },
+      _sum: { totalPaise: true },
+      _count: { _all: true },
+    }),
+    prisma.vendorPayment.aggregate({
+      where: { paidAt: { gte: monthStart, lt: monthEndExclusive } },
+      _sum: { amountPaise: true },
+    }),
+    prisma.vendorSale.count({
+      where: { paymentType: "CREDIT", dueAt: { lt: at } },
+    }),
+    prisma.purchase.aggregate({
+      where: { purchasedAt: { gte: todayStart, lt: tomorrowStart } },
+      _sum: { totalPaise: true },
+      _count: { _all: true },
+    }),
+    prisma.purchase.aggregate({
+      where: { purchasedAt: { gte: monthStart, lt: monthEndExclusive } },
+      _sum: { totalPaise: true },
+      _count: { _all: true },
+    }),
+    prisma.supplierPayment.aggregate({
+      where: { paidAt: { gte: monthStart, lt: monthEndExclusive } },
+      _sum: { amountPaise: true },
+    }),
+    prisma.purchase.count({
+      where: { paymentType: "CREDIT", dueAt: { lt: at } },
+    }),
+    prisma.orderLine.findMany({
+      where: {
+        order: {
           createdAt: { gte: monthStart, lt: monthEndExclusive },
           status: { not: "CANCELLED" },
         },
-        _sum: { totalMinor: true },
-        _count: { _all: true },
-      }),
-      prisma.expenseEntry.aggregate({
-        where: {
-          occurredAt: { gte: todayStart, lt: tomorrowStart },
-          kind: "OPERATING",
-        },
-        _sum: { amountPaise: true },
-      }),
-      prisma.expenseEntry.aggregate({
-        where: {
-          occurredAt: { gte: monthStart, lt: monthEndExclusive },
-          kind: "OPERATING",
-        },
-        _sum: { amountPaise: true },
-      }),
-      prisma.expenseEntry.aggregate({
-        where: {
-          occurredAt: { gte: monthStart, lt: monthEndExclusive },
-          kind: "CAPITAL",
-        },
-        _sum: { amountPaise: true },
-        _count: { _all: true },
-      }),
-      prisma.kitchenUseEntry.aggregate({
-        where: { usedAt: { gte: monthStart, lt: monthEndExclusive } },
-        _sum: { costPaise: true },
-        _count: { _all: true },
-      }),
-      prisma.payrollRun.findUnique({
-        where: { monthKey },
-        select: { lines: { select: { netPayPaise: true } } },
-      }),
-      prisma.vendorSale.aggregate({
-        where: { soldAt: { gte: todayStart, lt: tomorrowStart } },
-        _sum: { totalPaise: true },
-        _count: { _all: true },
-      }),
-      prisma.vendorSale.aggregate({
-        where: { soldAt: { gte: monthStart, lt: monthEndExclusive } },
-        _sum: { totalPaise: true },
-        _count: { _all: true },
-      }),
-      prisma.vendorPayment.aggregate({
-        where: { paidAt: { gte: monthStart, lt: monthEndExclusive } },
-        _sum: { amountPaise: true },
-      }),
-      prisma.vendorSale.count({
-        where: { paymentType: "CREDIT", dueAt: { lt: at } },
-      }),
-      prisma.purchase.aggregate({
-        where: { purchasedAt: { gte: todayStart, lt: tomorrowStart } },
-        _sum: { totalPaise: true },
-        _count: { _all: true },
-      }),
-      prisma.purchase.aggregate({
-        where: { purchasedAt: { gte: monthStart, lt: monthEndExclusive } },
-        _sum: { totalPaise: true },
-        _count: { _all: true },
-      }),
-      prisma.supplierPayment.aggregate({
-        where: { paidAt: { gte: monthStart, lt: monthEndExclusive } },
-        _sum: { amountPaise: true },
-      }),
-      prisma.purchase.count({
-        where: { paymentType: "CREDIT", dueAt: { lt: at } },
-      }),
-    ]);
+      },
+      select: { payload: true },
+    }),
+    sumOrderConsumptionCostPaiseInRange(prisma, monthStart, monthEndExclusive),
+    buildMenuCatalogRows(),
+    loadStockValueRankRows(),
+    sumVendorReceivablePaise(),
+    sumSupplierPayablePaise(),
+    buildVendorChartRows(monthStart, monthEndExclusive),
+    (async () => {
+      const opening = await ensureCashPoolSettings(prisma);
+      return cashBalanceBefore(prisma, tomorrowStart, opening);
+    })(),
+    prisma.category.count({ where: { parentId: null } }),
+    prisma.menuItem.count(),
+    prisma.menuCombo.count(),
+    prisma.menuGlobalAddon.count(),
+  ]);
 
-  const salariesPaise = payroll?.lines.reduce((s, l) => s + l.netPayPaise, 0) ?? 0;
-
-  const monthOrders = await prisma.order.findMany({
-    where: {
-      createdAt: { gte: monthStart, lt: monthEndExclusive },
-      status: { not: "CANCELLED" },
-    },
-    select: {
-      id: true,
-      createdAt: true,
-      totalMinor: true,
-      lines: { orderBy: { sortIndex: "asc" }, select: { payload: true } },
-    },
-  });
+  const salariesPaise =
+    payroll?.reduce(
+      (sum, run) => sum + run.lines.reduce((s, l) => s + l.netPayPaise, 0),
+      0,
+    ) ?? 0;
 
   const soldByKey = new Map<string, { label: string; qty: number }>();
-  const monthConsumption = new Map<string, Prisma.Decimal>();
-  const invSettings = await ensureInventorySettings(prisma);
-
-  await prisma.$transaction(async (tx) => {
-    for (const o of monthOrders) {
-      const lines: CartLine[] = o.lines.map((l) =>
-        migrateCartLine(l.payload as unknown as CartLine),
-      );
-
-      for (const line of lines) {
-        if (line.kind === "item") {
-          const key = `item:${line.itemId}:${line.variation.id}`;
-          const label = `${line.name}${line.variation.name ? ` • ${line.variation.name}` : ""}`;
-          const prev = soldByKey.get(key) ?? { label, qty: 0 };
-          soldByKey.set(key, { label: prev.label || label, qty: prev.qty + line.quantity });
-          continue;
-        }
-        if (line.kind === "combo") {
-          const key = `combo:${line.comboId}`;
-          const label = line.name || "Combo";
-          const prev = soldByKey.get(key) ?? { label, qty: 0 };
-          soldByKey.set(key, { label: prev.label || label, qty: prev.qty + line.quantity });
-          continue;
-        }
-      }
-
-      if (invSettings.costingMethod === "FIFO") continue;
-
-      const consumption = await planOrderConsumption(
-        tx,
-        { lines },
-        o.createdAt,
-      );
-      for (const [inventoryItemId, qtyBase] of consumption.entries()) {
-        monthConsumption.set(
-          inventoryItemId,
-          (monthConsumption.get(inventoryItemId) ?? d(0)).add(qtyBase),
-        );
-      }
+  for (const lineRow of monthOrderLines) {
+    const line = migrateCartLine(lineRow.payload as unknown as CartLine);
+    if (line.kind === "item") {
+      const key = `item:${line.itemId}:${line.variation.id}`;
+      const label = `${line.name}${line.variation.name ? ` • ${line.variation.name}` : ""}`;
+      const prev = soldByKey.get(key) ?? { label, qty: 0 };
+      soldByKey.set(key, {
+        label: prev.label || label,
+        qty: prev.qty + line.quantity,
+      });
+      continue;
     }
-  });
-
-  let stockCostPaiseInt: number;
-  if (invSettings.costingMethod === "FIFO") {
-    stockCostPaiseInt = await prisma.$transaction((tx) =>
-      sumOrderConsumptionCostPaise(
-        tx,
-        monthOrders.map((o) => o.id),
-      ),
-    );
-  } else {
-    const invIds = [...monthConsumption.keys()];
-    const invMeta =
-      invIds.length === 0
-        ? []
-        : await prisma.inventoryItem.findMany({
-            where: { id: { in: invIds } },
-            select: { id: true, avgCostPaisePerBase: true },
-          });
-    const costById = new Map(invMeta.map((i) => [i.id, i.avgCostPaisePerBase]));
-
-    let stockCostPaise = new Prisma.Decimal(0);
-    for (const [id, qtyBase] of monthConsumption.entries()) {
-      const rate = costById.get(id) ?? d(0);
-      stockCostPaise = stockCostPaise.add(qtyBase.mul(rate));
+    if (line.kind === "combo") {
+      const key = `combo:${line.comboId}`;
+      const label = line.name || "Combo";
+      const prev = soldByKey.get(key) ?? { label, qty: 0 };
+      soldByKey.set(key, {
+        label: prev.label || label,
+        qty: prev.qty + line.quantity,
+      });
     }
-    stockCostPaiseInt = Math.round(Number(stockCostPaise.toString()));
   }
+
   const kitchenUseCostPaise = monthKitchenUseAgg._sum.costPaise ?? 0;
   const recipeStockCostPaise = stockCostPaiseInt;
   const totalStockCostUsedPaise = recipeStockCostPaise + kitchenUseCostPaise;
@@ -422,24 +437,16 @@ export async function GET(request: Request) {
   const monthExpensesPaise = monthExpenseAgg._sum.amountPaise ?? 0;
   const netProfitPaise = grossMarginPaise - monthExpensesPaise - salariesPaise;
 
-  const catalog = await buildMenuCatalogRows();
   const soldRows = mergeSalesIntoCatalog(catalog, soldByKey);
   const { top: topSelling, bottom: leastSelling } = splitTopBottom(soldRows);
-
-  const stockValueRows = await loadStockValueRankRows();
   const { topByValue: topStockValue, lowestByValue: lowestStockValue } =
     splitStockValueRanks(stockValueRows);
-  const vendorReceivablePaise = await sumVendorReceivablePaise();
-  const supplierPayablePaise = await sumSupplierPayablePaise();
-  const { topVendorsBySales, bottomVendorsBySales, topVendorItemsByQty, bottomVendorItemsByQty } =
-    await buildVendorChartRows(monthStart, monthEndExclusive);
-
-  const cashOpening = await ensureCashPoolSettings(prisma);
-  const cashAvailablePaise = await cashBalanceBefore(
-    prisma,
-    tomorrowStart,
-    cashOpening,
-  );
+  const {
+    topVendorsBySales,
+    bottomVendorsBySales,
+    topVendorItemsByQty,
+    bottomVendorItemsByQty,
+  } = vendorCharts;
 
   return NextResponse.json({
     at: at.toISOString(),
@@ -482,6 +489,12 @@ export async function GET(request: Request) {
       overduePurchasesCount,
       monthSupplierPaymentsPaise: monthSupplierPaymentsAgg._sum.amountPaise ?? 0,
     },
+    menuCounts: {
+      categories: categoryCount,
+      items: itemCount,
+      combos: comboCount,
+      globalAddons: addonCount,
+    },
     charts: {
       topSelling,
       leastSelling,
@@ -494,4 +507,3 @@ export async function GET(request: Request) {
     },
   });
 }
-

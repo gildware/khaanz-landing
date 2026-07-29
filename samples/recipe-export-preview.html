@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Khaanz — Recipe Export Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --brand: #b91c1c;
+        --brand-dark: #991b1b;
+        --brand-soft: #fef2f2;
+        --ink: #1c1917;
+        --muted: #78716c;
+        --border: #e7e5e4;
+        --surface: #fafaf9;
+        --white: #ffffff;
+        --stock: #0f766e;
+        --stock-bg: #ecfdf5;
+        --prep: #b45309;
+        --prep-bg: #fffbeb;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+        background: #d6d3d1;
+        color: var(--ink);
+        line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Screen-only toolbar */
+      .preview-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.85rem 1.25rem;
+        background: rgba(28, 25, 23, 0.92);
+        color: #fafaf9;
+        backdrop-filter: blur(8px);
+      }
+
+      .preview-toolbar h1 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      .preview-toolbar p {
+        font-size: 0.78rem;
+        color: #a8a29e;
+        margin-top: 0.15rem;
+      }
+
+      .preview-toolbar button {
+        appearance: none;
+        border: none;
+        border-radius: 0.5rem;
+        background: var(--brand);
+        color: white;
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 0.55rem 1rem;
+        cursor: pointer;
+      }
+
+      .preview-toolbar button:hover {
+        background: var(--brand-dark);
+      }
+
+      .pages {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+        padding: 2rem 1rem 3rem;
+      }
+
+      /* A4 page shell */
+      .recipe-page {
+        width: 210mm;
+        min-height: 297mm;
+        background: var(--white);
+        box-shadow:
+          0 1px 2px rgba(0, 0, 0, 0.06),
+          0 12px 40px rgba(0, 0, 0, 0.12);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .page-accent {
+        height: 6px;
+        background: linear-gradient(90deg, var(--brand) 0%, #dc2626 55%, #f97316 100%);
+      }
+
+      .page-inner {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 14mm 16mm 12mm;
+      }
+
+      /* Header */
+      .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-bottom: 5mm;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 6mm;
+      }
+
+      .brand-block {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+      }
+
+      .brand-mark {
+        width: 2.4rem;
+        height: 2.4rem;
+        border-radius: 0.65rem;
+        background: var(--brand);
+        color: white;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 1.1rem;
+        letter-spacing: -0.04em;
+      }
+
+      .brand-name {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .brand-tagline {
+        font-size: 0.68rem;
+        color: #a8a29e;
+      }
+
+      .doc-meta {
+        text-align: right;
+        font-size: 0.72rem;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .doc-meta strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      /* Title block */
+      .title-block {
+        margin-bottom: 6mm;
+      }
+
+      .category-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.22rem 0.55rem;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: var(--brand-dark);
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        margin-bottom: 0.55rem;
+      }
+
+      .dish-title {
+        font-size: 1.65rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1.15;
+        color: var(--ink);
+      }
+
+      .dish-subtitle {
+        margin-top: 0.35rem;
+        font-size: 0.95rem;
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      /* Info cards row */
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.55rem;
+        margin-bottom: 7mm;
+      }
+
+      .info-card {
+        border: 1px solid var(--border);
+        border-radius: 0.65rem;
+        background: var(--surface);
+        padding: 0.55rem 0.65rem;
+      }
+
+      .info-card .label {
+        font-size: 0.62rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 0.2rem;
+      }
+
+      .info-card .value {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--ink);
+        word-break: break-word;
+      }
+
+      .info-card .value.small {
+        font-size: 0.78rem;
+        font-weight: 500;
+      }
+
+      /* Section */
+      .section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.45rem;
+      }
+
+      .section-title h2 {
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ink);
+      }
+
+      .section-title span {
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+
+      /* Ingredients table */
+      .ingredients-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        margin-bottom: 6mm;
+      }
+
+      .ingredients-table thead th {
+        background: #f5f5f4;
+        text-align: left;
+        font-size: 0.64rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: #57534e;
+        padding: 0.55rem 0.75rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .ingredients-table thead th:last-child,
+      .ingredients-table tbody td:last-child {
+        text-align: right;
+      }
+
+      .ingredients-table tbody tr + tr td {
+        border-top: 1px solid var(--border);
+      }
+
+      .ingredients-table tbody tr:nth-child(even) td {
+        background: #fcfcfb;
+      }
+
+      .ingredients-table td {
+        padding: 0.55rem 0.75rem;
+        font-size: 0.82rem;
+        vertical-align: middle;
+      }
+
+      .ingredient-name {
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .ingredient-note {
+        display: block;
+        font-size: 0.68rem;
+        color: var(--muted);
+        font-weight: 400;
+        margin-top: 0.1rem;
+      }
+
+      .type-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.15rem 0.45rem;
+        border-radius: 999px;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .type-badge.stock {
+        background: var(--stock-bg);
+        color: var(--stock);
+      }
+
+      .type-badge.prep {
+        background: var(--prep-bg);
+        color: var(--prep);
+      }
+
+      .qty-cell {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .unit-cell {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      /* Notes / footer */
+      .notes-box {
+        border: 1px dashed #d6d3d1;
+        border-radius: 0.65rem;
+        background: #fafaf9;
+        padding: 0.65rem 0.75rem;
+        margin-top: auto;
+      }
+
+      .notes-box h3 {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--muted);
+        margin-bottom: 0.3rem;
+      }
+
+      .notes-box p {
+        font-size: 0.76rem;
+        color: #57534e;
+      }
+
+      .page-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 5mm;
+        padding-top: 3mm;
+        border-top: 1px solid var(--border);
+        font-size: 0.68rem;
+        color: var(--muted);
+      }
+
+      .page-footer .confidential {
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #a8a29e;
+      }
+
+      /* Print */
+      @media print {
+        body {
+          background: white;
+        }
+
+        .preview-toolbar {
+          display: none;
+        }
+
+        .pages {
+          padding: 0;
+          gap: 0;
+        }
+
+        .recipe-page {
+          width: auto;
+          min-height: auto;
+          box-shadow: none;
+          page-break-after: always;
+          break-after: page;
+        }
+
+        .recipe-page:last-child {
+          page-break-after: auto;
+          break-after: auto;
+        }
+      }
+
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="preview-toolbar">
+      <div>
+        <h1>Recipe export — design preview</h1>
+        <p>Sample HTML layout · one A4 page per recipe · open in browser or print to PDF</p>
+      </div>
+      <button type="button" onclick="window.print()">Print / Save as PDF</button>
+    </div>
+
+    <div class="pages" id="pages"></div>
+
+    <script>
+      /** Sample data — mirrors real Khaanz recipe structure */
+      const RECIPES = [
+        {
+          menuItemName: "Butter Chicken",
+          variationName: "Half",
+          category: "Main Course",
+          version: 2,
+          effectiveFrom: "15 Jan 2026",
+          label: "Butter Chicken — Half",
+          yieldQty: "1",
+          yieldUnit: "portion",
+          exportedAt: "26 Jul 2026",
+          ingredients: [
+            { kind: "prep", name: "Boiled Chicken", qty: "250", unit: "g" },
+            { kind: "prep", name: "Indian Gravy", qty: "250", unit: "g" },
+            { kind: "stock", name: "Kitchen King", qty: "0.5", unit: "g" },
+            { kind: "stock", name: "Meat Masala", qty: "0.5", unit: "g" },
+            { kind: "stock", name: "Garam Masala", qty: "0.5", unit: "g" },
+            { kind: "stock", name: "Kasoori Methi", qty: "1", unit: "g" },
+            { kind: "stock", name: "Fresh Cream", qty: "30", unit: "g" },
+            { kind: "stock", name: "Butter", qty: "2", unit: "g" },
+            { kind: "stock", name: "Green Chilli", qty: "6", unit: "g" },
+            { kind: "stock", name: "Garlic", qty: "5", unit: "g" },
+            { kind: "stock", name: "Red Chilli Powder", qty: "1", unit: "g" },
+            { kind: "stock", name: "Salt", qty: "1", unit: "g" },
+            { kind: "stock", name: "Ajina Moto", qty: "1", unit: "g" },
+          ],
+          notes:
+            "Finish with butter and cream. Prep components (Boiled Chicken, Indian Gravy) must be ready before service.",
+        },
+        {
+          menuItemName: "Butter Chicken",
+          variationName: "Full",
+          category: "Main Course",
+          version: 2,
+          effectiveFrom: "15 Jan 2026",
+          label: "Butter Chicken — Full",
+          yieldQty: "1",
+          yieldUnit: "portion",
+          exportedAt: "26 Jul 2026",
+          ingredients: [
+            { kind: "prep", name: "Boiled Chicken", qty: "500", unit: "g" },
+            { kind: "prep", name: "Indian Gravy", qty: "450", unit: "g" },
+            { kind: "stock", name: "Kitchen King", qty: "1", unit: "g" },
+            { kind: "stock", name: "Meat Masala", qty: "1", unit: "g" },
+            { kind: "stock", name: "Garam Masala", qty: "1", unit: "g" },
+            { kind: "stock", name: "Kasoori Methi", qty: "2", unit: "g" },
+            { kind: "stock", name: "Fresh Cream", qty: "60", unit: "g" },
+            { kind: "stock", name: "Butter", qty: "3", unit: "g" },
+            { kind: "stock", name: "Green Chilli", qty: "9", unit: "g" },
+            { kind: "stock", name: "Garlic", qty: "9", unit: "g" },
+            { kind: "stock", name: "Red Chilli Powder", qty: "2", unit: "g" },
+            { kind: "stock", name: "Salt", qty: "2", unit: "g" },
+            { kind: "stock", name: "Ajina Moto", qty: "2", unit: "g" },
+          ],
+          notes:
+            "Double the half-portion prep quantities. Same finishing steps — adjust cream and butter to taste.",
+        },
+        {
+          menuItemName: "Indian Gravy",
+          variationName: "Batch",
+          category: "Raw Items",
+          version: 1,
+          effectiveFrom: "10 Jan 2026",
+          label: "Indian Gravy — 11.5 kg batch",
+          yieldQty: "11,500",
+          yieldUnit: "g",
+          exportedAt: "26 Jul 2026",
+          ingredients: [
+            { kind: "stock", name: "Onion", qty: "7,300", unit: "g" },
+            { kind: "stock", name: "Tomato", qty: "1,000", unit: "g" },
+            { kind: "stock", name: "Cashew", qty: "500", unit: "g" },
+            { kind: "stock", name: "Magz", qty: "250", unit: "g" },
+            { kind: "stock", name: "Garam Masala", qty: "25", unit: "g" },
+            { kind: "stock", name: "Meat Masala", qty: "30", unit: "g" },
+            { kind: "stock", name: "Kitchen King", qty: "30", unit: "g" },
+            { kind: "stock", name: "Corriandor Powder", qty: "15", unit: "g" },
+            { kind: "stock", name: "Zeera Powder", qty: "10", unit: "g" },
+            { kind: "stock", name: "Ginger Garlic Paste", qty: "200", unit: "g" },
+            { kind: "stock", name: "Salt", qty: "50", unit: "g" },
+            { kind: "stock", name: "Kasoori Methi", qty: "3", unit: "g" },
+            { kind: "stock", name: "Ajina Moto", qty: "10", unit: "g" },
+            { kind: "stock", name: "Oil", qty: "900", unit: "g" },
+            { kind: "stock", name: "Turmeric", qty: "5", unit: "g" },
+            { kind: "stock", name: "Red Chilli Powder", qty: "30", unit: "g" },
+            { kind: "stock", name: "Dal Cheeni", qty: "10", unit: "g" },
+            { kind: "stock", name: "Clove", qty: "6", unit: "g" },
+            { kind: "stock", name: "Cardamom", qty: "2", unit: "g" },
+            { kind: "stock", name: "Star Masala", qty: "3", unit: "g" },
+            { kind: "stock", name: "Tej Patta", qty: "3", unit: "g" },
+          ],
+          notes:
+            "Internal prep batch. Half portion uses 250 g gravy; full portion uses 430–450 g. Store chilled after cooling.",
+        },
+      ];
+
+      function typeLabel(kind) {
+        return kind === "prep" ? "Prep item" : "Stock";
+      }
+
+      function renderPage(recipe, pageNum, totalPages) {
+        const stockCount = recipe.ingredients.filter((i) => i.kind === "stock").length;
+        const prepCount = recipe.ingredients.filter((i) => i.kind === "prep").length;
+
+        const rows = recipe.ingredients
+          .map(
+            (ing) => `
+          <tr>
+            <td>
+              <span class="type-badge ${ing.kind}">${typeLabel(ing.kind)}</span>
+            </td>
+            <td>
+              <span class="ingredient-name">${ing.name}</span>
+            </td>
+            <td class="qty-cell">${ing.qty}</td>
+            <td class="unit-cell">${ing.unit}</td>
+          </tr>`,
+          )
+          .join("");
+
+        return `
+        <article class="recipe-page">
+          <div class="page-accent"></div>
+          <div class="page-inner">
+            <header class="page-header">
+              <div class="brand-block">
+                <div class="brand-mark" aria-hidden="true">K</div>
+                <div>
+                  <div class="brand-name">Khaanz Kitchen</div>
+                  <div class="brand-tagline">Recipe sheet · internal use</div>
+                </div>
+              </div>
+              <div class="doc-meta">
+                Exported <strong>${recipe.exportedAt}</strong><br />
+                Page <strong>${pageNum}</strong> of <strong>${totalPages}</strong>
+              </div>
+            </header>
+
+            <div class="title-block">
+              <div class="category-pill">${recipe.category}</div>
+              <h1 class="dish-title">${recipe.menuItemName}</h1>
+              <p class="dish-subtitle">${recipe.label}</p>
+            </div>
+
+            <div class="info-grid">
+              <div class="info-card">
+                <div class="label">Variation</div>
+                <div class="value">${recipe.variationName}</div>
+              </div>
+              <div class="info-card">
+                <div class="label">Version</div>
+                <div class="value">v${recipe.version}</div>
+              </div>
+              <div class="info-card">
+                <div class="label">Effective from</div>
+                <div class="value small">${recipe.effectiveFrom}</div>
+              </div>
+              <div class="info-card">
+                <div class="label">Yield</div>
+                <div class="value">${recipe.yieldQty} ${recipe.yieldUnit}</div>
+              </div>
+            </div>
+
+            <div class="section-title">
+              <h2>Ingredients</h2>
+              <span>${recipe.ingredients.length} lines · ${stockCount} stock · ${prepCount} prep</span>
+            </div>
+
+            <table class="ingredients-table">
+              <thead>
+                <tr>
+                  <th style="width: 18%">Type</th>
+                  <th style="width: 46%">Item</th>
+                  <th style="width: 18%">Qty</th>
+                  <th style="width: 18%">Unit</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+
+            ${
+              recipe.notes
+                ? `<div class="notes-box">
+              <h3>Kitchen notes</h3>
+              <p>${recipe.notes}</p>
+            </div>`
+                : ""
+            }
+
+            <footer class="page-footer">
+              <span class="confidential">Confidential · kitchen staff only</span>
+              <span>${recipe.menuItemName} · ${recipe.variationName} · v${recipe.version}</span>
+            </footer>
+          </div>
+        </article>`;
+      }
+
+      document.getElementById("pages").innerHTML = RECIPES.map((r, i) =>
+        renderPage(r, i + 1, RECIPES.length),
+      ).join("");
+    </script>
+  </body>
+</html>

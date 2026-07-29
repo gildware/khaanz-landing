@@ -77,6 +77,8 @@ export async function GET(request: Request) {
           : { createdAt: { gte: dayStart, lt: dayEndExclusive } };
 
   const prisma = getPrisma();
+  // Notifier poll: pending website orders only — skip lines + travel matrix.
+  const notifyLite = view === "online_pending";
   const rows = await prisma.order.findMany({
     where,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
@@ -86,19 +88,23 @@ export async function GET(request: Request) {
       customer: {
         select: { phoneDigits: true, displayName: true },
       },
-      lines: { orderBy: { sortIndex: "asc" } },
+      ...(notifyLite
+        ? {}
+        : { lines: { orderBy: { sortIndex: "asc" as const } } }),
     },
   });
 
   const hasMore = rows.length > pageSize;
   const orders = rows.slice(0, pageSize);
 
-  const withTravel = view === "online_pending" || view === "online";
+  const withTravel = view === "online";
 
-  const createdByLabelById = await mapOrderCreatedByLabels(
-    prisma,
-    orders.map((o) => ({ id: o.id, createdByUserId: o.createdByUserId })),
-  );
+  const createdByLabelById = notifyLite
+    ? new Map<string, string | null>()
+    : await mapOrderCreatedByLabels(
+        prisma,
+        orders.map((o) => ({ id: o.id, createdByUserId: o.createdByUserId })),
+      );
 
   const mapped = await Promise.all(
     orders.map(async (o) => {
@@ -108,6 +114,10 @@ export async function GET(request: Request) {
         withTravel && hasCoords && o.fulfillment === "delivery"
           ? await getTravelDistance(coords.lat, coords.lng)
           : null;
+      const lineRows =
+        "lines" in o && Array.isArray(o.lines)
+          ? (o.lines as { sortIndex: number; payload: unknown }[])
+          : [];
       return {
         id: o.id,
         orderRef: o.orderRef,
@@ -139,7 +149,7 @@ export async function GET(request: Request) {
           ? buildCustomerMapUrl(coords!.lat, coords!.lng)
           : null,
         distance: travel,
-        lines: o.lines.map((l) => ({
+        lines: lineRows.map((l) => ({
           sortIndex: l.sortIndex,
           payload: l.payload,
         })),

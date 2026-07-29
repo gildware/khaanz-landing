@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 
+import { AdminVendorsSkeleton } from "@/components/admin/admin-page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -197,6 +198,7 @@ const emptyVendorForm = {
 
 export default function AdminVendorsPage() {
   const [activeTab, setActiveTab] = useTabParam("overview");
+  const [initialLoading, setInitialLoading] = useState(true);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [menu, setMenu] = useState<MenuPayload | null>(null);
@@ -266,6 +268,8 @@ export default function AdminVendorsPage() {
         ]);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Failed to load vendors");
+      } finally {
+        setInitialLoading(false);
       }
     })();
   }, [loadMenu, loadSellable, loadSummary, loadSales, loadVendors]);
@@ -539,6 +543,10 @@ export default function AdminVendorsPage() {
   const outstandingVendorCount = (summary?.vendorBalances ?? []).filter(
     (x) => x.balancePaise > 0,
   ).length;
+
+  if (initialLoading) {
+    return <AdminVendorsSkeleton />;
+  }
 
   return (
     <div className="space-y-6">

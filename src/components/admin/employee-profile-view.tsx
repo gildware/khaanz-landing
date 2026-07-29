@@ -87,6 +87,9 @@ export type EmployeeProfile = {
   payrollHistory: {
     id: string;
     monthKey: string;
+    startDayKey: string;
+    endDayKey: string;
+    periodLabel: string;
     runCreatedAt: string;
     monthlySalaryPaise: number;
     extrasPaise: number;
@@ -299,7 +302,9 @@ export function EmployeeProfileView(props: {
     const q = salarySearch.trim().toLowerCase();
     let list = profile?.payrollHistory ?? [];
     if (q) {
-      list = list.filter((row) => formatMonthKey(row.monthKey).toLowerCase().includes(q));
+      list = list.filter((row) =>
+        (row.periodLabel || formatMonthKey(row.monthKey)).toLowerCase().includes(q),
+      );
     }
     list = [...list].sort((a, b) => {
       switch (salarySort) {
@@ -596,7 +601,9 @@ export function EmployeeProfileView(props: {
                   filteredPayrollHistory.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell>
-                        <p className="font-medium text-sm">{formatMonthKey(row.monthKey)}</p>
+                        <p className="font-medium text-sm">
+                          {row.periodLabel || formatMonthKey(row.monthKey)}
+                        </p>
                         <p className="text-muted-foreground text-xs tabular-nums">
                           W {row.workedDays} · L {row.leaveDays} · A {row.absentDays}
                         </p>

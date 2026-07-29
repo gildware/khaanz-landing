@@ -1,13 +1,21 @@
 import type { AttendanceKind } from "@prisma/client";
 
-import { dayKeyFromMonthDay, daysInMonthFromKey } from "@/lib/payroll/payroll-utils";
+import { dayKeyFromMonthDay, daysInMonthFromKey, dayKeysInclusive } from "@/lib/payroll/payroll-utils";
 
 export type AttendanceRow = {
   kind: AttendanceKind;
 };
 
+export type PayrollPeriod = {
+  monthKey: string;
+  startDayKey: string;
+  endDayKey: string;
+};
+
 export type PayrollInputs = {
   monthKey: string;
+  startDayKey?: string;
+  endDayKey?: string;
   monthlySalaryPaise: number;
   dailyRatePaise: number;
   paidLeavesAllowed: number;
@@ -46,16 +54,24 @@ export type PayrollComputed = {
 export function buildPayrollAttendance(
   monthKey: string,
   records: { dayKey: string; kind: AttendanceKind }[],
+  period?: { startDayKey: string; endDayKey: string },
 ): AttendanceRow[] {
   const byDay = new Map(records.map((r) => [r.dayKey, r.kind]));
-  const days = daysInMonthFromKey(monthKey);
-  const attendance: AttendanceRow[] = [];
-  for (let d = 1; d <= days; d++) {
-    attendance.push({
-      kind: byDay.get(dayKeyFromMonthDay(monthKey, d)) ?? "WORKED",
-    });
-  }
-  return attendance;
+  const dayKeys = period
+    ? dayKeysInclusive(period.startDayKey, period.endDayKey)
+    : Array.from({ length: daysInMonthFromKey(monthKey) }, (_, i) =>
+        dayKeyFromMonthDay(monthKey, i + 1),
+      );
+  return dayKeys.map((dayKey) => ({
+    kind: byDay.get(dayKey) ?? "WORKED",
+  }));
+}
+
+export function resolvePayrollPeriod(i: Pick<PayrollInputs, "monthKey" | "startDayKey" | "endDayKey">): PayrollPeriod {
+  const daysInMonth = daysInMonthFromKey(i.monthKey);
+  const startDayKey = i.startDayKey ?? dayKeyFromMonthDay(i.monthKey, 1);
+  const endDayKey = i.endDayKey ?? dayKeyFromMonthDay(i.monthKey, daysInMonth);
+  return { monthKey: i.monthKey, startDayKey, endDayKey };
 }
 
 export function countLeaveDaysTotal(
@@ -80,7 +96,12 @@ export function formatLeaveDays(days: number): string {
 }
 
 export function computePayroll(i: PayrollInputs): PayrollComputed {
-  const totalDays = daysInMonthFromKey(i.monthKey);
+  const period = resolvePayrollPeriod(i);
+  const daysInMonth = daysInMonthFromKey(i.monthKey);
+  const totalDays = dayKeysInclusive(period.startDayKey, period.endDayKey).length;
+  const periodFraction = totalDays / daysInMonth;
+  const periodSalaryPaise = Math.round(i.monthlySalaryPaise * periodFraction);
+  const paidLeavesAllowed = i.paidLeavesAllowed * periodFraction;
 
   const presentDays = i.attendance.filter((a) => a.kind === "WORKED").length;
   const fullLeaveDays =
@@ -97,14 +118,14 @@ export function computePayroll(i: PayrollInputs): PayrollComputed {
   const workedDaysTotal =
     countWorkedDaysTotal(presentDays + workedOnLeaveDays, halfLeaveDays);
 
-  const extraLeaveDays = Math.max(0, i.paidLeavesAllowed - leaveDaysTotal);
-  const excessLeaveDays = Math.max(0, leaveDaysTotal - i.paidLeavesAllowed);
+  const extraLeaveDays = Math.max(0, paidLeavesAllowed - leaveDaysTotal);
+  const excessLeaveDays = Math.max(0, leaveDaysTotal - paidLeavesAllowed);
 
   const extrasPaise = Math.round(extraLeaveDays * i.dailyRatePaise);
   const deductionsPaise = Math.round(excessLeaveDays * i.dailyRatePaise);
 
   const netPayPaise =
-    i.monthlySalaryPaise + extrasPaise - deductionsPaise - i.advancesPaise;
+    periodSalaryPaise + extrasPaise - deductionsPaise - i.advancesPaise;
 
   return {
     totalDays,
@@ -121,7 +142,7 @@ export function computePayroll(i: PayrollInputs): PayrollComputed {
     workedOnLeaveDays,
     unusedLeaveDays: extraLeaveDays,
     effectiveWorkedDays: Math.floor(workedDaysTotal),
-    applicablePaidLeaves: i.paidLeavesAllowed,
+    applicablePaidLeaves: paidLeavesAllowed,
     extrasPaise,
     deductionsPaise,
     advancesPaise: i.advancesPaise,

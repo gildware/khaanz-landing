@@ -246,6 +246,202 @@ export async function recordWastage(
   return { id: row.id };
 }
 
+/**
+ * Reverses FIFO consumptions + stock for one ingredient wastage row,
+ * and removes its WASTAGE movement. Does not delete the WastageEntry itself.
+ */
+export async function reverseIngredientWastageStock(
+  tx: Prisma.TransactionClient,
+  wastageEntryId: string,
+): Promise<void> {
+  const entry = await tx.wastageEntry.findUnique({
+    where: { id: wastageEntryId },
+    select: { id: true, inventoryItemId: true, qtyBase: true },
+  });
+  if (!entry) throw new Error("WASTAGE_NOT_FOUND");
+
+  const rows = await tx.inventoryBatchConsumption.findMany({
+    where: { referenceType: "wastage", referenceId: wastageEntryId },
+  });
+
+  const restoreByBatch = new Map<string, Prisma.Decimal>();
+  const restoreByItem = new Map<string, Prisma.Decimal>();
+
+  if (rows.length > 0) {
+    for (const r of rows) {
+      restoreByBatch.set(
+        r.batchId,
+        (restoreByBatch.get(r.batchId) ?? D0).add(r.qtyBase),
+      );
+      restoreByItem.set(
+        r.inventoryItemId,
+        (restoreByItem.get(r.inventoryItemId) ?? D0).add(r.qtyBase),
+      );
+    }
+  } else {
+    // Fallback if consumption rows are missing — restore the recorded qty.
+    restoreByItem.set(entry.inventoryItemId, entry.qtyBase);
+  }
+
+  for (const [batchId, qty] of restoreByBatch) {
+    const b = await tx.inventoryBatch.findUnique({
+      where: { id: batchId },
+      select: { remainingQtyBase: true },
+    });
+    if (!b) continue;
+    await tx.inventoryBatch.update({
+      where: { id: batchId },
+      data: { remainingQtyBase: b.remainingQtyBase.add(qty) },
+    });
+  }
+
+  const itemIds = [...restoreByItem.keys()];
+  if (itemIds.length > 0) {
+    const items = await tx.inventoryItem.findMany({
+      where: { id: { in: itemIds } },
+    });
+    const byId = new Map(items.map((r) => [r.id, r]));
+    for (const [inventoryItemId, qty] of restoreByItem) {
+      const row = byId.get(inventoryItemId);
+      if (!row || qty.equals(D0)) continue;
+      await tx.inventoryItem.update({
+        where: { id: inventoryItemId },
+        data: { stockOnHandBase: row.stockOnHandBase.add(qty) },
+      });
+    }
+  }
+
+  await tx.inventoryBatchConsumption.deleteMany({
+    where: { referenceType: "wastage", referenceId: wastageEntryId },
+  });
+  await tx.inventoryMovement.deleteMany({
+    where: { referenceType: "wastage", referenceId: wastageEntryId },
+  });
+}
+
+async function applyIngredientWastageDeduction(
+  tx: Prisma.TransactionClient,
+  input: {
+    wastageEntryId: string;
+    inventoryItemId: string;
+    qtyBase: Prisma.Decimal;
+    wastedAt: Date;
+    wastageType: WastageType;
+    createdByUserId?: string | null;
+    allowNegativeStock: boolean;
+  },
+): Promise<void> {
+  const item = await tx.inventoryItem.findFirst({
+    where: { id: input.inventoryItemId, active: true },
+  });
+  if (!item) throw new Error("INVENTORY_ITEM_NOT_FOUND");
+  const qty = input.qtyBase.abs();
+  if (qty.equals(D0)) throw new Error("WASTAGE_QTY_ZERO");
+
+  const delta = d(0).sub(qty);
+  await tx.inventoryItem.update({
+    where: { id: item.id },
+    data: { stockOnHandBase: item.stockOnHandBase.add(delta) },
+  });
+
+  await consumeFromBatchesFifo(tx, {
+    inventoryItemId: item.id,
+    qtyBase: qty,
+    occurredAt: input.wastedAt,
+    referenceType: "wastage",
+    referenceId: input.wastageEntryId,
+    orderId: null,
+    createdByUserId: input.createdByUserId ?? null,
+    allowNegative: input.allowNegativeStock,
+  });
+
+  await tx.inventoryMovement.create({
+    data: {
+      inventoryItemId: item.id,
+      occurredAt: input.wastedAt,
+      type: "WASTAGE",
+      qtyDeltaBase: delta,
+      referenceType: "wastage",
+      referenceId: input.wastageEntryId,
+      note: input.wastageType,
+      createdByUserId: input.createdByUserId ?? null,
+    },
+  });
+}
+
+export async function deleteIngredientWastage(
+  tx: Prisma.TransactionClient,
+  wastageEntryId: string,
+): Promise<void> {
+  const entry = await tx.wastageEntry.findUnique({
+    where: { id: wastageEntryId },
+    select: { id: true, menuWastageEntryId: true },
+  });
+  if (!entry) throw new Error("WASTAGE_NOT_FOUND");
+  if (entry.menuWastageEntryId) {
+    throw new Error("DISH_WASTAGE_CHILD");
+  }
+  await reverseIngredientWastageStock(tx, wastageEntryId);
+  await tx.wastageEntry.delete({ where: { id: wastageEntryId } });
+}
+
+export async function updateIngredientWastage(
+  tx: Prisma.TransactionClient,
+  wastageEntryId: string,
+  input: {
+    inventoryItemId: string;
+    qtyBase: Prisma.Decimal;
+    wastedAt: Date;
+    wastageType: WastageType;
+    note?: string;
+    createdByUserId?: string | null;
+    allowNegativeStock: boolean;
+  },
+): Promise<{ id: string }> {
+  const entry = await tx.wastageEntry.findUnique({
+    where: { id: wastageEntryId },
+    select: { id: true, menuWastageEntryId: true },
+  });
+  if (!entry) throw new Error("WASTAGE_NOT_FOUND");
+  if (entry.menuWastageEntryId) {
+    throw new Error("DISH_WASTAGE_CHILD");
+  }
+
+  const qty = input.qtyBase.abs();
+  if (qty.equals(D0)) throw new Error("WASTAGE_QTY_ZERO");
+
+  const item = await tx.inventoryItem.findFirst({
+    where: { id: input.inventoryItemId, active: true },
+    select: { id: true },
+  });
+  if (!item) throw new Error("INVENTORY_ITEM_NOT_FOUND");
+
+  await reverseIngredientWastageStock(tx, wastageEntryId);
+
+  await tx.wastageEntry.update({
+    where: { id: wastageEntryId },
+    data: {
+      inventoryItemId: item.id,
+      qtyBase: qty,
+      wastedAt: input.wastedAt,
+      wastageType: input.wastageType,
+      note: (input.note ?? "").slice(0, 500),
+    },
+  });
+
+  await applyIngredientWastageDeduction(tx, {
+    wastageEntryId,
+    inventoryItemId: item.id,
+    qtyBase: qty,
+    wastedAt: input.wastedAt,
+    wastageType: input.wastageType,
+    createdByUserId: input.createdByUserId ?? null,
+    allowNegativeStock: input.allowNegativeStock,
+  });
+
+  return { id: wastageEntryId };
+}
+
 export async function recordKitchenUse(
   tx: Prisma.TransactionClient,
   input: {

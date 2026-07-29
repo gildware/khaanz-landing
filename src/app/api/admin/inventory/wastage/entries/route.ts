@@ -38,6 +38,7 @@ export async function GET(request: Request) {
         qtyBase: true,
         note: true,
         createdAt: true,
+        inventoryItemId: true,
         item: { select: { name: true, baseUnit: true } },
       },
     }),
@@ -51,6 +52,8 @@ export async function GET(request: Request) {
         wastageType: true,
         note: true,
         createdAt: true,
+        menuItemId: true,
+        variationId: true,
         menuItem: { select: { name: true } },
         variation: { select: { name: true } },
         ingredients: {
@@ -72,6 +75,11 @@ export async function GET(request: Request) {
     wastageTypeLabel: string;
     summary: string;
     note: string;
+    inventoryItemId: string | null;
+    qtyBase: string | null;
+    menuItemId: string | null;
+    variationId: string | null;
+    quantity: string | null;
     ingredients: { itemName: string; baseUnit: string; qtyBase: string }[];
   };
 
@@ -85,6 +93,11 @@ export async function GET(request: Request) {
       wastageTypeLabel: WASTAGE_TYPE_LABELS[e.wastageType],
       summary: `${e.item.name} · ${e.qtyBase.toString()} ${e.item.baseUnit}`,
       note: e.note,
+      inventoryItemId: e.inventoryItemId,
+      qtyBase: e.qtyBase.toString(),
+      menuItemId: null,
+      variationId: null,
+      quantity: null,
       ingredients: [],
     })),
     ...dishRows.map((e) => ({
@@ -96,6 +109,11 @@ export async function GET(request: Request) {
       wastageTypeLabel: WASTAGE_TYPE_LABELS[e.wastageType],
       summary: `${e.menuItem.name} · ${e.variation.name} × ${e.quantity.toString()}`,
       note: e.note,
+      inventoryItemId: null,
+      qtyBase: null,
+      menuItemId: e.menuItemId,
+      variationId: e.variationId,
+      quantity: e.quantity.toString(),
       ingredients: e.ingredients.map((i) => ({
         itemName: i.item.name,
         baseUnit: i.item.baseUnit,

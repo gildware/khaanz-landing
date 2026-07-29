@@ -165,7 +165,7 @@ export async function onHandValueFifoPaise(
 }
 
 export async function onHandValuesFifoPaiseByItem(
-  tx: Prisma.TransactionClient,
+  tx: { inventoryBatch: Prisma.TransactionClient["inventoryBatch"] },
   inventoryItemIds: string[],
 ): Promise<Map<string, number>> {
   const out = new Map<string, number>();

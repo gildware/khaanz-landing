@@ -1137,12 +1137,16 @@ model EmployeeAdvance {
 
 model PayrollRun {
   id          String   @id @default(cuid())
-  monthKey    String   @unique @map("month_key") @db.VarChar(7) // YYYY-MM
+  monthKey    String   @map("month_key") @db.VarChar(7) // YYYY-MM (calendar month for grouping)
+  startDayKey String   @map("start_day_key") @db.VarChar(10) // YYYY-MM-DD inclusive
+  endDayKey   String   @map("end_day_key") @db.VarChar(10) // YYYY-MM-DD inclusive
   createdAt   DateTime @default(now()) @map("created_at")
   createdById String?  @map("created_by_user_id")
 
   lines PayrollEmployeeLine[]
 
+  @@unique([monthKey, startDayKey, endDayKey])
+  @@index([monthKey])
   @@map("payroll_runs")
 }
 

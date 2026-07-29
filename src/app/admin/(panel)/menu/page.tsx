@@ -2,11 +2,14 @@
 
 import { Suspense, useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ScrollTextIcon } from "lucide-react";
+import Link from "next/link";
 
 import { MenuCatalogAddonsPanel } from "@/components/admin/menu-catalog/addons-panel";
 import { MenuCatalogCategoriesPanel } from "@/components/admin/menu-catalog/categories-panel";
 import { MenuCatalogCombosPanel } from "@/components/admin/menu-catalog/combos-panel";
 import { MenuCatalogItemsPanel } from "@/components/admin/menu-catalog/items-panel";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const MENU_CATALOG_TABS = ["categories", "items", "combos", "addons"] as const;
@@ -38,11 +41,19 @@ function MenuCatalogPageContent() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-semibold text-2xl">Menu catalogue</h1>
-        <p className="text-muted-foreground text-sm">
-          Categories, dishes, combos, and add-ons in one place.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-semibold text-2xl">Menu catalogue</h1>
+          <p className="text-muted-foreground text-sm">
+            Categories, dishes, combos, and add-ons in one place.
+          </p>
+        </div>
+        <Button variant="outline" asChild>
+          <Link href="/admin/menu-board" target="_blank" rel="noopener noreferrer">
+            <ScrollTextIcon className="mr-2 size-4" aria-hidden />
+            View menu board
+          </Link>
+        </Button>
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="w-full gap-6">

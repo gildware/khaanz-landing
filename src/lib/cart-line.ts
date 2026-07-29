@@ -24,9 +24,39 @@ export function buildComboLineId(comboId: string): string {
   return `combo::${comboId}`;
 }
 
+function normalizeOpenLine(raw: Record<string, unknown>): CartOpenLine {
+  const name = typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : "Open item";
+  const quantity =
+    typeof raw.quantity === "number" &&
+    Number.isFinite(raw.quantity) &&
+    raw.quantity >= 1
+      ? Math.floor(raw.quantity)
+      : 1;
+  const unitPrice =
+    typeof raw.unitPrice === "number" &&
+    Number.isFinite(raw.unitPrice) &&
+    raw.unitPrice >= 0
+      ? raw.unitPrice
+      : 0;
+  return {
+    kind: "open",
+    lineId:
+      typeof raw.lineId === "string" && raw.lineId.trim()
+        ? raw.lineId
+        : `open::${name.toLowerCase()}`,
+    name,
+    quantity,
+    unitPrice,
+  };
+}
+
 /** Ensures persisted cart lines from before combo support still validate. */
 export function migrateCartLine(line: CartLine): CartLine {
-  const l = line as CartLine & { kind?: string };
+  const l = line as CartLine & { kind?: string; type?: string };
+  const raw = line as unknown as Record<string, unknown>;
+  if (l.type === "open" && l.kind !== "open") {
+    return normalizeOpenLine(raw);
+  }
   if (l.kind === "combo") return l as CartComboLine;
   if (l.kind === "open") return l as CartOpenLine;
   if (l.kind === "item") {
@@ -38,7 +68,6 @@ export function migrateCartLine(line: CartLine): CartLine {
     );
     return { ...it, kind: "item" as const, addons };
   }
-  const raw = line as unknown as Record<string, unknown>;
   if (typeof raw.comboId === "string") {
     return { ...line, kind: "combo" } as CartComboLine;
   }

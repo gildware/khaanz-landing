@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { AdvanceMethod, AttendanceKind } from "@prisma/client";
 import { toast } from "sonner";
-import { Loader2Icon, PlusIcon, RefreshCcwIcon } from "lucide-react";
+import { Loader2Icon, PlusIcon, RefreshCcwIcon, Trash2Icon } from "lucide-react";
 
 import {
   DataTableToolbar,
@@ -13,7 +13,14 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -26,6 +33,9 @@ import {
   monthKeyFromDate,
   paiseToRupeesInput,
   rupeesToPaise,
+  dayKeyFromMonthDay,
+  formatDayKeyLabel,
+  fullMonthPeriod,
 } from "@/lib/payroll/payroll-utils";
 import { formatLeaveDays } from "@/lib/payroll/payroll-calc";
 import { cn } from "@/lib/utils";
@@ -241,7 +251,7 @@ function AdminPayrollPageContent() {
         <div>
           <h1 className="font-semibold text-2xl">Payroll</h1>
           <p className="text-muted-foreground text-sm">
-            Employees, attendance, advances, and monthly payroll runs.
+            Employees, attendance, advances, and payroll runs (full month or day range).
           </p>
         </div>
         <Button type="button" variant="outline" onClick={() => void reloadEmployees()}>
@@ -1131,16 +1141,34 @@ function AdvancesTab({ employees, monthKey }: { employees: EmployeeRow[]; monthK
   );
 }
 
-function formatMonthLabel(monthKey: string): string {
-  const m = /^(\d{4})-(\d{2})$/.exec(monthKey);
-  if (!m) return monthKey;
-  const d = new Date(Number(m[1]), Number(m[2]) - 1, 1);
-  return d.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
-}
 
 function PayrunTab() {
   const [month, setMonth] = useState(() => startOfMonthLocal(new Date()));
   const monthKey = useMemo(() => monthKeyFromDate(month), [month]);
+  const daysInMonth = useMemo(() => daysInMonthLocal(month), [month]);
+
+  type PeriodMode = "full_month" | "day_range";
+  const [periodMode, setPeriodMode] = useState<PeriodMode>("full_month");
+  const [startDay, setStartDay] = useState(1);
+  const [endDay, setEndDay] = useState(() => daysInMonthLocal(new Date()));
+
+  useEffect(() => {
+    setEndDay((prev) => Math.min(Math.max(1, prev), daysInMonth));
+    setStartDay((prev) => Math.min(Math.max(1, prev), daysInMonth));
+  }, [daysInMonth]);
+
+  const period = useMemo(() => {
+    if (periodMode === "full_month") return fullMonthPeriod(monthKey);
+    return {
+      startDayKey: dayKeyFromMonthDay(monthKey, startDay),
+      endDayKey: dayKeyFromMonthDay(monthKey, endDay),
+    };
+  }, [periodMode, monthKey, startDay, endDay]);
+
+  const periodLabel = useMemo(
+    () => formatDayKeyLabel(period.startDayKey, period.endDayKey),
+    [period.endDayKey, period.startDayKey],
+  );
 
   const [loading, setLoading] = useState(true);
   const [loadingRuns, setLoadingRuns] = useState(true);
@@ -1163,14 +1191,24 @@ function PayrunTab() {
   type PayrollRun = {
     id: string;
     monthKey: string;
+    startDayKey: string;
+    endDayKey: string;
     createdAt: string;
     lines: PayrollLine[];
   };
-  type RunSummary = { id: string; monthKey: string; createdAt: string };
+  type RunSummary = {
+    id: string;
+    monthKey: string;
+    startDayKey: string;
+    endDayKey: string;
+    createdAt: string;
+  };
   const [run, setRun] = useState<PayrollRun | null>(null);
   const [pastRuns, setPastRuns] = useState<RunSummary[]>([]);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("net-desc");
+  const [deletingRun, setDeletingRun] = useState<RunSummary | PayrollRun | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   const loadPastRuns = useCallback(async () => {
     setLoadingRuns(true);
@@ -1187,7 +1225,12 @@ function PayrunTab() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/payroll/runs?monthKey=${encodeURIComponent(monthKey)}`, {
+      const params = new URLSearchParams({
+        monthKey,
+        startDayKey: period.startDayKey,
+        endDayKey: period.endDayKey,
+      });
+      const res = await fetch(`/api/admin/payroll/runs?${params.toString()}`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to load payroll run");
@@ -1196,7 +1239,7 @@ function PayrunTab() {
     } finally {
       setLoading(false);
     }
-  }, [monthKey]);
+  }, [monthKey, period.endDayKey, period.startDayKey]);
 
   useEffect(() => {
     void loadPastRuns().catch((e) => toast.error(e instanceof Error ? e.message : "Load failed"));
@@ -1242,8 +1285,11 @@ function PayrunTab() {
 
   const create = async (regenerate = false) => {
     if (regenerate && !isRunIncomplete) {
-      const label = formatMonthLabel(monthKey);
-      if (!confirm(`Regenerate payroll for ${label}? This replaces the existing run with fresh calculations.`)) {
+      if (
+        !confirm(
+          `Regenerate payroll for ${periodLabel}? This replaces the existing run with fresh calculations.`,
+        )
+      ) {
         return;
       }
     }
@@ -1253,7 +1299,12 @@ function PayrunTab() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ monthKey, regenerate }),
+        body: JSON.stringify({
+          monthKey,
+          startDayKey: period.startDayKey,
+          endDayKey: period.endDayKey,
+          regenerate,
+        }),
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string; repaired?: boolean };
       if (!res.ok) {
@@ -1274,11 +1325,47 @@ function PayrunTab() {
     }
   };
 
-  const selectMonthKey = (key: string) => {
-    const m = /^(\d{4})-(\d{2})$/.exec(key);
+  const selectRun = (r: RunSummary) => {
+    const m = /^(\d{4})-(\d{2})$/.exec(r.monthKey);
     if (!m) return;
     setMonth(new Date(Number(m[1]), Number(m[2]) - 1, 1));
+
+    const full = fullMonthPeriod(r.monthKey);
+    if (r.startDayKey === full.startDayKey && r.endDayKey === full.endDayKey) {
+      setPeriodMode("full_month");
+      return;
+    }
+
+    setPeriodMode("day_range");
+    setStartDay(Number(r.startDayKey.slice(8, 10)));
+    setEndDay(Number(r.endDayKey.slice(8, 10)));
   };
+
+  const confirmDeleteRun = async () => {
+    if (!deletingRun) return;
+    setDeleteSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/payroll/runs/${deletingRun.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(j.error || "Delete failed");
+      }
+      toast.success("Payroll run deleted");
+      setDeletingRun(null);
+      await Promise.all([load(), loadPastRuns()]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeleteSubmitting(false);
+    }
+  };
+
+  const deletingRunLabel = deletingRun
+    ? formatDayKeyLabel(deletingRun.startDayKey, deletingRun.endDayKey)
+    : "";
 
   return (
     <div className="space-y-4">
@@ -1286,7 +1373,7 @@ function PayrunTab() {
         <div className="space-y-3">
           <div>
             <h2 className="font-medium">Payroll history</h2>
-            <p className="text-muted-foreground text-xs">Select a month to view or regenerate.</p>
+            <p className="text-muted-foreground text-xs">Select a period to view or regenerate.</p>
           </div>
           {loadingRuns ? (
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
@@ -1300,20 +1387,39 @@ function PayrunTab() {
           ) : (
             <div className="max-h-72 space-y-1 overflow-y-auto rounded-xl border bg-card p-1">
               {pastRuns.map((r) => (
-                <button
+                <div
                   key={r.id}
-                  type="button"
-                  onClick={() => selectMonthKey(r.monthKey)}
                   className={cn(
-                    "flex w-full flex-col rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-muted/60",
-                    r.monthKey === monthKey && "bg-primary/10 ring-1 ring-primary/20",
+                    "flex items-stretch gap-0.5 rounded-lg transition-colors hover:bg-muted/60",
+                    r.monthKey === monthKey &&
+                      r.startDayKey === period.startDayKey &&
+                      r.endDayKey === period.endDayKey &&
+                      "bg-primary/10 ring-1 ring-primary/20",
                   )}
                 >
-                  <span className="font-medium">{formatMonthLabel(r.monthKey)}</span>
-                  <span className="text-muted-foreground font-mono text-xs">
-                    {String(r.createdAt).replace("T", " ").slice(0, 16)}
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => selectRun(r)}
+                    className="flex min-w-0 flex-1 flex-col px-3 py-2 text-left text-sm"
+                  >
+                    <span className="font-medium">
+                      {formatDayKeyLabel(r.startDayKey, r.endDayKey)}
+                    </span>
+                    <span className="text-muted-foreground font-mono text-xs">
+                      {String(r.createdAt).replace("T", " ").slice(0, 16)}
+                    </span>
+                  </button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="my-1 mr-1 shrink-0 self-center text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => setDeletingRun(r)}
+                  >
+                    <Trash2Icon className="size-4" aria-hidden />
+                    <span className="sr-only">Delete payroll run</span>
+                  </Button>
+                </div>
               ))}
             </div>
           )}
@@ -1330,14 +1436,68 @@ function PayrunTab() {
                   onChange={(e) => {
                     const v = e.target.value;
                     if (!/^\d{4}-\d{2}$/.test(v)) return;
-                    selectMonthKey(v);
+                    const m = /^(\d{4})-(\d{2})$/.exec(v);
+                    if (!m) return;
+                    setMonth(new Date(Number(m[1]), Number(m[2]) - 1, 1));
                   }}
                   className="w-40 font-mono"
                 />
               </div>
               <div className="space-y-1">
+                <Label>Period</Label>
+                <SearchableSelect
+                  options={[
+                    { value: "full_month", label: "Full month" },
+                    { value: "day_range", label: "Day range" },
+                  ]}
+                  value={periodMode}
+                  onValueChange={(v) => setPeriodMode(v === "day_range" ? "day_range" : "full_month")}
+                  placeholder="Period"
+                  className="w-36"
+                />
+              </div>
+              {periodMode === "day_range" ? (
+                <>
+                  <div className="space-y-1">
+                    <Label htmlFor="payroll-start-day">From day</Label>
+                    <Input
+                      id="payroll-start-day"
+                      type="number"
+                      min={1}
+                      max={endDay}
+                      value={startDay}
+                      onChange={(e) => {
+                        const n = Number(e.target.value);
+                        if (!Number.isFinite(n)) return;
+                        const next = Math.min(Math.max(1, Math.trunc(n)), daysInMonth);
+                        setStartDay(next);
+                        if (next > endDay) setEndDay(next);
+                      }}
+                      className="w-24 font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="payroll-end-day">To day</Label>
+                    <Input
+                      id="payroll-end-day"
+                      type="number"
+                      min={startDay}
+                      max={daysInMonth}
+                      value={endDay}
+                      onChange={(e) => {
+                        const n = Number(e.target.value);
+                        if (!Number.isFinite(n)) return;
+                        const next = Math.min(Math.max(startDay, Math.trunc(n)), daysInMonth);
+                        setEndDay(next);
+                      }}
+                      className="w-24 font-mono"
+                    />
+                  </div>
+                </>
+              ) : null}
+              <div className="space-y-1">
                 <p className="text-muted-foreground text-xs">Selected</p>
-                <p className="font-medium text-sm">{formatMonthLabel(monthKey)}</p>
+                <p className="font-medium text-sm">{periodLabel}</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -1346,7 +1506,7 @@ function PayrunTab() {
                   type="button"
                   variant="outline"
                   onClick={() => void create(true)}
-                  disabled={creating}
+                  disabled={creating || deleteSubmitting}
                 >
                   {creating ? (
                     <>
@@ -1361,7 +1521,11 @@ function PayrunTab() {
                   )}
                 </Button>
               ) : (
-                <Button type="button" onClick={() => void create(false)} disabled={creating}>
+                <Button
+                  type="button"
+                  onClick={() => void create(false)}
+                  disabled={creating || deleteSubmitting}
+                >
                   {creating ? (
                     <>
                       <Loader2Icon className="mr-2 size-4 animate-spin" />
@@ -1374,12 +1538,24 @@ function PayrunTab() {
                   )}
                 </Button>
               )}
+              {run ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setDeletingRun(run)}
+                  disabled={creating || deleteSubmitting}
+                >
+                  <Trash2Icon className="mr-2 size-4" />
+                  Delete
+                </Button>
+              ) : null}
             </div>
           </div>
 
           <p className="text-muted-foreground text-xs">
-            Net pay = monthly salary + (unused paid leaves × daily rate) − (extra leave days × daily
-            rate) − advances. Full month with no leave → 4 extra days pay (if 4 leaves/month).
+            Net pay = pro-rated monthly salary + (unused paid leaves × daily rate) − (extra leave
+            days × daily rate) − advances. Use day range for mid-month or partial-period payroll.
           </p>
 
           {loading ? (
@@ -1391,14 +1567,14 @@ function PayrunTab() {
             <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
               {isRunIncomplete ? (
                 <>
-                  Payroll for {formatMonthLabel(monthKey)} was created but has no employee lines — likely
-                  from an interrupted run. Click{" "}
+                  Payroll for {periodLabel} was created but has no employee lines — likely from an
+                  interrupted run. Click{" "}
                   <span className="font-medium text-foreground">Repair payroll</span> to generate it.
                 </>
               ) : (
                 <>
-                  No payroll run for {formatMonthLabel(monthKey)}. Enter attendance and advances for this
-                  month, then click <span className="font-medium text-foreground">Run payroll</span>.
+                  No payroll run for {periodLabel}. Enter attendance and advances for this period,
+                  then click <span className="font-medium text-foreground">Run payroll</span>.
                 </>
               )}
             </div>
@@ -1488,6 +1664,42 @@ function PayrunTab() {
           )}
         </div>
       </div>
+
+      <Dialog
+        open={deletingRun !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteSubmitting) setDeletingRun(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton={!deleteSubmitting}>
+          <DialogHeader>
+            <DialogTitle>Delete payroll run?</DialogTitle>
+            <DialogDescription>
+              Delete payroll for{" "}
+              <span className="font-medium text-foreground">{deletingRunLabel}</span>? This removes
+              the run and all employee pay lines. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deleteSubmitting}
+              onClick={() => setDeletingRun(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteSubmitting}
+              onClick={() => void confirmDeleteRun()}
+            >
+              {deleteSubmitting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

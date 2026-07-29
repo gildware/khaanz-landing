@@ -21,18 +21,25 @@ export function decimalToPaiseInt(v: Prisma.Decimal): number {
 
 export async function loadStockValueRankRows(): Promise<StockValueRankRow[]> {
   const prisma = getPrisma();
-  const invSettings = await ensureInventorySettings(prisma);
-  const items = await prisma.inventoryItem.findMany({
-    where: { active: true },
-    orderBy: { name: "asc" },
-  });
+  const [invSettings, items] = await Promise.all([
+    ensureInventorySettings(prisma),
+    prisma.inventoryItem.findMany({
+      where: { active: true },
+      select: {
+        id: true,
+        name: true,
+        stockOnHandBase: true,
+        avgCostPaisePerBase: true,
+        lastPurchasePaisePerBase: true,
+      },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   if (invSettings.costingMethod === "FIFO") {
-    const values = await prisma.$transaction((tx) =>
-      onHandValuesFifoPaiseByItem(
-        tx,
-        items.map((i) => i.id),
-      ),
+    const values = await onHandValuesFifoPaiseByItem(
+      prisma,
+      items.map((i) => i.id),
     );
     return items.map((item) => ({
       key: item.id,
@@ -41,13 +48,14 @@ export async function loadStockValueRankRows(): Promise<StockValueRankRow[]> {
     }));
   }
 
-  const rows: StockValueRankRow[] = [];
-  for (const item of items) {
+  return items.map((item) => {
     const unit = itemUnitCostPaisePerBase(item, invSettings.costingMethod);
-    const valuePaise = decimalToPaiseInt(item.stockOnHandBase.mul(unit));
-    rows.push({ key: item.id, label: item.name, valuePaise });
-  }
-  return rows;
+    return {
+      key: item.id,
+      label: item.name,
+      valuePaise: decimalToPaiseInt(item.stockOnHandBase.mul(unit)),
+    };
+  });
 }
 
 export function splitStockValueRanks(

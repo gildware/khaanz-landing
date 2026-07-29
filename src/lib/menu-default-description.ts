@@ -44,9 +44,11 @@ export function defaultDescriptionForItem(item: {
       if (n.toLowerCase().includes("manchurian")) return "Indo-Chinese Manchurian in bold sauce—sweet, spicy, and savoury.";
       if (n.toLowerCase().includes("chilli")) return "Classic chilli-style Indo-Chinese with capsicum, onion, and a spicy glaze.";
       return "Indo-Chinese favourite made hot and fresh with our spicy sauce.";
-    case "Fries & More":
+    case "Fries & Crispies":
       if (n.toLowerCase().includes("peri")) return "Crispy fries dusted with peri peri masala—spicy and tangy.";
       if (n.toLowerCase().includes("honey")) return "Crispy potatoes tossed in honey chilli sauce—sweet heat in every bite.";
+      if (n.toLowerCase().includes("fish")) return "Crispy fried fish with bold seasoning—great with a squeeze of lemon.";
+      if (n.toLowerCase().includes("chicken")) return "Crispy, golden fried goodness—best enjoyed hot.";
       return "Crispy, golden snack—perfect with dips.";
     case "Parathas & Rolls":
       if (n.toLowerCase().includes("roll")) return "Wrapped and rolled for the perfect on-the-go bite—spicy, filling, satisfying.";
@@ -55,9 +57,6 @@ export function defaultDescriptionForItem(item: {
       return "Thick, creamy shake blended ice-cold—smooth, sweet, and super refreshing.";
     case "Mojitos":
       return "Refreshing cooler with minty freshness and citrus zing—served chilled.";
-    case "Crispy Bites":
-      if (n.toLowerCase().includes("fish")) return "Crispy fried fish with bold seasoning—great with a squeeze of lemon.";
-      return "Crispy, golden fried goodness—best enjoyed hot.";
     case "Soft Drinks":
       return "Ice-cold, fizzy refreshment—perfect with spicy snacks and meals.";
     case "Chole Poori/Bhature":

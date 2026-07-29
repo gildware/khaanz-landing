@@ -1,0 +1,8543 @@
+[
+  {
+    "category": "Pizza Zone",
+    "dish": "Cheesy Bliss Pizza",
+    "title": "Cheesy Bliss Pizza \u2014 Large",
+    "variation": "Large",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 60.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 240.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 360.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Pizza Zone",
+    "dish": "Cheesy Bliss Pizza",
+    "title": "Cheesy Bliss Pizza \u2014 Small",
+    "variation": "Small",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 120.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 180.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Pizza Zone",
+    "dish": "Cheesy Corn Burst",
+    "title": "Cheesy Corn Burst \u2014 Large",
+    "variation": "Large",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 60.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 240.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Sweet Corn",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 360.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Pizza Zone",
+    "dish": "Cheesy Corn Burst",
+    "title": "Cheesy Corn Burst \u2014 Small",
+    "variation": "Small",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 120.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Sweet Corn",
+        "qty": 15.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 180.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Pizza Zone",
+    "dish": "Chicken Feast Pizza",
+    "title": "Chicken Feast Pizza \u2014 Large",
+    "variation": "Large",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 60.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 240.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Olives",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Olives",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Peprika",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Jalepino",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 360.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Semi Fried Boneless Chicken",
+        "qty": 80.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Pizza Zone",
+    "dish": "Chicken Feast Pizza",
+    "title": "Chicken Feast Pizza \u2014 Small",
+    "variation": "Small",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 120.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Olives",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Olives",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Peprika",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Jalepino",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 180.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Semi Fried Boneless Chicken",
+        "qty": 40.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Pizza Zone",
+    "dish": "Chicken Royale Pizza",
+    "title": "Chicken Royale Pizza \u2014 Large",
+    "variation": "Large",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 60.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 240.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Olives",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Olives",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Peprika",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Jalepino",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 360.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Semi Fried Boneless Chicken",
+        "qty": 80.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Cashew",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Sweet Corn",
+        "qty": 20.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Pizza Zone",
+    "dish": "Chicken Royale Pizza",
+    "title": "Chicken Royale Pizza \u2014 Small",
+    "variation": "Small",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 120.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Olives",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Olives",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Peprika",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Jalepino",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 180.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Semi Fried Boneless Chicken",
+        "qty": 40.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 1.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Cashew",
+        "qty": 10.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Pizza Zone",
+    "dish": "Veg Royale Pizza",
+    "title": "Veg Royale Pizza \u2014 Large",
+    "variation": "Large",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 60.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 240.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Olives",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Olives",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Peprika",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Jalepino",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 360.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Cashew",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Sweet Corn",
+        "qty": 20.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Pizza Zone",
+    "dish": "Veg Royale Pizza",
+    "title": "Veg Royale Pizza \u2014 Small",
+    "variation": "Small",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 180.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 1.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Cashew",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 120.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Olives",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Olives",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Peprika",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Jalepino",
+        "qty": 8.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Pizza Zone",
+    "dish": "Veggie Supreme",
+    "title": "Veggie Supreme \u2014 Large",
+    "variation": "Large",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 60.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 240.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Olives",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Olives",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Peprika",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Jalepino",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 360.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Pizza Zone",
+    "dish": "Veggie Supreme",
+    "title": "Veggie Supreme \u2014 Small",
+    "variation": "Small",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Pizza Dough",
+        "qty": 180.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Pizza Pasta Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 120.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Olives",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Olives",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Peprika",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Jalepino",
+        "qty": 8.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chef Specials",
+    "dish": "Butter Chicken",
+    "title": "Butter Chicken \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Boiled Chicken",
+        "qty": 450.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Indian Gravy",
+        "qty": 450.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Fresh Cream",
+        "qty": 60.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 3.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chef Specials",
+    "dish": "Butter Chicken",
+    "title": "Butter Chicken \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Boiled Chicken",
+        "qty": 220.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Indian Gravy",
+        "qty": 250.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Fresh Cream",
+        "qty": 30.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chef Specials",
+    "dish": "Kadai Chicken",
+    "title": "Kadai Chicken \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Boiled Chicken",
+        "qty": 500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 70.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 35.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Indian Gravy",
+        "qty": 450.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 3.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Fresh Cream",
+        "qty": 60.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 9.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chef Specials",
+    "dish": "Kadai Chicken",
+    "title": "Kadai Chicken \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Boiled Chicken",
+        "qty": 250.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 25.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Indian Gravy",
+        "qty": 250.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Fresh Cream",
+        "qty": 30.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 5.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chef Specials",
+    "dish": "Masala Chicken",
+    "title": "Masala Chicken \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Boiled Chicken",
+        "qty": 500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Indian Gravy",
+        "qty": 450.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 3.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Fresh Cream",
+        "qty": 60.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 9.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chef Specials",
+    "dish": "Masala Chicken",
+    "title": "Masala Chicken \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Boiled Chicken",
+        "qty": 250.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Indian Gravy",
+        "qty": 250.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Fresh Cream",
+        "qty": 30.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 5.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chef Specials",
+    "dish": "Special Chicken",
+    "title": "Special Chicken \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Boiled Chicken",
+        "qty": 500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Fresh Cream",
+        "qty": 60.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 3.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chef Specials",
+    "dish": "Special Chicken",
+    "title": "Special Chicken \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Boiled Chicken",
+        "qty": 250.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 0.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Fresh Cream",
+        "qty": 30.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chef Specials",
+    "dish": "Tandoori Chicken",
+    "title": "Tandoori Chicken \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Tandoori Masala Mix",
+        "qty": 400.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Full Live chicken",
+        "qty": 1600.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Fresh Cream",
+        "qty": 40.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 2.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Chef Specials",
+    "dish": "Tandoori Chicken",
+    "title": "Tandoori Chicken \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Tandoori Masala Mix",
+        "qty": 250.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Full Live chicken",
+        "qty": 800.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Fresh Cream",
+        "qty": 20.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 1.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Momo Mania",
+    "dish": "Fried Chicken Momo",
+    "title": "Fried Chicken Momo \u2014 Plate",
+    "variation": "Plate",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Momo",
+        "qty": 10.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Momo Mania",
+    "dish": "Momo",
+    "title": "Momo \u2014 Piece",
+    "variation": "Piece",
+    "effectiveFrom": "24 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken Boneless",
+        "qty": 3.42,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Granules",
+        "qty": 0.46,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 1.71,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 0.05,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 0.03,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Pepper Powder",
+        "qty": 0.01,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Momos Masala",
+        "qty": 0.02,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 0.03,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 0.09,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 0.05,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 0.13,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 0.13,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 0.07,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 0.07,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ghee",
+        "qty": 0.26,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dhaniya",
+        "qty": 0.07,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ginger Garlic Paste",
+        "qty": 0.05,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Momos Dough",
+        "qty": 10.0,
+        "unit": "kg"
+      }
+    ]
+  },
+  {
+    "category": "Momo Mania",
+    "dish": "Steamed Chicken Momo",
+    "title": "Steamed Chicken Momo \u2014 Plate",
+    "variation": "Plate",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Momo",
+        "qty": 10.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Momo Mania",
+    "dish": "Tandoori Chicken Momo",
+    "title": "Tandoori Chicken Momo \u2014 Plate",
+    "variation": "Plate",
+    "effectiveFrom": "24 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Momo",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Tandoori Masala Mix",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 1.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Fresh Cream",
+        "qty": 10.0,
+        "unit": "ml"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Chicken Fried Rice",
+    "title": "Chicken Fried Rice \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 310.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 53.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 75.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 27.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Chicken Fried Rice",
+    "title": "Chicken Fried Rice \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 190.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 38.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 59.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 22.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Dum Chicken Biryani",
+    "title": "Dum Chicken Biryani \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 2.9,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato",
+        "qty": 20.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ginger Garlic Paste",
+        "qty": 5.8,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Biryani Masala",
+        "qty": 1.47,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 0.58,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 0.44,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 0.88,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Clove",
+        "qty": 0.11,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cardamom",
+        "qty": 0.05,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Javatri",
+        "qty": 0.23,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Star Masala",
+        "qty": 0.11,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tej Patta",
+        "qty": 0.05,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dal Cheeni",
+        "qty": 0.35,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 117.64,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 47.05,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 23.52,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 13.23,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dhaniya",
+        "qty": 14.7,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Fried Chicken",
+        "qty": 0.15,
+        "unit": "kg"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Dum Chicken Biryani",
+    "title": "Dum Chicken Biryani \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 1.8,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato",
+        "qty": 13.2,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ginger Garlic Paste",
+        "qty": 3.77,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Biryani Masala",
+        "qty": 0.94,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 0.37,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 0.28,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 0.56,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Clove",
+        "qty": 0.07,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cardamom",
+        "qty": 0.03,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Javatri",
+        "qty": 0.15,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Star Masala",
+        "qty": 0.07,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tej Patta",
+        "qty": 0.03,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dal Cheeni",
+        "qty": 0.22,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 75.47,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 30.18,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 15.09,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 8.49,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dhaniya",
+        "qty": 9.43,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Fried Chicken",
+        "qty": 0.1,
+        "unit": "kg"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Egg Fried Rice",
+    "title": "Egg Fried Rice \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "21 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 310.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 53.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 75.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 27.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Egg Fried Rice",
+    "title": "Egg Fried Rice \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "21 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 190.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 38.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 59.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 22.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Fried Chicken Biryani",
+    "title": "Fried Chicken Biryani \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 2.9,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato",
+        "qty": 20.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ginger Garlic Paste",
+        "qty": 5.8,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Biryani Masala",
+        "qty": 1.47,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 0.58,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 0.44,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 0.88,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Clove",
+        "qty": 0.11,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cardamom",
+        "qty": 0.05,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Javatri",
+        "qty": 0.23,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Star Masala",
+        "qty": 0.11,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tej Patta",
+        "qty": 0.05,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dal Cheeni",
+        "qty": 0.35,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 117.64,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 47.05,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 23.52,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 13.23,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dhaniya",
+        "qty": 14.7,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Fried Chicken",
+        "qty": 0.15,
+        "unit": "kg"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Fried Chicken Biryani",
+    "title": "Fried Chicken Biryani \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 1.8,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato",
+        "qty": 13.2,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ginger Garlic Paste",
+        "qty": 3.77,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Biryani Masala",
+        "qty": 0.94,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 0.37,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 0.28,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 0.56,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Clove",
+        "qty": 0.07,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cardamom",
+        "qty": 0.03,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Javatri",
+        "qty": 0.15,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Star Masala",
+        "qty": 0.07,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tej Patta",
+        "qty": 0.03,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dal Cheeni",
+        "qty": 0.22,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 75.47,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 30.18,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 15.09,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 8.49,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dhaniya",
+        "qty": 9.43,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Fried Chicken",
+        "qty": 0.1,
+        "unit": "kg"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Schezwan Fried Rice (N)",
+    "title": "Schezwan Fried Rice (N) \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 310.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 53.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 75.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 25.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 27.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Schezwan Fried Rice (N)",
+    "title": "Schezwan Fried Rice (N) \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 190.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 38.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 59.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 15.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 22.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Schezwan Fried Rice (V)",
+    "title": "Schezwan Fried Rice (V) \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 308.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 53.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 75.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 25.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 27.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Schezwan Fried Rice (V)",
+    "title": "Schezwan Fried Rice (V) \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 190.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 38.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 59.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 15.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 22.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Veg. Fried Rice",
+    "title": "Veg. Fried Rice \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 308.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 53.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 75.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 27.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Rice Royale",
+    "dish": "Veg. Fried Rice",
+    "title": "Veg. Fried Rice \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Basmati Rice",
+        "qty": 190.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 38.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 59.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 22.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Tandoor Breads",
+    "dish": "Butter Garlic Naan",
+    "title": "Butter Garlic Naan",
+    "variation": "All variations",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Naan Dough",
+        "qty": 200.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 0.5,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 20.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Tandoor Breads",
+    "dish": "Butter Naan",
+    "title": "Butter Naan",
+    "variation": "All variations",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Naan Dough",
+        "qty": 200.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 0.5,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Tandoor Breads",
+    "dish": "Butter Tandoori Roti",
+    "title": "Butter Tandoori Roti",
+    "variation": "All variations",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Atta Dough",
+        "qty": 100.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 0.5,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Tandoor Breads",
+    "dish": "Butter Tawa Roti",
+    "title": "Butter Tawa Roti",
+    "variation": "All variations",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Atta Dough",
+        "qty": 80.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 0.5,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Tandoor Breads",
+    "dish": "Plain Naan",
+    "title": "Plain Naan",
+    "variation": "All variations",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Naan Dough",
+        "qty": 200.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Tandoor Breads",
+    "dish": "Tandoori Roti",
+    "title": "Tandoori Roti",
+    "variation": "All variations",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Atta Dough",
+        "qty": 100.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Tandoor Breads",
+    "dish": "Tawa Roti",
+    "title": "Tawa Roti",
+    "variation": "All variations",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Atta Dough",
+        "qty": 80.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Crispy Bites",
+    "dish": "Fried Chicken",
+    "title": "Fried Chicken",
+    "variation": "All variations",
+    "effectiveFrom": "21 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "kg",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken Boneless",
+        "qty": 1000.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Crispy Bites",
+    "dish": "Fried Fish",
+    "title": "Fried Fish \u2014 1 KG",
+    "variation": "1 KG",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Fish Fry Masala",
+        "qty": 1000.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Fries & More",
+    "dish": "Chilli Potato",
+    "title": "Chilli Potato \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Potato",
+        "qty": 300.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 46.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 19.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 65.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 55.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Fries & More",
+    "dish": "Chilli Potato",
+    "title": "Chilli Potato \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "19 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Potato",
+        "qty": 220.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 46.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 47.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 46.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Fries & More",
+    "dish": "French Fries",
+    "title": "French Fries \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Potato",
+        "qty": 300.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 55.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chat Masala",
+        "qty": 4.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Fries & More",
+    "dish": "French Fries",
+    "title": "French Fries \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Potato",
+        "qty": 220.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 46.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chat Masala",
+        "qty": 3.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Fries & More",
+    "dish": "Honey Chilli Potato",
+    "title": "Honey Chilli Potato \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Potato",
+        "qty": 300.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 46.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 19.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 65.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Honey",
+        "qty": 35.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Fries & More",
+    "dish": "Honey Chilli Potato",
+    "title": "Honey Chilli Potato \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Potato",
+        "qty": 220.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 46.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 47.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Honey",
+        "qty": 25.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Fries & More",
+    "dish": "Peri Peri Fries",
+    "title": "Peri Peri Fries \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Potato",
+        "qty": 300.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 55.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chat Masala",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Peri Peri Masla",
+        "qty": 8.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Fries & More",
+    "dish": "Peri Peri Fries",
+    "title": "Peri Peri Fries \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Potato",
+        "qty": 220.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 46.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chat Masala",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Peri Peri Masla",
+        "qty": 6.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Noodle Hub",
+    "dish": "Chicken Chowmein",
+    "title": "Chicken Chowmein \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Noodles",
+        "qty": 223.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 53.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 75.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 27.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Noodle Hub",
+    "dish": "Chicken Chowmein",
+    "title": "Chicken Chowmein \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Noodles",
+        "qty": 190.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 38.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 59.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 22.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Noodle Hub",
+    "dish": "Chicken Schezwan Noodles",
+    "title": "Chicken Schezwan Noodles \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Noodles",
+        "qty": 223.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 53.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 75.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 25.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 27.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Noodle Hub",
+    "dish": "Chicken Schezwan Noodles",
+    "title": "Chicken Schezwan Noodles \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Noodles",
+        "qty": 190.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 38.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 59.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 15.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 22.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Noodle Hub",
+    "dish": "Egg Chowmein",
+    "title": "Egg Chowmein \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Noodles",
+        "qty": 223.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 53.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 75.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 27.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Noodle Hub",
+    "dish": "Egg Chowmein",
+    "title": "Egg Chowmein \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "19 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Noodles",
+        "qty": 190.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 38.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 59.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 22.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Noodle Hub",
+    "dish": "Veg Schezwan Noodles",
+    "title": "Veg Schezwan Noodles \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Noodles",
+        "qty": 223.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 53.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 75.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 24.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 27.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Noodle Hub",
+    "dish": "Veg Schezwan Noodles",
+    "title": "Veg Schezwan Noodles \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Noodles",
+        "qty": 190.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 38.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 59.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 15.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 22.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Noodle Hub",
+    "dish": "Veg. Chowmein",
+    "title": "Veg. Chowmein \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Noodles",
+        "qty": 223.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 53.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 75.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 14.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 27.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 2.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 42.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Noodle Hub",
+    "dish": "Veg. Chowmein",
+    "title": "Veg. Chowmein \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Noodles",
+        "qty": 190.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 38.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 59.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 9.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 22.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 2.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 1.5,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Spicy Chinese",
+    "dish": "Chicken Kanti",
+    "title": "Chicken Kanti \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "21 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Fried Chicken",
+        "qty": 0.4,
+        "unit": "kg"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 225.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 33.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato",
+        "qty": 236.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 6.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 18.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Zeera Powder",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corriandor Powder",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cumin (Jeera)",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Turmeric",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dhaniya",
+        "qty": 5.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Spicy Chinese",
+    "dish": "Chicken Kanti",
+    "title": "Chicken Kanti \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "21 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Fried Chicken",
+        "qty": 0.25,
+        "unit": "kg"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 165.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato",
+        "qty": 124.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 13.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Zeera Powder",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corriandor Powder",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cumin (Jeera)",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Turmeric",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dhaniya",
+        "qty": 4.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Spicy Chinese",
+    "dish": "Chicken Manchurian",
+    "title": "Chicken Manchurian \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "21 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken With Bone",
+        "qty": 450.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 55.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 6.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 96.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 64.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 13.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 45.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 51.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 52.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Spicy Chinese",
+    "dish": "Chicken Manchurian",
+    "title": "Chicken Manchurian \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "21 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Fried Chicken",
+        "qty": 0.25,
+        "unit": "kg"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 165.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato",
+        "qty": 124.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 13.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Zeera Powder",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corriandor Powder",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cumin (Jeera)",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Turmeric",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dhaniya",
+        "qty": 4.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Spicy Chinese",
+    "dish": "Chilli Chicken",
+    "title": "Chilli Chicken \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Fish Fry Masala",
+        "qty": 450.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 55.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 6.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 96.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 64.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 13.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 45.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Spicy Chinese",
+    "dish": "Chilli Chicken",
+    "title": "Chilli Chicken \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "21 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Fried Chicken",
+        "qty": 0.25,
+        "unit": "kg"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 39.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 64.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 44.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 13.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 35.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Spicy Chinese",
+    "dish": "Crispy Chilli Chicken",
+    "title": "Crispy Chilli Chicken \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "20 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken With Bone",
+        "qty": 450.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 55.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 6.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 96.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 64.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 13.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 45.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 51.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 52.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Spicy Chinese",
+    "dish": "Crispy Chilli Chicken",
+    "title": "Crispy Chilli Chicken \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "21 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken With Bone",
+        "qty": 300.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 39.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 64.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 44.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 13.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 35.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 54.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 51.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 1.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Spicy Chinese",
+    "dish": "Fish Chilli",
+    "title": "Fish Chilli \u2014 Full",
+    "variation": "Full",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Fish Fry Masala",
+        "qty": 450.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 55.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 6.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 96.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 64.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 13.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 45.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Spicy Chinese",
+    "dish": "Fish Chilli",
+    "title": "Fish Chilli \u2014 Half",
+    "variation": "Half",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Fish Fry Masala",
+        "qty": 250.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 39.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 64.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 44.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 13.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 35.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Parathas & Rolls",
+    "dish": "Aloo Paratha",
+    "title": "Aloo Paratha \u2014 Single",
+    "variation": "Single",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Aloo Parath Mix",
+        "qty": 80.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Atta Dough",
+        "qty": 200.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 1.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "prep",
+        "name": "Raita",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Pickle",
+        "qty": 50.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Parathas & Rolls",
+    "dish": "Cheese Paratha",
+    "title": "Cheese Paratha",
+    "variation": "All variations",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Cheese",
+        "qty": 100.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Olives",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Olives",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Peprika",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Jalepino",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Atta Dough",
+        "qty": 200.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chili \ufb02akes Sachet",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Oregano Sachet",
+        "qty": 2.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Parathas & Rolls",
+    "dish": "Chicken Paratha",
+    "title": "Chicken Paratha \u2014 single",
+    "variation": "Single",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "pc",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Chicken Parath Mix",
+        "qty": 58.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Atta Dough",
+        "qty": 200.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Butter",
+        "qty": 1.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "prep",
+        "name": "Raita",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Pickle",
+        "qty": 50.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Parathas & Rolls",
+    "dish": "Chicken Roll",
+    "title": "Chicken Roll",
+    "variation": "All variations",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Chicken Roll Masala",
+        "qty": 150.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Mayonnaise",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chat Masala",
+        "qty": 2.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Parathas & Rolls",
+    "dish": "Egg + Chicken Roll",
+    "title": "Egg + Chicken Roll",
+    "variation": "All variations",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Chicken Roll Masala",
+        "qty": 150.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Mayonnaise",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chat Masala",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Parathas & Rolls",
+    "dish": "Egg Roll",
+    "title": "Egg Roll",
+    "variation": "All variations",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Mayonnaise",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chat Masala",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Chole Poori/Bhature",
+    "dish": "Bhature",
+    "title": "Bhature",
+    "variation": "All variations",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 70.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Sooji",
+        "qty": 3.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chole Poori/Bhature",
+    "dish": "Chole",
+    "title": "Chole \u2014 masala batch",
+    "variation": "Single",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 634.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Chole Masala",
+        "qty": 634.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chole Poori/Bhature",
+    "dish": "Chole Bhature",
+    "title": "Chole Bhature",
+    "variation": "All variations",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Chole",
+        "qty": 150.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Bhature",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Pickle",
+        "qty": 10.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chole Poori/Bhature",
+    "dish": "Chole Paratha",
+    "title": "Chole Paratha",
+    "variation": "All variations",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Chole",
+        "qty": 150.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Aloo Paratha",
+        "qty": 1.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chole Poori/Bhature",
+    "dish": "Chole Poori",
+    "title": "Chole Poori",
+    "variation": "All variations",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Chole",
+        "qty": 150.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Poori",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Pickle",
+        "qty": 20.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Chole Poori/Bhature",
+    "dish": "Poori",
+    "title": "Poori",
+    "variation": "All variations",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Atta",
+        "qty": 40.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajwain",
+        "qty": 0.16,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Mojitos",
+    "dish": "Blue Thunder",
+    "title": "Blue Thunder",
+    "variation": "All variations",
+    "effectiveFrom": "22 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Blue Curacao",
+        "qty": 30.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Sprite @ 20",
+        "qty": 0.24,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Sugar",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soda",
+        "qty": 300.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Lemon",
+        "qty": 70.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Mint Leaves",
+        "qty": 8.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Mojitos",
+    "dish": "Green Apple",
+    "title": "Green Apple",
+    "variation": "All variations",
+    "effectiveFrom": "22 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Green Apple",
+        "qty": 30.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Sprite @ 20",
+        "qty": 0.24,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Sugar",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soda",
+        "qty": 300.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Lemon",
+        "qty": 70.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Mint Leaves",
+        "qty": 8.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Mojitos",
+    "dish": "Strawberry Mojito",
+    "title": "Strawberry Mojito",
+    "variation": "All variations",
+    "effectiveFrom": "22 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Strawberry Mojito",
+        "qty": 30.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Sprite @ 20",
+        "qty": 0.24,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Sugar",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soda",
+        "qty": 300.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Lemon",
+        "qty": 70.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Mint Leaves",
+        "qty": 8.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Mojitos",
+    "dish": "Virgin Mojito",
+    "title": "Virgin Mojito",
+    "variation": "All variations",
+    "effectiveFrom": "22 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Virgin Mojito",
+        "qty": 30.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Sprite @ 20",
+        "qty": 0.24,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Sugar",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soda",
+        "qty": 300.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Lemon",
+        "qty": 70.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Mint Leaves",
+        "qty": 8.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Mojitos",
+    "dish": "Watermelon Cooler",
+    "title": "Watermelon Cooler",
+    "variation": "All variations",
+    "effectiveFrom": "22 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Water Melon Mojito",
+        "qty": 30.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Sprite @ 20",
+        "qty": 0.24,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Sugar",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soda",
+        "qty": 300.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Lemon",
+        "qty": 70.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Mint Leaves",
+        "qty": 8.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Shakes",
+    "dish": "Blackcurrent Blast",
+    "title": "Blackcurrent Blast \u2014 1 shake",
+    "variation": "Regular",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Black Current Crush",
+        "qty": 30.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Current Gallon",
+        "qty": 105.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Milk",
+        "qty": 180.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Ice Cubes",
+        "qty": 50.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Shakes",
+    "dish": "Classic Chocolate",
+    "title": "Classic Chocolate \u2014 1 shake",
+    "variation": "Regular",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chocolate Gallon",
+        "qty": 105.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Milk",
+        "qty": 180.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Chocolate Syrup",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ice Cubes",
+        "qty": 50.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Shakes",
+    "dish": "Cold Coffee",
+    "title": "Cold Coffee \u2014 1 shake",
+    "variation": "Regular",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Vanilla Gallon",
+        "qty": 105.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ice Cubes",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Milk",
+        "qty": 180.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Chocolate Syrup",
+        "qty": 15.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Coffee Sachet",
+        "qty": 1.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Shakes",
+    "dish": "Kit Kat Milkshake",
+    "title": "Kit Kat Milkshake \u2014 1 shake",
+    "variation": "Regular",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Vanilla Gallon",
+        "qty": 70.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chocolate Gallon",
+        "qty": 35.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kit Kat",
+        "qty": 4.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Chocolate Syrup",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Milk",
+        "qty": 180.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Ice Cubes",
+        "qty": 50.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Shakes",
+    "dish": "Mango Blast",
+    "title": "Mango Blast \u2014 1 shake",
+    "variation": "Regular",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Mango Crush",
+        "qty": 30.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Mango Gallon",
+        "qty": 105.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Milk",
+        "qty": 180.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Ice Cubes",
+        "qty": 50.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Shakes",
+    "dish": "Oreo Biscuit",
+    "title": "Oreo Biscuit \u2014 1 shake",
+    "variation": "Regular",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Vanilla Gallon",
+        "qty": 70.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chocolate Gallon",
+        "qty": 35.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Milk",
+        "qty": 180.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Ice Cubes",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oreo Biscuit",
+        "qty": 1.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Chocolate Syrup",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Shakes",
+    "dish": "Strawberry Sweetness",
+    "title": "Strawberry Sweetness \u2014 1 shake",
+    "variation": "Regular",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Strawberry Crush",
+        "qty": 31.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Strawberry Gallon",
+        "qty": 105.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ice Cubes",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Milk",
+        "qty": 180.0,
+        "unit": "ml"
+      }
+    ]
+  },
+  {
+    "category": "Shakes",
+    "dish": "True Vanilla",
+    "title": "True Vanilla \u2014 1 shake",
+    "variation": "Regular",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Vanilla Gallon",
+        "qty": 140.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Milk",
+        "qty": 180.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Ice Cubes",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chocolate Syrup",
+        "qty": 30.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Soft Drinks",
+    "dish": "Coca-Cola",
+    "title": "Coca-Cola \u2014 250 ml",
+    "variation": "250 ml",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Coca Cola @ 20",
+        "qty": 1.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Soft Drinks",
+    "dish": "Mountain Dew",
+    "title": "Mountain Dew \u2014 250 ml",
+    "variation": "250 ml",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Dev @ 20",
+        "qty": 1.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Soft Drinks",
+    "dish": "Pepsi",
+    "title": "Pepsi \u2014 250 ml",
+    "variation": "250 ml",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Pepsi @ 20",
+        "qty": 1.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Signature Chicken",
+    "dish": "Crispy Chicken",
+    "title": "Crispy Chicken 2 Pcs",
+    "variation": "2 Pcs",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Crispy Chicken",
+        "qty": 180.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Signature Chicken",
+    "dish": "Crispy Chicken",
+    "title": "Crispy Chicken 4 Pcs",
+    "variation": "4 Pcs",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Crispy Chicken",
+        "qty": 360.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Signature Chicken",
+    "dish": "Crispy Chicken",
+    "title": "Crispy Chicken 8 Pcs",
+    "variation": "8 Pcs",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Crispy Chicken",
+        "qty": 720.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Signature Chicken",
+    "dish": "Popcorn Chicken",
+    "title": "Popcorn Large",
+    "variation": "Large",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Popcorn",
+        "qty": 300.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Signature Chicken",
+    "dish": "Popcorn Chicken",
+    "title": "Popcorn Regular",
+    "variation": "Regular",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Popcorn",
+        "qty": 150.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Signature Chicken",
+    "dish": "Strips",
+    "title": "Strips 4 Pcs",
+    "variation": "4 Pcs",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Strips",
+        "qty": 183.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Signature Chicken",
+    "dish": "Strips",
+    "title": "Strips 6 Pcs",
+    "variation": "6 Pcs",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Strips",
+        "qty": 274.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Signature Chicken",
+    "dish": "Strips",
+    "title": "Strips 8 Pcs",
+    "variation": "8 Pcs",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Strips",
+        "qty": 366.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Signature Chicken",
+    "dish": "Wings",
+    "title": "Wings 4 Pcs",
+    "variation": "4 Pcs",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Wings",
+        "qty": 286.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Signature Chicken",
+    "dish": "Wings",
+    "title": "Wings 6 Pcs",
+    "variation": "6 Pcs",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Wings",
+        "qty": 429.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Signature Chicken",
+    "dish": "Wings",
+    "title": "Wings 8 Pcs",
+    "variation": "8 Pcs",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Wings",
+        "qty": 572.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Burgers",
+    "dish": "Tandoori Burger",
+    "title": "Tandoori Burger Single",
+    "variation": "Single",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Burger Slices",
+        "qty": 114.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Burgers",
+    "dish": "Zinger Burger",
+    "title": "Zinger Burger Single",
+    "variation": "Single",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Raw Peri Peri Burger Slices",
+        "qty": 114.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Atta Dough",
+    "title": "Atta Dough",
+    "variation": "All variations",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1500.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Atta",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 50.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Boiled Chicken",
+    "title": "Boiled Chicken \u2014 Batch",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 350.0,
+    "yieldUnit": "portion",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken With Bone",
+        "qty": 500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Turmeric",
+        "qty": 10.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Chicken Roll Masala",
+    "title": "Chicken Roll Masala \u2014 1.4 kg batch",
+    "variation": "Batch",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1400.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "prep",
+        "name": "Semi Fried Boneless Chicken",
+        "qty": 500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cabbage",
+        "qty": 500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 60.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Capsicum",
+        "qty": 60.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli Sauce",
+        "qty": 35.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 53.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Schezwan Sauce",
+        "qty": 80.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Vinegar",
+        "qty": 3.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "White Pepper",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 15.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 7.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 67.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 36.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 72.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Chole Masala",
+    "title": "Chole Masala \u2014 batch",
+    "variation": "Batch",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 634.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Channa Masala",
+        "qty": 15.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 12.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corriandor Powder",
+        "qty": 7.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 16.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 21.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 36.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cardamom",
+        "qty": 1.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tej Patta",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dal Cheeni",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 300.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato",
+        "qty": 150.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 50.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Dum Chicken",
+    "title": "Dum Chicken \u2014 Batch",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 10.0,
+    "yieldUnit": "pcs",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Full Live chicken",
+        "qty": 2000.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Fish Fry Masala",
+    "title": "Fish Fry Masala \u2014 5 kg \ufb01sh batch",
+    "variation": "Batch",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 5471.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Fish Fry Masala",
+        "qty": 15.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Zeera Powder",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 11.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Turmeric",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajwain",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 100.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 160.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ginger Garlic Paste",
+        "qty": 100.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Fish",
+        "qty": 5000.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Indian Gravy",
+    "title": "Indian Gravy \u2014 11.5 kg batch",
+    "variation": "Batch",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 11500.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Onion",
+        "qty": 7300.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cashew",
+        "qty": 500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Magz",
+        "qty": 250.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 25.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corriandor Powder",
+        "qty": 15.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Zeera Powder",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ginger Garlic Paste",
+        "qty": 200.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 900.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Turmeric",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dal Cheeni",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Clove",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Cardamom",
+        "qty": 2.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Star Masala",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tej Patta",
+        "qty": 3.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Momos Dough",
+    "title": "Momos Dough",
+    "variation": "All variations",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 3190.0,
+    "yieldUnit": "kg",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 2000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Milk",
+        "qty": 500.0,
+        "unit": "ml"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Naan Dough",
+    "title": "Naan Dough \u2014 4.5 kg batch",
+    "variation": "Batch",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 4500.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 2500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kalonji",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dhaniya",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Water",
+        "qty": 1974.0,
+        "unit": "ml"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Peri Peri Marinade",
+    "title": "Peri Peri Marinade \u2014 full batch (with maida coating)",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1072.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Curd",
+        "qty": 500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Peri Peri Masla",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic powder",
+        "qty": 12.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Pipla Mirchi",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Chili \ufb02akes Sachet",
+        "qty": 1.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Turmeric",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Aromatic Mix",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Soya Sauce",
+        "qty": 12.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tomato Sauce",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ginger Garlic Paste",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 45.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 250.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Pizza Dough",
+    "title": "Pizza Dough \u2014 5 kg batch",
+    "variation": "Batch",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 5000.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Yeast",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Sugar",
+        "qty": 40.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 35.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 3330.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Water",
+        "qty": 1555.0,
+        "unit": "ml"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Raita",
+    "title": "Raita \u2014 batch",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1305.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Curd",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Water",
+        "qty": 200.0,
+        "unit": "ml"
+      },
+      {
+        "kind": "stock",
+        "name": "Carrot",
+        "qty": 100.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 5.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Raw Aloo Parath Mix",
+    "title": "Raw Aloo Parath Mix \u2014 batch",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1094.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Potato",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 25.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajwain",
+        "qty": 4.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 5.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Raw Chicken Parath Mix",
+    "title": "Raw Chicken Parath Mix \u2014 batch",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1158.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken Boneless",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 36.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 36.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 18.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 18.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajwain",
+        "qty": 6.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 36.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 8.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Raw Peri Peri Burger Slices",
+    "title": "Raw Peri Peri Burger Slices \u2014 1 kg batch",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1143.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken Boneless",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Peri Peri Marinade",
+        "qty": 143.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Raw Peri Peri Crispy Chicken",
+    "title": "Raw Peri Peri Crispy Chicken \u2014 1 kg batch",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1143.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken Boneless",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Peri Peri Marinade",
+        "qty": 143.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Raw Peri Peri Popcorn",
+    "title": "Raw Peri Peri Popcorn \u2014 1 kg batch",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1143.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken Boneless",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Peri Peri Marinade",
+        "qty": 143.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Raw Peri Peri Strips",
+    "title": "Raw Peri Peri Strips \u2014 1 kg batch",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1143.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken Boneless",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Peri Peri Marinade",
+        "qty": 143.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Raw Peri Peri Wings",
+    "title": "Raw Peri Peri Wings \u2014 1 kg batch",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 1143.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken With Bone",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "prep",
+        "name": "Peri Peri Marinade",
+        "qty": 143.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Red Chutni",
+    "title": "Red Chutni \u2014 Batch",
+    "variation": "Batch",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 10850.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Tomato",
+        "qty": 5000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Pipla Mirchi",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garlic",
+        "qty": 800.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Dhaniya",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Black Pepper Powder",
+        "qty": 100.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 1000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 650.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 800.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 2000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ginger Garlic Paste",
+        "qty": 500.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Roll Dough",
+    "title": "Roll Dough \u2014 batch",
+    "variation": "Batch",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 1500.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 1500.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 1.0,
+        "unit": "pc"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Semi Fried Boneless Chicken",
+    "title": "Semi Fried Boneless Chicken \u2014 Batch",
+    "variation": "Batch",
+    "effectiveFrom": "25 Jul 2026",
+    "yieldQty": 7325.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Chicken Boneless",
+        "qty": 6800.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corriandor Powder",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 15.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 25.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 50.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 5.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ginger Garlic Paste",
+        "qty": 80.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Egg",
+        "qty": 2.0,
+        "unit": "pc"
+      },
+      {
+        "kind": "stock",
+        "name": "Maida",
+        "qty": 100.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corn Flour",
+        "qty": 200.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Food Colour",
+        "qty": 2.0,
+        "unit": "g"
+      }
+    ]
+  },
+  {
+    "category": "Raw Items",
+    "dish": "Tandoori Masala Mix",
+    "title": "Tandoori Masala Mix \u2014 full batch",
+    "variation": "Batch",
+    "effectiveFrom": "26 Jul 2026",
+    "yieldQty": 2548.0,
+    "yieldUnit": "g",
+    "ingredients": [
+      {
+        "kind": "stock",
+        "name": "Curd",
+        "qty": 2000.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Oil",
+        "qty": 150.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ginger Garlic Paste",
+        "qty": 115.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Green Chilli",
+        "qty": 80.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Tandoori Masala",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Meat Masala",
+        "qty": 17.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kitchen King",
+        "qty": 20.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Ajina Moto",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Salt",
+        "qty": 30.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Corriandor Powder",
+        "qty": 8.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Red Chilli Powder",
+        "qty": 25.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Garam Masala",
+        "qty": 10.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Kasoori Methi",
+        "qty": 3.0,
+        "unit": "g"
+      },
+      {
+        "kind": "stock",
+        "name": "Lemon",
+        "qty": 60.0,
+        "unit": "g"
+      }
+    ]
+  }
+]

@@ -19,8 +19,7 @@ export const MENU_CATEGORY_DEFAULTS: MenuCategoryDef[] = [
   { name: "Momo Mania", image: "/menu/steamed-chicken-momo.jpg", icon: "soup" },
   { name: "Rice Royale", image: "/menu/dum-chicken-biryani.jpg", icon: "wheat" },
   { name: "Tandoor Breads", image: "/menu/butter-garlic-naan.jpg", icon: "flame" },
-  { name: "Crispy Bites", image: "/menu/fried-chicken.jpg", icon: "cookie" },
-  { name: "Fries & More", image: "/menu/peri-peri-fries.jpg", icon: "sandwich" },
+  { name: "Fries & Crispies", image: "/menu/peri-peri-fries.jpg", icon: "sandwich" },
   { name: "Noodle Hub", image: "/menu/chicken-chowmein.jpg", icon: "soup" },
   { name: "Spicy Chinese", image: "/menu/chilli-chicken.jpg", icon: "flame" },
   { name: "Parathas & Rolls", image: "/menu/chicken-paratha.jpg", icon: "croissant" },
@@ -141,18 +140,17 @@ function defaultAddonsForItem(item: MenuItemInput): MenuAddon[] {
         { id: "ia-extra-capsicum", name: "Extra Capsicum", price: 20 },
         { id: "ia-extra-onion", name: "Extra Onion", price: 15 },
       ];
-    case "Fries & More":
-      return [...ADDONS_FRIES];
-    case "Shakes":
-      return [...ADDONS_SHAKES];
-    case "Mojitos":
-      return [...ADDONS_MOJITOS];
-    case "Crispy Bites":
+    case "Fries & Crispies":
       return [
+        ...ADDONS_FRIES,
         { id: "ia-lemon-wedge", name: "Lemon Wedge", price: 5 },
         { id: "ia-mint-mayo-dip", name: "Mint Mayo Dip", price: 20 },
         { id: "ia-spicy-dip", name: "Spicy Dip", price: 20 },
       ];
+    case "Shakes":
+      return [...ADDONS_SHAKES];
+    case "Mojitos":
+      return [...ADDONS_MOJITOS];
     case "Tandoor Breads":
       return [{ id: "ia-extra-butter-bread", name: "Extra Butter", price: 10 }];
     case "Soft Drinks":
@@ -363,6 +361,14 @@ const menuItemsRaw: MenuItemInput[] = [
     variations: [{ id: "fish-fry-masala", name: "Batch", price: 0 }],
   },
   {
+    id: "fried-chicken-masala",
+    name: "Fried Chicken Masala",
+    category: "Raw Items",
+    isVeg: false,
+    available: false,
+    variations: [{ id: "fried-chicken-masala", name: "Batch", price: 0 }],
+  },
+  {
     id: "peri-peri-marinade",
     name: "Peri Peri Marinade",
     category: "Raw Items",
@@ -481,25 +487,6 @@ const menuItemsRaw: MenuItemInput[] = [
     isVeg: false,
     available: false,
     variations: [{ id: "raw-chicken-parath-mix", name: "Batch", price: 0 }],
-  },
-
-  // Crispy Bites
-  {
-    id: "fried-chicken",
-    name: "Fried Chicken",
-    category: "Crispy Bites",
-    isVeg: false,
-    variations: [
-      { id: "fried-chicken-half", name: "Half", price: 250 },
-      { id: "fried-chicken-full", name: "Full", price: 550 },
-    ],
-  },
-  {
-    id: "fried-fish",
-    name: "Fried Fish",
-    category: "Crispy Bites",
-    isVeg: false,
-    variations: [{ id: "fried-fish", name: "1 KG", price: 500 }],
   },
 
   // Chef Specials
@@ -958,11 +945,11 @@ const menuItemsRaw: MenuItemInput[] = [
     ],
   },
 
-  // Fries & More
+  // Fries & Crispies
   {
     id: "french-fries",
     name: "French Fries",
-    category: "Fries & More",
+    category: "Fries & Crispies",
     isVeg: true,
     variations: [
       { id: "french-fries-half", name: "Half", price: 70 },
@@ -972,7 +959,7 @@ const menuItemsRaw: MenuItemInput[] = [
   {
     id: "peri-peri-fries",
     name: "Peri Peri Fries",
-    category: "Fries & More",
+    category: "Fries & Crispies",
     isVeg: true,
     variations: [
       { id: "peri-peri-fries-half", name: "Half", price: 80 },
@@ -982,7 +969,7 @@ const menuItemsRaw: MenuItemInput[] = [
   {
     id: "chilli-potato",
     name: "Chilli Potato",
-    category: "Fries & More",
+    category: "Fries & Crispies",
     isVeg: true,
     variations: [
       { id: "chilli-potato-half", name: "Half", price: 100 },
@@ -992,12 +979,29 @@ const menuItemsRaw: MenuItemInput[] = [
   {
     id: "honey-chilli-potato",
     name: "Honey Chilli Potato",
-    category: "Fries & More",
+    category: "Fries & Crispies",
     isVeg: true,
     variations: [
       { id: "honey-chilli-potato-half", name: "Half", price: 120 },
       { id: "honey-chilli-potato-full", name: "Full", price: 220 },
     ],
+  },
+  {
+    id: "fried-chicken",
+    name: "Fried Chicken",
+    category: "Fries & Crispies",
+    isVeg: false,
+    variations: [
+      { id: "fried-chicken-half", name: "Half", price: 250 },
+      { id: "fried-chicken-full", name: "Full", price: 550 },
+    ],
+  },
+  {
+    id: "fried-fish",
+    name: "Fried Fish",
+    category: "Fries & Crispies",
+    isVeg: false,
+    variations: [{ id: "fried-fish", name: "1 KG", price: 500 }],
   },
 ];
 

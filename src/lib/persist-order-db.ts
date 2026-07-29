@@ -13,6 +13,7 @@ import {
   buildOrderDisplayRef,
   formatDdMMyyIST,
 } from "@/lib/order-ref";
+import { ORDER_TX_OPTIONS } from "@/lib/order-tx-options";
 import { getPrisma } from "@/lib/prisma";
 import { normalizeIndianMobileDigits } from "@/lib/phone-digits";
 
@@ -127,7 +128,7 @@ export async function persistOrderToDatabase(
     }
 
     return { orderRef };
-  });
+  }, ORDER_TX_OPTIONS);
 }
 
 /** Walk-in / POS: upsert customer by phone and create order (no customer session). No outbound notifications. */
@@ -140,6 +141,13 @@ export async function persistPosOrderToDatabase(
     adminUserId?: string | null;
     /** Display name when creator is known but may not match a server user id. */
     createdByLabel?: string | null;
+    /**
+     * Business datetime for the sale (IST day for reports, refs, COGS).
+     * When set, order.createdAt and inventory occurredAt use this instead of wall-clock now.
+     */
+    soldAt?: Date;
+    /** Mark as an admin backdated / catch-up sale in notes + audit event. */
+    historical?: boolean;
   },
 ): Promise<{ orderRef: string }> {
   const prisma = getPrisma();
@@ -154,6 +162,11 @@ export async function persistPosOrderToDatabase(
 
   const paymentKey = (options?.paymentMethodKey ?? "").trim().slice(0, 64);
   const dineInTable = (options?.dineInTable ?? "").trim().slice(0, 80);
+  const historical = options?.historical === true;
+  const soldAt =
+    options?.soldAt instanceof Date && !Number.isNaN(options.soldAt.getTime())
+      ? options.soldAt
+      : null;
 
   return prisma.$transaction(async (tx) => {
     const customer = await tx.customer.upsert({
@@ -165,9 +178,19 @@ export async function persistPosOrderToDatabase(
       update: { displayName: parsed.customerName },
     });
 
-    const now = new Date();
-    const seq = await allocateNextOrderSequence(tx, now);
-    const orderRef = buildOrderDisplayRef(formatDdMMyyIST(now), seq);
+    const at = soldAt ?? new Date();
+    const seq = await allocateNextOrderSequence(tx, at);
+    const orderRef = buildOrderDisplayRef(formatDdMMyyIST(at), seq);
+
+    const historicalTag = "[Backdated sale]";
+    let notes = parsed.notes.trim();
+    if (historical) {
+      notes = notes
+        ? notes.includes(historicalTag)
+          ? notes
+          : `${historicalTag} ${notes}`.slice(0, 2000)
+        : historicalTag;
+    }
 
     await tx.order.create({
       data: {
@@ -180,7 +203,7 @@ export async function persistPosOrderToDatabase(
         scheduledAt,
         address: parsed.address,
         landmark: parsed.landmark,
-        notes: parsed.notes,
+        notes,
         latitude: parsed.latitude,
         longitude: parsed.longitude,
         totalMinor,
@@ -191,6 +214,7 @@ export async function persistPosOrderToDatabase(
         paymentMethod: paymentKey,
         dineInTable,
         createdByUserId: options?.adminUserId ?? null,
+        createdAt: at,
         lines: {
           create: parsed.lines.map((line, sortIndex) => ({
             sortIndex,
@@ -205,7 +229,7 @@ export async function persistPosOrderToDatabase(
       orderId,
       parsed,
       options?.adminUserId ?? null,
-      now,
+      at,
     );
 
     const createdByLabel = (options?.createdByLabel ?? "").trim().slice(0, 160);
@@ -216,7 +240,9 @@ export async function persistPosOrderToDatabase(
         options?.adminUserId || createdByLabel ? "USER" : "POS_SYNC",
       actorUserId: options?.adminUserId ?? null,
       actorLabel: createdByLabel || undefined,
-      summary: `POS order created (${orderRef})`,
+      summary: historical
+        ? `Backdated POS sale recorded (${orderRef})`
+        : `POS order created (${orderRef})`,
       after: orderSnapshotForAudit({
         status: "ACCEPTED",
         totalMinor,
@@ -225,7 +251,7 @@ export async function persistPosOrderToDatabase(
         fulfillment: parsed.fulfillment,
         paymentMethod: paymentKey,
         dineInTable,
-        notes: parsed.notes,
+        notes,
         address: parsed.address,
         lineCount: parsed.lines.length,
       }),
@@ -241,5 +267,5 @@ export async function persistPosOrderToDatabase(
     }
 
     return { orderRef };
-  });
+  }, ORDER_TX_OPTIONS);
 }

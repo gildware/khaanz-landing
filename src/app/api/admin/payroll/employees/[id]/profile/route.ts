@@ -4,7 +4,7 @@ import type { AttendanceKind } from "@prisma/client";
 
 import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import { computePayroll, buildPayrollAttendance } from "@/lib/payroll/payroll-calc";
-import { monthKeyFromDate, monthStartEnd } from "@/lib/payroll/payroll-utils";
+import { monthKeyFromDate, monthStartEnd, formatDayKeyLabel } from "@/lib/payroll/payroll-utils";
 import { getPrisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -52,7 +52,9 @@ export async function GET(
       prisma.payrollEmployeeLine.findMany({
         where: { employeeId: id },
         include: {
-          payrollRun: { select: { monthKey: true, createdAt: true } },
+          payrollRun: {
+            select: { monthKey: true, startDayKey: true, endDayKey: true, createdAt: true },
+          },
         },
         orderBy: [{ payrollRun: { monthKey: "desc" } }],
         take: 24,
@@ -168,6 +170,9 @@ export async function GET(
     payrollHistory: payrollLines.map((l) => ({
       id: l.id,
       monthKey: l.payrollRun.monthKey,
+      startDayKey: l.payrollRun.startDayKey,
+      endDayKey: l.payrollRun.endDayKey,
+      periodLabel: formatDayKeyLabel(l.payrollRun.startDayKey, l.payrollRun.endDayKey),
       runCreatedAt: l.payrollRun.createdAt.toISOString(),
       monthlySalaryPaise: l.monthlySalaryPaise,
       dailyRatePaise: l.dailyRatePaise,

@@ -1,0 +1,65 @@
+html:has(.recipe-book-layout),
+body:has(.recipe-book-layout) {
+  overflow: hidden;
+  height: 100%;
+}
+
+.admin-panel-content:has(.recipe-book-layout) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 1.5rem;
+}
+
+.recipe-book-layout {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media print {
+  html:has(.recipe-book-layout),
+  body:has(.recipe-book-layout) {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  aside,
+  .admin-panel-root > aside {
+    display: none !important;
+  }
+
+  .admin-panel-root,
+  .admin-panel-root > div,
+  .admin-panel-content,
+  .recipe-book-layout,
+  .recipe-book-page-shell,
+  .recipe-book-preview-scroll,
+  .recipe-book-print-root {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    position: static !important;
+    display: block !important;
+  }
+
+  .admin-panel-content {
+    padding: 0 !important;
+  }
+
+  .recipe-book-toolbar {
+    display: none !important;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}

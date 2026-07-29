@@ -10,6 +10,7 @@ import {
 } from "@/lib/order-events";
 import { canEditPosOrder } from "@/lib/order-status-workflow";
 import { computeOrderTotalMinor } from "@/lib/order-total";
+import { ORDER_TX_OPTIONS } from "@/lib/order-tx-options";
 import type { OrderCreateParsed } from "@/lib/parse-order-create-body";
 import { normalizeIndianMobileDigits } from "@/lib/phone-digits";
 import { getPrisma } from "@/lib/prisma";
@@ -143,7 +144,7 @@ export async function editOnlineOrder(
       });
 
       return u;
-    });
+    }, ORDER_TX_OPTIONS);
 
     return {
       ok: true,
@@ -314,7 +315,7 @@ export async function editPosOrder(
       });
 
       return u;
-    });
+    }, ORDER_TX_OPTIONS);
 
     return {
       ok: true,

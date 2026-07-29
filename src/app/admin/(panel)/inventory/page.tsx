@@ -29,6 +29,12 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 
+import {
+  AdminChartGridSkeleton,
+  AdminInventorySkeleton,
+  AdminKpiGridSkeleton,
+  AdminTableSkeleton,
+} from "@/components/admin/admin-page-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,6 +51,7 @@ import {
   SearchableSelect,
   type SearchableSelectOption,
 } from "@/components/ui/searchable-select";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -79,6 +86,12 @@ function cx(...x: Array<string | false | null | undefined>): string {
 }
 
 type Summary = {
+  settings?: {
+    costingMethod: string;
+    restoreStockOnCancel: boolean;
+    allowNegativeStock: boolean;
+  };
+  expiry?: ExpiryReport;
   kpis: {
     totalInventoryValuePaise: number;
     activeItemsCount: number;
@@ -400,6 +413,16 @@ function isMenuItemRecipeLine(
   return ing.kind === "menu_item" || Boolean(ing.componentMenuItemId);
 }
 
+/** When a dish has exactly one variation, recipes should target it (not "All variations"). */
+function soleVariationId(
+  variations: { id: string }[] | undefined,
+): string | null {
+  return variations?.length === 1 ? variations[0]!.id : null;
+}
+
+const recipeByNewest = (a: RecipeRow, b: RecipeRow) =>
+  b.effectiveFrom.localeCompare(a.effectiveFrom) || b.version - a.version;
+
 /** Pick the best matching recipe version for a menu item (+ optional variation). */
 function pickRecipeForComponent(
   recipes: RecipeRow[],
@@ -408,19 +431,47 @@ function pickRecipeForComponent(
 ): RecipeRow | null {
   const candidates = recipes.filter((r) => r.menuItemId === menuItemId);
   if (candidates.length === 0) return null;
-  const byNewest = (a: RecipeRow, b: RecipeRow) =>
-    b.effectiveFrom.localeCompare(a.effectiveFrom) || b.version - a.version;
   if (variationId) {
     const specific = candidates
       .filter((r) => r.variationId === variationId)
-      .sort(byNewest)[0];
+      .sort(recipeByNewest)[0];
     if (specific) return specific;
   }
   return (
-    candidates.filter((r) => r.variationId === null).sort(byNewest)[0] ??
-    candidates.sort(byNewest)[0] ??
+    candidates.filter((r) => r.variationId === null).sort(recipeByNewest)[0] ??
+    candidates.sort(recipeByNewest)[0] ??
     null
   );
+}
+
+/** Latest recipe for a specific variation (no null/"all" fallback). */
+function pickLatestRecipeForVariation(
+  recipes: RecipeRow[],
+  menuItemId: string,
+  variationId: string,
+): RecipeRow | null {
+  return (
+    recipes
+      .filter((r) => r.menuItemId === menuItemId && r.variationId === variationId)
+      .sort(recipeByNewest)[0] ?? null
+  );
+}
+
+function recipeIngredientLineKey(ln: {
+  kind: "inventory" | "menu_item";
+  inventoryItemId: string;
+  componentMenuItemId: string;
+  componentVariationId: string;
+}): string {
+  if (ln.kind === "inventory") return `inv:${ln.inventoryItemId}`;
+  return `menu:${ln.componentMenuItemId}:${ln.componentVariationId || ""}`;
+}
+
+function recipeIngredientRowKey(ing: RecipeIngredientRow): string {
+  if (isMenuItemRecipeLine(ing)) {
+    return `menu:${ing.componentMenuItemId}:${ing.componentVariationId || ""}`;
+  }
+  return `inv:${ing.inventoryItemId}`;
 }
 
 /** Client-side cost estimate including nested menu-item components. */
@@ -1128,6 +1179,19 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export default function AdminInventoryPage() {
+  const [activeTab, setActiveTab] = useTabParam("overview");
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [tabsReady, setTabsReady] = useState<Record<string, boolean>>({});
+  const settingsLoadedRef = useRef(false);
+  const itemsLoadedRef = useRef(false);
+  const suppliersLoadedRef = useRef(false);
+  const purchasesLoadedRef = useRef(false);
+  const recipesLoadedRef = useRef(false);
+  const menuLoadedRef = useRef(false);
+  const movementsLoadedRef = useRef(false);
+  const stockSalesLoadedRef = useRef(false);
+  const loadingTabRef = useRef<string | null>(null);
+
   const [summary, setSummary] = useState<Summary | null>(null);
   const [items, setItems] = useState<InvItem[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -1142,11 +1206,19 @@ export default function AdminInventoryPage() {
   const loadSummary = useCallback(async () => {
     const s = await adminFetch<Summary>("/api/admin/inventory/reports/summary");
     setSummary(s);
+    if (s.settings) {
+      setSettings(s.settings);
+      settingsLoadedRef.current = true;
+    }
+    if (s.expiry) {
+      setExpiry(s.expiry);
+    }
   }, []);
 
   const loadItems = useCallback(async () => {
     const r = await adminFetch<{ items: InvItem[] }>("/api/admin/inventory/items");
     setItems(r.items);
+    itemsLoadedRef.current = true;
   }, []);
 
   const loadSuppliers = useCallback(async () => {
@@ -1154,6 +1226,7 @@ export default function AdminInventoryPage() {
       "/api/admin/inventory/suppliers",
     );
     setSuppliers(r.suppliers);
+    suppliersLoadedRef.current = true;
   }, []);
 
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
@@ -1179,11 +1252,13 @@ export default function AdminInventoryPage() {
       "/api/admin/inventory/purchases",
     );
     setPurchases(r.purchases);
+    purchasesLoadedRef.current = true;
   }, []);
 
   const loadRecipesList = useCallback(async () => {
     const r = await adminFetch<{ recipes: RecipeRow[] }>("/api/admin/inventory/recipes");
     setRecipesList(r.recipes);
+    recipesLoadedRef.current = true;
   }, []);
 
   const loadMovements = useCallback(async () => {
@@ -1191,6 +1266,7 @@ export default function AdminInventoryPage() {
       "/api/admin/inventory/movements",
     );
     setMovements(r.movements);
+    movementsLoadedRef.current = true;
   }, []);
 
   const loadStockSales = useCallback(async () => {
@@ -1209,11 +1285,18 @@ export default function AdminInventoryPage() {
       }[];
     }>("/api/admin/inventory/stock-sales?limit=100");
     setStockSales(r.entries);
+    stockSalesLoadedRef.current = true;
   }, []);
 
   const loadMenu = useCallback(async () => {
-    const r = await adminFetch<MenuPayload>("/api/menu");
-    setMenu(r);
+    // Slim catalog only (id/name/category/variations) — not full /api/menu.
+    const data = await adminFetch<{ menu?: MenuPayload }>(
+      "/api/admin/inventory/bootstrap?tab=recipes&have=settings,items,recipes",
+    );
+    if (data.menu) {
+      setMenu(data.menu);
+      menuLoadedRef.current = true;
+    }
   }, []);
 
   const loadSettings = useCallback(async () => {
@@ -1223,6 +1306,7 @@ export default function AdminInventoryPage() {
       allowNegativeStock: boolean;
     }>("/api/admin/inventory/settings");
     setSettings(r);
+    settingsLoadedRef.current = true;
   }, []);
 
   const loadExpiry = useCallback(async () => {
@@ -1230,37 +1314,138 @@ export default function AdminInventoryPage() {
     setExpiry(r);
   }, []);
 
+  type TabBootstrap = {
+    tab: string;
+    settings?: {
+      costingMethod: string;
+      restoreStockOnCancel: boolean;
+      allowNegativeStock: boolean;
+    };
+    items?: InvItem[];
+    suppliers?: Supplier[];
+    purchases?: PurchaseRow[];
+    recipes?: RecipeRow[];
+    menu?: MenuPayload;
+    movements?: MovementRow[];
+    stockSales?: typeof stockSales;
+  };
+
+  const loadTabBootstrap = useCallback(async (tab: string) => {
+    const partsByTab: Record<string, string[]> = {
+      items: ["settings", "items"],
+      suppliers: ["suppliers", "purchases"],
+      purchase: ["purchases", "suppliers", "items"],
+      recipes: ["settings", "recipes", "menu", "items"],
+      sell: ["stockSales", "items"],
+      ops: ["settings", "movements", "items"],
+    };
+    const needed = partsByTab[tab] ?? [];
+    const have: string[] = [];
+    if (settingsLoadedRef.current) have.push("settings");
+    if (itemsLoadedRef.current) have.push("items");
+    if (suppliersLoadedRef.current) have.push("suppliers");
+    if (purchasesLoadedRef.current) have.push("purchases");
+    if (recipesLoadedRef.current) have.push("recipes");
+    if (menuLoadedRef.current) have.push("menu");
+    if (movementsLoadedRef.current) have.push("movements");
+    if (stockSalesLoadedRef.current) have.push("stockSales");
+
+    // Shared caches mean tab switches after the first visit are instant.
+    if (needed.length > 0 && needed.every((p) => have.includes(p))) {
+      return;
+    }
+
+    const qs = new URLSearchParams({ tab });
+    if (have.length) qs.set("have", have.join(","));
+
+    const data = await adminFetch<TabBootstrap>(
+      `/api/admin/inventory/bootstrap?${qs.toString()}`,
+    );
+
+    if (data.settings) {
+      setSettings(data.settings);
+      settingsLoadedRef.current = true;
+    }
+    if (data.items) {
+      setItems(data.items);
+      itemsLoadedRef.current = true;
+    }
+    if (data.suppliers) {
+      setSuppliers(data.suppliers);
+      suppliersLoadedRef.current = true;
+    }
+    if (data.purchases) {
+      setPurchases(data.purchases);
+      purchasesLoadedRef.current = true;
+    }
+    if (data.recipes) {
+      setRecipesList(data.recipes);
+      recipesLoadedRef.current = true;
+    }
+    if (data.menu) {
+      setMenu(data.menu);
+      menuLoadedRef.current = true;
+    }
+    if (data.movements) {
+      setMovements(data.movements);
+      movementsLoadedRef.current = true;
+    }
+    if (data.stockSales) {
+      setStockSales(data.stockSales);
+      stockSalesLoadedRef.current = true;
+    }
+  }, []);
+
   useEffect(() => {
+    if (tabsReady[activeTab]) {
+      setInitialLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const tab = activeTab;
+    loadingTabRef.current = tab;
+
     void (async () => {
       try {
-        await Promise.all([
-          loadSummary(),
-          loadItems(),
-          loadSuppliers(),
-          loadPurchases(),
-          loadRecipesList(),
-          loadMovements(),
-          loadStockSales(),
-          loadMenu(),
-          loadSettings(),
-          loadExpiry(),
-        ]);
+        if (tab === "overview") {
+          await loadSummary();
+        } else if (
+          tab === "items" ||
+          tab === "suppliers" ||
+          tab === "purchase" ||
+          tab === "recipes" ||
+          tab === "sell" ||
+          tab === "ops"
+        ) {
+          await loadTabBootstrap(tab);
+        } else {
+          await loadSummary();
+        }
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Failed to load inventory");
+        if (!cancelled) {
+          toast.error(e instanceof Error ? e.message : "Failed to load inventory");
+        }
+      } finally {
+        if (loadingTabRef.current === tab) {
+          loadingTabRef.current = null;
+        }
+        if (!cancelled) {
+          setTabsReady((prev) =>
+            prev[tab] ? prev : { ...prev, [tab]: true },
+          );
+          setInitialLoading(false);
+        }
       }
     })();
-  }, [
-    loadExpiry,
-    loadItems,
-    loadMenu,
-    loadMovements,
-    loadPurchases,
-    loadRecipesList,
-    loadSettings,
-    loadStockSales,
-    loadSummary,
-    loadSuppliers,
-  ]);
+
+    return () => {
+      cancelled = true;
+      if (loadingTabRef.current === tab) {
+        loadingTabRef.current = null;
+      }
+    };
+  }, [activeTab, tabsReady, loadSummary, loadTabBootstrap]);
 
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -1806,7 +1991,10 @@ export default function AdminInventoryPage() {
     inventoryItemId: string;
     componentMenuItemId: string;
     componentVariationId: string;
+    /** Qty for the active (selected) variation. */
     qtyBase: string;
+    /** Variation-wise qtys when viewing/editing all variations. */
+    qtyByVariationId: Record<string, string>;
   };
 
   const emptyRecipeIngredient = (
@@ -1818,6 +2006,7 @@ export default function AdminInventoryPage() {
     componentMenuItemId: "",
     componentVariationId: "",
     qtyBase: "",
+    qtyByVariationId: {},
   });
 
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredientDraft[]>([
@@ -1831,17 +2020,31 @@ export default function AdminInventoryPage() {
   );
   const [copyingRecipe, setCopyingRecipe] = useState(false);
   const [recipeSubmitting, setRecipeSubmitting] = useState(false);
+  /** Show a Qty column per variation in the ingredients table. */
+  const [showAllVariationQtys, setShowAllVariationQtys] = useState(false);
 
-  const recipeIngredientFromRow = (ing: RecipeIngredientRow): RecipeIngredientDraft => {
+  const recipeIngredientFromRow = (
+    ing: RecipeIngredientRow,
+    variationId?: string | null,
+  ): RecipeIngredientDraft => {
     const qtyBase = formatRecipeQtyBase(ing.qtyBase);
+    const qtyByVariationId =
+      variationId && qtyBase ? { [variationId]: qtyBase } : {};
     if (isMenuItemRecipeLine(ing)) {
+      const compItem = (menu?.items ?? []).find(
+        (x) => x.id === ing.componentMenuItemId,
+      );
       return {
         id: crypto.randomUUID(),
         kind: "menu_item",
         inventoryItemId: "",
         componentMenuItemId: ing.componentMenuItemId,
-        componentVariationId: ing.componentVariationId ?? "",
+        componentVariationId:
+          ing.componentVariationId ||
+          soleVariationId(compItem?.variations) ||
+          "",
         qtyBase,
+        qtyByVariationId,
       };
     }
     return {
@@ -1851,7 +2054,138 @@ export default function AdminInventoryPage() {
       componentMenuItemId: "",
       componentVariationId: "",
       qtyBase,
+      qtyByVariationId,
     };
+  };
+
+  /** Merge sibling variation recipes into a qty-per-variation matrix. */
+  const mergeSiblingVariationQtys = (
+    lines: RecipeIngredientDraft[],
+    menuItemId: string,
+    variations: { id: string; name: string }[],
+    activeVariationId: string,
+  ): RecipeIngredientDraft[] => {
+    const byKey = new Map<string, RecipeIngredientDraft>();
+
+    const ensureLine = (
+      key: string,
+      base: Omit<RecipeIngredientDraft, "id" | "qtyBase" | "qtyByVariationId"> & {
+        qtyBase?: string;
+        qtyByVariationId?: Record<string, string>;
+      },
+    ) => {
+      let row = byKey.get(key);
+      if (!row) {
+        row = {
+          id: crypto.randomUUID(),
+          kind: base.kind,
+          inventoryItemId: base.inventoryItemId,
+          componentMenuItemId: base.componentMenuItemId,
+          componentVariationId: base.componentVariationId,
+          qtyBase: "",
+          qtyByVariationId: {},
+        };
+        byKey.set(key, row);
+      }
+      return row;
+    };
+
+    // Seed from saved sibling recipes first…
+    for (const v of variations) {
+      const sibling = pickLatestRecipeForVariation(
+        recipesList,
+        menuItemId,
+        v.id,
+      );
+      if (!sibling) continue;
+      for (const ing of sibling.ingredients) {
+        const key = recipeIngredientRowKey(ing);
+        const qty = formatRecipeQtyBase(ing.qtyBase);
+        if (!qty) continue;
+        if (isMenuItemRecipeLine(ing)) {
+          const compItem = (menu?.items ?? []).find(
+            (x) => x.id === ing.componentMenuItemId,
+          );
+          const row = ensureLine(key, {
+            kind: "menu_item",
+            inventoryItemId: "",
+            componentMenuItemId: ing.componentMenuItemId,
+            componentVariationId:
+              ing.componentVariationId ||
+              soleVariationId(compItem?.variations) ||
+              "",
+          });
+          row.qtyByVariationId[v.id] = qty;
+        } else {
+          const row = ensureLine(key, {
+            kind: "inventory",
+            inventoryItemId: ing.inventoryItemId,
+            componentMenuItemId: "",
+            componentVariationId: "",
+          });
+          row.qtyByVariationId[v.id] = qty;
+        }
+      }
+    }
+
+    // …then overlay the in-form lines so unsaved edits win.
+    for (const ln of lines) {
+      const key =
+        ln.kind === "inventory" && !ln.inventoryItemId
+          ? `draft:${ln.id}`
+          : ln.kind === "menu_item" && !ln.componentMenuItemId
+            ? `draft:${ln.id}`
+            : recipeIngredientLineKey(ln);
+      const row = ensureLine(key, ln);
+      row.kind = ln.kind;
+      row.inventoryItemId = ln.inventoryItemId;
+      row.componentMenuItemId = ln.componentMenuItemId;
+      row.componentVariationId = ln.componentVariationId;
+      for (const [vid, q] of Object.entries(ln.qtyByVariationId)) {
+        if (q) row.qtyByVariationId[vid] = q;
+      }
+      const activeQty =
+        (activeVariationId && ln.qtyByVariationId[activeVariationId]) ||
+        ln.qtyBase;
+      if (activeVariationId && activeQty) {
+        row.qtyByVariationId[activeVariationId] = activeQty;
+      }
+    }
+
+    const merged = [...byKey.values()].map((ln) => ({
+      ...ln,
+      qtyBase: activeVariationId
+        ? (ln.qtyByVariationId[activeVariationId] ?? "")
+        : ln.qtyBase,
+    }));
+
+    return merged.length > 0 ? merged : [emptyRecipeIngredient()];
+  };
+
+  const setIngredientQtyForVariation = (
+    lineId: string,
+    variationId: string | null,
+    value: string,
+  ) => {
+    setRecipeIngredients((x) =>
+      x.map((r) => {
+        if (r.id !== lineId) return r;
+        const qtyByVariationId = { ...r.qtyByVariationId };
+        if (variationId) {
+          if (value) qtyByVariationId[variationId] = value;
+          else delete qtyByVariationId[variationId];
+        }
+        const isActive =
+          !variationId ||
+          variationId === recipe.variationId ||
+          !recipe.variationId;
+        return {
+          ...r,
+          qtyByVariationId,
+          qtyBase: isActive ? value : r.qtyBase,
+        };
+      }),
+    );
   };
 
   const resetRecipeForm = () => {
@@ -1866,17 +2200,31 @@ export default function AdminInventoryPage() {
     setEditingRecipeId(null);
     setEditingRecipeVersion(null);
     setCopyingRecipe(false);
+    setShowAllVariationQtys(false);
+  };
+
+  const resolveRecipeVariationId = (
+    menuItemId: string,
+    variationId?: string | null,
+  ) => {
+    if (variationId) return variationId;
+    const item = (menu?.items ?? []).find((x) => x.id === menuItemId);
+    return soleVariationId(item?.variations) ?? "";
   };
 
   const openNewRecipe = (prefill?: {
     menuItemId?: string;
     variationId?: string;
   }) => {
+    setActiveTab("recipes");
     resetRecipeForm();
     if (prefill?.menuItemId) {
       setRecipe({
         menuItemId: prefill.menuItemId,
-        variationId: prefill.variationId ?? "",
+        variationId: resolveRecipeVariationId(
+          prefill.menuItemId,
+          prefill.variationId,
+        ),
         effectiveFrom: new Date().toISOString().slice(0, 16),
         yieldQty: "1",
         yieldUnit: "",
@@ -1886,69 +2234,114 @@ export default function AdminInventoryPage() {
   };
 
   const openEditRecipe = (row: RecipeRow) => {
+    setActiveTab("recipes");
     setEditingRecipeId(row.id);
     setEditingRecipeVersion(row.version);
     setCopyingRecipe(false);
     setRecipe({
       menuItemId: row.menuItemId,
-      variationId: row.variationId ?? "",
+      variationId: resolveRecipeVariationId(row.menuItemId, row.variationId),
       effectiveFrom: row.effectiveFrom.slice(0, 16),
       yieldQty: row.yieldQty || "1",
       yieldUnit: row.yieldUnit || "",
     });
+    const variationId = resolveRecipeVariationId(
+      row.menuItemId,
+      row.variationId,
+    );
     setRecipeIngredients(
       row.ingredients.length > 0
-        ? row.ingredients.map(recipeIngredientFromRow)
+        ? row.ingredients.map((ing) =>
+            recipeIngredientFromRow(ing, variationId || row.variationId),
+          )
         : [emptyRecipeIngredient()],
     );
+    setShowAllVariationQtys(false);
     setRecipeDialogOpen(true);
   };
 
   /** Prefill a new version from an existing recipe (does not edit the source). */
   const openCopyRecipe = (row: RecipeRow) => {
+    setActiveTab("recipes");
     setEditingRecipeId(null);
     setEditingRecipeVersion(null);
     setCopyingRecipe(true);
+    const variationId = resolveRecipeVariationId(
+      row.menuItemId,
+      row.variationId,
+    );
     setRecipe({
       menuItemId: row.menuItemId,
-      variationId: row.variationId ?? "",
+      variationId,
       effectiveFrom: new Date().toISOString().slice(0, 16),
       yieldQty: row.yieldQty || "1",
       yieldUnit: row.yieldUnit || "",
     });
     setRecipeIngredients(
       row.ingredients.length > 0
-        ? row.ingredients.map(recipeIngredientFromRow)
+        ? row.ingredients.map((ing) =>
+            recipeIngredientFromRow(ing, variationId || row.variationId),
+          )
         : [emptyRecipeIngredient()],
     );
+    setShowAllVariationQtys(false);
     setRecipeDialogOpen(true);
   };
 
-  const recipePayload = () => ({
-    menuItemId: recipe.menuItemId,
-    variationId: recipe.variationId || null,
-    effectiveFrom: new Date(recipe.effectiveFrom).toISOString(),
-    yieldQty: recipe.yieldQty || "1",
-    yieldUnit: recipe.yieldUnit.trim(),
-    ingredients: recipeIngredients
+  const ingredientsPayloadForVariation = (variationId: string | null) => {
+    return recipeIngredients
+      .map((x) => {
+        const qty =
+          variationId && showAllVariationQtys
+            ? (x.qtyByVariationId[variationId] ?? "")
+            : x.qtyBase;
+        return { ...x, qty };
+      })
       .filter((x) =>
         x.kind === "inventory"
-          ? x.inventoryItemId && x.qtyBase
-          : x.componentMenuItemId && x.qtyBase,
+          ? x.inventoryItemId && x.qty
+          : x.componentMenuItemId && x.qty,
       )
-      .map((x) =>
-        x.kind === "inventory"
-          ? {
-              inventoryItemId: x.inventoryItemId,
-              qtyBase: x.qtyBase,
-            }
-          : {
-              componentMenuItemId: x.componentMenuItemId,
-              componentVariationId: x.componentVariationId || null,
-              qtyBase: x.qtyBase,
-            },
-      ),
-  });
+      .map((x) => {
+        if (x.kind === "inventory") {
+          return {
+            inventoryItemId: x.inventoryItemId,
+            qtyBase: x.qty,
+          };
+        }
+        const compItem = (menu?.items ?? []).find(
+          (it) => it.id === x.componentMenuItemId,
+        );
+        return {
+          componentMenuItemId: x.componentMenuItemId,
+          componentVariationId:
+            x.componentVariationId ||
+            soleVariationId(compItem?.variations) ||
+            null,
+          qtyBase: x.qty,
+        };
+      });
+  };
+
+  const recipePayload = (variationIdOverride?: string | null) => {
+    const selectedMenuItem = (menu?.items ?? []).find(
+      (it) => it.id === recipe.menuItemId,
+    );
+    const variationId =
+      variationIdOverride !== undefined
+        ? variationIdOverride
+        : recipe.variationId ||
+          soleVariationId(selectedMenuItem?.variations) ||
+          null;
+    return {
+      menuItemId: recipe.menuItemId,
+      variationId,
+      effectiveFrom: new Date(recipe.effectiveFrom).toISOString(),
+      yieldQty: recipe.yieldQty || "1",
+      yieldUnit: recipe.yieldUnit.trim(),
+      ingredients: ingredientsPayloadForVariation(variationId),
+    };
+  };
 
   const recipeTotalValuePaise = useMemo(() => {
     const draftAsRow: RecipeRow = {
@@ -2002,9 +2395,58 @@ export default function AdminInventoryPage() {
 
   const submitRecipe = async (mode: "update" | "new") => {
     if (recipeSubmitting) return;
+    const selectedMenuItem = (menu?.items ?? []).find(
+      (it) => it.id === recipe.menuItemId,
+    );
+    if (
+      selectedMenuItem &&
+      selectedMenuItem.variations.length > 0 &&
+      !recipe.variationId
+    ) {
+      toast.error("Select a variation — each variation needs its own recipe");
+      return;
+    }
     setRecipeSubmitting(true);
     try {
-      if (mode === "update") {
+      const multiVars =
+        showAllVariationQtys &&
+        selectedMenuItem &&
+        selectedMenuItem.variations.length > 1
+          ? selectedMenuItem.variations
+          : null;
+
+      if (multiVars) {
+        let savedCount = 0;
+        for (const v of multiVars) {
+          const payload = recipePayload(v.id);
+          if (payload.ingredients.length === 0) continue;
+          const isActive = v.id === recipe.variationId;
+          if (isActive && mode === "update" && editingRecipeId) {
+            await adminFetch(
+              `/api/admin/inventory/recipes/${editingRecipeId}`,
+              {
+                method: "PATCH",
+                body: JSON.stringify(payload),
+              },
+            );
+          } else {
+            await adminFetch("/api/admin/inventory/recipes", {
+              method: "POST",
+              body: JSON.stringify(payload),
+            });
+          }
+          savedCount += 1;
+        }
+        if (savedCount === 0) {
+          toast.error("Enter at least one qty for a variation");
+          return;
+        }
+        toast.success(
+          savedCount === 1
+            ? "Recipe version saved"
+            : `Saved recipes for ${savedCount} variations`,
+        );
+      } else if (mode === "update") {
         if (!editingRecipeId) {
           toast.error("No recipe selected to update");
           return;
@@ -2437,12 +2879,18 @@ export default function AdminInventoryPage() {
   const [movementTypeFilter, setMovementTypeFilter] = useState("all");
   const [movementSort, setMovementSort] = useState("date-desc");
   const [opsMenu, setOpsMenu] = useState<OpsMenuId>("opening");
-  const [activeTab, setActiveTab] = useTabParam("overview");
 
   const recipeVariationLabel = useCallback(
     (menuItemId: string, variationId: string | null) => {
-      if (!variationId) return "All variations";
       const item = menu?.items.find((x) => x.id === menuItemId);
+      if (!variationId) {
+        // Single-variation dishes: treat null ("All variations") as that variation.
+        const sole = soleVariationId(item?.variations);
+        if (sole) {
+          return item?.variations.find((v) => v.id === sole)?.name ?? "All variations";
+        }
+        return "All variations";
+      }
       return item?.variations.find((v) => v.id === variationId)?.name ?? variationId;
     },
     [menu?.items],
@@ -2759,13 +3207,24 @@ export default function AdminInventoryPage() {
     const rows: MenuItemVariationCoverageRow[] = [];
     for (const item of menu?.items ?? []) {
       const versions = byMenuItem.get(item.id) ?? [];
-      const hasAllVariations = versions.some((r) => r.variationId === null);
-      const allVariationVersionCount = hasAllVariations
-        ? versions.filter((r) => r.variationId === null).length
-        : 0;
+      // Recipes are mandatory per variation. An "All variations" recipe
+      // (variationId null) does not cover individual variations — except when
+      // the dish has only one variation, in which case null means that one.
       const versionCountByVariation = new Map<string, number>();
+      let nullVariationVersionCount = 0;
+      const soleId = soleVariationId(item.variations);
       for (const version of versions) {
-        if (!version.variationId) continue;
+        if (!version.variationId) {
+          if (soleId) {
+            versionCountByVariation.set(
+              soleId,
+              (versionCountByVariation.get(soleId) ?? 0) + 1,
+            );
+          } else {
+            nullVariationVersionCount += 1;
+          }
+          continue;
+        }
         versionCountByVariation.set(
           version.variationId,
           (versionCountByVariation.get(version.variationId) ?? 0) + 1,
@@ -2778,14 +3237,11 @@ export default function AdminInventoryPage() {
           : [{ id: null as string | null, name: "—" }];
 
       for (const variation of variationTargets) {
-        const covered =
-          hasAllVariations ||
-          (variation.id !== null && versionCountByVariation.has(variation.id));
-        const versionCount = hasAllVariations
-          ? allVariationVersionCount
-          : variation.id !== null
+        const versionCount =
+          variation.id !== null
             ? (versionCountByVariation.get(variation.id) ?? 0)
-            : versions.filter((r) => r.variationId === null).length;
+            : nullVariationVersionCount;
+        const covered = versionCount > 0;
 
         rows.push({
           menuItemId: item.id,
@@ -2895,6 +3351,18 @@ export default function AdminInventoryPage() {
 
   const allTabTotalRowCount = recipesList.length + recipeNeedsCount;
 
+  const recipeFormMenuItem = (menu?.items ?? []).find(
+    (x) => x.id === recipe.menuItemId,
+  );
+  const recipeFormVariations = recipeFormMenuItem?.variations ?? [];
+  const recipeRequiresVariation = recipeFormVariations.length > 0;
+  const canShowAllVariationQtys = recipeFormVariations.length > 1;
+  const tabLoading = !tabsReady[activeTab];
+
+  if (initialLoading) {
+    return <AdminInventorySkeleton />;
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -2904,7 +3372,23 @@ export default function AdminInventoryPage() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          // Nested recipe sub-views must not flip the main inventory tab.
+          if (
+            v === "overview" ||
+            v === "items" ||
+            v === "suppliers" ||
+            v === "purchase" ||
+            v === "recipes" ||
+            v === "sell" ||
+            v === "ops"
+          ) {
+            setActiveTab(v);
+          }
+        }}
+      >
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
           <TabsTrigger value="overview" className="data-[state=active]:font-semibold">
             Overview
@@ -2929,7 +3413,18 @@ export default function AdminInventoryPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6 pt-4">
+        {tabLoading ? (
+          <div className="space-y-4 pt-4">
+            <AdminKpiGridSkeleton count={3} />
+            <AdminChartGridSkeleton count={2} />
+            <AdminTableSkeleton rows={5} />
+          </div>
+        ) : null}
+
+        <TabsContent
+          value="overview"
+          className={cx("space-y-6 pt-4", tabLoading && "hidden")}
+        >
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <KpiCard
               title="Inventory value"
@@ -3179,7 +3674,7 @@ export default function AdminInventoryPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="items" className="space-y-4 pt-4">
+        <TabsContent value="items" className={cx("space-y-4 pt-4", tabLoading && "hidden")}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-medium">Inventory items</h2>
@@ -3636,7 +4131,7 @@ export default function AdminInventoryPage() {
           </Dialog>
         </TabsContent>
 
-        <TabsContent value="suppliers" className="space-y-4 pt-4">
+        <TabsContent value="suppliers" className={cx("space-y-4 pt-4", tabLoading && "hidden")}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-medium">Suppliers</h2>
@@ -4393,7 +4888,7 @@ export default function AdminInventoryPage() {
           </Dialog>
         </TabsContent>
 
-        <TabsContent value="purchase" className="space-y-4 pt-4">
+        <TabsContent value="purchase" className={cx("space-y-4 pt-4", tabLoading && "hidden")}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-medium">Purchases</h2>
@@ -4796,7 +5291,7 @@ export default function AdminInventoryPage() {
           </Dialog>
         </TabsContent>
 
-        <TabsContent value="recipes" className="space-y-4 pt-4">
+        <TabsContent value="recipes" className={cx("space-y-4 pt-4", tabLoading && "hidden")}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-medium">Recipes</h2>
@@ -4810,33 +5305,51 @@ export default function AdminInventoryPage() {
             </Button>
           </div>
 
-          <Tabs
-            value={recipeViewTab}
-            onValueChange={setRecipeView}
-            className="space-y-4"
-          >
-            <TabsList className="grid w-full max-w-xl grid-cols-3">
-              <TabsTrigger value="all" className="data-[state=active]:font-semibold">
-                All
-                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
-                  {recipeCoverageCounts.total}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="added" className="data-[state=active]:font-semibold">
-                Added
-                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
-                  {recipeAddedMenuItemCount}
-                </span>
-              </TabsTrigger>
-              <TabsTrigger value="missing" className="data-[state=active]:font-semibold">
-                Missing
-                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
-                  {recipeNeedsCount}
-                </span>
-              </TabsTrigger>
-            </TabsList>
+          <div className="space-y-4">
+            <div className="inline-flex h-8 w-full max-w-xl items-center justify-center rounded-lg bg-muted p-[3px] text-muted-foreground">
+              {(
+                [
+                  {
+                    value: "all" as const,
+                    label: "All",
+                    count: recipeCoverageCounts.total,
+                  },
+                  {
+                    value: "added" as const,
+                    label: "Added",
+                    count: recipeAddedMenuItemCount,
+                  },
+                  {
+                    value: "missing" as const,
+                    label: "Missing",
+                    count: recipeNeedsCount,
+                  },
+                ] as const
+              ).map((t) => {
+                const active = recipeViewTab === t.value;
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    className={cx(
+                      "inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 text-sm font-medium whitespace-nowrap transition-all",
+                      active
+                        ? "bg-background font-semibold text-foreground shadow-sm"
+                        : "text-foreground/60 hover:text-foreground",
+                    )}
+                    onClick={() => setRecipeView(t.value)}
+                  >
+                    {t.label}
+                    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
+                      {t.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
-            <TabsContent value="all" className="mt-0 space-y-4">
+            {recipeViewTab === "all" ? (
+            <div className="space-y-4">
               <DataTableToolbar
                 search={recipeSearch}
                 onSearchChange={setRecipeSearch}
@@ -5083,9 +5596,11 @@ export default function AdminInventoryPage() {
                   </TableBody>
                 </Table>
               </div>
-            </TabsContent>
+            </div>
+            ) : null}
 
-            <TabsContent value="added" className="mt-0 space-y-4">
+            {recipeViewTab === "added" ? (
+            <div className="space-y-4">
               <DataTableToolbar
                 search={recipeSearch}
                 onSearchChange={setRecipeSearch}
@@ -5280,9 +5795,11 @@ export default function AdminInventoryPage() {
                   </TableBody>
                 </Table>
               </div>
-            </TabsContent>
+            </div>
+            ) : null}
 
-            <TabsContent value="missing" className="mt-0 space-y-4">
+            {recipeViewTab === "missing" ? (
+            <div className="space-y-4">
               <DataTableToolbar
                 search={recipeItemSearch}
                 onSearchChange={setRecipeItemSearch}
@@ -5388,465 +5905,13 @@ export default function AdminInventoryPage() {
                   </TableBody>
                 </Table>
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+            ) : null}
+          </div>
 
-          <Dialog
-            open={recipeDialogOpen}
-            onOpenChange={(open) => {
-              setRecipeDialogOpen(open);
-              if (!open && !recipeSubmitting) resetRecipeForm();
-            }}
-          >
-            <DialogContent
-              className="max-h-[95vh] w-[min(100vw-2rem,56rem)] max-w-5xl overflow-y-auto sm:max-w-5xl"
-              showCloseButton={!recipeSubmitting}
-            >
-              <DialogHeader>
-                <DialogTitle>
-                  {editingRecipeId
-                    ? `Edit recipe · v${editingRecipeVersion ?? "?"}`
-                    : copyingRecipe
-                      ? "Copy recipe · new version"
-                      : "New recipe version"}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-2">
-                <div className="space-y-2">
-                  <Label>Menu item</Label>
-                  <SearchableSelect
-                    options={(menu?.items ?? []).map((it) => ({
-                      value: it.id,
-                      label: it.name,
-                    }))}
-                    value={recipe.menuItemId}
-                    onValueChange={(v) =>
-                      setRecipe({ ...recipe, menuItemId: v, variationId: "" })
-                    }
-                    placeholder="Select dish…"
-                    searchPlaceholder="Search dishes…"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Variation (optional)</Label>
-                  <SearchableSelect
-                    options={[
-                      { value: "", label: "All variations" },
-                      ...((menu?.items ?? [])
-                        .find((x) => x.id === recipe.menuItemId)
-                        ?.variations.map((v) => ({
-                          value: v.id,
-                          label: v.name,
-                        })) ?? []),
-                    ]}
-                    value={recipe.variationId}
-                    onValueChange={(v) => setRecipe({ ...recipe, variationId: v })}
-                    placeholder="All variations"
-                    searchPlaceholder="Search variations…"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Effective from</Label>
-                  <Input
-                    type="datetime-local"
-                    value={recipe.effectiveFrom}
-                    onChange={(e) =>
-                      setRecipe({ ...recipe, effectiveFrom: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Yield qty</Label>
-                    <Input
-                      inputMode="decimal"
-                      placeholder="1"
-                      value={recipe.yieldQty}
-                      onChange={(e) =>
-                        setRecipe({ ...recipe, yieldQty: e.target.value })
-                      }
-                    />
-                    <p className="text-muted-foreground text-xs">
-                      Finished amount this recipe makes (e.g. 200 for 200 g fried
-                      chicken). Nested dishes use qty in this same unit.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Yield unit</Label>
-                    <Input
-                      placeholder="portion / g / pc"
-                      value={recipe.yieldUnit}
-                      onChange={(e) =>
-                        setRecipe({ ...recipe, yieldUnit: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-medium text-sm">
-                      Ingredients &amp; components
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() =>
-                          setRecipeIngredients((x) => [
-                            ...x,
-                            emptyRecipeIngredient("inventory"),
-                          ])
-                        }
-                      >
-                        Add stock
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() =>
-                          setRecipeIngredients((x) => [
-                            ...x,
-                            emptyRecipeIngredient("menu_item"),
-                          ])
-                        }
-                      >
-                        Add menu item
-                      </Button>
-                    </div>
-                  </div>
-                  <p className="mb-2 text-muted-foreground text-xs">
-                    Use &quot;Add menu item&quot; for prep like fried chicken (e.g.
-                    50 g). Qty is in that item&apos;s yield unit.
-                  </p>
-                  <div className="mb-1 flex gap-2 px-0.5 text-muted-foreground text-xs">
-                    <span className="w-24">Type</span>
-                    <span className="flex-1">Item</span>
-                    <span className="w-24 text-center">Qty</span>
-                    <span className="w-20 text-right">Value</span>
-                    <span className="w-8" aria-hidden />
-                  </div>
-                  <div className="space-y-2">
-                    {recipeIngredients.map((ln) => {
-                      const componentRecipe =
-                        ln.kind === "menu_item" && ln.componentMenuItemId
-                          ? pickRecipeForComponent(
-                              recipesList,
-                              ln.componentMenuItemId,
-                              ln.componentVariationId || null,
-                            )
-                          : null;
-                      const lineValuePaise =
-                        ln.kind === "inventory"
-                          ? recipeIngredientValuePaise(
-                              items.find((i) => i.id === ln.inventoryItemId),
-                              ln.qtyBase,
-                              settings?.costingMethod,
-                            )
-                          : componentRecipe
-                            ? (() => {
-                                const yieldQty = Number(
-                                  componentRecipe.yieldQty || "1",
-                                );
-                                const nestedQty = Number(ln.qtyBase);
-                                if (
-                                  !Number.isFinite(yieldQty) ||
-                                  yieldQty <= 0 ||
-                                  !Number.isFinite(nestedQty)
-                                ) {
-                                  return 0;
-                                }
-                                return (
-                                  (recipeRowCostPaise(
-                                    componentRecipe,
-                                    recipesList,
-                                    items,
-                                    settings?.costingMethod,
-                                  ) *
-                                    nestedQty) /
-                                  yieldQty
-                                );
-                              })()
-                            : 0;
-                      const qtyPlaceholder =
-                        ln.kind === "menu_item"
-                          ? componentRecipe?.yieldUnit || "qty"
-                          : "Qty";
-                      return (
-                        <div
-                          key={ln.id}
-                          className="flex flex-col gap-2 rounded-md border border-transparent sm:flex-row sm:items-center"
-                        >
-                          <SearchableSelect
-                            options={[
-                              { value: "inventory", label: "Stock" },
-                              { value: "menu_item", label: "Menu item" },
-                            ]}
-                            value={ln.kind}
-                            onValueChange={(v) =>
-                              setRecipeIngredients((x) =>
-                                x.map((r) =>
-                                  r.id === ln.id
-                                    ? {
-                                        ...r,
-                                        kind:
-                                          v === "menu_item"
-                                            ? "menu_item"
-                                            : "inventory",
-                                        inventoryItemId: "",
-                                        componentMenuItemId: "",
-                                        componentVariationId: "",
-                                      }
-                                    : r,
-                                ),
-                              )
-                            }
-                            placeholder="Type"
-                            searchPlaceholder="Type…"
-                            className="w-full sm:w-28"
-                          />
-                          {ln.kind === "inventory" ? (
-                            <InventoryItemSelect
-                              value={ln.inventoryItemId}
-                              onChange={(v) =>
-                                setRecipeIngredients((x) =>
-                                  x.map((r) =>
-                                    r.id === ln.id
-                                      ? { ...r, inventoryItemId: v }
-                                      : r,
-                                  ),
-                                )
-                              }
-                              items={items}
-                              className="min-w-0 flex-1"
-                            />
-                          ) : (
-                            <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
-                              <SearchableSelect
-                                options={(menu?.items ?? [])
-                                  .filter((it) => it.id !== recipe.menuItemId)
-                                  .map((it) => ({
-                                    value: it.id,
-                                    label: it.name,
-                                  }))}
-                                value={ln.componentMenuItemId}
-                                onValueChange={(v) =>
-                                  setRecipeIngredients((x) =>
-                                    x.map((r) =>
-                                      r.id === ln.id
-                                        ? {
-                                            ...r,
-                                            componentMenuItemId: v,
-                                            componentVariationId: "",
-                                          }
-                                        : r,
-                                    ),
-                                  )
-                                }
-                                placeholder="Select dish…"
-                                searchPlaceholder="Search dishes…"
-                                className="min-w-0 flex-1"
-                              />
-                              <SearchableSelect
-                                options={[
-                                  { value: "", label: "All variations" },
-                                  ...((menu?.items ?? [])
-                                    .find((x) => x.id === ln.componentMenuItemId)
-                                    ?.variations.map((v) => ({
-                                      value: v.id,
-                                      label: v.name,
-                                    })) ?? []),
-                                ]}
-                                value={ln.componentVariationId}
-                                onValueChange={(v) =>
-                                  setRecipeIngredients((x) =>
-                                    x.map((r) =>
-                                      r.id === ln.id
-                                        ? { ...r, componentVariationId: v }
-                                        : r,
-                                    ),
-                                  )
-                                }
-                                placeholder="All variations"
-                                searchPlaceholder="Variation…"
-                                className="w-full sm:w-40"
-                              />
-                            </div>
-                          )}
-                          <Input
-                            className="w-full sm:w-24"
-                            inputMode="decimal"
-                            placeholder={qtyPlaceholder}
-                            value={ln.qtyBase}
-                            onChange={(e) =>
-                              setRecipeIngredients((x) =>
-                                x.map((r) =>
-                                  r.id === ln.id
-                                    ? { ...r, qtyBase: e.target.value }
-                                    : r,
-                                ),
-                              )
-                            }
-                          />
-                          <span
-                            className="w-24 shrink-0 text-right text-sm tabular-nums text-muted-foreground"
-                            title={
-                              (ln.kind === "inventory" && ln.inventoryItemId && ln.qtyBase) ||
-                              (ln.kind === "menu_item" && ln.componentMenuItemId && ln.qtyBase)
-                                ? ln.kind === "menu_item"
-                                  ? "Expanded from nested recipe"
-                                  : settings?.costingMethod === "LATEST_PURCHASE"
-                                    ? "Latest purchase cost × qty"
-                                    : settings?.costingMethod === "FIFO"
-                                      ? "Remaining-stock weighted cost × qty (FIFO COGS uses oldest batches)"
-                                      : "Avg cost × qty"
-                                : undefined
-                            }
-                          >
-                            {(ln.kind === "inventory" && ln.inventoryItemId && ln.qtyBase) ||
-                            (ln.kind === "menu_item" && ln.componentMenuItemId && ln.qtyBase)
-                              ? formatRecipeCostRupees(lineValuePaise)
-                              : "—"}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="w-8 shrink-0 px-0"
-                            onClick={() =>
-                              setRecipeIngredients((x) =>
-                                x.length <= 1 ? x : x.filter((r) => r.id !== ln.id),
-                              )
-                            }
-                          >
-                            ×
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm">
-                    <span className="font-medium">Recipe total</span>
-                    <span className="font-medium tabular-nums">
-                      {formatRecipeCostRupees(recipeTotalValuePaise)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={recipeSubmitting}
-                  onClick={() => setRecipeDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                {editingRecipeId ? (
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      disabled={recipeSubmitting}
-                      onClick={() => void submitRecipe("new")}
-                    >
-                      Save as new version
-                    </Button>
-                    <Button
-                      type="button"
-                      disabled={recipeSubmitting}
-                      onClick={() => void submitRecipe("update")}
-                    >
-                      Save
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    type="button"
-                    disabled={recipeSubmitting}
-                    onClick={() => void submitRecipe("new")}
-                  >
-                    Save as new version
-                  </Button>
-                )}
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog
-            open={deletingRecipe !== null}
-            onOpenChange={(open) => {
-              if (!open && !recipeDeleteSubmitting) setDeletingRecipe(null);
-            }}
-          >
-            <DialogContent
-              className="sm:max-w-md"
-              showCloseButton={!recipeDeleteSubmitting}
-            >
-              <DialogHeader>
-                <DialogTitle>Delete recipe version?</DialogTitle>
-                <DialogDescription render={<div />}>
-                  <div className="space-y-3 text-sm">
-                    <p>
-                      You are about to delete{" "}
-                      <span className="font-medium text-foreground">
-                        v{deletingRecipe?.version}
-                      </span>{" "}
-                      for{" "}
-                      <span className="font-medium text-foreground">
-                        {deletingRecipe?.menuItemName}
-                      </span>
-                      {deletingRecipe?.label ? ` (${deletingRecipe.label})` : ""}. Here is
-                      what happens:
-                    </p>
-                    <ul className="list-disc space-y-1.5 pl-5">
-                      <li>
-                        This recipe version and its ingredient list are{" "}
-                        <span className="font-medium text-foreground">
-                          permanently removed
-                        </span>
-                        .
-                      </li>
-                      <li>
-                        New orders for this dish/variation will{" "}
-                        <span className="font-medium text-foreground">
-                          no longer deduct these ingredients
-                        </span>{" "}
-                        until another recipe version is in effect.
-                      </li>
-                      <li>
-                        Past orders and their stock movements are{" "}
-                        <span className="font-medium text-foreground">not affected</span>.
-                      </li>
-                    </ul>
-                    <p>This cannot be undone.</p>
-                  </div>
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={recipeDeleteSubmitting}
-                  onClick={() => setDeletingRecipe(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  disabled={recipeDeleteSubmitting}
-                  onClick={() => void confirmDeleteRecipe()}
-                >
-                  {recipeDeleteSubmitting ? "Deleting…" : "Delete version"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </TabsContent>
 
-        <TabsContent value="sell" className="space-y-6 pt-4">
+        <TabsContent value="sell" className={cx("space-y-6 pt-4", tabLoading && "hidden")}>
           <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -6100,7 +6165,7 @@ export default function AdminInventoryPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="ops" className="space-y-6 pt-4">
+        <TabsContent value="ops" className={cx("space-y-6 pt-4", tabLoading && "hidden")}>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
             <nav
               className="shrink-0 rounded-2xl border bg-card p-2 shadow-sm lg:sticky lg:top-4 lg:w-60"
@@ -6651,6 +6716,604 @@ export default function AdminInventoryPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+          <Dialog
+            open={recipeDialogOpen}
+            onOpenChange={(open) => {
+              setRecipeDialogOpen(open);
+              if (!open && !recipeSubmitting) resetRecipeForm();
+            }}
+          >
+            <DialogContent
+              className={
+                showAllVariationQtys && canShowAllVariationQtys
+                  ? "max-h-[95vh] w-[min(100vw-2rem,72rem)] max-w-6xl overflow-y-auto sm:max-w-6xl"
+                  : "max-h-[95vh] w-[min(100vw-2rem,56rem)] max-w-5xl overflow-y-auto sm:max-w-5xl"
+              }
+              showCloseButton={!recipeSubmitting}
+            >
+              <DialogHeader>
+                <DialogTitle>
+                  {editingRecipeId
+                    ? `Edit recipe · v${editingRecipeVersion ?? "?"}`
+                    : copyingRecipe
+                      ? "Copy recipe · new version"
+                      : "New recipe version"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-2">
+                <div className="space-y-2">
+                  <Label>Menu item</Label>
+                  <SearchableSelect
+                    options={(menu?.items ?? []).map((it) => ({
+                      value: it.id,
+                      label: it.name,
+                    }))}
+                    value={recipe.menuItemId}
+                    onValueChange={(v) => {
+                      const item = (menu?.items ?? []).find((x) => x.id === v);
+                      setShowAllVariationQtys(false);
+                      setRecipe({
+                        ...recipe,
+                        menuItemId: v,
+                        variationId: soleVariationId(item?.variations) ?? "",
+                      });
+                      setRecipeIngredients([emptyRecipeIngredient()]);
+                    }}
+                    placeholder="Select dish…"
+                    searchPlaceholder="Search dishes…"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>
+                    Variation{recipeRequiresVariation ? "" : " (optional)"}
+                  </Label>
+                  <SearchableSelect
+                    options={
+                      recipeRequiresVariation
+                        ? recipeFormVariations.map((v) => ({
+                            value: v.id,
+                            label: v.name,
+                          }))
+                        : [{ value: "", label: "All variations" }]
+                    }
+                    value={recipe.variationId}
+                    onValueChange={(v) => {
+                      setRecipe({ ...recipe, variationId: v });
+                      if (showAllVariationQtys) {
+                        setRecipeIngredients((lines) =>
+                          lines.map((ln) => ({
+                            ...ln,
+                            qtyBase: v
+                              ? (ln.qtyByVariationId[v] ?? "")
+                              : ln.qtyBase,
+                          })),
+                        );
+                      }
+                    }}
+                    placeholder={
+                      recipeRequiresVariation
+                        ? "Select variation…"
+                        : "All variations"
+                    }
+                    searchPlaceholder="Search variations…"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Effective from</Label>
+                  <Input
+                    type="datetime-local"
+                    value={recipe.effectiveFrom}
+                    onChange={(e) =>
+                      setRecipe({ ...recipe, effectiveFrom: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Yield qty</Label>
+                    <Input
+                      inputMode="decimal"
+                      placeholder="1"
+                      value={recipe.yieldQty}
+                      onChange={(e) =>
+                        setRecipe({ ...recipe, yieldQty: e.target.value })
+                      }
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      Finished amount this recipe makes (e.g. 200 for 200 g fried
+                      chicken). Nested dishes use qty in this same unit.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Yield unit</Label>
+                    <Input
+                      placeholder="portion / g / pc"
+                      value={recipe.yieldUnit}
+                      onChange={(e) =>
+                        setRecipe({ ...recipe, yieldUnit: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium text-sm">
+                      Ingredients &amp; components
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {canShowAllVariationQtys ? (
+                        <label className="mr-1 flex items-center gap-2 text-muted-foreground text-xs">
+                          <Switch
+                            size="sm"
+                            checked={showAllVariationQtys}
+                            onCheckedChange={(checked) => {
+                              const on = Boolean(checked);
+                              setShowAllVariationQtys(on);
+                              if (on && recipe.menuItemId) {
+                                setRecipeIngredients((lines) =>
+                                  mergeSiblingVariationQtys(
+                                    lines,
+                                    recipe.menuItemId,
+                                    recipeFormVariations,
+                                    recipe.variationId,
+                                  ),
+                                );
+                              }
+                            }}
+                          />
+                          Qty by variation
+                        </label>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          setRecipeIngredients((x) => [
+                            ...x,
+                            emptyRecipeIngredient("inventory"),
+                          ])
+                        }
+                      >
+                        Add stock
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          setRecipeIngredients((x) => [
+                            ...x,
+                            emptyRecipeIngredient("menu_item"),
+                          ])
+                        }
+                      >
+                        Add menu item
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="mb-2 text-muted-foreground text-xs">
+                    Use &quot;Add menu item&quot; for prep like fried chicken (e.g.
+                    50 g). Qty is in that item&apos;s yield unit
+                    {showAllVariationQtys && canShowAllVariationQtys
+                      ? ". Enter a qty under each variation column (leave blank to skip)."
+                      : "."}
+                  </p>
+                  <div className="overflow-x-auto">
+                  <div
+                    className={
+                      showAllVariationQtys && canShowAllVariationQtys
+                        ? "mb-1 flex min-w-max gap-2 px-0.5 text-muted-foreground text-xs"
+                        : "mb-1 flex gap-2 px-0.5 text-muted-foreground text-xs"
+                    }
+                  >
+                    <span className="w-24 shrink-0">Type</span>
+                    <span className="min-w-[10rem] flex-1">Item</span>
+                    {showAllVariationQtys && canShowAllVariationQtys ? (
+                      recipeFormVariations.map((v) => (
+                        <span
+                          key={v.id}
+                          className="w-20 shrink-0 text-center"
+                          title={`Qty for ${v.name}`}
+                        >
+                          {v.name}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="w-24 shrink-0 text-center">Qty</span>
+                    )}
+                    <span className="w-20 shrink-0 text-right">Value</span>
+                    <span className="w-8 shrink-0" aria-hidden />
+                  </div>
+                  <div className="space-y-2">
+                    {recipeIngredients.map((ln) => {
+                      const componentRecipe =
+                        ln.kind === "menu_item" && ln.componentMenuItemId
+                          ? pickRecipeForComponent(
+                              recipesList,
+                              ln.componentMenuItemId,
+                              ln.componentVariationId || null,
+                            )
+                          : null;
+                      const activeQty =
+                        showAllVariationQtys && recipe.variationId
+                          ? (ln.qtyByVariationId[recipe.variationId] ??
+                            ln.qtyBase)
+                          : ln.qtyBase;
+                      const lineValuePaise =
+                        ln.kind === "inventory"
+                          ? recipeIngredientValuePaise(
+                              items.find((i) => i.id === ln.inventoryItemId),
+                              activeQty,
+                              settings?.costingMethod,
+                            )
+                          : componentRecipe
+                            ? (() => {
+                                const yieldQty = Number(
+                                  componentRecipe.yieldQty || "1",
+                                );
+                                const nestedQty = Number(activeQty);
+                                if (
+                                  !Number.isFinite(yieldQty) ||
+                                  yieldQty <= 0 ||
+                                  !Number.isFinite(nestedQty)
+                                ) {
+                                  return 0;
+                                }
+                                return (
+                                  (recipeRowCostPaise(
+                                    componentRecipe,
+                                    recipesList,
+                                    items,
+                                    settings?.costingMethod,
+                                  ) *
+                                    nestedQty) /
+                                  yieldQty
+                                );
+                              })()
+                            : 0;
+                      const qtyPlaceholder =
+                        ln.kind === "menu_item"
+                          ? componentRecipe?.yieldUnit || "qty"
+                          : "Qty";
+                      const hasActiveQty =
+                        (ln.kind === "inventory" &&
+                          ln.inventoryItemId &&
+                          activeQty) ||
+                        (ln.kind === "menu_item" &&
+                          ln.componentMenuItemId &&
+                          activeQty);
+                      return (
+                        <div
+                          key={ln.id}
+                          className={
+                            showAllVariationQtys && canShowAllVariationQtys
+                              ? "flex min-w-max flex-col gap-2 rounded-md border border-transparent sm:flex-row sm:items-center"
+                              : "flex flex-col gap-2 rounded-md border border-transparent sm:flex-row sm:items-center"
+                          }
+                        >
+                          <SearchableSelect
+                            options={[
+                              { value: "inventory", label: "Stock" },
+                              { value: "menu_item", label: "Menu item" },
+                            ]}
+                            value={ln.kind}
+                            onValueChange={(v) =>
+                              setRecipeIngredients((x) =>
+                                x.map((r) =>
+                                  r.id === ln.id
+                                    ? {
+                                        ...r,
+                                        kind:
+                                          v === "menu_item"
+                                            ? "menu_item"
+                                            : "inventory",
+                                        inventoryItemId: "",
+                                        componentMenuItemId: "",
+                                        componentVariationId: "",
+                                      }
+                                    : r,
+                                ),
+                              )
+                            }
+                            placeholder="Type"
+                            searchPlaceholder="Type…"
+                            className="w-full shrink-0 sm:w-28"
+                          />
+                          {ln.kind === "inventory" ? (
+                            <InventoryItemSelect
+                              value={ln.inventoryItemId}
+                              onChange={(v) =>
+                                setRecipeIngredients((x) =>
+                                  x.map((r) =>
+                                    r.id === ln.id
+                                      ? { ...r, inventoryItemId: v }
+                                      : r,
+                                  ),
+                                )
+                              }
+                              items={items}
+                              className="min-w-[10rem] flex-1"
+                            />
+                          ) : (
+                            <div className="flex min-w-[10rem] flex-1 flex-col gap-2 sm:flex-row">
+                              <SearchableSelect
+                                options={(menu?.items ?? [])
+                                  .filter((it) => it.id !== recipe.menuItemId)
+                                  .map((it) => ({
+                                    value: it.id,
+                                    label: it.name,
+                                  }))}
+                                value={ln.componentMenuItemId}
+                                onValueChange={(v) =>
+                                  setRecipeIngredients((x) =>
+                                    x.map((r) => {
+                                      if (r.id !== ln.id) return r;
+                                      const item = (menu?.items ?? []).find(
+                                        (it) => it.id === v,
+                                      );
+                                      return {
+                                        ...r,
+                                        componentMenuItemId: v,
+                                        componentVariationId:
+                                          soleVariationId(item?.variations) ?? "",
+                                      };
+                                    }),
+                                  )
+                                }
+                                placeholder="Select dish…"
+                                searchPlaceholder="Search dishes…"
+                                className="min-w-0 flex-1"
+                              />
+                              <SearchableSelect
+                                options={(() => {
+                                  const vars =
+                                    (menu?.items ?? []).find(
+                                      (x) => x.id === ln.componentMenuItemId,
+                                    )?.variations ?? [];
+                                  if (vars.length === 1) {
+                                    return vars.map((v) => ({
+                                      value: v.id,
+                                      label: v.name,
+                                    }));
+                                  }
+                                  return [
+                                    { value: "", label: "All variations" },
+                                    ...vars.map((v) => ({
+                                      value: v.id,
+                                      label: v.name,
+                                    })),
+                                  ];
+                                })()}
+                                value={ln.componentVariationId}
+                                onValueChange={(v) =>
+                                  setRecipeIngredients((x) =>
+                                    x.map((r) =>
+                                      r.id === ln.id
+                                        ? { ...r, componentVariationId: v }
+                                        : r,
+                                    ),
+                                  )
+                                }
+                                placeholder={
+                                  (
+                                    (menu?.items ?? []).find(
+                                      (x) => x.id === ln.componentMenuItemId,
+                                    )?.variations.length ?? 0
+                                  ) === 1
+                                    ? "Select variation…"
+                                    : "All variations"
+                                }
+                                searchPlaceholder="Variation…"
+                                className="w-full sm:w-40"
+                              />
+                            </div>
+                          )}
+                          {showAllVariationQtys && canShowAllVariationQtys ? (
+                            recipeFormVariations.map((v) => (
+                              <Input
+                                key={v.id}
+                                className={
+                                  v.id === recipe.variationId
+                                    ? "w-20 shrink-0 border-primary/40"
+                                    : "w-20 shrink-0"
+                                }
+                                inputMode="decimal"
+                                placeholder={qtyPlaceholder}
+                                aria-label={`Qty for ${v.name}`}
+                                value={ln.qtyByVariationId[v.id] ?? ""}
+                                onChange={(e) =>
+                                  setIngredientQtyForVariation(
+                                    ln.id,
+                                    v.id,
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            ))
+                          ) : (
+                            <Input
+                              className="w-full shrink-0 sm:w-24"
+                              inputMode="decimal"
+                              placeholder={qtyPlaceholder}
+                              value={ln.qtyBase}
+                              onChange={(e) =>
+                                setIngredientQtyForVariation(
+                                  ln.id,
+                                  recipe.variationId || null,
+                                  e.target.value,
+                                )
+                              }
+                            />
+                          )}
+                          <span
+                            className="w-20 shrink-0 text-right text-sm tabular-nums text-muted-foreground"
+                            title={
+                              hasActiveQty
+                                ? ln.kind === "menu_item"
+                                  ? showAllVariationQtys
+                                    ? "Value for selected variation (expanded from nested recipe)"
+                                    : "Expanded from nested recipe"
+                                  : settings?.costingMethod === "LATEST_PURCHASE"
+                                    ? "Latest purchase cost × qty"
+                                    : settings?.costingMethod === "FIFO"
+                                      ? "Remaining-stock weighted cost × qty (FIFO COGS uses oldest batches)"
+                                      : "Avg cost × qty"
+                                : undefined
+                            }
+                          >
+                            {hasActiveQty
+                              ? formatRecipeCostRupees(lineValuePaise)
+                              : "—"}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="w-8 shrink-0 px-0"
+                            onClick={() =>
+                              setRecipeIngredients((x) =>
+                                x.length <= 1 ? x : x.filter((r) => r.id !== ln.id),
+                              )
+                            }
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm">
+                    <span className="font-medium">
+                      Recipe total
+                      {showAllVariationQtys &&
+                      canShowAllVariationQtys &&
+                      recipe.variationId
+                        ? ` · ${
+                            recipeFormVariations.find(
+                              (v) => v.id === recipe.variationId,
+                            )?.name ?? "selected"
+                          }`
+                        : ""}
+                    </span>
+                    <span className="font-medium tabular-nums">
+                      {formatRecipeCostRupees(recipeTotalValuePaise)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={recipeSubmitting}
+                  onClick={() => setRecipeDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                {editingRecipeId ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={recipeSubmitting}
+                      onClick={() => void submitRecipe("new")}
+                    >
+                      Save as new version
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={recipeSubmitting}
+                      onClick={() => void submitRecipe("update")}
+                    >
+                      Save
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="button"
+                    disabled={recipeSubmitting}
+                    onClick={() => void submitRecipe("new")}
+                  >
+                    Save as new version
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
+            open={deletingRecipe !== null}
+            onOpenChange={(open) => {
+              if (!open && !recipeDeleteSubmitting) setDeletingRecipe(null);
+            }}
+          >
+            <DialogContent
+              className="sm:max-w-md"
+              showCloseButton={!recipeDeleteSubmitting}
+            >
+              <DialogHeader>
+                <DialogTitle>Delete recipe version?</DialogTitle>
+                <DialogDescription render={<div />}>
+                  <div className="space-y-3 text-sm">
+                    <p>
+                      You are about to delete{" "}
+                      <span className="font-medium text-foreground">
+                        v{deletingRecipe?.version}
+                      </span>{" "}
+                      for{" "}
+                      <span className="font-medium text-foreground">
+                        {deletingRecipe?.menuItemName}
+                      </span>
+                      {deletingRecipe?.label ? ` (${deletingRecipe.label})` : ""}. Here is
+                      what happens:
+                    </p>
+                    <ul className="list-disc space-y-1.5 pl-5">
+                      <li>
+                        This recipe version and its ingredient list are{" "}
+                        <span className="font-medium text-foreground">
+                          permanently removed
+                        </span>
+                        .
+                      </li>
+                      <li>
+                        New orders for this dish/variation will{" "}
+                        <span className="font-medium text-foreground">
+                          no longer deduct these ingredients
+                        </span>{" "}
+                        until another recipe version is in effect.
+                      </li>
+                      <li>
+                        Past orders and their stock movements are{" "}
+                        <span className="font-medium text-foreground">not affected</span>.
+                      </li>
+                    </ul>
+                    <p>This cannot be undone.</p>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={recipeDeleteSubmitting}
+                  onClick={() => setDeletingRecipe(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={recipeDeleteSubmitting}
+                  onClick={() => void confirmDeleteRecipe()}
+                >
+                  {recipeDeleteSubmitting ? "Deleting…" : "Delete version"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
     </div>
   );
 }

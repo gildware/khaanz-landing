@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangleIcon,
+  CheckIcon,
   IndianRupeeIcon,
+  Loader2Icon,
+  PencilIcon,
   PlusIcon,
   Trash2Icon,
   TrendingDownIcon,
@@ -22,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -56,6 +60,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatIstDateInput } from "@/lib/ist-dates";
 import {
   chartTooltipRupeePair,
   chartYAxisRupeeTick,
@@ -94,6 +99,11 @@ type WastageEntryRow = {
   wastageTypeLabel: string;
   summary: string;
   note: string;
+  inventoryItemId: string | null;
+  qtyBase: string | null;
+  menuItemId: string | null;
+  variationId: string | null;
+  quantity: string | null;
   ingredients: { itemName: string; baseUnit: string; qtyBase: string }[];
 };
 
@@ -284,6 +294,10 @@ export default function AdminWastagePage() {
   const [recipesList, setRecipesList] = useState<RecipeRow[]>([]);
   const [recordOpen, setRecordOpen] = useState(false);
   const [recordTab, setRecordTab] = useState<"ingredient" | "dish">("ingredient");
+  const [recordSubmitting, setRecordSubmitting] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<WastageEntryRow | null>(null);
+  const [deletingEntry, setDeletingEntry] = useState<WastageEntryRow | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   const [pageTab, setPageTab] = useTabParam("overview");
   const [summary, setSummary] = useState<WastageSummary | null>(null);
@@ -292,6 +306,10 @@ export default function AdminWastagePage() {
   const [entrySearch, setEntrySearch] = useState("");
   const [entryKindFilter, setEntryKindFilter] = useState<"all" | "INGREDIENT" | "DISH">("all");
   const [entrySort, setEntrySort] = useState("date-desc");
+
+  const [wastedAtDate, setWastedAtDate] = useState(() =>
+    formatIstDateInput(new Date()),
+  );
 
   const [ingredientItemId, setIngredientItemId] = useState("");
   const [ingredientQty, setIngredientQty] = useState("");
@@ -303,6 +321,8 @@ export default function AdminWastagePage() {
   const [dishQty, setDishQty] = useState("");
   const [dishType, setDishType] = useState("OVERPRODUCTION");
   const [dishNote, setDishNote] = useState("");
+
+  const todayIst = formatIstDateInput(new Date());
 
   const loadEntries = useCallback(async () => {
     const r = await adminFetch<{ entries: WastageEntryRow[] }>(
@@ -359,9 +379,33 @@ export default function AdminWastagePage() {
     return menu.items.filter((it) => idsWithRecipes.has(it.id));
   }, [menu, recipesList]);
 
-  const selectedDish = menuItemsWithRecipes.find((it) => it.id === dishMenuItemId);
+  const dishSelectItems = useMemo(() => {
+    const list = [...menuItemsWithRecipes];
+    if (editingEntry?.kind === "DISH" && editingEntry.menuItemId && menu) {
+      const existing = menu.items.find((it) => it.id === editingEntry.menuItemId);
+      if (existing && !list.some((it) => it.id === existing.id)) {
+        list.unshift(existing);
+      }
+    }
+    return list;
+  }, [menuItemsWithRecipes, editingEntry, menu]);
+
+  const selectedDish = dishSelectItems.find((it) => it.id === dishMenuItemId);
   const selectedIngredient = items.find((it) => it.id === ingredientItemId);
-  const itemOptions = useMemo(() => inventoryItemSelectOptions(items), [items]);
+  const itemOptions = useMemo(() => {
+    const opts = inventoryItemSelectOptions(items);
+    if (editingEntry?.kind === "INGREDIENT" && editingEntry.inventoryItemId) {
+      const existing = items.find((it) => it.id === editingEntry.inventoryItemId);
+      if (existing && !opts.some((o) => o.value === existing.id)) {
+        opts.unshift({
+          value: existing.id,
+          label: `${existing.name} (${existing.baseUnit})`,
+          searchText: `${existing.name} ${existing.category}`,
+        });
+      }
+    }
+    return opts;
+  }, [items, editingEntry]);
 
   const filteredEntries = useMemo(() => {
     const q = entrySearch.trim().toLowerCase();
@@ -459,9 +503,52 @@ export default function AdminWastagePage() {
     setDishNote("");
   };
 
+  const resolveWastedAtPayload = () => {
+    const date = wastedAtDate || todayIst;
+    if (date > todayIst) {
+      toast.error("Waste date can’t be in the future");
+      return null;
+    }
+    // Today keeps the current timestamp; past dates use the calendar day (IST).
+    if (date === todayIst) return new Date().toISOString();
+    return date;
+  };
+
   const openRecord = (tab: "ingredient" | "dish" = "ingredient") => {
+    setEditingEntry(null);
+    resetIngredientForm();
+    resetDishForm();
     setRecordTab(tab);
+    setWastedAtDate(formatIstDateInput(new Date()));
     setRecordOpen(true);
+  };
+
+  const openEdit = (entry: WastageEntryRow) => {
+    setEditingEntry(entry);
+    setWastedAtDate(formatIstDateInput(new Date(entry.wastedAt)));
+    if (entry.kind === "INGREDIENT") {
+      setRecordTab("ingredient");
+      setIngredientItemId(entry.inventoryItemId ?? "");
+      setIngredientQty(entry.qtyBase ?? "");
+      setIngredientType(entry.wastageType || "SPOILAGE");
+      setIngredientNote(entry.note);
+      resetDishForm();
+    } else {
+      setRecordTab("dish");
+      setDishMenuItemId(entry.menuItemId ?? "");
+      setDishVariationId(entry.variationId ?? "");
+      setDishQty(entry.quantity ?? "");
+      setDishType(entry.wastageType || "OVERPRODUCTION");
+      setDishNote(entry.note);
+      resetIngredientForm();
+    }
+    setRecordOpen(true);
+  };
+
+  const closeRecordDialog = () => {
+    if (recordSubmitting) return;
+    setRecordOpen(false);
+    setEditingEntry(null);
   };
 
   const postIngredientWastage = async () => {
@@ -469,22 +556,39 @@ export default function AdminWastagePage() {
       toast.error("Select an ingredient");
       return;
     }
+    const wastedAt = resolveWastedAtPayload();
+    if (!wastedAt) return;
+    setRecordSubmitting(true);
     try {
-      await adminFetch("/api/admin/inventory/wastage", {
-        method: "POST",
-        body: JSON.stringify({
-          inventoryItemId: ingredientItemId,
-          qtyBase: ingredientQty,
-          wastageType: ingredientType,
-          note: ingredientNote,
-        }),
-      });
-      toast.success("Ingredient waste recorded");
+      const body = {
+        inventoryItemId: ingredientItemId,
+        qtyBase: ingredientQty,
+        wastageType: ingredientType,
+        note: ingredientNote,
+        wastedAt,
+      };
+      if (editingEntry?.kind === "INGREDIENT") {
+        await adminFetch(`/api/admin/inventory/wastage/${editingEntry.id}`, {
+          method: "PATCH",
+          body: JSON.stringify(body),
+        });
+        toast.success("Ingredient waste updated");
+      } else {
+        await adminFetch("/api/admin/inventory/wastage", {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+        toast.success("Ingredient waste recorded");
+      }
       resetIngredientForm();
+      setWastedAtDate(formatIstDateInput(new Date()));
+      setEditingEntry(null);
       setRecordOpen(false);
       await reloadAll();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setRecordSubmitting(false);
     }
   };
 
@@ -493,19 +597,34 @@ export default function AdminWastagePage() {
       toast.error("Select a dish and size");
       return;
     }
+    const wastedAt = resolveWastedAtPayload();
+    if (!wastedAt) return;
+    setRecordSubmitting(true);
     try {
-      await adminFetch("/api/admin/inventory/menu-wastage", {
-        method: "POST",
-        body: JSON.stringify({
-          menuItemId: dishMenuItemId,
-          variationId: dishVariationId,
-          quantity: dishQty,
-          wastageType: dishType,
-          note: dishNote,
-        }),
-      });
-      toast.success("Dish waste recorded — ingredients deducted via recipe");
+      const body = {
+        menuItemId: dishMenuItemId,
+        variationId: dishVariationId,
+        quantity: dishQty,
+        wastageType: dishType,
+        note: dishNote,
+        wastedAt,
+      };
+      if (editingEntry?.kind === "DISH") {
+        await adminFetch(`/api/admin/inventory/menu-wastage/${editingEntry.id}`, {
+          method: "PATCH",
+          body: JSON.stringify(body),
+        });
+        toast.success("Dish waste updated");
+      } else {
+        await adminFetch("/api/admin/inventory/menu-wastage", {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+        toast.success("Dish waste recorded — ingredients deducted via recipe");
+      }
       resetDishForm();
+      setWastedAtDate(formatIstDateInput(new Date()));
+      setEditingEntry(null);
       setRecordOpen(false);
       await reloadAll();
     } catch (e) {
@@ -515,6 +634,27 @@ export default function AdminWastagePage() {
       } else {
         toast.error(msg);
       }
+    } finally {
+      setRecordSubmitting(false);
+    }
+  };
+
+  const confirmDeleteEntry = async () => {
+    if (!deletingEntry) return;
+    setDeleteSubmitting(true);
+    try {
+      const path =
+        deletingEntry.kind === "DISH"
+          ? `/api/admin/inventory/menu-wastage/${deletingEntry.id}`
+          : `/api/admin/inventory/wastage/${deletingEntry.id}`;
+      await adminFetch(path, { method: "DELETE" });
+      toast.success("Wastage entry deleted — stock restored");
+      setDeletingEntry(null);
+      await reloadAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete");
+    } finally {
+      setDeleteSubmitting(false);
     }
   };
 
@@ -695,13 +835,14 @@ export default function AdminWastagePage() {
                     <TableHead className="text-xs h-8">Waste reason</TableHead>
                     <TableHead className="text-xs h-8">Note</TableHead>
                     <TableHead className="text-xs h-8">Ingredients deducted</TableHead>
+                    <TableHead className="text-xs h-8 w-[1%] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {entries.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={7}
                         className="py-8 text-center text-muted-foreground text-xs"
                       >
                         No wastage recorded yet.
@@ -710,7 +851,7 @@ export default function AdminWastagePage() {
                   ) : filteredEntries.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={7}
                         className="py-8 text-center text-muted-foreground text-xs"
                       >
                         No entries match your search or filters.
@@ -739,6 +880,30 @@ export default function AdminWastagePage() {
                         </TableCell>
                         <TableCell className="max-w-md text-muted-foreground text-xs py-2">
                           {formatIngredients(e.ingredients)}
+                        </TableCell>
+                        <TableCell className="py-2 text-right">
+                          <div className="flex items-center justify-end gap-0.5">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="size-7"
+                              aria-label="Edit wastage"
+                              onClick={() => openEdit(e)}
+                            >
+                              <PencilIcon className="size-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 text-destructive hover:text-destructive"
+                              aria-label="Delete wastage"
+                              onClick={() => setDeletingEntry(e)}
+                            >
+                              <Trash2Icon className="size-3.5" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -881,22 +1046,55 @@ export default function AdminWastagePage() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={recordOpen} onOpenChange={setRecordOpen}>
-        <DialogContent className="max-w-lg">
+      <Dialog
+        open={recordOpen}
+        onOpenChange={(open) => {
+          if (!open) closeRecordDialog();
+          else setRecordOpen(true);
+        }}
+      >
+        <DialogContent
+          className="max-w-lg"
+          showCloseButton={!recordSubmitting}
+        >
           <DialogHeader>
-            <DialogTitle>Record waste</DialogTitle>
+            <DialogTitle>
+              {editingEntry ? "Edit waste" : "Record waste"}
+            </DialogTitle>
           </DialogHeader>
-          <Tabs value={recordTab} onValueChange={(v) => setRecordTab(v as "ingredient" | "dish")}>
+          <Tabs
+            value={recordTab}
+            onValueChange={(v) => {
+              if (editingEntry) return;
+              setRecordTab(v as "ingredient" | "dish");
+            }}
+          >
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="ingredient">
+              <TabsTrigger value="ingredient" disabled={!!editingEntry && editingEntry.kind !== "INGREDIENT"}>
                 <WarehouseIcon className="mr-1.5 size-4" aria-hidden />
                 Ingredient
               </TabsTrigger>
-              <TabsTrigger value="dish">
+              <TabsTrigger value="dish" disabled={!!editingEntry && editingEntry.kind !== "DISH"}>
                 <UtensilsCrossedIcon className="mr-1.5 size-4" aria-hidden />
                 Prepared dish
               </TabsTrigger>
             </TabsList>
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="wastage-date">Date wasted</Label>
+              <Input
+                id="wastage-date"
+                type="date"
+                value={wastedAtDate}
+                max={todayIst}
+                disabled={recordSubmitting}
+                onChange={(e) =>
+                  setWastedAtDate(e.target.value || formatIstDateInput(new Date()))
+                }
+              />
+              <p className="text-muted-foreground text-xs">
+                Pick an earlier date if you forgot to record waste that day.
+              </p>
+            </div>
             <TabsContent value="ingredient" className="mt-4 space-y-3">
               <div className="space-y-2">
                 <Label>Ingredient</Label>
@@ -906,6 +1104,7 @@ export default function AdminWastagePage() {
                   onValueChange={setIngredientItemId}
                   placeholder="Select item…"
                   searchPlaceholder="Search items…"
+                  disabled={recordSubmitting}
                 />
                 {selectedIngredient ? (
                   <p className="text-muted-foreground text-xs">
@@ -930,6 +1129,7 @@ export default function AdminWastagePage() {
                   inputMode="decimal"
                   placeholder="e.g. 1"
                   value={ingredientQty}
+                  disabled={recordSubmitting}
                   onChange={(e) => setIngredientQty(e.target.value)}
                 />
               </div>
@@ -940,6 +1140,7 @@ export default function AdminWastagePage() {
                   value={ingredientType}
                   onValueChange={setIngredientType}
                   placeholder="Choose type…"
+                  disabled={recordSubmitting}
                 />
               </div>
               <div className="space-y-2">
@@ -947,12 +1148,13 @@ export default function AdminWastagePage() {
                 <Input
                   placeholder="e.g. expired, trimmings"
                   value={ingredientNote}
+                  disabled={recordSubmitting}
                   onChange={(e) => setIngredientNote(e.target.value)}
                 />
               </div>
             </TabsContent>
             <TabsContent value="dish" className="mt-4 space-y-3">
-              {menuItemsWithRecipes.length === 0 ? (
+              {dishSelectItems.length === 0 ? (
                 <p className="text-muted-foreground text-sm">
                   No dishes with recipes yet. Add recipes under Inventory → Recipes first.
                 </p>
@@ -961,7 +1163,7 @@ export default function AdminWastagePage() {
                   <div className="space-y-2">
                     <Label>Dish</Label>
                     <SearchableSelect
-                      options={menuItemsWithRecipes.map((it) => ({
+                      options={dishSelectItems.map((it) => ({
                         value: it.id,
                         label: it.name,
                         searchText: it.category,
@@ -973,6 +1175,7 @@ export default function AdminWastagePage() {
                       }}
                       placeholder="Select dish…"
                       searchPlaceholder="Search menu…"
+                      disabled={recordSubmitting}
                     />
                   </div>
                   <div className="space-y-2">
@@ -985,7 +1188,7 @@ export default function AdminWastagePage() {
                       value={dishVariationId}
                       onValueChange={setDishVariationId}
                       placeholder="Select size…"
-                      disabled={!dishMenuItemId}
+                      disabled={!dishMenuItemId || recordSubmitting}
                     />
                   </div>
                   <div className="space-y-2">
@@ -994,6 +1197,7 @@ export default function AdminWastagePage() {
                       inputMode="decimal"
                       placeholder="e.g. 3"
                       value={dishQty}
+                      disabled={recordSubmitting}
                       onChange={(e) => setDishQty(e.target.value)}
                     />
                   </div>
@@ -1004,6 +1208,7 @@ export default function AdminWastagePage() {
                       value={dishType}
                       onValueChange={setDishType}
                       placeholder="Choose type…"
+                      disabled={recordSubmitting}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1011,6 +1216,7 @@ export default function AdminWastagePage() {
                     <Input
                       placeholder="e.g. end of day, didn't sell"
                       value={dishNote}
+                      disabled={recordSubmitting}
                       onChange={(e) => setDishNote(e.target.value)}
                     />
                   </div>
@@ -1019,24 +1225,102 @@ export default function AdminWastagePage() {
             </TabsContent>
           </Tabs>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => setRecordOpen(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={recordSubmitting}
+              onClick={closeRecordDialog}
+            >
               Cancel
             </Button>
             {recordTab === "ingredient" ? (
-              <Button type="button" onClick={() => void postIngredientWastage()}>
-                <Trash2Icon className="mr-2 size-4" aria-hidden />
-                Record waste
+              <Button
+                type="button"
+                disabled={recordSubmitting}
+                onClick={() => void postIngredientWastage()}
+              >
+                {recordSubmitting ? (
+                  <Loader2Icon className="mr-2 size-4 animate-spin" aria-hidden />
+                ) : editingEntry ? (
+                  <CheckIcon className="mr-2 size-4" aria-hidden />
+                ) : (
+                  <Trash2Icon className="mr-2 size-4" aria-hidden />
+                )}
+                {recordSubmitting
+                  ? editingEntry
+                    ? "Saving…"
+                    : "Recording…"
+                  : editingEntry
+                    ? "Save changes"
+                    : "Record waste"}
               </Button>
             ) : (
               <Button
                 type="button"
-                disabled={menuItemsWithRecipes.length === 0}
+                disabled={dishSelectItems.length === 0 || recordSubmitting}
                 onClick={() => void postDishWastage()}
               >
-                <Trash2Icon className="mr-2 size-4" aria-hidden />
-                Record dish waste
+                {recordSubmitting ? (
+                  <Loader2Icon className="mr-2 size-4 animate-spin" aria-hidden />
+                ) : editingEntry ? (
+                  <CheckIcon className="mr-2 size-4" aria-hidden />
+                ) : (
+                  <Trash2Icon className="mr-2 size-4" aria-hidden />
+                )}
+                {recordSubmitting
+                  ? editingEntry
+                    ? "Saving…"
+                    : "Recording…"
+                  : editingEntry
+                    ? "Save changes"
+                    : "Record dish waste"}
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deletingEntry !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleteSubmitting) setDeletingEntry(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton={!deleteSubmitting}>
+          <DialogHeader>
+            <DialogTitle>Delete wastage?</DialogTitle>
+            <DialogDescription>
+              Delete{" "}
+              <span className="font-medium text-foreground">
+                {deletingEntry?.summary ?? "this entry"}
+              </span>
+              ? Stock deducted for this waste will be restored. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={deleteSubmitting}
+              onClick={() => setDeletingEntry(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteSubmitting}
+              onClick={() => void confirmDeleteEntry()}
+            >
+              {deleteSubmitting ? (
+                <>
+                  <Loader2Icon className="mr-2 size-4 animate-spin" aria-hidden />
+                  Deleting…
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

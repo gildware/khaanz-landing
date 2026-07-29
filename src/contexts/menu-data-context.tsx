@@ -28,9 +28,22 @@ const MenuDataContext = createContext<MenuDataContextValue | null>(null);
 export function MenuDataProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith("/admin");
+  // Full menu payload is heavy (~0.5s+). Only fetch on storefront or admin
+  // surfaces that actually need catalog data (POS / menu editors / home layout).
+  const adminNeedsMenu =
+    pathname.startsWith("/admin/menu") ||
+    pathname.startsWith("/admin/pos") ||
+    pathname.startsWith("/admin/home") ||
+    pathname.startsWith("/admin/recipes") ||
+    pathname.startsWith("/admin/items") ||
+    pathname.startsWith("/admin/categories") ||
+    pathname.startsWith("/admin/addons") ||
+    pathname.startsWith("/admin/combos");
+  const menuKey =
+    !isAdminRoute || adminNeedsMenu ? "/api/menu" : null;
 
   const { data, error, isLoading, mutate } = useSWR<MenuPayload>(
-    "/api/menu",
+    menuKey,
     fetcher,
     {
       // Storefront polls for menu changes; admin edits locally and saves explicitly.

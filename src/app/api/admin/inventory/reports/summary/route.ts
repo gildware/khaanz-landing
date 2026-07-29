@@ -1,15 +1,31 @@
 import { NextResponse } from "next/server";
 
 import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
+import {
+  itemUnitCostPaisePerBase,
+  onHandValuesFifoPaiseByItem,
+} from "@/lib/inventory/inventory-costing";
 import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
 import {
-  loadStockValueRankRows,
+  decimalToPaiseInt,
   splitStockValueRanks,
   STOCK_VALUE_CHART_LIMIT,
+  type StockValueRankRow,
 } from "@/lib/inventory/stock-value-charts";
 import { getPrisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
+
+type ExpiryBatchRow = {
+  batchId: string;
+  inventoryItemId: string;
+  itemName: string;
+  baseUnit: string;
+  expiryDate: string;
+  receivedAt: string;
+  lotCode: string;
+  remainingQtyBase: string;
+};
 
 export async function GET(request: Request) {
   const session = await requireAdminInventorySession();
@@ -22,19 +38,135 @@ export async function GET(request: Request) {
   const toStr = url.searchParams.get("to");
   const from = fromStr ? new Date(fromStr) : null;
   const to = toStr ? new Date(toStr) : null;
-  const expiryDays = Math.max(0, Math.floor(Number(url.searchParams.get("expiryDays") ?? "7")));
+  const expiryDays = Math.max(
+    0,
+    Math.floor(Number(url.searchParams.get("expiryDays") ?? "7")),
+  );
 
   const prisma = getPrisma();
-  const invSettings = await ensureInventorySettings(prisma);
   const now = new Date();
-  const expiryCutoff = new Date(now.getTime() + expiryDays * 24 * 60 * 60 * 1000);
+  const expiryCutoff = new Date(
+    now.getTime() + expiryDays * 24 * 60 * 60 * 1000,
+  );
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const items = await prisma.inventoryItem.findMany({
-    where: { active: true },
-    orderBy: { name: "asc" },
-  });
+  const [
+    invSettings,
+    items,
+    activeSuppliersCount,
+    expiredBatchesCount,
+    nearExpiryBatchesCount,
+    expiryPreviewRows,
+    ledgerAgg,
+    allSuppliers,
+    overduePurchases,
+    movementAgg,
+    rangedMovements,
+  ] = await Promise.all([
+    ensureInventorySettings(prisma),
+    prisma.inventoryItem.findMany({
+      where: { active: true },
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        baseUnit: true,
+        stockOnHandBase: true,
+        minStockBase: true,
+        avgCostPaisePerBase: true,
+        lastPurchasePaisePerBase: true,
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.supplier.count({ where: { active: true } }),
+    prisma.inventoryBatch.count({
+      where: {
+        remainingQtyBase: { gt: 0 },
+        expiryDate: { lt: now },
+      },
+    }),
+    prisma.inventoryBatch.count({
+      where: {
+        remainingQtyBase: { gt: 0 },
+        expiryDate: { gte: now, lte: expiryCutoff },
+      },
+    }),
+    prisma.inventoryBatch.findMany({
+      where: {
+        remainingQtyBase: { gt: 0 },
+        expiryDate: { not: null, lte: expiryCutoff },
+      },
+      orderBy: [{ expiryDate: "asc" }, { receivedAt: "asc" }],
+      take: 40,
+      select: {
+        id: true,
+        inventoryItemId: true,
+        expiryDate: true,
+        receivedAt: true,
+        lotCode: true,
+        remainingQtyBase: true,
+        item: { select: { name: true, baseUnit: true } },
+      },
+    }),
+    prisma.supplierLedgerEntry.groupBy({
+      by: ["supplierId"],
+      _sum: { debitPaise: true, creditPaise: true },
+    }),
+    prisma.supplier.findMany({
+      select: { id: true, name: true },
+    }),
+    prisma.purchase.findMany({
+      where: {
+        paymentType: "CREDIT",
+        dueAt: { lt: now },
+      },
+      orderBy: { dueAt: "asc" },
+      take: 50,
+      select: {
+        id: true,
+        batchRef: true,
+        totalPaise: true,
+        dueAt: true,
+        purchasedAt: true,
+        supplier: { select: { name: true } },
+      },
+    }),
+    prisma.inventoryMovement.groupBy({
+      by: ["type"],
+      where: { occurredAt: { gte: thirtyDaysAgo } },
+      _count: { id: true },
+    }),
+    from && to && !Number.isNaN(from.getTime()) && !Number.isNaN(to.getTime())
+      ? prisma.inventoryMovement.groupBy({
+          by: ["type"],
+          where: { occurredAt: { gte: from, lte: to } },
+          _count: { id: true },
+        })
+      : Promise.resolve(null),
+  ]);
 
-  const stockValueRows = await loadStockValueRankRows();
+  let stockValueRows: StockValueRankRow[];
+  if (invSettings.costingMethod === "FIFO") {
+    const values = await onHandValuesFifoPaiseByItem(
+      prisma,
+      items.map((i) => i.id),
+    );
+    stockValueRows = items.map((item) => ({
+      key: item.id,
+      label: item.name,
+      valuePaise: values.get(item.id) ?? 0,
+    }));
+  } else {
+    stockValueRows = items.map((item) => {
+      const unit = itemUnitCostPaisePerBase(item, invSettings.costingMethod);
+      return {
+        key: item.id,
+        label: item.name,
+        valuePaise: decimalToPaiseInt(item.stockOnHandBase.mul(unit)),
+      };
+    });
+  }
+
   const { topByValue, lowestByValue } = splitStockValueRanks(stockValueRows);
 
   const valueByKey = new Map(stockValueRows.map((r) => [r.key, r.valuePaise]));
@@ -58,39 +190,28 @@ export async function GET(request: Request) {
       minStockBase: r.minStockBase.toString(),
     }));
 
-  const [activeSuppliersCount, expiryBatches] = await Promise.all([
-    prisma.supplier.count({ where: { active: true } }),
-    prisma.inventoryBatch.findMany({
-      where: {
-        remainingQtyBase: { gt: 0 },
-        expiryDate: { not: null },
-      },
-      select: { expiryDate: true },
-    }),
-  ]);
-
-  let expiredBatchesCount = 0;
-  let nearExpiryBatchesCount = 0;
-  for (const b of expiryBatches) {
-    if (!b.expiryDate) continue;
-    const t = b.expiryDate.getTime();
-    if (t < now.getTime()) expiredBatchesCount += 1;
-    else if (t <= expiryCutoff.getTime()) nearExpiryBatchesCount += 1;
-  }
-
-  const ledgerAgg = await prisma.supplierLedgerEntry.groupBy({
-    by: ["supplierId"],
-    _sum: { debitPaise: true, creditPaise: true },
+  const mapExpiry = (r: (typeof expiryPreviewRows)[number]): ExpiryBatchRow => ({
+    batchId: r.id,
+    inventoryItemId: r.inventoryItemId,
+    itemName: r.item.name,
+    baseUnit: r.item.baseUnit,
+    expiryDate: r.expiryDate!.toISOString(),
+    receivedAt: r.receivedAt.toISOString(),
+    lotCode: r.lotCode,
+    remainingQtyBase: r.remainingQtyBase.toString(),
   });
 
-  const supplierIds = ledgerAgg.map((g) => g.supplierId);
-  const suppliers =
-    supplierIds.length > 0
-      ? await prisma.supplier.findMany({
-          where: { id: { in: supplierIds } },
-        })
-      : [];
-  const supplierName = new Map(suppliers.map((s) => [s.id, s.name]));
+  const nowMs = now.getTime();
+  const expiredPreview: ExpiryBatchRow[] = [];
+  const nearExpiryPreview: ExpiryBatchRow[] = [];
+  for (const r of expiryPreviewRows) {
+    if (!r.expiryDate) continue;
+    const row = mapExpiry(r);
+    if (r.expiryDate.getTime() < nowMs) expiredPreview.push(row);
+    else nearExpiryPreview.push(row);
+  }
+
+  const supplierName = new Map(allSuppliers.map((s) => [s.id, s.name]));
 
   const supplierBalances = ledgerAgg
     .map((g) => ({
@@ -105,24 +226,10 @@ export async function GET(request: Request) {
     .filter((r) => r.balancePaise > 0)
     .reduce((sum, r) => sum + r.balancePaise, 0);
 
-  const overduePurchases = await prisma.purchase.findMany({
-    where: {
-      paymentType: "CREDIT",
-      dueAt: { lt: now },
-    },
-    orderBy: { dueAt: "asc" },
-    take: 50,
-    include: { supplier: { select: { name: true } } },
-  });
-
-  const overduePurchasesPaise = overduePurchases.reduce((s, p) => s + p.totalPaise, 0);
-
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const movementAgg = await prisma.inventoryMovement.groupBy({
-    by: ["type"],
-    where: { occurredAt: { gte: thirtyDaysAgo } },
-    _count: { id: true },
-  });
+  const overduePurchasesPaise = overduePurchases.reduce(
+    (s, p) => s + p.totalPaise,
+    0,
+  );
 
   const movementTypeLabels: Record<string, string> = {
     OPENING_STOCK: "Opening stock",
@@ -148,17 +255,9 @@ export async function GET(request: Request) {
     }))
     .sort((a, b) => b.count - a.count);
 
-  let movementCounts: Record<string, number> | null = null;
-  if (from && to && !Number.isNaN(from.getTime()) && !Number.isNaN(to.getTime())) {
-    const movements = await prisma.inventoryMovement.groupBy({
-      by: ["type"],
-      where: { occurredAt: { gte: from, lte: to } },
-      _count: { id: true },
-    });
-    movementCounts = Object.fromEntries(
-      movements.map((m) => [m.type, m._count.id]),
-    );
-  }
+  const movementCounts = rangedMovements
+    ? Object.fromEntries(rangedMovements.map((m) => [m.type, m._count.id]))
+    : null;
 
   const okStockCount = items.length - lowStock.length;
 
@@ -171,12 +270,18 @@ export async function GET(request: Request) {
     .slice(0, STOCK_VALUE_CHART_LIMIT);
 
   return NextResponse.json({
+    settings: invSettings,
+    expiry: {
+      days: expiryDays,
+      expired: expiredPreview,
+      nearExpiry: nearExpiryPreview,
+    },
     kpis: {
       totalInventoryValuePaise,
       activeItemsCount: items.length,
       activeSuppliersCount,
       lowStockCount: lowStock.length,
-      nearExpiryBatchesCount: nearExpiryBatchesCount,
+      nearExpiryBatchesCount,
       expiredBatchesCount,
       supplierPayablePaise,
       overduePurchasesCount: overduePurchases.length,

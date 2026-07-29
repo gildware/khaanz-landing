@@ -26,7 +26,7 @@ function apiPermissionsForRequest(
       pathname.startsWith("/api/admin/floor-plan") ||
       pathname === "/api/admin/menu"
     ) {
-      return [...base, "pos"];
+      return [...base, "pos", "orders", "reports"];
     }
   }
 
@@ -60,11 +60,6 @@ export async function middleware(request: NextRequest) {
         needed,
       )
     ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // reset-data: SUPER_ADMIN only
-    if (pathname === "/api/admin/reset-data" && session.role !== "SUPER_ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

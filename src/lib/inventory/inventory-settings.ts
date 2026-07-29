@@ -6,13 +6,26 @@ export type InventorySettingsRow = {
   allowNegativeStock: boolean;
 };
 
+/**
+ * Read inventory settings. Prefer findUnique — upsert on every read was
+ * adding extra round-trips to the remote DB on every inventory page load.
+ */
 export async function ensureInventorySettings(
   tx: Pick<PrismaClient, "inventorySettings">,
 ): Promise<InventorySettingsRow> {
-  const row = await tx.inventorySettings.upsert({
+  const existing = await tx.inventorySettings.findUnique({
     where: { id: "default" },
-    create: { id: "default" },
-    update: {},
+  });
+  if (existing) {
+    return {
+      costingMethod: existing.costingMethod,
+      restoreStockOnCancel: existing.restoreStockOnCancel,
+      allowNegativeStock: existing.allowNegativeStock,
+    };
+  }
+
+  const row = await tx.inventorySettings.create({
+    data: { id: "default" },
   });
   return {
     costingMethod: row.costingMethod,
