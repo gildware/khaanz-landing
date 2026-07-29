@@ -1,44 +1,25 @@
 "use client";
 
-import { Suspense, useCallback, useMemo } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { ScrollTextIcon } from "lucide-react";
 import Link from "next/link";
 
+import { useAdminSession } from "@/components/admin/admin-session-provider";
 import { MenuCatalogAddonsPanel } from "@/components/admin/menu-catalog/addons-panel";
 import { MenuCatalogCategoriesPanel } from "@/components/admin/menu-catalog/categories-panel";
 import { MenuCatalogCombosPanel } from "@/components/admin/menu-catalog/combos-panel";
 import { MenuCatalogItemsPanel } from "@/components/admin/menu-catalog/items-panel";
 import { buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePermittedTabs } from "@/hooks/use-permitted-tabs";
 import { cn } from "@/lib/utils";
 
-const MENU_CATALOG_TABS = ["categories", "items", "combos", "addons"] as const;
-type MenuCatalogTab = (typeof MENU_CATALOG_TABS)[number];
-
-function parseTab(v: string | null): MenuCatalogTab {
-  if (v && MENU_CATALOG_TABS.includes(v as MenuCatalogTab)) {
-    return v as MenuCatalogTab;
-  }
-  return "categories";
-}
-
 function MenuCatalogPageContent() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const tab = useMemo(() => parseTab(tabParam), [tabParam]);
-
-  const setTab = useCallback(
-    (next: string) => {
-      const value = parseTab(next);
-      const p = new URLSearchParams(searchParams.toString());
-      p.set("tab", value);
-      router.replace(`${pathname}?${p.toString()}`, { scroll: false });
-    },
-    [router, pathname, searchParams],
-  );
+  const { can } = useAdminSession();
+  const { activeTab, setActiveTab, canTab } = usePermittedTabs({
+    pagePath: "/admin/menu",
+    defaultTab: "categories",
+  });
 
   return (
     <div className="space-y-6">
@@ -49,40 +30,58 @@ function MenuCatalogPageContent() {
             Categories, dishes, combos, and add-ons in one place.
           </p>
         </div>
-        <Link
-          href="/admin/menu-board"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(buttonVariants({ variant: "outline" }), "inline-flex items-center")}
-        >
-          <ScrollTextIcon className="mr-2 size-4" aria-hidden />
-          View menu board
-        </Link>
+        {can("menu.board") ? (
+          <Link
+            href="/admin/menu-board"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(buttonVariants({ variant: "outline" }), "inline-flex items-center")}
+          >
+            <ScrollTextIcon className="mr-2 size-4" aria-hidden />
+            View menu board
+          </Link>
+        ) : null}
       </div>
 
-      <Tabs value={tab} onValueChange={setTab} className="w-full gap-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full gap-6">
         <TabsList
           variant="line"
           className="h-auto min-h-9 w-full flex-wrap justify-start gap-0"
         >
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="items">Menu items</TabsTrigger>
-          <TabsTrigger value="combos">Combos</TabsTrigger>
-          <TabsTrigger value="addons">Add-ons</TabsTrigger>
+          {canTab("categories") ? (
+            <TabsTrigger value="categories">Categories</TabsTrigger>
+          ) : null}
+          {canTab("items") ? (
+            <TabsTrigger value="items">Menu items</TabsTrigger>
+          ) : null}
+          {canTab("combos") ? (
+            <TabsTrigger value="combos">Combos</TabsTrigger>
+          ) : null}
+          {canTab("addons") ? (
+            <TabsTrigger value="addons">Add-ons</TabsTrigger>
+          ) : null}
         </TabsList>
 
-        <TabsContent value="categories" className="space-y-6">
-          <MenuCatalogCategoriesPanel />
-        </TabsContent>
-        <TabsContent value="items" className="space-y-6">
-          <MenuCatalogItemsPanel />
-        </TabsContent>
-        <TabsContent value="combos" className="space-y-6">
-          <MenuCatalogCombosPanel />
-        </TabsContent>
-        <TabsContent value="addons" className="space-y-6">
-          <MenuCatalogAddonsPanel />
-        </TabsContent>
+        {canTab("categories") ? (
+          <TabsContent value="categories" className="space-y-6">
+            <MenuCatalogCategoriesPanel />
+          </TabsContent>
+        ) : null}
+        {canTab("items") ? (
+          <TabsContent value="items" className="space-y-6">
+            <MenuCatalogItemsPanel />
+          </TabsContent>
+        ) : null}
+        {canTab("combos") ? (
+          <TabsContent value="combos" className="space-y-6">
+            <MenuCatalogCombosPanel />
+          </TabsContent>
+        ) : null}
+        {canTab("addons") ? (
+          <TabsContent value="addons" className="space-y-6">
+            <MenuCatalogAddonsPanel />
+          </TabsContent>
+        ) : null}
       </Tabs>
     </div>
   );

@@ -45,7 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useTabParam } from "@/hooks/use-tab-param";
+import { usePermittedTabs } from "@/hooks/use-permitted-tabs";
 import {
   Bar,
   BarChart,
@@ -299,7 +299,10 @@ export default function AdminWastagePage() {
   const [deletingEntry, setDeletingEntry] = useState<WastageEntryRow | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
-  const [pageTab, setPageTab] = useTabParam("overview");
+  const { activeTab: pageTab, setActiveTab: setPageTab, canTab } = usePermittedTabs({
+    pagePath: "/admin/wastage",
+    defaultTab: "overview",
+  });
   const [summary, setSummary] = useState<WastageSummary | null>(null);
   const [periodPreset, setPeriodPreset] = useState<WastagePreset>("this_month");
 
@@ -675,12 +678,16 @@ export default function AdminWastagePage() {
 
       <Tabs value={pageTab} onValueChange={setPageTab}>
         <TabsList className="h-8">
-          <TabsTrigger value="overview" className="text-xs px-3 py-1">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="text-xs px-3 py-1">
-            Reports
-          </TabsTrigger>
+          {canTab("overview") ? (
+            <TabsTrigger value="overview" className="text-xs px-3 py-1">
+              Overview
+            </TabsTrigger>
+          ) : null}
+          {canTab("reports") ? (
+            <TabsTrigger value="reports" className="text-xs px-3 py-1">
+              Reports
+            </TabsTrigger>
+          ) : null}
         </TabsList>
 
         <TabsContent value="overview" className="mt-3 space-y-3">

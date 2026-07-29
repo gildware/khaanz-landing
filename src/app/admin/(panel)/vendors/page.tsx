@@ -44,7 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useTabParam } from "@/hooks/use-tab-param";
+import { usePermittedTabs } from "@/hooks/use-permitted-tabs";
 import {
   DataTableToolbar,
   type ActiveFilter,
@@ -197,7 +197,10 @@ const emptyVendorForm = {
 };
 
 export default function AdminVendorsPage() {
-  const [activeTab, setActiveTab] = useTabParam("overview");
+  const { activeTab, setActiveTab, canTab } = usePermittedTabs({
+    pagePath: "/admin/vendors",
+    defaultTab: "overview",
+  });
   const [initialLoading, setInitialLoading] = useState(true);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -559,21 +562,31 @@ export default function AdminVendorsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-5">
-          <TabsTrigger value="overview" className="data-[state=active]:font-semibold">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="vendors" className="data-[state=active]:font-semibold">
-            Vendors
-          </TabsTrigger>
-          <TabsTrigger value="sellable" className="data-[state=active]:font-semibold">
-            Items to sell
-          </TabsTrigger>
-          <TabsTrigger value="sales" className="data-[state=active]:font-semibold">
-            Vendor sales
-          </TabsTrigger>
-          <TabsTrigger value="payments" className="data-[state=active]:font-semibold">
-            Payments
-          </TabsTrigger>
+          {canTab("overview") ? (
+            <TabsTrigger value="overview" className="data-[state=active]:font-semibold">
+              Overview
+            </TabsTrigger>
+          ) : null}
+          {canTab("vendors") ? (
+            <TabsTrigger value="vendors" className="data-[state=active]:font-semibold">
+              Vendors
+            </TabsTrigger>
+          ) : null}
+          {canTab("sellable") ? (
+            <TabsTrigger value="sellable" className="data-[state=active]:font-semibold">
+              Items to sell
+            </TabsTrigger>
+          ) : null}
+          {canTab("sales") ? (
+            <TabsTrigger value="sales" className="data-[state=active]:font-semibold">
+              Vendor sales
+            </TabsTrigger>
+          ) : null}
+          {canTab("payments") ? (
+            <TabsTrigger value="payments" className="data-[state=active]:font-semibold">
+              Payments
+            </TabsTrigger>
+          ) : null}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 pt-4">

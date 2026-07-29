@@ -3,8 +3,8 @@ import type { NextRequest } from "next/server";
 
 import { verifyAdminToken, sessionHasPermission } from "@/lib/admin-auth";
 import {
+  canAccessAdminPagePath,
   defaultAdminHomePath,
-  permissionForAdminPagePath,
   permissionsForAdminApiPath,
   hasAnyPermission,
   type AdminPermission,
@@ -112,8 +112,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/admin/pos/mobile", request.url));
   }
 
-  const required = permissionForAdminPagePath(pathname);
-  if (required && !sessionHasPermission(session, required)) {
+  if (
+    !canAccessAdminPagePath(
+      { role: session.role, permissions: session.permissions },
+      pathname,
+    )
+  ) {
     const home = defaultAdminHomePath(
       { role: session.role, permissions: session.permissions },
       { preferMobile },

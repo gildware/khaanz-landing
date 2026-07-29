@@ -27,7 +27,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { useTabParam } from "@/hooks/use-tab-param";
+import { usePermittedTabs } from "@/hooks/use-permitted-tabs";
 import {
   formatRupees,
   monthKeyFromDate,
@@ -209,7 +209,10 @@ function AdminPayrollPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editEmployeeId = searchParams.get("edit");
-  const [tab, setTab] = useTabParam("employees");
+  const { activeTab: tab, setActiveTab: setTab, canTab } = usePermittedTabs({
+    pagePath: "/admin/payroll",
+    defaultTab: "employees",
+  });
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
 
@@ -262,10 +265,14 @@ function AdminPayrollPageContent() {
 
       <Tabs value={tab} onValueChange={setTab} className="w-full gap-6">
         <TabsList variant="line" className="h-auto min-h-9 w-full flex-wrap justify-start gap-0">
-          <TabsTrigger value="employees">Employees</TabsTrigger>
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>
-          <TabsTrigger value="advances">Advance salary</TabsTrigger>
-          <TabsTrigger value="payrun">Payroll run</TabsTrigger>
+          {canTab("employees") ? <TabsTrigger value="employees">Employees</TabsTrigger> : null}
+          {canTab("attendance") ? (
+            <TabsTrigger value="attendance">Attendance</TabsTrigger>
+          ) : null}
+          {canTab("advances") ? (
+            <TabsTrigger value="advances">Advance salary</TabsTrigger>
+          ) : null}
+          {canTab("payrun") ? <TabsTrigger value="payrun">Payroll run</TabsTrigger> : null}
         </TabsList>
 
         <TabsContent value="employees" className="space-y-4">

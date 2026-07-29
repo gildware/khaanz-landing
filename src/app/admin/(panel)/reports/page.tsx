@@ -42,7 +42,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useTabParam } from "@/hooks/use-tab-param";
+import { usePermittedTabs } from "@/hooks/use-permitted-tabs";
 import { formatIstDateInput, istStartOfMonth } from "@/lib/ist-dates";
 import {
   chartTooltipRupeePair,
@@ -194,7 +194,10 @@ function defaultCustomTo(): string {
 }
 
 export default function AdminReportsPage() {
-  const [activeTab, setActiveTab] = useTabParam("overview");
+  const { activeTab, setActiveTab, canTab } = usePermittedTabs({
+    pagePath: "/admin/reports",
+    defaultTab: "overview",
+  });
   const [preset, setPreset] = useState<DatePreset>("this_month");
   const [customFrom, setCustomFrom] = useState(defaultCustomFrom);
   const [customTo, setCustomTo] = useState(defaultCustomTo);
@@ -533,12 +536,16 @@ export default function AdminReportsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="flex h-auto flex-wrap gap-1">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="sales">Sales</TabsTrigger>
-          <TabsTrigger value="items">Menu items</TabsTrigger>
-          <TabsTrigger value="expenses">Business expenses</TabsTrigger>
-          <TabsTrigger value="personal">Personal expenses</TabsTrigger>
-          <TabsTrigger value="wastage">Wastage</TabsTrigger>
+          {canTab("overview") ? <TabsTrigger value="overview">Overview</TabsTrigger> : null}
+          {canTab("sales") ? <TabsTrigger value="sales">Sales</TabsTrigger> : null}
+          {canTab("items") ? <TabsTrigger value="items">Menu items</TabsTrigger> : null}
+          {canTab("expenses") ? (
+            <TabsTrigger value="expenses">Business expenses</TabsTrigger>
+          ) : null}
+          {canTab("personal") ? (
+            <TabsTrigger value="personal">Personal expenses</TabsTrigger>
+          ) : null}
+          {canTab("wastage") ? <TabsTrigger value="wastage">Wastage</TabsTrigger> : null}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">

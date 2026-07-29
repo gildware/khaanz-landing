@@ -79,6 +79,7 @@ import {
 } from "@/lib/payroll/payroll-utils";
 import { formatRecipeQtyBase } from "@/lib/inventory/decimal-utils";
 import { useQueryParam } from "@/hooks/use-query-param";
+import { usePermittedTabs } from "@/hooks/use-permitted-tabs";
 import { useTabParam } from "@/hooks/use-tab-param";
 
 function cx(...x: Array<string | false | null | undefined>): string {
@@ -1179,7 +1180,10 @@ async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export default function AdminInventoryPage() {
-  const [activeTab, setActiveTab] = useTabParam("overview");
+  const { activeTab, setActiveTab, canTab } = usePermittedTabs({
+    pagePath: "/admin/inventory",
+    defaultTab: "overview",
+  });
   const [initialLoading, setInitialLoading] = useState(true);
   const [tabsReady, setTabsReady] = useState<Record<string, boolean>>({});
   const settingsLoadedRef = useRef(false);
@@ -3390,27 +3394,41 @@ export default function AdminInventoryPage() {
         }}
       >
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
-          <TabsTrigger value="overview" className="data-[state=active]:font-semibold">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="items" className="data-[state=active]:font-semibold">
-            Items
-          </TabsTrigger>
-          <TabsTrigger value="suppliers" className="data-[state=active]:font-semibold">
-            Suppliers
-          </TabsTrigger>
-          <TabsTrigger value="purchase" className="data-[state=active]:font-semibold">
-            Purchases
-          </TabsTrigger>
-          <TabsTrigger value="recipes" className="data-[state=active]:font-semibold">
-            Recipes
-          </TabsTrigger>
-          <TabsTrigger value="sell" className="data-[state=active]:font-semibold">
-            Sell stock
-          </TabsTrigger>
-          <TabsTrigger value="ops" className="data-[state=active]:font-semibold">
-            Stock & pay
-          </TabsTrigger>
+          {canTab("overview") ? (
+            <TabsTrigger value="overview" className="data-[state=active]:font-semibold">
+              Overview
+            </TabsTrigger>
+          ) : null}
+          {canTab("items") ? (
+            <TabsTrigger value="items" className="data-[state=active]:font-semibold">
+              Items
+            </TabsTrigger>
+          ) : null}
+          {canTab("suppliers") ? (
+            <TabsTrigger value="suppliers" className="data-[state=active]:font-semibold">
+              Suppliers
+            </TabsTrigger>
+          ) : null}
+          {canTab("purchase") ? (
+            <TabsTrigger value="purchase" className="data-[state=active]:font-semibold">
+              Purchases
+            </TabsTrigger>
+          ) : null}
+          {canTab("recipes") ? (
+            <TabsTrigger value="recipes" className="data-[state=active]:font-semibold">
+              Recipes
+            </TabsTrigger>
+          ) : null}
+          {canTab("sell") ? (
+            <TabsTrigger value="sell" className="data-[state=active]:font-semibold">
+              Sell stock
+            </TabsTrigger>
+          ) : null}
+          {canTab("ops") ? (
+            <TabsTrigger value="ops" className="data-[state=active]:font-semibold">
+              Stock & pay
+            </TabsTrigger>
+          ) : null}
         </TabsList>
 
         {tabLoading ? (

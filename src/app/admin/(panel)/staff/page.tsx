@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Loader2Icon, PencilIcon, PlusIcon, UserPlusIcon } from "lucide-react";
 
+import { PermissionTreeEditor } from "@/components/admin/permission-tree-editor";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -25,9 +26,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  ADMIN_PERMISSIONS,
-  ADMIN_PERMISSION_LABELS,
   ALL_ADMIN_PERMISSIONS,
+  expandPermissionsForEditor,
+  summarizePermissions,
   type AdminPermission,
 } from "@/lib/admin-permissions";
 import { cn } from "@/lib/utils";
@@ -104,27 +105,10 @@ export default function AdminStaffPage() {
       permissions:
         user.role === "SUPER_ADMIN"
           ? [...ALL_ADMIN_PERMISSIONS]
-          : [...user.permissions],
+          : expandPermissionsForEditor(user.permissions),
       active: user.active,
     });
     setDialogOpen(true);
-  };
-
-  const togglePermission = (key: AdminPermission, checked: boolean) => {
-    setForm((prev) => {
-      const set = new Set(prev.permissions);
-      if (checked) set.add(key);
-      else set.delete(key);
-      return { ...prev, permissions: ADMIN_PERMISSIONS.filter((p) => set.has(p)) };
-    });
-  };
-
-  const selectAll = () => {
-    setForm((prev) => ({ ...prev, permissions: [...ALL_ADMIN_PERMISSIONS] }));
-  };
-
-  const clearAll = () => {
-    setForm((prev) => ({ ...prev, permissions: [] }));
   };
 
   const save = async () => {
@@ -204,8 +188,9 @@ export default function AdminStaffPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Staff & logins</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Create employee logins and choose which modules they can open
-            (Inventory, Wastage, POS, Orders, and more).
+            Create employee logins and choose exactly which menus and submenus
+            they can open — for example Daily report only, or Inventory stock
+            items without purchase orders.
           </p>
         </div>
         <Button type="button" onClick={openCreate} className="gap-2">
@@ -227,7 +212,7 @@ export default function AdminStaffPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Access</TableHead>
+                <TableHead className="w-[320px] min-w-[240px]">Access</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[100px]" />
               </TableRow>
@@ -235,32 +220,28 @@ export default function AdminStaffPage() {
             <TableBody>
               {users.map((u) => (
                 <TableRow key={u.id} className={cn(!u.active && "opacity-60")}>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium align-top">
                     {u.displayName?.trim() || "—"}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{u.email}</TableCell>
-                  <TableCell className="capitalize text-sm">
+                  <TableCell className="font-mono text-xs align-top">
+                    {u.email}
+                  </TableCell>
+                  <TableCell className="capitalize text-sm align-top">
                     {u.role === "SUPER_ADMIN"
                       ? "Super admin"
                       : u.role === "STAFF"
                         ? "Staff"
                         : "Admin"}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[220px]">
+                  <TableCell className="w-[320px] min-w-[240px] max-w-[320px] align-top text-xs text-muted-foreground whitespace-normal break-words">
                     {u.role === "SUPER_ADMIN"
                       ? "Full access"
-                      : u.permissions.length === 0
-                        ? "No modules"
-                        : u.permissions
-                            .slice(0, 4)
-                            .map((p) => ADMIN_PERMISSION_LABELS[p])
-                            .join(", ") +
-                          (u.permissions.length > 4
-                            ? ` +${u.permissions.length - 4}`
-                            : "")}
+                      : summarizePermissions(u.permissions)}
                   </TableCell>
-                  <TableCell>{u.active ? "Active" : "Inactive"}</TableCell>
-                  <TableCell>
+                  <TableCell className="align-top">
+                    {u.active ? "Active" : "Inactive"}
+                  </TableCell>
+                  <TableCell className="align-top">
                     <div className="flex gap-1">
                       <Button
                         type="button"
@@ -299,7 +280,7 @@ export default function AdminStaffPage() {
             </DialogTitle>
             <DialogDescription>
               {editing
-                ? "Update details, password, and module permissions."
+                ? "Update details, password, and menu permissions."
                 : "They can sign in at /admin/login with this email and password."}
             </DialogDescription>
           </DialogHeader>
@@ -371,52 +352,17 @@ export default function AdminStaffPage() {
                       }));
                     }}
                   >
-                    <option value="STAFF">Staff (choose modules)</option>
-                    <option value="ADMIN">Admin (all modules by default)</option>
+                    <option value="STAFF">Staff (choose menus)</option>
+                    <option value="ADMIN">Admin (all menus by default)</option>
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label>Module permissions</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs"
-                        onClick={selectAll}
-                      >
-                        All
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs"
-                        onClick={clearAll}
-                      >
-                        None
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-2 rounded-md border border-border p-3">
-                    {ADMIN_PERMISSIONS.map((key) => (
-                      <label
-                        key={key}
-                        className="flex items-center gap-2 text-sm cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={form.permissions.includes(key)}
-                          onCheckedChange={(v) =>
-                            togglePermission(key, v === true)
-                          }
-                        />
-                        {ADMIN_PERMISSION_LABELS[key]}
-                      </label>
-                    ))}
-                  </div>
-                </div>
+                <PermissionTreeEditor
+                  value={form.permissions}
+                  onChange={(permissions) =>
+                    setForm((p) => ({ ...p, permissions }))
+                  }
+                />
 
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <Checkbox

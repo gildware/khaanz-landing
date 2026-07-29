@@ -35,7 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useTabParam } from "@/hooks/use-tab-param";
+import { usePermittedTabs } from "@/hooks/use-permitted-tabs";
 import {
   DataTableToolbar,
   selectControlClassName,
@@ -253,7 +253,10 @@ function resetBusinessDraft(): {
 }
 
 export default function AdminExpensesPage() {
-  const [activeTab, setActiveTab] = useTabParam("business");
+  const { activeTab, setActiveTab, canTab } = usePermittedTabs({
+    pagePath: "/admin/expenses",
+    defaultTab: "business",
+  });
   const [initialLoading, setInitialLoading] = useState(true);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [expenseEntries, setExpenseEntries] = useState<ExpenseEntry[]>([]);
@@ -649,12 +652,16 @@ export default function AdminExpensesPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="business" className="data-[state=active]:font-semibold">
-            Business expenses
-          </TabsTrigger>
-          <TabsTrigger value="personal" className="data-[state=active]:font-semibold">
-            Personal use
-          </TabsTrigger>
+          {canTab("business") ? (
+            <TabsTrigger value="business" className="data-[state=active]:font-semibold">
+              Business expenses
+            </TabsTrigger>
+          ) : null}
+          {canTab("personal") ? (
+            <TabsTrigger value="personal" className="data-[state=active]:font-semibold">
+              Personal use
+            </TabsTrigger>
+          ) : null}
         </TabsList>
 
         <TabsContent value="business" className="space-y-4 pt-4">

@@ -32,6 +32,7 @@ import {
 import { useAdminSession } from "@/components/admin/admin-session-provider";
 import { Button } from "@/components/ui/button";
 import type { AdminPermission } from "@/lib/admin-permissions";
+import { permittedTabsForPage } from "@/lib/admin-permissions";
 import { SITE } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -40,26 +41,34 @@ const links: {
   label: string;
   icon: LucideIcon;
   permission: AdminPermission;
+  /** Show link when user has any permission in this module (for multi-tab pages). */
+  module?: LegacyModulePermission;
   /** Open in a new tab (e.g. POS fullscreen register). */
   openInNewTab?: boolean;
 }[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboardIcon, permission: "dashboard" },
-  { href: "/admin/reports", label: "Reports", icon: BarChart3Icon, permission: "reports" },
-  { href: "/admin/daily-report", label: "Daily report", icon: CalendarDaysIcon, permission: "reports" },
+  {
+    href: "/admin/reports",
+    label: "Reports",
+    icon: BarChart3Icon,
+    permission: "reports.overview",
+    module: "reports",
+  },
+  { href: "/admin/daily-report", label: "Daily report", icon: CalendarDaysIcon, permission: "reports.daily_report" },
   {
     href: "/admin/previous-sales",
     label: "Previous day sales",
     icon: HistoryIcon,
-    permission: "reports",
+    permission: "reports.previous_sales",
   },
-  { href: "/admin/cash", label: "Money available", icon: WalletIcon, permission: "reports" },
+  { href: "/admin/cash", label: "Money available", icon: WalletIcon, permission: "reports.cash" },
   { href: "/admin/online-orders", label: "Online orders", icon: ShoppingBagIcon, permission: "online_orders" },
   { href: "/admin/orders", label: "Orders", icon: ClipboardListIcon, permission: "orders" },
-  { href: "/admin/inventory", label: "Inventory", icon: WarehouseIcon, permission: "inventory" },
-  { href: "/admin/recipes", label: "Recipe book", icon: BookOpenIcon, permission: "inventory" },
-  { href: "/admin/wastage", label: "Wastage", icon: Trash2Icon, permission: "wastage" },
-  { href: "/admin/vendors", label: "Vendors", icon: HandshakeIcon, permission: "vendors" },
-  { href: "/admin/expenses", label: "Expenses", icon: IndianRupeeIcon, permission: "expenses" },
+  { href: "/admin/inventory", label: "Inventory", icon: WarehouseIcon, permission: "inventory.overview", module: "inventory" },
+  { href: "/admin/recipes", label: "Recipe book", icon: BookOpenIcon, permission: "inventory.recipe_book" },
+  { href: "/admin/wastage", label: "Wastage", icon: Trash2Icon, permission: "wastage.overview", module: "wastage" },
+  { href: "/admin/vendors", label: "Vendors", icon: HandshakeIcon, permission: "vendors.overview", module: "vendors" },
+  { href: "/admin/expenses", label: "Expenses", icon: IndianRupeeIcon, permission: "expenses.business", module: "expenses" },
   { href: "/admin/floor-plan", label: "Table layout", icon: LayoutGridIcon, permission: "floor_plan" },
   { href: "/admin/pos", label: "POS", icon: StoreIcon, permission: "pos", openInNewTab: true },
   {
@@ -73,19 +82,20 @@ const links: {
     href: "/admin/menu",
     label: "Menu catalogue",
     icon: UtensilsCrossedIcon,
-    permission: "menu",
+    permission: "menu.categories",
+    module: "menu",
   },
   {
     href: "/admin/menu-board",
     label: "Menu board",
     icon: ScrollTextIcon,
-    permission: "menu",
+    permission: "menu.board",
     openInNewTab: true,
   },
   { href: "/admin/home-layout", label: "Home layout", icon: LayoutTemplateIcon, permission: "home_layout" },
-  { href: "/admin/payroll", label: "Payroll", icon: UsersIcon, permission: "payroll" },
+  { href: "/admin/payroll", label: "Payroll", icon: UsersIcon, permission: "payroll.employees", module: "payroll" },
   { href: "/admin/staff", label: "Staff & logins", icon: KeyRoundIcon, permission: "staff" },
-  { href: "/admin/settings", label: "Settings", icon: SettingsIcon, permission: "settings" },
+  { href: "/admin/settings", label: "Settings", icon: SettingsIcon, permission: "settings.general", module: "settings" },
 ];
 
 export function AdminSidebar() {
@@ -99,9 +109,19 @@ export function AdminSidebar() {
     router.refresh();
   };
 
-  // The layout seeds the session server-side, so this filters correctly on the
-  // first paint. `can` already grants everything to SUPER_ADMIN.
-  const visibleLinks = user ? links.filter((l) => can(l.permission)) : [];
+  // Exact permission for each link. Hub pages (module set) also show when the
+  // user has any in-page tab under that hub — not sibling standalone pages.
+  const visibleLinks = user
+    ? links.filter((l) => {
+        if (can(l.permission)) return true;
+        if (!l.module) return false;
+        const tabs = permittedTabsForPage(
+          { role: user.role, permissions: user.permissions },
+          l.href,
+        );
+        return Boolean(tabs?.length);
+      })
+    : [];
   const label =
     user?.displayName?.trim() ||
     user?.email ||
