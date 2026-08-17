@@ -13,10 +13,14 @@ import type { MenuItem } from "@/types/menu";
  */
 export function FeaturedDishesCarousel() {
   const { data } = useMenuData();
-  const featured = (data?.items ?? []).filter(
-    (i) =>
-      i.recommended && isMenuItemOrderable(i, data?.categories ?? []),
-  );
+  const featured = (data?.items ?? [])
+    .filter(
+      (i) =>
+        i.recommended && isMenuItemOrderable(i, data?.categories ?? []),
+    )
+    .sort(
+      (a, b) => (a.recommendedSortOrder ?? 0) - (b.recommendedSortOrder ?? 0),
+    );
   const [active, setActive] = useState<MenuItem | null>(null);
   const [open, setOpen] = useState(false);
 

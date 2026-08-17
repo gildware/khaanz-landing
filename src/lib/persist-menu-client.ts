@@ -86,14 +86,23 @@ export async function deleteMenuComboClient(comboId: string): Promise<void> {
 }
 
 /**
- * Reorder categories/items, toggle item visibility, and set recommended
- * items/combos without rewriting the whole menu (safe when items are
- * referenced by wastage, recipes, etc.).
+ * Reorder categories/items, toggle category/item visibility, and set
+ * recommended items/combos without rewriting the whole menu (safe when
+ * items are referenced by wastage, recipes, etc.).
  */
 export async function persistMenuLayout(layout: {
-  categories: string[];
-  items: { id: string; available: boolean; recommended: boolean }[];
-  combos: { id: string; recommended: boolean }[];
+  categories: { name: string; available: boolean }[];
+  items: {
+    id: string;
+    available: boolean;
+    recommended: boolean;
+    recommendedSortOrder?: number;
+  }[];
+  combos: {
+    id: string;
+    recommended: boolean;
+    recommendedSortOrder?: number;
+  }[];
 }): Promise<void> {
   await putJson("/api/admin/menu/layout", layout);
 }

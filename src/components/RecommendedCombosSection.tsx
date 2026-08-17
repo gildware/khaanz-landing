@@ -29,13 +29,18 @@ export function RecommendedCombosSection() {
     const items = data?.items ?? [];
     const combos = data?.combos ?? [];
     const categories = data?.categories ?? [];
-    return combos.filter(
-      (c) =>
-        c.recommended &&
-        c.available !== false &&
-        isComboAvailable(c, items, categories) &&
-        matchesComboSearch(c, q),
-    );
+    return combos
+      .filter(
+        (c) =>
+          c.recommended &&
+          c.available !== false &&
+          isComboAvailable(c, items, categories) &&
+          matchesComboSearch(c, q),
+      )
+      .sort(
+        (a, b) =>
+          (a.recommendedSortOrder ?? 0) - (b.recommendedSortOrder ?? 0),
+      );
   }, [data?.items, data?.combos, data?.categories, q]);
 
   if (isLoading && !data) return null;

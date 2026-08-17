@@ -82,6 +82,8 @@ model Category {
   sortOrder   Int        @map("sort_order")
   /// When true, every item in this category is treated as not for sale.
   notForSale  Boolean    @default(false) @map("not_for_sale")
+  /// When false, the category is hidden from the customer website (POS still shows it).
+  available   Boolean    @default(true)
   parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
   children  Category[] @relation("CategoryTree")
   items     MenuItem[]
@@ -111,6 +113,8 @@ model MenuItem {
   /// Ingredient / internal item — kept in catalog but not orderable.
   notForSale        Boolean                 @default(false) @map("not_for_sale")
   sortOrder         Int                     @default(0) @map("sort_order")
+  /// Independent of category `sortOrder` — used by the home-page recommended rail.
+  recommendedSortOrder Int                  @default(0) @map("recommended_sort_order")
   category          Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   variations        MenuItemVariation[]
   addons            MenuItemAddon[]
@@ -165,6 +169,8 @@ model MenuCombo {
   recommended Boolean              @default(false)
   available   Boolean              @default(true)
   sortOrder   Int                  @default(0) @map("sort_order")
+  /// Independent of combo list `sortOrder` — used by the home-page recommended rail.
+  recommendedSortOrder Int         @default(0) @map("recommended_sort_order")
   components  MenuComboComponent[]
 
   @@map("menu_combos")

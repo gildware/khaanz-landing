@@ -18,7 +18,7 @@ import { useMenuData } from "@/contexts/menu-data-context";
 import { getAddonsForItem } from "@/data/menu";
 import { computeUnitPrice } from "@/lib/cart-line";
 import { flyToCart } from "@/lib/fly-to-cart";
-import { isMenuItemOrderable } from "@/lib/menu-availability";
+import { isMenuItemVisibleOnStorefront } from "@/lib/menu-availability";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItem, MenuVariation } from "@/types/menu";
 import { MenuItemImage } from "@/components/MenuItemImage";
@@ -90,7 +90,7 @@ export function ItemCustomizeSheet({
 
   const handleAdd = () => {
     if (!cachedItem || !variation) return;
-    if (!isMenuItemOrderable(cachedItem, menuData?.categories)) {
+    if (!isMenuItemVisibleOnStorefront(cachedItem, menuData?.categories)) {
       toast.error("This item is not available to order right now.");
       return;
     }
@@ -212,7 +212,7 @@ export function ItemCustomizeSheet({
               onClick={handleAdd}
               disabled={
                 !variation ||
-                !isMenuItemOrderable(cachedItem, menuData?.categories)
+                !isMenuItemVisibleOnStorefront(cachedItem, menuData?.categories)
               }
             >
               Add to cart

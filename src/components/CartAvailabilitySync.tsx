@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { useMenuData } from "@/contexts/menu-data-context";
 import { isComboAvailable } from "@/lib/menu-combos";
-import { isMenuItemOrderable } from "@/lib/menu-availability";
+import { isMenuItemVisibleOnStorefront } from "@/lib/menu-availability";
 import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
 import { useCartStore } from "@/store/cartStore";
 
@@ -28,7 +28,7 @@ export function CartAvailabilitySync() {
       }
       if (isCartItemLine(line)) {
         const item = byId.get(line.itemId);
-        if (!item || !isMenuItemOrderable(item, data.categories)) {
+        if (!item || !isMenuItemVisibleOnStorefront(item, data.categories)) {
           removeItem(line.lineId);
         }
         continue;

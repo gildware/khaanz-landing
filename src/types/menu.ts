@@ -23,6 +23,8 @@ export interface MenuItem {
   addons: MenuAddon[];
   recommended?: boolean;
   available?: boolean;
+  /** Home-page recommended rail order (independent of category item order). */
+  recommendedSortOrder?: number;
   /** Kept in catalog but not orderable (ingredients, internal items). */
   notForSale?: boolean;
 }
@@ -47,6 +49,8 @@ export interface MenuCombo {
   isVeg: boolean;
   recommended?: boolean;
   available?: boolean;
+  /** Home-page recommended rail order (independent of combo list order). */
+  recommendedSortOrder?: number;
 }
 
 /** Add-on on a cart line: unit `price` × `quantity` (per main item) is included in line `unitPrice`. */

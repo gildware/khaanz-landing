@@ -5,22 +5,48 @@ import { ADMIN_TOKEN_COOKIE, verifyAdminToken } from "@/lib/admin-auth";
 import { writeMenuLayout } from "@/lib/menu-repository";
 
 type LayoutPayload = {
-  categories: string[];
-  items: { id: string; available: boolean; recommended: boolean }[];
-  combos: { id: string; recommended: boolean }[];
+  categories: { name: string; available?: boolean }[];
+  items: {
+    id: string;
+    available: boolean;
+    recommended: boolean;
+    recommendedSortOrder?: number;
+  }[];
+  combos: {
+    id: string;
+    recommended: boolean;
+    recommendedSortOrder?: number;
+  }[];
 };
+
+function optionalSortOrder(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.round(value)
+    : undefined;
+}
 
 function parseLayout(body: unknown): LayoutPayload | null {
   if (!body || typeof body !== "object") return null;
   const o = body as Record<string, unknown>;
   if (!Array.isArray(o.categories) || !Array.isArray(o.items)) return null;
 
-  const categories: string[] = [];
+  const categories: LayoutPayload["categories"] = [];
   for (const c of o.categories) {
-    if (typeof c === "string" && c.trim()) categories.push(c.trim());
+    if (typeof c === "string" && c.trim()) {
+      categories.push({ name: c.trim() });
+      continue;
+    }
+    if (!c || typeof c !== "object") continue;
+    const r = c as Record<string, unknown>;
+    const name = typeof r.name === "string" ? r.name.trim() : "";
+    if (!name) continue;
+    categories.push({
+      name,
+      ...(typeof r.available === "boolean" ? { available: r.available } : {}),
+    });
   }
 
-  const items: { id: string; available: boolean; recommended: boolean }[] = [];
+  const items: LayoutPayload["items"] = [];
   for (const raw of o.items) {
     if (!raw || typeof raw !== "object") return null;
     const r = raw as Record<string, unknown>;
@@ -29,16 +55,21 @@ function parseLayout(body: unknown): LayoutPayload | null {
       id: r.id,
       available: r.available !== false,
       recommended: r.recommended === true,
+      recommendedSortOrder: optionalSortOrder(r.recommendedSortOrder),
     });
   }
 
-  const combos: { id: string; recommended: boolean }[] = [];
+  const combos: LayoutPayload["combos"] = [];
   if (Array.isArray(o.combos)) {
     for (const raw of o.combos) {
       if (!raw || typeof raw !== "object") return null;
       const r = raw as Record<string, unknown>;
       if (typeof r.id !== "string" || !r.id) return null;
-      combos.push({ id: r.id, recommended: r.recommended === true });
+      combos.push({
+        id: r.id,
+        recommended: r.recommended === true,
+        recommendedSortOrder: optionalSortOrder(r.recommendedSortOrder),
+      });
     }
   }
 

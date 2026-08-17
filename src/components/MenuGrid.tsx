@@ -8,7 +8,10 @@ import { MenuCard, MenuCardSkeleton } from "@/components/MenuCard";
 import { useMenuExplore } from "@/contexts/menu-explore-context";
 import { useMenuData } from "@/contexts/menu-data-context";
 import { COMBOS_TAB_ID, isComboAvailable } from "@/lib/menu-combos";
-import { isMenuItemOrderable } from "@/lib/menu-availability";
+import {
+  isMenuCategoryAvailable,
+  isMenuItemVisibleOnStorefront,
+} from "@/lib/menu-availability";
 import { CategoryIcon } from "@/lib/category-icons";
 import type { MenuCategoryDef } from "@/types/menu-category";
 import type { MenuCombo, MenuItem } from "@/types/menu";
@@ -56,7 +59,7 @@ export function MenuGrid() {
   const menuItems = useMemo(
     () =>
       (data?.items ?? []).filter((item) =>
-        isMenuItemOrderable(item, categories),
+        isMenuItemVisibleOnStorefront(item, categories),
       ),
     [data?.items, categories],
   );
@@ -84,6 +87,7 @@ export function MenuGrid() {
     const rows: { name: string; items: MenuItem[] }[] = [];
 
     for (const cat of categories) {
+      if (!isMenuCategoryAvailable(cat)) continue;
       const catName = cat.name;
       const itemsInCat = menuItems.filter(
         (item) => item.category === catName && matchesSearch(item, q),

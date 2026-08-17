@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 import { getPrisma } from "@/lib/prisma";
 import { normalizeMenuCombos } from "@/lib/menu-combos";
@@ -38,6 +38,7 @@ export async function readMenuPayload(): Promise<MenuPayload> {
           image: true,
           icon: true,
           notForSale: true,
+          available: true,
         },
         orderBy: { sortOrder: "asc" },
       }),
@@ -78,6 +79,7 @@ export async function readMenuPayload(): Promise<MenuPayload> {
     image: (c.image ?? "").trim(),
     icon: (c.icon ?? "").trim() || "utensils-crossed",
     notForSale: c.notForSale || undefined,
+    available: c.available === false ? false : undefined,
   }));
 
   const menuItems: MenuItem[] = items.map((row) => {
@@ -97,6 +99,7 @@ export async function readMenuPayload(): Promise<MenuPayload> {
       recommended: row.recommended || undefined,
       available: row.available,
       notForSale: row.notForSale || undefined,
+      recommendedSortOrder: row.recommendedSortOrder,
       variations: row.variations.map((v) => ({
         id: v.id,
         name: v.name,
@@ -119,6 +122,7 @@ export async function readMenuPayload(): Promise<MenuPayload> {
     isVeg: c.isVeg,
     recommended: c.recommended || undefined,
     available: c.available,
+    recommendedSortOrder: c.recommendedSortOrder,
     components: c.components.map((x) => ({
       itemId: x.itemId,
       variationId: x.variationId,
@@ -162,6 +166,7 @@ async function upsertMenuItemRowInTx(
       available: it.available !== false,
       notForSale: it.notForSale === true,
       sortOrder,
+      recommendedSortOrder: it.recommendedSortOrder ?? 0,
     },
     update: {
       categoryId,
@@ -173,6 +178,9 @@ async function upsertMenuItemRowInTx(
       available: it.available !== false,
       notForSale: it.notForSale === true,
       sortOrder,
+      ...(typeof it.recommendedSortOrder === "number"
+        ? { recommendedSortOrder: it.recommendedSortOrder }
+        : {}),
     },
   });
 
@@ -266,13 +274,22 @@ export async function writeMenuItem(item: MenuItem): Promise<void> {
 
     const existing = await tx.menuItem.findUnique({
       where: { id: item.id },
-      select: { sortOrder: true },
+      select: { sortOrder: true, recommendedSortOrder: true },
     });
     const sortOrder =
       existing?.sortOrder ??
       (await tx.menuItem.count({ where: { categoryId: category.id } }));
 
-    await upsertMenuItemRowInTx(tx, item, category.id, sortOrder);
+    await upsertMenuItemRowInTx(
+      tx,
+      {
+        ...item,
+        recommendedSortOrder:
+          item.recommendedSortOrder ?? existing?.recommendedSortOrder ?? 0,
+      },
+      category.id,
+      sortOrder,
+    );
   });
 }
 
@@ -329,6 +346,7 @@ async function upsertCategoriesInTx(
         parentId: null,
         sortOrder: i,
         notForSale: def?.notForSale === true,
+        available: def?.available !== false,
       },
       update: {
         name,
@@ -337,6 +355,7 @@ async function upsertCategoriesInTx(
         parentId: null,
         sortOrder: i,
         notForSale: def?.notForSale === true,
+        available: def?.available !== false,
       },
     });
   }
@@ -389,6 +408,7 @@ async function upsertMenuComboInTx(
       recommended: combo.recommended ?? false,
       available: combo.available !== false,
       sortOrder,
+      recommendedSortOrder: combo.recommendedSortOrder ?? 0,
     },
     update: {
       name: combo.name,
@@ -399,6 +419,9 @@ async function upsertMenuComboInTx(
       recommended: combo.recommended ?? false,
       available: combo.available !== false,
       sortOrder,
+      ...(typeof combo.recommendedSortOrder === "number"
+        ? { recommendedSortOrder: combo.recommendedSortOrder }
+        : {}),
     },
   });
 
@@ -442,10 +465,18 @@ export async function writeMenuCombo(combo: MenuCombo): Promise<void> {
   await prisma.$transaction(async (tx) => {
     const existing = await tx.menuCombo.findUnique({
       where: { id: combo.id },
-      select: { sortOrder: true },
+      select: { sortOrder: true, recommendedSortOrder: true },
     });
     const sortOrder = existing?.sortOrder ?? (await tx.menuCombo.count());
-    await upsertMenuComboInTx(tx, combo, sortOrder);
+    await upsertMenuComboInTx(
+      tx,
+      {
+        ...combo,
+        recommendedSortOrder:
+          combo.recommendedSortOrder ?? existing?.recommendedSortOrder ?? 0,
+      },
+      sortOrder,
+    );
   });
 }
 
@@ -512,57 +543,111 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
 }
 
 /**
- * Home-layout save: reorder categories/items, toggle item visibility, and set
- * which items/combos are recommended on the storefront home page.
+ * Home-layout save: reorder categories/items, toggle category/item visibility,
+ * and set which items/combos are recommended on the storefront home page.
  *
- * Targeted `sortOrder` / `available` / `recommended` updates only — never
- * deletes menu rows. Catalog edits go through `writeMenuPayload`.
+ * Targeted `sortOrder` / `available` / `recommended` / `recommendedSortOrder`
+ * updates only — never deletes menu rows. Catalog edits go through
+ * `writeMenuPayload`.
  */
 export async function writeMenuLayout(layout: {
-  categories: string[];
-  items: { id: string; available: boolean; recommended?: boolean }[];
-  combos?: { id: string; recommended: boolean }[];
+  categories: { name: string; available?: boolean }[];
+  items: {
+    id: string;
+    available: boolean;
+    recommended?: boolean;
+    recommendedSortOrder?: number;
+  }[];
+  combos?: {
+    id: string;
+    recommended: boolean;
+    recommendedSortOrder?: number;
+  }[];
 }): Promise<void> {
   const prisma = getPrisma();
 
-  await prisma.$transaction(async (tx) => {
-    const topCategories = await tx.category.findMany({
-      where: { parentId: null },
-      select: { id: true, name: true },
-    });
-    const idByName = new Map(topCategories.map((c) => [c.name, c.id]));
+  await prisma.$transaction(
+    async (tx) => {
+      const topCategories = await tx.category.findMany({
+        where: { parentId: null },
+        select: { id: true, name: true },
+      });
+      const idByName = new Map(topCategories.map((c) => [c.name, c.id]));
 
-    const seen = new Set<string>();
-    for (let i = 0; i < layout.categories.length; i++) {
-      const name = layout.categories[i]!;
-      const id = idByName.get(name);
-      if (!id || seen.has(id)) continue;
-      seen.add(id);
-      await tx.category.update({ where: { id }, data: { sortOrder: i } });
-    }
-
-    for (let i = 0; i < layout.items.length; i++) {
-      const it = layout.items[i]!;
-      // updateMany avoids throwing if an item was removed concurrently.
-      await tx.menuItem.updateMany({
-        where: { id: it.id },
-        data: {
+      const catRows: { id: string; sortOrder: number; available: boolean }[] =
+        [];
+      const seen = new Set<string>();
+      for (let i = 0; i < layout.categories.length; i++) {
+        const cat = layout.categories[i]!;
+        const id = idByName.get(cat.name);
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        catRows.push({
+          id,
           sortOrder: i,
-          available: it.available,
-          ...(typeof it.recommended === "boolean"
-            ? { recommended: it.recommended }
-            : {}),
-        },
-      });
-    }
+          available: cat.available !== false,
+        });
+      }
 
-    for (const c of layout.combos ?? []) {
-      await tx.menuCombo.updateMany({
-        where: { id: c.id },
-        data: { recommended: c.recommended },
-      });
-    }
-  });
+      if (catRows.length > 0) {
+        await tx.$executeRaw`
+          UPDATE categories AS c
+          SET
+            sort_order = v.sort_order,
+            available = v.available
+          FROM (
+            VALUES ${Prisma.join(
+              catRows.map(
+                (r) =>
+                  Prisma.sql`(${r.id}, ${r.sortOrder}::int, ${r.available})`,
+              ),
+            )}
+          ) AS v(id, sort_order, available)
+          WHERE c.id = v.id
+        `;
+      }
+
+      if (layout.items.length > 0) {
+        await tx.$executeRaw`
+          UPDATE menu_items AS m
+          SET
+            sort_order = v.sort_order,
+            available = v.available,
+            recommended = v.recommended,
+            recommended_sort_order = v.recommended_sort_order
+          FROM (
+            VALUES ${Prisma.join(
+              layout.items.map(
+                (it, i) =>
+                  Prisma.sql`(${it.id}, ${i}::int, ${it.available}, ${it.recommended === true}, ${typeof it.recommendedSortOrder === "number" ? it.recommendedSortOrder : 0}::int)`,
+              ),
+            )}
+          ) AS v(id, sort_order, available, recommended, recommended_sort_order)
+          WHERE m.id = v.id
+        `;
+      }
+
+      const combos = layout.combos ?? [];
+      if (combos.length > 0) {
+        await tx.$executeRaw`
+          UPDATE menu_combos AS m
+          SET
+            recommended = v.recommended,
+            recommended_sort_order = v.recommended_sort_order
+          FROM (
+            VALUES ${Prisma.join(
+              combos.map(
+                (c) =>
+                  Prisma.sql`(${c.id}, ${c.recommended}, ${typeof c.recommendedSortOrder === "number" ? c.recommendedSortOrder : 0}::int)`,
+              ),
+            )}
+          ) AS v(id, recommended, recommended_sort_order)
+          WHERE m.id = v.id
+        `;
+      }
+    },
+    { maxWait: 15_000, timeout: 120_000 },
+  );
 }
 
 /** Toggle availability / for-sale on a single menu item without a full catalog sync. */

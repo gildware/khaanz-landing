@@ -7,4 +7,6 @@ export interface MenuCategoryDef {
   icon: string;
   /** When true, all items in this category are not for sale. */
   notForSale?: boolean;
+  /** When false, hidden from the customer website. Omitted/true = visible. */
+  available?: boolean;
 }

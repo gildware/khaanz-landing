@@ -9,6 +9,7 @@ import {
   EyeIcon,
   EyeOffIcon,
   GripVerticalIcon,
+  Loader2Icon,
   SparklesIcon,
   XIcon,
 } from "lucide-react";
@@ -44,6 +45,10 @@ function itemIsVisible(item: MenuItem): boolean {
   return item.available !== false;
 }
 
+function categoryIsVisible(cat: MenuCategoryDef): boolean {
+  return cat.available !== false;
+}
+
 export function HomeLayoutManager() {
   const { data, isLoading, mutate } = useMenuData();
 
@@ -55,9 +60,12 @@ export function HomeLayoutManager() {
   const [recOpen, setRecOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   const dragCat = useRef<number | null>(null);
   const dragItem = useRef<{ cat: string; index: number } | null>(null);
+  const dragRecItem = useRef<number | null>(null);
+  const dragRecCombo = useRef<number | null>(null);
 
   // Sync local working copy from the menu payload. Skip while there are
   // unsaved edits so a background SWR refresh can't clobber them.
@@ -84,11 +92,23 @@ export function HomeLayoutManager() {
   );
 
   const recommendedItemsList = useMemo(
-    () => allItems.filter((i) => i.recommended),
+    () =>
+      allItems
+        .filter((i) => i.recommended)
+        .sort(
+          (a, b) =>
+            (a.recommendedSortOrder ?? 0) - (b.recommendedSortOrder ?? 0),
+        ),
     [allItems],
   );
   const recommendedCombosList = useMemo(
-    () => combos.filter((c) => c.recommended),
+    () =>
+      combos
+        .filter((c) => c.recommended)
+        .sort(
+          (a, b) =>
+            (a.recommendedSortOrder ?? 0) - (b.recommendedSortOrder ?? 0),
+        ),
     [combos],
   );
   const recommendedCount =
@@ -112,11 +132,12 @@ export function HomeLayoutManager() {
 
   const totalHidden = useMemo(() => {
     let n = 0;
+    for (const cat of cats) if (!categoryIsVisible(cat)) n += 1;
     for (const list of Object.values(groups)) {
       for (const it of list) if (!itemIsVisible(it)) n += 1;
     }
     return n;
-  }, [groups]);
+  }, [cats, groups]);
 
   const moveCategory = (from: number, to: number) => {
     setCats((prev) => moveInArray(prev, from, to));
@@ -141,25 +162,93 @@ export function HomeLayoutManager() {
     setDirty(true);
   };
 
+  const setCategoryVisible = (name: string, visible: boolean) => {
+    setCats((prev) =>
+      prev.map((c) =>
+        c.name === name ? { ...c, available: visible } : c,
+      ),
+    );
+    setDirty(true);
+  };
+
+  const patchItem = (id: string, patch: Partial<MenuItem>) => {
+    setGroups((prev) => {
+      const next: Record<string, MenuItem[]> = {};
+      for (const [cat, list] of Object.entries(prev)) {
+        next[cat] = list.map((i) => (i.id === id ? { ...i, ...patch } : i));
+      }
+      return next;
+    });
+    setOrphans((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, ...patch } : i)),
+    );
+  };
+
   const setItemRecommended = (id: string, recommended: boolean) => {
+    const nextOrder = recommended
+      ? Math.max(
+          -1,
+          ...recommendedItemsList.map((i) => i.recommendedSortOrder ?? 0),
+        ) + 1
+      : 0;
+    patchItem(id, { recommended, recommendedSortOrder: nextOrder });
+    setDirty(true);
+  };
+
+  const setComboRecommended = (id: string, recommended: boolean) => {
+    const nextOrder = recommended
+      ? Math.max(
+          -1,
+          ...recommendedCombosList.map((c) => c.recommendedSortOrder ?? 0),
+        ) + 1
+      : 0;
+    setCombos((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? { ...c, recommended, recommendedSortOrder: nextOrder }
+          : c,
+      ),
+    );
+    setDirty(true);
+  };
+
+  const moveRecommendedItem = (from: number, to: number) => {
+    const ids = recommendedItemsList.map((i) => i.id);
+    const nextIds = moveInArray(ids, from, to);
+    if (nextIds === ids) return;
+    const order = new Map(nextIds.map((id, i) => [id, i]));
     setGroups((prev) => {
       const next: Record<string, MenuItem[]> = {};
       for (const [cat, list] of Object.entries(prev)) {
         next[cat] = list.map((i) =>
-          i.id === id ? { ...i, recommended } : i,
+          order.has(i.id)
+            ? { ...i, recommendedSortOrder: order.get(i.id)! }
+            : i,
         );
       }
       return next;
     });
     setOrphans((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, recommended } : i)),
+      prev.map((i) =>
+        order.has(i.id)
+          ? { ...i, recommendedSortOrder: order.get(i.id)! }
+          : i,
+      ),
     );
     setDirty(true);
   };
 
-  const setComboRecommended = (id: string, recommended: boolean) => {
+  const moveRecommendedCombo = (from: number, to: number) => {
+    const ids = recommendedCombosList.map((c) => c.id);
+    const nextIds = moveInArray(ids, from, to);
+    if (nextIds === ids) return;
+    const order = new Map(nextIds.map((id, i) => [id, i]));
     setCombos((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, recommended } : c)),
+      prev.map((c) =>
+        order.has(c.id)
+          ? { ...c, recommendedSortOrder: order.get(c.id)! }
+          : c,
+      ),
     );
     setDirty(true);
   };
@@ -174,7 +263,8 @@ export function HomeLayoutManager() {
   };
 
   const save = async () => {
-    if (!data) return;
+    if (!dirty || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
     const ordered: MenuItem[] = [];
     for (const c of cats) {
@@ -182,24 +272,46 @@ export function HomeLayoutManager() {
     }
     for (const it of orphans) ordered.push(it);
     try {
+      const recItemOrder = new Map(
+        recommendedItemsList.map((it, i) => [it.id, i]),
+      );
+      const recComboOrder = new Map(
+        recommendedCombosList.map((c, i) => [c.id, i]),
+      );
       await persistMenuLayout({
-        categories: cats.map((c) => c.name),
+        categories: cats.map((c) => ({
+          name: c.name,
+          available: categoryIsVisible(c),
+        })),
         items: ordered.map((it) => ({
           id: it.id,
           available: itemIsVisible(it),
           recommended: Boolean(it.recommended),
+          recommendedSortOrder: recItemOrder.get(it.id) ?? 0,
         })),
         combos: combos.map((c) => ({
           id: c.id,
           recommended: Boolean(c.recommended),
+          recommendedSortOrder: recComboOrder.get(c.id) ?? 0,
         })),
       });
+      if (data) {
+        await mutate(
+          {
+            ...data,
+            categories: cats,
+            items: ordered,
+            combos,
+          },
+          { revalidate: false },
+        );
+      }
       setDirty(false);
-      await mutate(undefined, { revalidate: false });
       toast.success("Home layout saved");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -231,7 +343,7 @@ export function HomeLayoutManager() {
             </span>
           ) : (
             <>
-              Drag to reorder. {totalHidden > 0 ? `${totalHidden} item${totalHidden === 1 ? "" : "s"} hidden.` : "All items visible."}
+              Drag to reorder. {totalHidden > 0 ? `${totalHidden} hidden from the website.` : "All categories and items visible."}
             </>
           )}
         </p>
@@ -250,8 +362,23 @@ export function HomeLayoutManager() {
             size="sm"
             onClick={() => void save()}
             disabled={!dirty || saving}
+            aria-busy={saving}
+            title={
+              saving
+                ? "Saving…"
+                : dirty
+                  ? "Save layout"
+                  : "Make a change to save"
+            }
           >
-            {saving ? "Saving…" : "Save layout"}
+            {saving ? (
+              <>
+                <Loader2Icon className="animate-spin" />
+                Saving…
+              </>
+            ) : (
+              "Save layout"
+            )}
           </Button>
         </div>
       </div>
@@ -266,7 +393,8 @@ export function HomeLayoutManager() {
           <div className="min-w-0 flex-1">
             <p className="font-medium">Recommended</p>
             <p className="text-muted-foreground text-xs">
-              Featured on the home page. Pick dishes and combos to highlight.
+              Featured on the home page. Pick dishes and combos, then drag to
+              set their order.
             </p>
           </div>
           <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground tabular-nums">
@@ -299,11 +427,26 @@ export function HomeLayoutManager() {
                 </p>
               ) : (
                 <ul className="space-y-1.5">
-                  {recommendedItemsList.map((item) => (
+                  {recommendedItemsList.map((item, i) => (
                     <li
                       key={item.id}
-                      className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5"
+                      draggable
+                      onDragStart={() => {
+                        dragRecItem.current = i;
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        const from = dragRecItem.current;
+                        if (from === null || from === i) return;
+                        moveRecommendedItem(from, i);
+                        dragRecItem.current = i;
+                      }}
+                      onDragEnd={() => {
+                        dragRecItem.current = null;
+                      }}
+                      className="flex cursor-grab items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 active:cursor-grabbing"
                     >
+                      <GripVerticalIcon className="size-4 shrink-0 text-muted-foreground/70" />
                       <div className="relative size-9 shrink-0 overflow-hidden rounded-md bg-muted">
                         <MenuItemImage
                           src={item.image}
@@ -316,15 +459,37 @@ export function HomeLayoutManager() {
                       <span className="min-w-0 flex-1 truncate text-sm">
                         {item.name}
                       </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Remove ${item.name} from recommended`}
-                        onClick={() => setItemRecommended(item.id, false)}
-                      >
-                        <XIcon />
-                      </Button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Move ${item.name} up`}
+                          disabled={i === 0}
+                          onClick={() => moveRecommendedItem(i, i - 1)}
+                        >
+                          <ArrowUpIcon />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Move ${item.name} down`}
+                          disabled={i === recommendedItemsList.length - 1}
+                          onClick={() => moveRecommendedItem(i, i + 1)}
+                        >
+                          <ArrowDownIcon />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Remove ${item.name} from recommended`}
+                          onClick={() => setItemRecommended(item.id, false)}
+                        >
+                          <XIcon />
+                        </Button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -349,11 +514,26 @@ export function HomeLayoutManager() {
                 </p>
               ) : (
                 <ul className="space-y-1.5">
-                  {recommendedCombosList.map((combo) => (
+                  {recommendedCombosList.map((combo, i) => (
                     <li
                       key={combo.id}
-                      className="flex items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5"
+                      draggable
+                      onDragStart={() => {
+                        dragRecCombo.current = i;
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        const from = dragRecCombo.current;
+                        if (from === null || from === i) return;
+                        moveRecommendedCombo(from, i);
+                        dragRecCombo.current = i;
+                      }}
+                      onDragEnd={() => {
+                        dragRecCombo.current = null;
+                      }}
+                      className="flex cursor-grab items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5 active:cursor-grabbing"
                     >
+                      <GripVerticalIcon className="size-4 shrink-0 text-muted-foreground/70" />
                       <div className="relative size-9 shrink-0 overflow-hidden rounded-md bg-muted">
                         <MenuItemImage
                           src={combo.image}
@@ -366,15 +546,37 @@ export function HomeLayoutManager() {
                       <span className="min-w-0 flex-1 truncate text-sm">
                         {combo.name}
                       </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Remove ${combo.name} from recommended`}
-                        onClick={() => setComboRecommended(combo.id, false)}
-                      >
-                        <XIcon />
-                      </Button>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Move ${combo.name} up`}
+                          disabled={i === 0}
+                          onClick={() => moveRecommendedCombo(i, i - 1)}
+                        >
+                          <ArrowUpIcon />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Move ${combo.name} down`}
+                          disabled={i === recommendedCombosList.length - 1}
+                          onClick={() => moveRecommendedCombo(i, i + 1)}
+                        >
+                          <ArrowDownIcon />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Remove ${combo.name} from recommended`}
+                          onClick={() => setComboRecommended(combo.id, false)}
+                        >
+                          <XIcon />
+                        </Button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -388,11 +590,15 @@ export function HomeLayoutManager() {
         {cats.map((cat, idx) => {
           const list = groups[cat.name] ?? [];
           const isOpen = expanded[cat.name] ?? false;
+          const catVisible = categoryIsVisible(cat);
           const hiddenInCat = list.filter((i) => !itemIsVisible(i)).length;
           return (
             <li
               key={cat.name}
-              className="overflow-hidden rounded-xl border border-border bg-card"
+              className={cn(
+                "overflow-hidden rounded-xl border border-border bg-card",
+                !catVisible && "opacity-70",
+              )}
             >
               <div
                 draggable
@@ -409,7 +615,7 @@ export function HomeLayoutManager() {
                 onDragEnd={() => {
                   dragCat.current = null;
                 }}
-                className="flex cursor-grab items-center gap-2 px-2 py-2.5 active:cursor-grabbing sm:px-3"
+                className="flex flex-wrap cursor-grab items-center gap-2 px-2 py-2.5 active:cursor-grabbing sm:px-3"
               >
                 <GripVerticalIcon className="size-4 shrink-0 text-muted-foreground/70" />
                 <CategoryIcon
@@ -424,7 +630,11 @@ export function HomeLayoutManager() {
                   <span className="truncate font-medium">{cat.name}</span>
                   <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground tabular-nums">
                     {list.length} item{list.length === 1 ? "" : "s"}
-                    {hiddenInCat > 0 ? ` · ${hiddenInCat} hidden` : ""}
+                    {!catVisible
+                      ? " · hidden on website"
+                      : hiddenInCat > 0
+                        ? ` · ${hiddenInCat} hidden`
+                        : ""}
                   </span>
                 </button>
                 <div className="flex shrink-0 items-center gap-1">
@@ -448,6 +658,35 @@ export function HomeLayoutManager() {
                   >
                     <ArrowDownIcon />
                   </Button>
+                  <label
+                    className="ml-1 flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    title={
+                      catVisible
+                        ? "Visible on website"
+                        : "Hidden from website"
+                    }
+                  >
+                    {catVisible ? (
+                      <EyeIcon className="size-4 text-muted-foreground" />
+                    ) : (
+                      <EyeOffIcon className="size-4 text-muted-foreground" />
+                    )}
+                    <span className="hidden text-[11px] text-muted-foreground sm:inline">
+                      Website
+                    </span>
+                    <Switch
+                      checked={catVisible}
+                      onCheckedChange={(v) =>
+                        setCategoryVisible(cat.name, Boolean(v))
+                      }
+                      aria-label={
+                        catVisible
+                          ? "Hide category from website"
+                          : "Show category on website"
+                      }
+                    />
+                  </label>
                   <Button
                     type="button"
                     variant="ghost"

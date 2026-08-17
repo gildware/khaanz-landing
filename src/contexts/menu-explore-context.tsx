@@ -12,7 +12,7 @@ import {
 
 import { useMenuData } from "@/contexts/menu-data-context";
 import { COMBOS_TAB_ID, isComboAvailable } from "@/lib/menu-combos";
-import { isMenuItemOrderable } from "@/lib/menu-availability";
+import { isMenuItemVisibleOnStorefront } from "@/lib/menu-availability";
 
 type MenuExploreContextValue = {
   category: string | "all";
@@ -52,10 +52,14 @@ export function MenuExploreProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (category !== "all") {
-      const hasAvailable = items.some(
-        (i) =>
-          i.category === category && isMenuItemOrderable(i, categories),
-      );
+      const selected = categories.find((c) => c.name === category);
+      const hasAvailable =
+        selected?.available !== false &&
+        items.some(
+          (i) =>
+            i.category === category &&
+            isMenuItemVisibleOnStorefront(i, categories),
+        );
       if (!hasAvailable) {
         setCategoryState("all");
       }
