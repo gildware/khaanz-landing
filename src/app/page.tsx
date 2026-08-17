@@ -10,7 +10,7 @@ export default function HomePage() {
   return (
     <div className="min-h-[100dvh] pb-24 md:pb-8">
       <Header />
-      <main className="mx-auto max-w-6xl space-y-8 px-4 py-6">
+      <main className="mx-auto max-w-6xl space-y-4 px-4 py-3 sm:space-y-8 sm:py-6">
         <HeroBanner />
         <FeaturedDishesCarousel />
         <RecommendedCombosSection />

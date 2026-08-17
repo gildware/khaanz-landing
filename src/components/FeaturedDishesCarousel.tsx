@@ -39,7 +39,7 @@ export function FeaturedDishesCarousel() {
         </div>
       </div>
       <div
-        className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0"
+        className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0"
         role="list"
         aria-label="Recommended dishes"
       >
@@ -47,7 +47,7 @@ export function FeaturedDishesCarousel() {
           <div
             key={item.id}
             role="listitem"
-            className="w-[min(calc((100vw-2.5rem)/2.35),200px)] shrink-0 snap-start sm:w-[200px]"
+            className="w-[min(calc((100vw-2.5rem)/2.35),200px)] shrink-0 sm:w-[200px]"
           >
             <button
               type="button"

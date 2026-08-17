@@ -39,42 +39,67 @@ export function Header() {
   }, [pathname]);
 
   const { searchQuery, setSearchQuery, setCategory } = useMenuExplore();
-  const searchOpen = useUIStore((s) => s.searchOpen);
-  const setSearchOpen = useUIStore((s) => s.setSearchOpen);
   const setCartOpen = useUIStore((s) => s.setCartOpen);
   const { totalItems } = useCartTotals();
 
+  const onSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCategory("all");
+  };
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-6xl items-center gap-2 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2"
+          className="flex shrink-0 items-center"
           aria-label={`${SITE.name} — home`}
         >
-          <span className="relative block h-10 w-[8.5rem] shrink-0 sm:h-11 sm:w-[9.5rem]">
+          <span className="relative block h-8 w-[5.75rem] shrink-0 sm:h-10 sm:w-[8.25rem] md:h-11 md:w-[9.5rem]">
             <Image
               src={SITE.logoPath}
               alt={`${SITE.name} — ${SITE.tagline}`}
               fill
               priority
-              sizes="(max-width: 640px) 140px, 160px"
+              sizes="(max-width: 640px) 92px, (max-width: 768px) 132px, 152px"
               className="object-contain object-left"
             />
           </span>
         </Link>
 
-        <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
+        <div className="relative min-w-0 flex-1">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground sm:left-3" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search dishes…"
+            aria-label="Search menu"
+            className="h-9 rounded-full border-border bg-muted/40 pr-9 pl-8 text-sm sm:h-10 sm:pl-10 md:h-11"
+          />
+          {searchQuery ? (
+            <button
+              type="button"
+              className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={() => onSearchChange("")}
+              aria-label="Clear search"
+            >
+              <XIcon className="size-3.5" />
+            </button>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
           {customerIn ? (
             <Link
               href="/my-orders"
               className={cn(
-                buttonVariants({ variant: "ghost", size: "sm" }),
-                "inline-flex gap-1.5 rounded-full text-muted-foreground",
+                buttonVariants({ variant: "ghost", size: "icon-sm" }),
+                "rounded-full text-muted-foreground md:h-9 md:w-auto md:gap-1.5 md:px-2.5",
               )}
+              aria-label={customerName ? `Hi, ${customerName}` : "My orders"}
             >
               <UserRoundIcon className="size-4" />
-              <span className="hidden sm:inline">
+              <span className="hidden md:inline">
                 {customerName ? `Hi, ${customerName}` : "My orders"}
               </span>
             </Link>
@@ -82,30 +107,21 @@ export function Header() {
             <Link
               href="/auth/phone?next=/"
               className={cn(
-                buttonVariants({ variant: "ghost", size: "sm" }),
-                "inline-flex gap-1.5 rounded-full text-muted-foreground",
+                buttonVariants({ variant: "ghost", size: "icon-sm" }),
+                "rounded-full text-muted-foreground md:h-9 md:w-auto md:gap-1.5 md:px-2.5",
               )}
+              aria-label="Sign in"
             >
               <UserRoundIcon className="size-4" />
-              <span className="hidden sm:inline">Sign in</span>
+              <span className="hidden md:inline">Sign in</span>
             </Link>
           )}
-          <Button
-            type="button"
-            variant={searchOpen ? "secondary" : "ghost"}
-            size="icon-sm"
-            className="rounded-full"
-            onClick={() => setSearchOpen(!searchOpen)}
-            aria-label="Search menu"
-          >
-            {searchOpen ? <XIcon className="size-4" /> : <SearchIcon className="size-4" />}
-          </Button>
 
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="relative rounded-full"
+            className="relative rounded-full md:size-9"
             data-cart-target="header"
             onClick={() => setCartOpen(true)}
             aria-label="Open cart"
@@ -117,30 +133,6 @@ export function Header() {
               </span>
             )}
           </Button>
-        </div>
-      </div>
-
-      <div
-        className={cn(
-          "grid transition-[grid-template-rows] duration-300 ease-out",
-          searchOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="border-t border-border/70 px-4 py-3">
-            <div className="relative mx-auto max-w-6xl">
-              <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCategory("all");
-                }}
-                placeholder="Search dishes, ingredients…"
-                className="h-11 rounded-full border-border bg-muted/30 pl-10"
-              />
-            </div>
-          </div>
         </div>
       </div>
     </header>
