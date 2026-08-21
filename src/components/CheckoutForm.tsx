@@ -41,6 +41,7 @@ import {
   isPickupOpen,
 } from "@/lib/restaurant-hours";
 import { useCartTotals } from "@/hooks/use-cart-totals";
+import { trackPurchase } from "@/lib/meta-pixel";
 import { useCartStore } from "@/store/cartStore";
 import { buildWaMeUrl, buildWhatsAppMessage } from "@/utils/whatsapp";
 import type { FulfillmentMode } from "@/types/restaurant-settings";
@@ -702,6 +703,15 @@ export function CheckoutForm() {
         toast.error("Invalid response from server.");
         return;
       }
+
+      trackPurchase({
+        value: grandTotal,
+        contentIds: lines.map((l) =>
+          l.kind === "combo" ? l.comboId : l.kind === "item" ? l.itemId : l.lineId,
+        ),
+        numItems: lines.reduce((sum, l) => sum + l.quantity, 0),
+        orderId: orderRef ?? orderId,
+      });
 
       clearCart();
 

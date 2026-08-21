@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 
 import { CartDrawer } from "@/components/CartDrawer";
 import { FloatingCartButton } from "@/components/FloatingCartButton";
+import { MetaPixel } from "@/components/MetaPixel";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { MenuExploreProvider } from "@/contexts/menu-explore-context";
 import { RestaurantSettingsProvider } from "@/contexts/restaurant-settings-context";
@@ -27,6 +28,7 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
       <RootErrorBoundary>
         <RestaurantSettingsProvider>
           <MenuExploreProvider>
+            <MetaPixel />
             {children}
             <CartDrawer />
             <FloatingCartButton />

@@ -11,13 +11,16 @@ import {
 } from "@/lib/cart-line";
 import { formatComboComponentSummary, isComboAvailable } from "@/lib/menu-combos";
 import { isMenuItemAvailable, isMenuItemOrderable } from "@/lib/menu-availability";
-import type {
-  CartAddonWithQty,
-  CartComboLine,
-  CartLine,
-  MenuCombo,
-  MenuItem,
-  MenuVariation,
+import { trackAddToCart } from "@/lib/meta-pixel";
+import {
+  isCartComboLine,
+  isCartItemLine,
+  type CartAddonWithQty,
+  type CartComboLine,
+  type CartLine,
+  type MenuCombo,
+  type MenuItem,
+  type MenuVariation,
 } from "@/types/menu";
 
 export interface AddItemPayload {
@@ -36,9 +39,15 @@ interface CartState {
   clearCart: () => void;
 }
 
+function contentIdForLine(line: CartLine): string {
+  if (isCartComboLine(line)) return line.comboId;
+  if (isCartItemLine(line)) return line.itemId;
+  return line.lineId;
+}
+
 export const useCartStore = create<CartState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       items: [],
 
       addItem: ({ item, variation, addons }) => {
@@ -71,6 +80,11 @@ export const useCartStore = create<CartState>()(
           };
           return { items: [...state.items, line] };
         });
+        trackAddToCart({
+          contentId: item.id,
+          contentName: item.name,
+          value: unitPrice,
+        });
       },
 
       addCombo: (combo, menuItems) => {
@@ -102,6 +116,11 @@ export const useCartStore = create<CartState>()(
           };
           return { items: [...state.items, line] };
         });
+        trackAddToCart({
+          contentId: combo.id,
+          contentName: combo.name,
+          value: combo.price,
+        });
       },
 
       removeItem: (lineId) =>
@@ -109,12 +128,20 @@ export const useCartStore = create<CartState>()(
           items: state.items.filter((l) => l.lineId !== lineId),
         })),
 
-      increaseQty: (lineId) =>
+      increaseQty: (lineId) => {
+        const line = get().items.find((l) => l.lineId === lineId);
+        if (!line) return;
         set((state) => ({
           items: state.items.map((l) =>
             l.lineId === lineId ? { ...l, quantity: l.quantity + 1 } : l,
           ),
-        })),
+        }));
+        trackAddToCart({
+          contentId: contentIdForLine(line),
+          contentName: line.name,
+          value: line.unitPrice,
+        });
+      },
 
       decreaseQty: (lineId) =>
         set((state) => {
