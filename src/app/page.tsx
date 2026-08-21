@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { CategoryTabs } from "@/components/CategoryTabs";
 import { FeaturedDishesCarousel } from "@/components/FeaturedDishesCarousel";
 import { Header } from "@/components/Header";
@@ -5,10 +7,14 @@ import { HeroBanner } from "@/components/HeroBanner";
 import { HomeCombosSection } from "@/components/HomeCombosSection";
 import { HomeMenuSection } from "@/components/HomeMenuSection";
 import { RecommendedCombosSection } from "@/components/RecommendedCombosSection";
+import { StorefrontDeepLink } from "@/components/StorefrontDeepLink";
 
 export default function HomePage() {
   return (
     <div className="min-h-[100dvh] pb-24 md:pb-8">
+      <Suspense fallback={null}>
+        <StorefrontDeepLink />
+      </Suspense>
       <Header />
       <main className="mx-auto max-w-6xl space-y-4 px-4 py-3 sm:space-y-8 sm:py-6">
         <HeroBanner />

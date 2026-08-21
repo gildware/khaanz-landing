@@ -27,6 +27,24 @@ function fbqTrack(event: string, params?: Record<string, unknown>) {
   else window.fbq("track", event);
 }
 
+export function trackViewContent(params: {
+  contentId: string;
+  contentName: string;
+  value: number;
+  contentCategory?: string;
+}) {
+  fbqTrack("ViewContent", {
+    content_ids: [params.contentId],
+    content_name: params.contentName,
+    content_type: "product",
+    value: params.value,
+    currency: CURRENCY,
+    ...(params.contentCategory
+      ? { content_category: params.contentCategory }
+      : {}),
+  });
+}
+
 export function trackAddToCart(params: {
   contentId: string;
   contentName: string;

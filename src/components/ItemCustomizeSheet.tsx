@@ -19,6 +19,7 @@ import { getAddonsForItem } from "@/data/menu";
 import { computeUnitPrice } from "@/lib/cart-line";
 import { flyToCart } from "@/lib/fly-to-cart";
 import { isMenuItemVisibleOnStorefront } from "@/lib/menu-availability";
+import { trackViewContent } from "@/lib/meta-pixel";
 import { useCartStore } from "@/store/cartStore";
 import type { MenuItem, MenuVariation } from "@/types/menu";
 import { MenuItemImage } from "@/components/MenuItemImage";
@@ -52,6 +53,20 @@ export function ItemCustomizeSheet({
   useEffect(() => {
     if (item) setCachedItem(item);
   }, [item]);
+
+  useEffect(() => {
+    if (!open || !item) return;
+    const value =
+      item.variations.length > 0
+        ? Math.min(...item.variations.map((v) => v.price))
+        : 0;
+    trackViewContent({
+      contentId: item.id,
+      contentName: item.name,
+      value,
+      contentCategory: item.category,
+    });
+  }, [open, item]);
 
   const addons = useMemo(() => {
     if (!cachedItem || !menuData) return [];

@@ -25,12 +25,13 @@ type MenuExploreContextValue = {
 const MenuExploreContext = createContext<MenuExploreContextValue | null>(null);
 
 export function MenuExploreProvider({ children }: { children: ReactNode }) {
-  const { data } = useMenuData();
+  const { data, isLoading } = useMenuData();
 
   const [category, setCategoryState] = useState<string | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    if (isLoading && !data) return;
     const categories = data?.categories ?? [];
     const items = data?.items ?? [];
     const combos = data?.combos ?? [];
@@ -64,7 +65,7 @@ export function MenuExploreProvider({ children }: { children: ReactNode }) {
         setCategoryState("all");
       }
     }
-  }, [data?.categories, data?.combos, data?.items, category]);
+  }, [data, data?.categories, data?.combos, data?.items, category, isLoading]);
 
   const setCategory = useCallback((c: string | "all") => {
     setCategoryState(c);

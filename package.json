@@ -17,7 +17,7 @@
     "db:seed": "prisma db seed",
     "db:backup": "bash scripts/backup-db.sh",
     "desktop": "npm --prefix pos-desktop run dev",
-    "test": "tsx --test tests/payroll-calc.test.ts"
+    "test": "tsx --test tests/payroll-calc.test.ts tests/storefront-deep-link.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
