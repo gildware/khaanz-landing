@@ -4,6 +4,7 @@
  *   npx tsx scripts/migrate-images-to-cloudinary.ts
  */
 import { loadEnvConfig } from "@next/env";
+import path from "node:path";
 
 import {
   isCloudinaryConfigured,
@@ -26,20 +27,38 @@ const SITE = (
   "https://khaanz.in"
 ).replace(/\/$/, "");
 
+const PLACEHOLDER_FILE = path.join(process.cwd(), "public/placeholder-food.svg");
+
 function resolveSource(image: string): string | null {
   const t = image.trim();
-  if (t === "/placeholder-food.svg" || t.endsWith("placeholder-food.svg")) {
-    return null;
-  }
-  if (t.includes("images.unsplash.com")) return null;
   if (isCloudinaryUrl(t)) return null;
   if (isDataImageUrl(t)) return t;
   if (/^https?:\/\//i.test(t)) return t;
-  if (t.startsWith("/")) return `${SITE}${t}`;
-  return t;
+  if (t.startsWith("/") && !t.includes("placeholder-food")) return `${SITE}${t}`;
+  return PLACEHOLDER_FILE;
 }
 
-async function migrateOne(
+async function uploadFromUrlOrFile(source: string, folder: string, publicId: string) {
+  try {
+    return await uploadMenuImageToCloudinary({ source, folder, publicId });
+  } catch (e) {
+    if (!/^https?:\/\//i.test(source)) throw e;
+    const res = await fetch(source, {
+      headers: { "User-Agent": "khaanz-cloudinary-migrate" },
+    });
+    if (!res.ok) throw e;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const mime = res.headers.get("content-type")?.split(";")[0] || "image/jpeg";
+    const dataUri = `data:${mime};base64,${buf.toString("base64")}`;
+    return await uploadMenuImageToCloudinary({
+      source: dataUri,
+      folder,
+      publicId,
+    });
+  }
+}
+
+async function uploadWithFallback(
   kind: string,
   id: string,
   name: string,
@@ -48,18 +67,22 @@ async function migrateOne(
 ): Promise<string | null> {
   const source = resolveSource(image);
   if (!source) return null;
-  const url = await uploadMenuImageToCloudinary({
-    source,
-    folder,
-    publicId: id,
-  });
-  console.log(`  ${kind} ${id} (${name}) -> ${url}`);
-  return url;
-}
-
-function isMissingRemote(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
-  return msg.includes("Resource not found") || msg.includes("404");
+  try {
+    const url = await uploadFromUrlOrFile(source, folder, id);
+    console.log(`  ${kind} ${id} (${name}) -> ${url}`);
+    return url;
+  } catch (e) {
+    if (source === PLACEHOLDER_FILE) throw e;
+    const url = await uploadMenuImageToCloudinary({
+      source: PLACEHOLDER_FILE,
+      folder,
+      publicId: id,
+    });
+    console.warn(
+      `  ${kind} ${id} (${name}) missing file, used placeholder -> ${url}`,
+    );
+    return url;
+  }
 }
 
 async function main() {
@@ -78,7 +101,7 @@ async function main() {
   });
   for (const row of items) {
     try {
-      const url = await migrateOne(
+      const url = await uploadWithFallback(
         "item",
         row.id,
         row.name,
@@ -95,11 +118,6 @@ async function main() {
       });
       updated += 1;
     } catch (e) {
-      if (isMissingRemote(e)) {
-        skipped += 1;
-        console.warn(`  SKIP missing file item ${row.id}`);
-        continue;
-      }
       failed += 1;
       console.error(`  FAIL item ${row.id}:`, e instanceof Error ? e.message : e);
     }
@@ -110,7 +128,7 @@ async function main() {
   });
   for (const row of combos) {
     try {
-      const url = await migrateOne(
+      const url = await uploadWithFallback(
         "combo",
         row.id,
         row.name,
@@ -127,11 +145,6 @@ async function main() {
       });
       updated += 1;
     } catch (e) {
-      if (isMissingRemote(e)) {
-        skipped += 1;
-        console.warn(`  SKIP missing file combo ${row.id}`);
-        continue;
-      }
       failed += 1;
       console.error(`  FAIL combo ${row.id}:`, e instanceof Error ? e.message : e);
     }
@@ -143,7 +156,7 @@ async function main() {
   });
   for (const row of cats) {
     try {
-      const url = await migrateOne(
+      const url = await uploadWithFallback(
         "category",
         row.id,
         row.name,
@@ -160,11 +173,6 @@ async function main() {
       });
       updated += 1;
     } catch (e) {
-      if (isMissingRemote(e)) {
-        skipped += 1;
-        console.warn(`  SKIP missing file category ${row.id}`);
-        continue;
-      }
       failed += 1;
       console.error(`  FAIL category ${row.id}:`, e instanceof Error ? e.message : e);
     }
