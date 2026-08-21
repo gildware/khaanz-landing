@@ -14,6 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getFirebaseAuth, isFirebasePhoneAuthEnabled } from "@/lib/firebase-client";
 import {
+  clearRecaptchaVerifier,
+  createInvisibleRecaptchaVerifier,
+  isRecaptchaAlreadyRenderedError,
+} from "@/lib/firebase-phone-recaptcha";
+import {
   DEMO_CUSTOMER_OTP,
   DEMO_CUSTOMER_PHONE_DIGITS,
   isDemoCustomerLoginEnabled,
@@ -35,46 +40,32 @@ function PhoneAuthForm() {
   const firebaseEnabled = useMemo(() => isFirebasePhoneAuthEnabled(), []);
   const demoEnabled = useMemo(() => isDemoCustomerLoginEnabled(), []);
   const auth = useMemo(() => (firebaseEnabled ? getFirebaseAuth() : null), [firebaseEnabled]);
-  const recaptchaContainerId = "firebase-recaptcha-container";
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
   const confirmRef = useRef<ConfirmationResult | null>(null);
 
-  const initRecaptcha = async () => {
-    if (!auth) return false;
-    try {
-      const mod = await import("firebase/auth");
-      try {
-        recaptchaRef.current?.clear();
-      } catch {
-        // ignore clear failures on a stale verifier
-      }
-      recaptchaRef.current = new mod.RecaptchaVerifier(auth, recaptchaContainerId, {
-        size: "invisible",
-      });
-      await recaptchaRef.current.render();
-      return true;
-    } catch (e) {
-      const msg =
-        e instanceof Error ? e.message : typeof e === "string" ? e : "Unknown error";
-      console.error("Firebase reCAPTCHA init failed:", e);
-      toast.error(`Could not initialize reCAPTCHA: ${msg}`);
-      return false;
-    }
+  const resetRecaptcha = () => {
+    clearRecaptchaVerifier(recaptchaRef.current, recaptchaContainerRef.current);
+    recaptchaRef.current = null;
+  };
+
+  const getRecaptcha = async () => {
+    if (!auth) return null;
+    const container = recaptchaContainerRef.current;
+    if (!container) return null;
+    if (recaptchaRef.current) return recaptchaRef.current;
+    const verifier = await createInvisibleRecaptchaVerifier(auth, container);
+    recaptchaRef.current = verifier;
+    return verifier;
   };
 
   useEffect(() => {
-    if (!firebaseEnabled || !auth) return;
-    if (typeof window === "undefined") return;
-
-    let cancelled = false;
-    void initRecaptcha().then((ok) => {
-      if (!ok || cancelled) recaptchaRef.current = null;
-    });
-
+    if (firebaseEnabled) void import("firebase/auth");
     return () => {
-      cancelled = true;
+      clearRecaptchaVerifier(recaptchaRef.current, recaptchaContainerRef.current);
+      recaptchaRef.current = null;
     };
-  }, [firebaseEnabled, auth]);
+  }, [firebaseEnabled]);
 
   const firebaseSmsErrorHint = (errCode: string | null): string | null => {
     if (errCode !== "auth/invalid-app-credential") return null;
@@ -102,18 +93,23 @@ function PhoneAuthForm() {
     setBusy(true);
     try {
       if (firebaseEnabled && auth && !isDemo) {
-        if (!recaptchaRef.current) {
-          toast.error("reCAPTCHA is not ready. Please try again.");
-          return;
-        }
         const e164 = `+91${digits}`;
+        const sendSms = async () => {
+          const verifier = await getRecaptcha();
+          if (!verifier) {
+            throw new Error("reCAPTCHA is not ready. Please try again.");
+          }
+          // signInWithPhoneNumber renders the widget; do not call render()/verify() first.
+          return signInWithPhoneNumber(auth, e164, verifier);
+        };
         try {
-          // signInWithPhoneNumber runs reCAPTCHA internally; do not call verify() first.
-          confirmRef.current = await signInWithPhoneNumber(
-            auth,
-            e164,
-            recaptchaRef.current,
-          );
+          try {
+            confirmRef.current = await sendSms();
+          } catch (first) {
+            if (!isRecaptchaAlreadyRenderedError(first)) throw first;
+            resetRecaptcha();
+            confirmRef.current = await sendSms();
+          }
           toast.success("SMS code sent.");
           setPhone(digits);
           setStep("code");
@@ -129,8 +125,7 @@ function PhoneAuthForm() {
               ? anyErr.message
               : null;
           console.error("Firebase signInWithPhoneNumber failed:", e);
-          recaptchaRef.current = null;
-          void initRecaptcha();
+          resetRecaptcha();
           const hint = firebaseSmsErrorHint(code);
           toast.error(
             hint ??
@@ -257,7 +252,7 @@ function PhoneAuthForm() {
           </p>
         </div>
 
-        <div id={recaptchaContainerId} />
+        <div ref={recaptchaContainerRef} />
 
         {step === "phone" ? (
           <div className="space-y-4">
@@ -336,6 +331,7 @@ function PhoneAuthForm() {
                 setStep("phone");
                 setCode("");
                 confirmRef.current = null;
+                resetRecaptcha();
               }}
             >
               Use a different number
