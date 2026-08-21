@@ -2,6 +2,12 @@ import { Prisma } from "@prisma/client";
 
 import { getPrisma } from "@/lib/prisma";
 import { normalizeMenuCombos } from "@/lib/menu-combos";
+import { persistImageAsCloudinaryUrl } from "@/lib/cloudinary";
+import {
+  CLOUDINARY_FOLDER_CATEGORIES,
+  CLOUDINARY_FOLDER_COMBOS,
+  CLOUDINARY_FOLDER_ITEMS,
+} from "@/lib/cloudinary-folders";
 import { uniqueCategoryIds } from "@/lib/category-slug";
 import { normalizeMenuCategories } from "@/lib/menu-payload-normalize";
 import type { MenuPayload } from "@/types/menu-payload";
@@ -262,18 +268,24 @@ async function upsertMenuItemRowInTx(
 /** Upsert one menu item and sync its variations/add-ons (including removals). */
 export async function writeMenuItem(item: MenuItem): Promise<void> {
   const prisma = getPrisma();
+  const image = await persistImageAsCloudinaryUrl(
+    item.image,
+    CLOUDINARY_FOLDER_ITEMS,
+    item.id,
+  );
+  const toWrite: MenuItem = { ...item, image };
 
   await prisma.$transaction(async (tx) => {
     const category = await tx.category.findFirst({
-      where: { name: item.category, parentId: null },
+      where: { name: toWrite.category, parentId: null },
       select: { id: true },
     });
     if (!category) {
-      throw new Error(`Category not found: ${item.category}`);
+      throw new Error(`Category not found: ${toWrite.category}`);
     }
 
     const existing = await tx.menuItem.findUnique({
-      where: { id: item.id },
+      where: { id: toWrite.id },
       select: { sortOrder: true, recommendedSortOrder: true },
     });
     const sortOrder =
@@ -283,9 +295,9 @@ export async function writeMenuItem(item: MenuItem): Promise<void> {
     await upsertMenuItemRowInTx(
       tx,
       {
-        ...item,
+        ...toWrite,
         recommendedSortOrder:
-          item.recommendedSortOrder ?? existing?.recommendedSortOrder ?? 0,
+          toWrite.recommendedSortOrder ?? existing?.recommendedSortOrder ?? 0,
       },
       category.id,
       sortOrder,
@@ -364,7 +376,16 @@ async function upsertCategoriesInTx(
 /** Upsert top-level categories without rewriting menu items. */
 export async function writeMenuCategories(categories: MenuCategoryDef[]): Promise<void> {
   const prisma = getPrisma();
-  const categoriesNorm = normalizeMenuCategories(categories);
+  const categoriesNorm = await Promise.all(
+    normalizeMenuCategories(categories).map(async (c) => ({
+      ...c,
+      image: await persistImageAsCloudinaryUrl(
+        c.image,
+        CLOUDINARY_FOLDER_CATEGORIES,
+        c.name,
+      ),
+    })),
+  );
   const categoryMeta = uniqueCategoryIds(categoriesNorm.map((c) => c.name));
 
   await prisma.$transaction(async (tx) => {
@@ -462,18 +483,24 @@ async function upsertMenuComboInTx(
 /** Upsert one combo and sync its components (including removals). */
 export async function writeMenuCombo(combo: MenuCombo): Promise<void> {
   const prisma = getPrisma();
+  const image = await persistImageAsCloudinaryUrl(
+    combo.image,
+    CLOUDINARY_FOLDER_COMBOS,
+    combo.id,
+  );
+  const toWrite: MenuCombo = { ...combo, image };
   await prisma.$transaction(async (tx) => {
     const existing = await tx.menuCombo.findUnique({
-      where: { id: combo.id },
+      where: { id: toWrite.id },
       select: { sortOrder: true, recommendedSortOrder: true },
     });
     const sortOrder = existing?.sortOrder ?? (await tx.menuCombo.count());
     await upsertMenuComboInTx(
       tx,
       {
-        ...combo,
+        ...toWrite,
         recommendedSortOrder:
-          combo.recommendedSortOrder ?? existing?.recommendedSortOrder ?? 0,
+          toWrite.recommendedSortOrder ?? existing?.recommendedSortOrder ?? 0,
       },
       sortOrder,
     );
@@ -509,8 +536,28 @@ export async function deleteMenuItem(itemId: string): Promise<void> {
  */
 export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
   const prisma = getPrisma();
-  const combos = normalizeMenuCombos(payload.combos);
-  const categoriesNorm = normalizeMenuCategories(payload.categories);
+  const combos = await Promise.all(
+    normalizeMenuCombos(payload.combos).map(async (c) => ({
+      ...c,
+      image: await persistImageAsCloudinaryUrl(c.image, CLOUDINARY_FOLDER_COMBOS, c.id),
+    })),
+  );
+  const categoriesNorm = await Promise.all(
+    normalizeMenuCategories(payload.categories).map(async (c) => ({
+      ...c,
+      image: await persistImageAsCloudinaryUrl(
+        c.image,
+        CLOUDINARY_FOLDER_CATEGORIES,
+        c.name,
+      ),
+    })),
+  );
+  const items = await Promise.all(
+    payload.items.map(async (it) => ({
+      ...it,
+      image: await persistImageAsCloudinaryUrl(it.image, CLOUDINARY_FOLDER_ITEMS, it.id),
+    })),
+  );
   const categoryMeta = uniqueCategoryIds(categoriesNorm.map((c) => c.name));
   const nameToId = new Map(categoryMeta.map((c) => [c.name, c.id]));
 
@@ -526,8 +573,8 @@ export async function writeMenuPayload(payload: MenuPayload): Promise<void> {
 
     await upsertGlobalAddonsInTx(tx, payload.globalAddons);
 
-    for (let ii = 0; ii < payload.items.length; ii++) {
-      const it = payload.items[ii]!;
+    for (let ii = 0; ii < items.length; ii++) {
+      const it = items[ii]!;
       const categoryId =
         nameToId.get(it.category) ?? fallbackCategoryId ?? categoryMeta[0]!.id;
 

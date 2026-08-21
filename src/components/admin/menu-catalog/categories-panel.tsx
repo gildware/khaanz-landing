@@ -37,6 +37,9 @@ import {
   CategoryIcon,
 } from "@/lib/category-icons";
 import { persistMenuCategories } from "@/lib/persist-menu-client";
+import { slugifyCategoryName } from "@/lib/category-slug";
+import { CLOUDINARY_FOLDER_CATEGORIES } from "@/lib/cloudinary-folders";
+import { uploadAdminImage } from "@/lib/upload-admin-image";
 import { cn } from "@/lib/utils";
 import type { MenuCategoryDef } from "@/types/menu-category";
 
@@ -135,6 +138,7 @@ export function MenuCatalogCategoriesPanel() {
     icon: FALLBACK_ICON,
     notForSale: false,
   });
+  const [uploading, setUploading] = useState(false);
 
   const fallbackImage = useMemo(
     () => MENU_CATEGORY_DEFAULTS[0]?.image ?? "",
@@ -433,20 +437,53 @@ export function MenuCatalogCategoriesPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cat-image">Image URL (or `/public` path)</Label>
+              <Label htmlFor="cat-image">Photo</Label>
               <Input
                 id="cat-image"
-                value={draft.image}
+                value={draft.image.startsWith("data:") ? "" : draft.image}
                 onChange={(e) =>
                   setDraft((p) => ({ ...p, image: e.target.value }))
                 }
-                placeholder="https://… or /path"
+                placeholder="Cloudinary URL or /path"
                 className="font-mono text-xs"
               />
-              <p className="text-muted-foreground text-xs">
-                Tip: leaving it blank will auto-pick a matching preset image (by
-                name), otherwise the global fallback image.
-              </p>
+              <Input
+                type="file"
+                accept="image/*"
+                className="cursor-pointer"
+                disabled={uploading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  e.target.value = "";
+                  if (!file || !file.type.startsWith("image/")) return;
+                  const publicId =
+                    slugifyCategoryName(draft.name) || `category-${Date.now()}`;
+                  setUploading(true);
+                  void uploadAdminImage({
+                    file,
+                    folder: CLOUDINARY_FOLDER_CATEGORIES,
+                    publicId,
+                  })
+                    .then((url) => {
+                      setDraft((p) => ({ ...p, image: url }));
+                      toast.success("Image uploaded");
+                    })
+                    .catch((err: unknown) => {
+                      toast.error(
+                        err instanceof Error ? err.message : "Image upload failed",
+                      );
+                    })
+                    .finally(() => setUploading(false));
+                }}
+              />
+              {uploading ? (
+                <p className="text-muted-foreground text-xs">Uploading…</p>
+              ) : (
+                <p className="text-muted-foreground text-xs">
+                  Tip: leaving it blank will auto-pick a matching preset image (by
+                  name), otherwise the global fallback image.
+                </p>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -477,7 +514,11 @@ export function MenuCatalogCategoriesPanel() {
             >
               Cancel
             </Button>
-            <Button type="button" onClick={saveCategoryDialog}>
+            <Button
+              type="button"
+              onClick={saveCategoryDialog}
+              disabled={uploading}
+            >
               Save changes
             </Button>
           </DialogFooter>

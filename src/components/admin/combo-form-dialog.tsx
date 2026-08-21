@@ -24,7 +24,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { CLOUDINARY_FOLDER_COMBOS } from "@/lib/cloudinary-folders";
 import { MENU_ITEM_PLACEHOLDER_IMAGE } from "@/lib/menu-item-image";
+import { uploadAdminImage } from "@/lib/upload-admin-image";
 import {
   computeComboRetailTotal,
   normalizeMenuCombos,
@@ -66,6 +68,7 @@ export function ComboFormDialog({
       ? normalizeMenuCombos([structuredClone(initial)])[0]!
       : emptyCombo(),
   );
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -120,17 +123,22 @@ export function ComboFormDialog({
     }));
   };
 
-  const onFile = (file: File | null) => {
+  const onFile = async (file: File | null) => {
     if (!file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const r = reader.result;
-      if (typeof r === "string") {
-        setCombo((prev) => ({ ...prev, image: r }));
-        toast.success("Image loaded");
-      }
-    };
-    reader.readAsDataURL(file);
+    setUploading(true);
+    try {
+      const url = await uploadAdminImage({
+        file,
+        folder: CLOUDINARY_FOLDER_COMBOS,
+        publicId: combo.id,
+      });
+      setCombo((prev) => ({ ...prev, image: url }));
+      toast.success("Image uploaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Image upload failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = () => {
@@ -214,19 +222,28 @@ export function ComboFormDialog({
             </div>
           </div>
           <div className="grid gap-2">
-            <Label>Image URL</Label>
+            <Label>Photo</Label>
             <Input
-              value={combo.image}
+              value={combo.image.startsWith("data:") ? "" : combo.image}
               onChange={(e) =>
                 setCombo((p) => ({ ...p, image: e.target.value }))
               }
+              placeholder="Cloudinary URL"
             />
             <Input
               type="file"
               accept="image/*"
               className="cursor-pointer"
-              onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+              disabled={uploading}
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                void onFile(f);
+                e.target.value = "";
+              }}
             />
+            {uploading ? (
+              <p className="text-muted-foreground text-xs">Uploading…</p>
+            ) : null}
           </div>
           <Separator />
           <div className="space-y-2">
@@ -363,7 +380,7 @@ export function ComboFormDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={handleSave}>
+          <Button type="button" onClick={handleSave} disabled={uploading}>
             Save
           </Button>
         </DialogFooter>

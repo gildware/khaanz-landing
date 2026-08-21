@@ -29,10 +29,10 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
         pathname: "/**",
       },
-      /** Vercel Blob (admin-uploaded menu photos, etc.) */
+      /** Cloudinary (admin-uploaded menu photos) */
       {
         protocol: "https",
-        hostname: "**.public.blob.vercel-storage.com",
+        hostname: "res.cloudinary.com",
         pathname: "/**",
       },
     ],

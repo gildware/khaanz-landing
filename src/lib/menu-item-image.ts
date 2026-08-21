@@ -19,5 +19,13 @@ export function resolveMenuItemImage(src: string | null | undefined): string {
   const t = typeof src === "string" ? src.trim() : "";
   if (!t) return MENU_ITEM_PLACEHOLDER_IMAGE;
   if (isUnsplashMenuImage(t)) return MENU_ITEM_PLACEHOLDER_IMAGE;
+  if (t.includes("res.cloudinary.com") && t.includes("/image/upload/")) {
+    if (!t.includes("/upload/f_auto") && !/\/upload\/(?:[^/]+,)+/.test(t)) {
+      return t.replace(
+        "/image/upload/",
+        "/image/upload/f_auto,q_auto,c_limit,w_800/",
+      );
+    }
+  }
   return t;
 }

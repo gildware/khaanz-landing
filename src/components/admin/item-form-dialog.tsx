@@ -23,7 +23,9 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { CLOUDINARY_FOLDER_ITEMS } from "@/lib/cloudinary-folders";
 import { MENU_ITEM_PLACEHOLDER_IMAGE } from "@/lib/menu-item-image";
+import { uploadAdminImage } from "@/lib/upload-admin-image";
 import type { MenuCategoryDef } from "@/types/menu-category";
 import type { MenuAddon, MenuItem, MenuVariation } from "@/types/menu";
 
@@ -64,6 +66,7 @@ export function ItemFormDialog({
       ? structuredClone(initial)
       : emptyItem(categories.map((c) => c.name)),
   );
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -130,17 +133,22 @@ export function ItemFormDialog({
     (c) => c.name === item.category && c.notForSale === true,
   );
 
-  const onFile = (file: File | null) => {
+  const onFile = async (file: File | null) => {
     if (!file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const r = reader.result;
-      if (typeof r === "string") {
-        setItem((prev) => ({ ...prev, image: r }));
-        toast.success("Image loaded");
-      }
-    };
-    reader.readAsDataURL(file);
+    setUploading(true);
+    try {
+      const url = await uploadAdminImage({
+        file,
+        folder: CLOUDINARY_FOLDER_ITEMS,
+        publicId: item.id,
+      });
+      setItem((prev) => ({ ...prev, image: url }));
+      toast.success("Image uploaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Image upload failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = () => {
@@ -239,19 +247,28 @@ export function ItemFormDialog({
             </p>
           ) : null}
           <div className="grid gap-2">
-            <Label>Image URL</Label>
+            <Label>Photo</Label>
             <Input
-              value={item.image}
+              value={item.image.startsWith("data:") ? "" : item.image}
               onChange={(e) =>
                 setItem((p) => ({ ...p, image: e.target.value }))
               }
+              placeholder="Cloudinary URL"
             />
             <Input
               type="file"
               accept="image/*"
               className="cursor-pointer"
-              onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+              disabled={uploading}
+              onChange={(e) => {
+                const f = e.target.files?.[0] ?? null;
+                void onFile(f);
+                e.target.value = "";
+              }}
             />
+            {uploading ? (
+              <p className="text-muted-foreground text-xs">Uploading…</p>
+            ) : null}
           </div>
           <Separator />
           <div className="space-y-2">
@@ -335,7 +352,7 @@ export function ItemFormDialog({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button type="button" onClick={handleSave}>
+          <Button type="button" onClick={handleSave} disabled={uploading}>
             Save
           </Button>
         </DialogFooter>
