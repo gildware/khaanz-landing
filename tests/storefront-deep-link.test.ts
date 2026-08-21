@@ -42,12 +42,14 @@ const categories = [
   cat("Parathas & Rolls"),
   cat("Chef Specials"),
   cat("Signature Chicken"),
+  cat("Shawarma"),
 ];
 
 const items: MenuItem[] = [
   item("steamed-chicken-momo", "Steamed Chicken Momo", "Momo Mania"),
   item("khaanz-zinger-burger", "Zinger Burger", "Burgers"),
   item("chicken-roll", "Chicken Roll", "Parathas & Rolls"),
+  item("item-mserom13", "Chicken Shawarma", "Shawarma"),
   item("kadai-chicken", "Kadai Chicken", "Chef Specials"),
   item("khaanz-popcorn", "Popcorn Chicken", "Signature Chicken"),
   item("hidden-momo", "Hidden Momo", "Momo Mania", { available: false }),
@@ -96,7 +98,8 @@ test("resolves campaign aliases to the advertised dish", () => {
   const cases: Array<[string, string]> = [
     ["momo", "steamed-chicken-momo"],
     ["zinger", "khaanz-zinger-burger"],
-    ["shawarma", "chicken-roll"],
+    ["shawarma", "item-mserom13"],
+    ["chicken-shawarma", "item-mserom13"],
     ["kadia-chicken", "kadai-chicken"],
     ["popcorn", "khaanz-popcorn"],
   ];

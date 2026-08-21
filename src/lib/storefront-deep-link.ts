@@ -19,8 +19,8 @@ const ITEM_ALIASES: Record<string, string> = {
   "steamed-momos": "steamed-chicken-momo",
   zinger: "khaanz-zinger-burger",
   "zinger-burger": "khaanz-zinger-burger",
-  shawarma: "chicken-roll",
-  "chicken-shawarma": "chicken-roll",
+  shawarma: "item-mserom13",
+  "chicken-shawarma": "item-mserom13",
   kadia: "kadai-chicken",
   "kadia-chicken": "kadai-chicken",
   popcorn: "khaanz-popcorn",
@@ -51,6 +51,7 @@ const CATEGORY_ALIASES: Record<string, string> = {
   "spicy-chinese": "spicy-chinese",
   noodles: "noodle-hub",
   "chef-specials": "chef-specials",
+  shawarma: "shawarma",
 };
 
 export function normalizeDeepLinkKey(raw: string): string {
