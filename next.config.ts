@@ -29,11 +29,10 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
         pathname: "/**",
       },
-      /** Cloudinary (admin-uploaded menu photos) */
+      /** Cloudinary (admin-uploaded menu photos). Loaded unoptimized in the browser. */
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
-        pathname: "/**",
       },
     ],
   },

@@ -26,7 +26,10 @@ export function MenuItemImage({
   }, [src]);
 
   const unoptimized =
-    Boolean(unoptimizedProp) || displaySrc.startsWith("data:");
+    Boolean(unoptimizedProp) ||
+    displaySrc.startsWith("data:") ||
+    displaySrc.startsWith("https://") ||
+    displaySrc.startsWith("http://");
 
   return (
     <Image
