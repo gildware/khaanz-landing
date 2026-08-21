@@ -25,10 +25,21 @@ ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 COPY package*.json ./
 # `postinstall` runs `prisma generate`, which requires the schema to exist.
 COPY prisma/schema.prisma ./prisma/schema.prisma
-RUN npm install
+# Registry drops (ECONNRESET) are common on long `npm install`; retry the fetch.
+RUN set -eux; \
+    i=1; \
+    until npm install --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000; do \
+      i=$((i + 1)); \
+      if [ "$i" -gt 5 ]; then exit 1; fi; \
+      echo "npm install failed, retry $i/5 in 15s"; \
+      sleep 15; \
+    done
 
 COPY . .
 RUN npm run build
+# Drop devDependencies here so the runner can copy node_modules without a
+# second registry download (that step was failing on ECONNRESET).
+RUN npm prune --omit=dev
 
 # ---- Production Stage ----
 FROM node:20-alpine AS runner
@@ -38,13 +49,7 @@ ENV NODE_ENV=production
 ENV DESKTOP_POS_GITHUB_REPO=gildware/khaanz-desktop-pos
 
 COPY --from=builder /app/package*.json ./
-# Avoid running `postinstall` in the slim runtime image (it would try to run
-# `prisma generate` without the Prisma CLI installed).
-RUN npm install --omit=dev --ignore-scripts
-
-# Prisma client is generated at build time in the builder; copy it into the slim runtime install.
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules ./node_modules
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
