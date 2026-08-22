@@ -983,21 +983,49 @@ export function CheckoutForm() {
           </div>
 
           {!settingsLoading && settings && bothClosed && scheduleMode === "asap" && (
-            <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100 text-sm">
-              We are not accepting pickup or delivery orders right now (outside
-              hours). Please try again when we are open.
-            </p>
+            <div
+              role="status"
+              className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm"
+            >
+              <p className="font-medium text-amber-950 dark:text-amber-100">
+                We are closed for ASAP orders right now
+              </p>
+              <p className="mt-1 text-amber-900 dark:text-amber-50/90">
+                Pickup hours: {formatRangeLabel(settings.pickup)} IST · Delivery
+                hours: {formatRangeLabel(settings.delivery)} IST. Choose a
+                custom time inside those hours, or come back when we are open.
+              </p>
+            </div>
           )}
           {!settingsLoading &&
             settings &&
             !bothClosed &&
             !channelOpen &&
             scheduleMode === "asap" && (
-            <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-100 text-sm">
-              {fulfillment === "delivery"
-                ? "Delivery is outside hours right now. Switch to pickup if it is available, or try again later."
-                : "Pickup is outside hours right now. Switch to delivery if it is available, or try again later."}
-            </p>
+            <div
+              role="status"
+              className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm"
+            >
+              <p className="font-medium text-amber-950 dark:text-amber-100">
+                {fulfillment === "delivery"
+                  ? "Delivery is closed right now"
+                  : "Pickup is closed right now"}
+              </p>
+              <p className="mt-1 text-amber-900 dark:text-amber-50/90">
+                {fulfillment === "delivery" ? "Delivery" : "Pickup"} hours:{" "}
+                {formatRangeLabel(
+                  fulfillment === "delivery"
+                    ? settings.delivery
+                    : settings.pickup,
+                )}{" "}
+                IST.{" "}
+                {fulfillment === "delivery" && isPickupOpen(settings)
+                  ? "Switch to pickup, or choose a custom time inside delivery hours."
+                  : fulfillment === "pickup" && isDeliveryOpen(settings)
+                    ? "Switch to delivery, or choose a custom time inside pickup hours."
+                    : "Choose a custom time inside those hours, or try again later."}
+              </p>
+            </div>
           )}
           {!settingsLoading && !settings && (
             <p className="text-destructive text-sm">
