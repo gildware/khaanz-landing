@@ -12,6 +12,7 @@ import {
   LogOutIcon,
   MinusIcon,
   PlusIcon,
+  ShoppingBagIcon,
   StoreIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -45,7 +46,7 @@ import { cn } from "@/lib/utils";
 import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
 import type { FulfillmentMode } from "@/types/restaurant-settings";
 
-type MainTab = "home" | "orders";
+type MainTab = "home" | "orders" | "online";
 type RegisterStep = "type" | "menu" | "cart" | "checkout";
 
 export default function AdminPosMobilePage() {
@@ -147,9 +148,12 @@ function AdminPosMobilePageInner() {
     cancelEditingOrder,
   } = pos;
 
-  const [mainTab, setMainTab] = useState<MainTab>(() =>
-    searchParams.get("tab") === "orders" ? "orders" : "home",
-  );
+  const [mainTab, setMainTab] = useState<MainTab>(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "orders") return "orders";
+    if (tab === "online") return "online";
+    return "home";
+  });
   const [registerStep, setRegisterStep] = useState<RegisterStep | null>(null);
   const [selectedType, setSelectedType] = useState<
     "dine_in" | "pickup" | "delivery" | null
@@ -194,7 +198,9 @@ function AdminPosMobilePageInner() {
   }, []);
 
   useEffect(() => {
-    if (searchParams.get("tab") === "orders") setMainTab("orders");
+    const tab = searchParams.get("tab");
+    if (tab === "orders") setMainTab("orders");
+    else if (tab === "online") setMainTab("online");
   }, [searchParams]);
 
   useEffect(() => {
@@ -417,6 +423,16 @@ function AdminPosMobilePageInner() {
       <main className="min-h-0 flex-1 overflow-hidden">
         {mainTab === "orders" ? (
           <PosMobileOrderHistory
+            onEditDraftReady={() => window.location.assign("/admin/pos/mobile")}
+            onStatusUpdated={() => {
+              void loadOccupiedTables();
+            }}
+          />
+        ) : null}
+
+        {mainTab === "online" ? (
+          <PosMobileOrderHistory
+            mode="online"
             onEditDraftReady={() => window.location.assign("/admin/pos/mobile")}
             onStatusUpdated={() => {
               void loadOccupiedTables();
@@ -1153,11 +1169,16 @@ function AdminPosMobilePageInner() {
         className="shrink-0 border-t bg-background pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
         aria-label="POS navigation"
       >
-        <div className="grid grid-cols-2">
+        <div className="grid grid-cols-3">
           {(
             [
               { id: "home" as const, label: "Home", icon: HomeIcon },
               { id: "orders" as const, label: "Orders", icon: ClipboardListIcon },
+              {
+                id: "online" as const,
+                label: "Online",
+                icon: ShoppingBagIcon,
+              },
             ] as const
           ).map(({ id, label, icon: Icon }) => {
             const active = mainTab === id;

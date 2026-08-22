@@ -55,7 +55,7 @@ import {
   formatTravelDistanceLabel,
   parseCoordinates,
   straightLineDistance,
-} from "@/lib/travel-distance";
+} from "@/lib/travel-distance-client";
 import { openWhatsAppOrder } from "@/utils/whatsapp";
 
 import { OrderLineView } from "@/components/orders/order-line-view";

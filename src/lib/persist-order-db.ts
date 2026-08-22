@@ -129,6 +129,21 @@ export async function persistOrderToDatabase(
 
     return { orderRef };
   }, ORDER_TX_OPTIONS);
+
+  const { publishPosRealtime } = await import("@/lib/pos-realtime");
+  void publishPosRealtime({
+    type: "order",
+    id: orderId,
+    status: "PENDING",
+    source: "website",
+    fulfillment: parsed.fulfillment,
+    totalMinor,
+    customerName: parsed.customerName || null,
+    customerPhone: digits,
+    createdAt: new Date().toISOString(),
+  });
+
+  return { orderRef };
 }
 
 /** Walk-in / POS: upsert customer by phone and create order (no customer session). No outbound notifications. */
@@ -268,4 +283,19 @@ export async function persistPosOrderToDatabase(
 
     return { orderRef };
   }, ORDER_TX_OPTIONS);
+
+  const { publishPosRealtime } = await import("@/lib/pos-realtime");
+  void publishPosRealtime({
+    type: "order",
+    id: orderId,
+    status: "ACCEPTED",
+    source: "pos",
+    fulfillment: parsed.fulfillment,
+    totalMinor,
+    customerName: parsed.customerName || null,
+    customerPhone: digits,
+    createdAt: (soldAt ?? new Date()).toISOString(),
+  });
+
+  return { orderRef };
 }

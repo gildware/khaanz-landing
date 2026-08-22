@@ -695,6 +695,8 @@ export async function writeMenuLayout(layout: {
     },
     { maxWait: 15_000, timeout: 120_000 },
   );
+  const { invalidatePosSyncCatalogCache } = await import("@/lib/pos-sync-catalog");
+  invalidatePosSyncCatalogCache();
 }
 
 /** Toggle availability / for-sale on a single menu item without a full catalog sync. */
@@ -713,6 +715,8 @@ export async function writeMenuItemFlags(
     data,
   });
   if (result.count === 0) throw new Error("Item not found");
+  const { invalidatePosSyncCatalogCache } = await import("@/lib/pos-sync-catalog");
+  invalidatePosSyncCatalogCache();
 }
 
 /** Kept for script compatibility; menu lives in the database — use `npm run db:seed`. */

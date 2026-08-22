@@ -24,11 +24,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { formatIstDateInput } from "@/lib/ist-dates";
 import {
+  ORDER_STATUS_LABEL,
   RESTAURANT_ORDER_STATUS_TAB_LABEL,
   canEditPosOrder,
   nextOrderStatusStep,
   restaurantOrderStatusLabel,
 } from "@/lib/order-status-workflow";
+import {
+  countOrdersByStatus,
+  filterOrdersByStatusTab,
+} from "@/lib/order-tab-utils";
 import { writePosMobileEditDraft } from "@/lib/pos-mobile-edit-draft";
 import { fulfillmentLabelFromKey } from "@/lib/pos-print";
 import { cn } from "@/lib/utils";
@@ -107,7 +112,23 @@ function orderStatusBadgeClassName(status: string): string {
   }
 }
 
+type HistoryMode = "pos" | "online";
+
+const ONLINE_STATUS_TABS: { id: "all" | OrderStatus; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "PENDING", label: ORDER_STATUS_LABEL.PENDING },
+  { id: "ACCEPTED", label: ORDER_STATUS_LABEL.ACCEPTED },
+  { id: "PREPARING", label: ORDER_STATUS_LABEL.PREPARING },
+  { id: "OUT_FOR_DELIVERY", label: "Sent for delivery" },
+  { id: "DELIVERED", label: ORDER_STATUS_LABEL.DELIVERED },
+  { id: "CANCELLED", label: ORDER_STATUS_LABEL.CANCELLED },
+];
+
+const AUTO_REFRESH_MS = 15_000;
+
 type Props = {
+  /** POS register history vs website / home delivery orders. */
+  mode?: HistoryMode;
   /** Called after edit draft is written; default reloads `/admin/pos/mobile`. */
   onEditDraftReady?: () => void;
   /** Fired after a successful status update (e.g. refresh occupied tables). */
@@ -120,13 +141,16 @@ type Props = {
 };
 
 export function PosMobileOrderHistory({
+  mode = "pos",
   onEditDraftReady,
   onStatusUpdated,
   className,
 }: Props) {
+  const isOnline = mode === "online";
   const todayIst = formatIstDateInput(new Date());
   const [orderDate, setOrderDate] = useState(todayIst);
   const [scope, setScope] = useState<PosMobileHistoryScope>("mine");
+  const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
   const [fulfillmentFilter, setFulfillmentFilter] = useState<
     "all" | "dine_in" | "pickup" | "delivery"
   >("all");
@@ -220,11 +244,17 @@ export function PosMobileOrderHistory({
           date: orderDate,
           limit: "30",
           offset: String(offset),
-          scope,
         });
-        const res = await fetch(`/api/admin/pos/orders?${qs}`, {
-          credentials: "include",
-        });
+        if (isOnline) qs.set("view", "online");
+        else qs.set("scope", scope);
+        const res = await fetch(
+          isOnline
+            ? `/api/admin/orders?${qs}`
+            : `/api/admin/pos/orders?${qs}`,
+          {
+            credentials: "include",
+          },
+        );
         const data = (await res.json()) as {
           orders?: PosMobileHistoryOrder[];
           hasMore?: boolean;
@@ -247,7 +277,7 @@ export function PosMobileOrderHistory({
         setLoadingMore(false);
       }
     },
-    [orderDate, scope],
+    [orderDate, scope, isOnline],
   );
 
   useEffect(() => {
@@ -256,13 +286,25 @@ export function PosMobileOrderHistory({
   }, [fetchOrders]);
 
   useEffect(() => {
-    setExpandedId(null);
-  }, [fulfillmentFilter]);
+    if (!isOnline) return;
+    const id = window.setInterval(() => {
+      void fetchOrders({ soft: true });
+    }, AUTO_REFRESH_MS);
+    return () => window.clearInterval(id);
+  }, [fetchOrders, isOnline]);
 
-  const visibleOrders =
+  useEffect(() => {
+    setExpandedId(null);
+  }, [fulfillmentFilter, statusFilter]);
+
+  const byFulfillment =
     fulfillmentFilter === "all"
       ? orders
       : orders.filter((o) => o.fulfillment === fulfillmentFilter);
+  const visibleOrders = isOnline
+    ? filterOrdersByStatusTab(byFulfillment, statusFilter)
+    : byFulfillment;
+  const statusCounts = countOrdersByStatus(orders);
 
   const requestStatusChange = (
     order: PosMobileHistoryOrder,
@@ -278,10 +320,11 @@ export function PosMobileOrderHistory({
         order.fulfillment,
       ),
       nextStatus,
-      nextStatusLabel:
-        RESTAURANT_ORDER_STATUS_TAB_LABEL[
-          nextStatus as keyof typeof RESTAURANT_ORDER_STATUS_TAB_LABEL
-        ] ?? nextStatus,
+      nextStatusLabel: isOnline
+        ? (ORDER_STATUS_LABEL[nextStatus as OrderStatus] ?? nextStatus)
+        : (RESTAURANT_ORDER_STATUS_TAB_LABEL[
+            nextStatus as keyof typeof RESTAURANT_ORDER_STATUS_TAB_LABEL
+          ] ?? nextStatus),
       actionLabel,
       destructive,
     });
@@ -293,12 +336,17 @@ export function PosMobileOrderHistory({
     setUpdatingId(pending.orderId);
     setStatusConfirm(null);
     try {
-      const res = await fetch(`/api/admin/pos/orders/${pending.orderId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ status: pending.nextStatus }),
-      });
+      const res = await fetch(
+        isOnline
+          ? `/api/admin/orders/${pending.orderId}`
+          : `/api/admin/pos/orders/${pending.orderId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ status: pending.nextStatus }),
+        },
+      );
       const data = (await res.json()) as {
         ok?: boolean;
         status?: string;
@@ -342,10 +390,15 @@ export function PosMobileOrderHistory({
     setUpdatingId(pending.orderId);
     setDeleteConfirm(null);
     try {
-      const res = await fetch(`/api/admin/pos/orders/${pending.orderId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
+      const res = await fetch(
+        isOnline
+          ? `/api/admin/orders/${pending.orderId}`
+          : `/api/admin/pos/orders/${pending.orderId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok) {
         toast.error(data.error ?? "Could not delete order.");
@@ -370,7 +423,9 @@ export function PosMobileOrderHistory({
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       <div className="shrink-0 space-y-2 border-b px-3 py-2.5">
         <div className="flex items-center gap-2">
-          <p className="shrink-0 font-semibold text-base">Orders</p>
+          <p className="shrink-0 font-semibold text-base">
+            {isOnline ? "Online orders" : "Orders"}
+          </p>
           <Input
             type="date"
             value={orderDate}
@@ -395,36 +450,77 @@ export function PosMobileOrderHistory({
             )}
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-muted/50 p-1">
-          {(
-            [
-              { id: "mine" as const, label: "My orders" },
-              { id: "all" as const, label: "All orders" },
-            ] as const
-          ).map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={cn(
-                "rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                scope === t.id
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground active:bg-background/60",
-              )}
-              onClick={() => setScope(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-4 gap-1 rounded-xl bg-muted/50 p-1">
-          {(
-            [
-              { id: "all" as const, label: "All" },
-              { id: "dine_in" as const, label: "Dine-in" },
-              { id: "pickup" as const, label: "Pickup" },
-              { id: "delivery" as const, label: "Delivery" },
-            ] as const
+        {isOnline ? (
+          <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-0.5">
+            {ONLINE_STATUS_TABS.map((t) => {
+              const count =
+                t.id === "all"
+                  ? statusCounts.total
+                  : (statusCounts.byStatus[t.id] ?? 0);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={cn(
+                    "shrink-0 rounded-lg px-2.5 py-2 text-[11px] font-medium transition-colors",
+                    statusFilter === t.id
+                      ? "bg-background text-foreground shadow-sm ring-1 ring-border/80"
+                      : "text-muted-foreground active:bg-background/60",
+                  )}
+                  onClick={() => setStatusFilter(t.id)}
+                >
+                  {t.label}
+                  {count > 0 ? (
+                    <span className="ml-1 tabular-nums text-muted-foreground">
+                      {count}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-muted/50 p-1">
+            {(
+              [
+                { id: "mine" as const, label: "My orders" },
+                { id: "all" as const, label: "All orders" },
+              ] as const
+            ).map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={cn(
+                  "rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  scope === t.id
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground active:bg-background/60",
+                )}
+                onClick={() => setScope(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
+        <div
+          className={cn(
+            "grid gap-1 rounded-xl bg-muted/50 p-1",
+            isOnline ? "grid-cols-3" : "grid-cols-4",
+          )}
+        >
+          {(isOnline
+            ? ([
+                { id: "all" as const, label: "All" },
+                { id: "pickup" as const, label: "Pickup" },
+                { id: "delivery" as const, label: "Delivery" },
+              ] as const)
+            : ([
+                { id: "all" as const, label: "All" },
+                { id: "dine_in" as const, label: "Dine-in" },
+                { id: "pickup" as const, label: "Pickup" },
+                { id: "delivery" as const, label: "Delivery" },
+              ] as const)
           ).map((t) => (
             <button
               key={t.id}
@@ -451,19 +547,26 @@ export function PosMobileOrderHistory({
           </div>
         ) : visibleOrders.length === 0 ? (
           <p className="text-muted-foreground py-16 text-center text-sm">
-            {scope === "mine"
-              ? "No orders taken by you for this date."
-              : "No POS orders for this date."}
+            {isOnline
+              ? "No online / home orders for this date."
+              : scope === "mine"
+                ? "No orders taken by you for this date."
+                : "No POS orders for this date."}
             {fulfillmentFilter !== "all" ? " Try another filter." : ""}
           </p>
         ) : (
           <ul className="space-y-2.5">
             {visibleOrders.map((o) => {
               const open = expandedId === o.id;
-              const statusLabel = restaurantOrderStatusLabel(
-                o.status as OrderStatus,
-                o.fulfillment,
-              );
+              const statusLabel = isOnline
+                ? o.status === "PENDING"
+                  ? `New · ${ORDER_STATUS_LABEL[o.status as OrderStatus] ?? o.statusLabel}`
+                  : (ORDER_STATUS_LABEL[o.status as OrderStatus] ??
+                    o.statusLabel)
+                : restaurantOrderStatusLabel(
+                    o.status as OrderStatus,
+                    o.fulfillment,
+                  );
               const pay = paymentLabel(o.paymentMethod);
               const unpaid = !o.paymentMethod.trim();
               const step = nextOrderStatusStep(o.status, o.fulfillment);

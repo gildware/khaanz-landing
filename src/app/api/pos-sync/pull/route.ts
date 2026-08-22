@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { readMenuPayload } from "@/lib/menu-repository";
 import { ORDER_STATUS_LABEL } from "@/lib/order-status-workflow";
+import {
+  clientHasCurrentCatalog,
+  readPosSyncCatalog,
+} from "@/lib/pos-sync-catalog";
 import { getPrisma } from "@/lib/prisma";
-import { readRestaurantSettings } from "@/lib/settings-repository";
-import { buildCustomerMapUrl, parseCoordinates } from "@/lib/travel-distance";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,31 +19,72 @@ function requireSyncKey(req: Request): string | null {
   return got;
 }
 
+function parsePendingSince(req: Request): Date | null {
+  const raw = (req.headers.get("x-pos-pending-since") || "").trim();
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return null;
+  return new Date(d.getTime() - 2000);
+}
+
 export async function GET(req: Request) {
   if (!requireSyncKey(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const url = new URL(req.url);
+  if (url.searchParams.get("ping") === "1") {
+    return NextResponse.json(
+      { ok: true, ping: true },
+      { headers: { "Cache-Control": "no-store, must-revalidate" } },
+    );
+  }
+
+  const haveMenuRev = (req.headers.get("x-pos-menu-rev") || "").trim();
+  const haveSettingsRev = (req.headers.get("x-pos-settings-rev") || "").trim();
+  const skipCatalog = await clientHasCurrentCatalog(haveMenuRev, haveSettingsRev);
+  const since = parsePendingSince(req);
+
   const prisma = getPrisma();
-  const [payload, orders, settings] = await Promise.all([
-    readMenuPayload(),
+  const orderInclude = {
+    customer: { select: { phoneDigits: true, displayName: true } },
+    lines: { orderBy: { sortIndex: "asc" as const } },
+  };
+
+  const [catalog, pendingIdRows, changedOrders] = await Promise.all([
+    skipCatalog ? Promise.resolve(null) : readPosSyncCatalog(),
     prisma.order.findMany({
+      where: { status: "PENDING" },
+      select: { id: true },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 250,
-      include: {
-        customer: { select: { phoneDigits: true, displayName: true } },
-        lines: { orderBy: { sortIndex: "asc" } },
-      },
+      take: 200,
     }),
-    readRestaurantSettings(),
+    prisma.order.findMany({
+      where: since
+        ? { status: "PENDING", updatedAt: { gt: since } }
+        : { status: "PENDING" },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      take: 100,
+      include: orderInclude,
+    }),
   ]);
+
+  const menuRevision = catalog?.menuRevision ?? haveMenuRev;
+  const settingsRevision = catalog?.settingsRevision ?? haveSettingsRev;
+  const menuUnchanged = !catalog || haveMenuRev === catalog.menuRevision;
+  const settingsUnchanged = !catalog || haveSettingsRev === catalog.settingsRevision;
 
   return NextResponse.json(
     {
       ok: true,
-      menu: payload,
-      settings,
-      recentOrders: orders.map((o) => ({
+      menu: menuUnchanged ? undefined : catalog?.menu,
+      menuRevision,
+      settings: settingsUnchanged ? undefined : catalog?.settings,
+      settingsRevision,
+      menuUnchanged,
+      settingsUnchanged,
+      pendingIdList: pendingIdRows.map((r) => r.id),
+      recentOrders: changedOrders.map((o) => ({
         id: o.id,
         orderRef: o.orderRef,
         status: o.status,
@@ -63,6 +105,7 @@ export async function GET(req: Request) {
           payload: l.payload,
         })),
       })),
+      pendingDelta: Boolean(since),
       serverTime: new Date().toISOString(),
     },
     {
@@ -72,4 +115,3 @@ export async function GET(req: Request) {
     },
   );
 }
-

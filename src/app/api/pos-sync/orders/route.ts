@@ -53,8 +53,10 @@ export async function GET(req: Request) {
 
   const view = url.searchParams.get("view");
   const websiteFilter = { source: "website" as const };
-  const where =
-    view === "online"
+  const notifyLite = view === "online_pending";
+  const where = notifyLite
+    ? { status: "PENDING" as const, source: "website" as const }
+    : view === "online"
       ? {
           ...websiteFilter,
           createdAt: { gte: dayStart, lt: dayEndExclusive },
@@ -71,7 +73,7 @@ export async function GET(req: Request) {
     take: pageSize,
     include: {
       customer: { select: { phoneDigits: true, displayName: true } },
-      lines: { orderBy: { sortIndex: "asc" } },
+      ...(notifyLite ? {} : { lines: { orderBy: { sortIndex: "asc" as const } } }),
     },
   });
 
@@ -114,10 +116,13 @@ export async function GET(req: Request) {
           ? buildCustomerMapUrl(coords!.lat, coords!.lng)
           : null,
         distance: travel,
-        lines: o.lines.map((l) => ({
-          sortIndex: l.sortIndex,
-          payload: l.payload,
-        })),
+        lines:
+          "lines" in o && Array.isArray(o.lines)
+            ? o.lines.map((l) => ({
+                sortIndex: l.sortIndex,
+                payload: l.payload,
+              }))
+            : [],
       };
     }),
   );
@@ -125,6 +130,7 @@ export async function GET(req: Request) {
   return NextResponse.json(
     {
       ok: true,
+      view: notifyLite ? "online_pending" : view === "online" ? "online" : "recent",
       date: formatIstDateInput(dayStart),
       travelDistanceConfigured: withTravel
         ? await isTravelDistanceConfigured()

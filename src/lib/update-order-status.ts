@@ -157,6 +157,19 @@ export async function updateOrderStatus(
     }
   }
 
+  const { publishPosRealtime } = await import("@/lib/pos-realtime");
+  void publishPosRealtime({
+    type: "order",
+    id: updated.id,
+    status: updated.status,
+    source: String(order.source || ""),
+    fulfillment: order.fulfillment,
+    totalMinor: updated.totalMinor,
+    customerName: order.customer.displayName,
+    customerPhone: order.customer.phoneDigits,
+    createdAt: order.createdAt.toISOString(),
+  });
+
   return {
     ok: true,
     id: updated.id,

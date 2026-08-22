@@ -66,6 +66,16 @@ model RestaurantSettings {
   @@map("restaurant_settings")
 }
 
+/// Cached POS catalog hashes so pull can skip rebuilding the menu on a cold server.
+model PosSyncMeta {
+  id               String   @id @default("default")
+  menuRevision     String   @default("") @map("menu_revision")
+  settingsRevision String   @default("") @map("settings_revision")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("pos_sync_meta")
+}
+
 /// Menu category; optional `parentId` for subcategories (tabs still use top-level names in API).
 model Category {
   id        String     @id

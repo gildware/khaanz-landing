@@ -15,8 +15,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { isMobileView } from "@/lib/is-mobile";
 import { cn } from "@/lib/utils";
-import { playAdminNewOrderRingtone } from "@/lib/admin-new-order-sound";
+import {
+  playAdminNewOrderRingtone,
+  primeAdminNewOrderAudio,
+} from "@/lib/admin-new-order-sound";
 
 function hasOtherOpenModal(): boolean {
   if (typeof document === "undefined") return false;
@@ -28,7 +32,7 @@ function hasOtherOpenModal(): boolean {
 }
 
 const POLL_MS = 5_000;
-const RING_INTERVAL_MS = 2_700;
+const RING_INTERVAL_MS = 2_200;
 
 type NotifyOrder = {
   id: string;
@@ -43,6 +47,16 @@ type NotifyOrder = {
   customerPhone: string;
   customerName: string | null;
 };
+
+function onlineOrdersHref(pathname: string | null): string {
+  if (pathname?.startsWith("/admin/pos/mobile") || isMobileView()) {
+    return "/admin/pos/mobile?tab=online";
+  }
+  if (pathname?.startsWith("/admin/pos")) {
+    return "/admin/pos?tab=online";
+  }
+  return "/admin/online-orders";
+}
 
 function isWebsiteOrder(o: NotifyOrder): boolean {
   return o.source === undefined || o.source === "website";
@@ -118,6 +132,9 @@ export function AdminNewOrderNotifier() {
     setOpen(true);
   }, [open]);
 
+  const tryOpenModalRef = useRef(tryOpenModal);
+  tryOpenModalRef.current = tryOpenModal;
+
   const poll = useCallback(async () => {
     if (!canWatchOnline) return;
     try {
@@ -180,22 +197,38 @@ export function AdminNewOrderNotifier() {
 
       if (websiteNewOnes.length > 0) {
         startSoundLoop();
-        tryOpenModal();
+        tryOpenModalRef.current();
       }
     } catch {
       // ignore network errors
     }
-  }, [canWatchOnline, startSoundLoop, stopSoundLoop, tryOpenModal]);
+  }, [canWatchOnline, startSoundLoop, stopSoundLoop]);
 
   useEffect(() => {
-    if (!canWatchOnline) return;
+    if (!canWatchOnline) {
+      stopSoundLoop();
+      return;
+    }
     void poll();
-    const id = window.setInterval(() => void poll(), POLL_MS);
+    let live: EventSource | null = null;
+    try {
+      live = new EventSource("/api/admin/orders/live");
+      live.onmessage = () => {
+        void poll();
+      };
+    } catch {
+      live = null;
+    }
+    const id = window.setInterval(() => void poll(), live ? 60_000 : POLL_MS);
     return () => {
       window.clearInterval(id);
-      stopSoundLoop();
+      live?.close();
     };
   }, [canWatchOnline, poll, stopSoundLoop]);
+
+  useEffect(() => {
+    return () => stopSoundLoop();
+  }, [stopSoundLoop]);
 
   // Close on navigation so we never leave a modal layered across routes.
   useEffect(() => {
@@ -217,21 +250,13 @@ export function AdminNewOrderNotifier() {
 
   /** Prime Web Audio after first gesture so alerts can play reliably. */
   useEffect(() => {
-    const warm = () => {
-      try {
-        const w = window as unknown as {
-          AudioContext?: typeof AudioContext;
-          webkitAudioContext?: typeof AudioContext;
-        };
-        const AC = w.AudioContext ?? w.webkitAudioContext;
-        if (!AC) return;
-        const c = new AC();
-        void c.resume().finally(() => void c.close());
-      } catch {
-        /* empty */
-      }
+    const warm = () => primeAdminNewOrderAudio();
+    window.addEventListener("pointerdown", warm, { capture: true });
+    window.addEventListener("keydown", warm, { capture: true });
+    return () => {
+      window.removeEventListener("pointerdown", warm, { capture: true });
+      window.removeEventListener("keydown", warm, { capture: true });
     };
-    window.addEventListener("pointerdown", warm, { once: true, capture: true });
   }, []);
 
   return (
@@ -255,7 +280,7 @@ export function AdminNewOrderNotifier() {
             </p>
           </div>
           <Link
-            href="/admin/online-orders"
+            href={onlineOrdersHref(pathname)}
             className={cn(buttonVariants({ size: "sm" }), "shrink-0 self-start sm:self-auto")}
           >
             View orders
@@ -317,7 +342,7 @@ export function AdminNewOrderNotifier() {
             <Button type="button" variant="outline" onClick={dismissModal}>
               Dismiss
             </Button>
-            <Link href="/admin/online-orders" className={cn(buttonVariants())}>
+            <Link href={onlineOrdersHref(pathname)} className={cn(buttonVariants())}>
               Open orders
             </Link>
           </DialogFooter>

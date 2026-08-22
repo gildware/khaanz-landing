@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import {
   ChevronDownIcon,
   ImageIcon,
@@ -11,6 +12,7 @@ import {
 import { toast } from "sonner";
 
 import { PosDeliveryCustomerPhoneInput } from "@/components/admin/pos-delivery-customer-phone-input";
+import { PosMobileOrderHistory } from "@/components/admin/pos-mobile-order-history";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -115,6 +117,14 @@ export default function AdminPosPage() {
     tablePickModalOpen,
   } = useAdminPosRegister();
 
+  const [mainTab, setMainTab] = useState<"pos" | "online">("pos");
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "online") {
+      setMainTab("online");
+    }
+  }, []);
+
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center gap-2 text-muted-foreground">
@@ -186,7 +196,43 @@ export default function AdminPosPage() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-0 overflow-hidden rounded-xl border bg-card shadow-sm max-lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[1fr_min(520px,44%)]">
+      <nav
+        className="flex shrink-0 gap-1 rounded-lg border bg-muted/30 p-1"
+        aria-label="POS views"
+      >
+        <button
+          type="button"
+          className={cn(
+            "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            mainTab === "pos"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+          onClick={() => setMainTab("pos")}
+        >
+          POS
+        </button>
+        <button
+          type="button"
+          className={cn(
+            "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            mainTab === "online"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+          onClick={() => setMainTab("online")}
+        >
+          Online orders
+        </button>
+      </nav>
+
+      {mainTab === "online" ? (
+        <div className="min-h-0 flex-1 overflow-hidden rounded-xl border bg-card">
+          <PosMobileOrderHistory mode="online" />
+        </div>
+      ) : null}
+
+      {mainTab === "pos" ? (
         <div className="flex min-h-0 min-w-0 flex-col border-b lg:border-r lg:border-b-0">
           <div className="shrink-0 space-y-3 border-b bg-muted/30 p-3">
             <Input
@@ -768,6 +814,7 @@ export default function AdminPosPage() {
           </footer>
         </div>
       </div>
+      ) : null}
 
       <Dialog
         open={tablePickModalOpen}

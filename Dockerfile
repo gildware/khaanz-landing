@@ -61,6 +61,7 @@ COPY --from=builder /app/src ./src
 # Production menu upgrade script (`npm run menu:upgrade`) lives here.
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/server.mjs ./server.mjs
 
 EXPOSE 3000
 CMD ["npm", "start"]

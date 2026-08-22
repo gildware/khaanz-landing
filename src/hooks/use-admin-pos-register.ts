@@ -443,7 +443,9 @@ export function useAdminPosRegister() {
   const syncNow = useCallback(async () => {
     const d = getKhaanzDesktop() as
       | (ReturnType<typeof getKhaanzDesktop> & {
-          syncNow?: () => Promise<{ ok: boolean; error?: string; serverTime?: string }>;
+          syncNow?: (opts?: {
+            force?: boolean;
+          }) => Promise<{ ok: boolean; error?: string; serverTime?: string }>;
         })
       | undefined;
     if (!d?.isDesktop || !d.syncNow) {
@@ -452,7 +454,7 @@ export function useAdminPosRegister() {
     }
     setSyncingNow(true);
     try {
-      const out = await d.syncNow();
+      const out = await d.syncNow({ force: true });
       if (!out.ok) {
         toast.error(out.error ?? "Sync failed.");
         return;

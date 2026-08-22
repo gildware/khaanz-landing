@@ -493,6 +493,8 @@ export async function writeRestaurantSettings(
     }
     await writeRestaurantSettingsLegacy(prisma, payload);
   }
+  const { invalidatePosSyncCatalogCache } = await import("@/lib/pos-sync-catalog");
+  invalidatePosSyncCatalogCache();
 }
 
 /** @deprecated Settings are in the database; use `npm run db:seed` for first-time setup. */
