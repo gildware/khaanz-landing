@@ -29,6 +29,7 @@ export const DEFAULT_RESTAURANT_SETTINGS: RestaurantSettingsPayload = {
   baseDeliveryCharge: 0,
   deliveryPerKmCharge: 0,
   maxDeliveryDistanceKm: 0,
+  minOnlineOrderAmount: 0,
   restaurantLatitude: null,
   restaurantLongitude: null,
   paymentMethods: DEFAULT_PAYMENT_METHODS,
@@ -130,7 +131,10 @@ export function isRestaurantSettingsPayload(
     o.deliveryPerKmCharge < 0 ||
     typeof o.maxDeliveryDistanceKm !== "number" ||
     !Number.isFinite(o.maxDeliveryDistanceKm) ||
-    o.maxDeliveryDistanceKm < 0
+    o.maxDeliveryDistanceKm < 0 ||
+    typeof o.minOnlineOrderAmount !== "number" ||
+    !Number.isFinite(o.minOnlineOrderAmount) ||
+    o.minOnlineOrderAmount < 0
   ) {
     return false;
   }
@@ -163,6 +167,7 @@ function isPrismaMissingColumnError(e: unknown): boolean {
     msg.includes("restaurant_latitude") ||
     msg.includes("restaurant_longitude") ||
     msg.includes("max_delivery_distance_km") ||
+    msg.includes("min_online_order_amount") ||
     msg.includes("bill_preview_json") ||
     msg.includes("does not exist")
   );
@@ -249,6 +254,7 @@ async function readRestaurantSettingsLegacy(
     baseDeliveryCharge: row.base_delivery_charge,
     deliveryPerKmCharge: row.delivery_per_km_charge,
     maxDeliveryDistanceKm: 0,
+    minOnlineOrderAmount: 0,
     restaurantLatitude: null,
     restaurantLongitude: null,
     paymentMethodsJson: row.payment_methods_json,
@@ -345,6 +351,7 @@ function rowToPayload(row: {
   baseDeliveryCharge: number;
   deliveryPerKmCharge: number;
   maxDeliveryDistanceKm: number;
+  minOnlineOrderAmount?: number;
   restaurantLatitude: number | null;
   restaurantLongitude: number | null;
   paymentMethodsJson: unknown;
@@ -365,6 +372,9 @@ function rowToPayload(row: {
     baseDeliveryCharge: normalizeNonNegativeNumber(row.baseDeliveryCharge),
     deliveryPerKmCharge: normalizeNonNegativeNumber(row.deliveryPerKmCharge),
     maxDeliveryDistanceKm: normalizeNonNegativeNumber(row.maxDeliveryDistanceKm),
+    minOnlineOrderAmount: normalizeNonNegativeNumber(
+      row.minOnlineOrderAmount ?? 0,
+    ),
     restaurantLatitude:
       row.restaurantLatitude != null
         ? normalizeCoordinate(row.restaurantLatitude, "lat")
@@ -431,6 +441,9 @@ export async function writeRestaurantSettings(
   const maxDeliveryDistanceKm = normalizeNonNegativeNumber(
     payload.maxDeliveryDistanceKm,
   );
+  const minOnlineOrderAmount = normalizeNonNegativeNumber(
+    payload.minOnlineOrderAmount,
+  );
   const restaurantLatitude = normalizeCoordinate(
     payload.restaurantLatitude,
     "lat",
@@ -460,6 +473,7 @@ export async function writeRestaurantSettings(
         baseDeliveryCharge,
         deliveryPerKmCharge,
         maxDeliveryDistanceKm,
+        minOnlineOrderAmount,
         restaurantLatitude,
         restaurantLongitude,
         paymentMethodsJson: pm as unknown as Prisma.InputJsonValue,
@@ -481,6 +495,7 @@ export async function writeRestaurantSettings(
         baseDeliveryCharge,
         deliveryPerKmCharge,
         maxDeliveryDistanceKm,
+        minOnlineOrderAmount,
         restaurantLatitude,
         restaurantLongitude,
         paymentMethodsJson: pm as unknown as Prisma.InputJsonValue,

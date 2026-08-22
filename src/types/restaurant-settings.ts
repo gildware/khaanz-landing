@@ -34,6 +34,11 @@ export interface RestaurantSettingsPayload {
   deliveryPerKmCharge: number;
   /** Maximum delivery radius in km (0 = deliver anywhere distance can be calculated). */
   maxDeliveryDistanceKm: number;
+  /**
+   * Minimum item subtotal (rupees) for website pickup/delivery checkout.
+   * 0 = no minimum. Delivery fee is not counted. Does not apply to POS.
+   */
+  minOnlineOrderAmount: number;
   /** Restaurant location for delivery distance (null = use server env vars). */
   restaurantLatitude: number | null;
   restaurantLongitude: number | null;
@@ -53,6 +58,7 @@ export type PublicRestaurantSettings = Pick<
   | "baseDeliveryCharge"
   | "deliveryPerKmCharge"
   | "maxDeliveryDistanceKm"
+  | "minOnlineOrderAmount"
   | "restaurantLatitude"
   | "restaurantLongitude"
 > & {

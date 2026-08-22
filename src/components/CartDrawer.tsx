@@ -14,6 +14,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useCartTotals } from "@/hooks/use-cart-totals";
+import { useRestaurantSettings } from "@/contexts/restaurant-settings-context";
+import {
+  minOnlineOrderMessage,
+  onlineOrderMinShortfallRupees,
+} from "@/lib/min-online-order";
 import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
 import { useCartStore } from "@/store/cartStore";
 import { useUIStore } from "@/store/uiStore";
@@ -27,6 +32,13 @@ export function CartDrawer() {
   const decreaseQty = useCartStore((s) => s.decreaseQty);
   const removeItem = useCartStore((s) => s.removeItem);
   const { totalAmount } = useCartTotals();
+  const { data: settings } = useRestaurantSettings();
+  const minOnlineOrderAmount = settings?.minOnlineOrderAmount ?? 0;
+  const minOrderShortfall = onlineOrderMinShortfallRupees(
+    totalAmount,
+    minOnlineOrderAmount,
+  );
+  const belowMinOrder = minOrderShortfall > 0;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -125,16 +137,32 @@ export function CartDrawer() {
                   ₹{totalAmount}
                 </span>
               </div>
-              <Link
-                href="/checkout"
-                className={cn(
-                  buttonVariants({ size: "lg" }),
-                  "bg-cta-gradient h-12 w-full rounded-full border-0 font-semibold text-lg text-primary-foreground shadow-lg shadow-cta",
-                )}
-                onClick={() => setOpen(false)}
-              >
-                Proceed to checkout
-              </Link>
+              {belowMinOrder ? (
+                <p className="text-amber-800 text-sm dark:text-amber-200">
+                  {minOnlineOrderMessage(minOrderShortfall, minOnlineOrderAmount)}
+                </p>
+              ) : null}
+              {belowMinOrder ? (
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled
+                  className="h-12 w-full rounded-full font-semibold text-lg"
+                >
+                  Proceed to checkout
+                </Button>
+              ) : (
+                <Link
+                  href="/checkout"
+                  className={cn(
+                    buttonVariants({ size: "lg" }),
+                    "bg-cta-gradient h-12 w-full rounded-full border-0 font-semibold text-lg text-primary-foreground shadow-lg shadow-cta",
+                  )}
+                  onClick={() => setOpen(false)}
+                >
+                  Proceed to checkout
+                </Link>
+              )}
             </div>
           </>
         )}

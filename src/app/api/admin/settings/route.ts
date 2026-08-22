@@ -138,6 +138,7 @@ export async function PUT(request: Request) {
   const baseDeliveryCharge = normalizeNonNegativeNumber(o.baseDeliveryCharge);
   const deliveryPerKmCharge = normalizeNonNegativeNumber(o.deliveryPerKmCharge);
   const maxDeliveryDistanceKm = normalizeNonNegativeNumber(o.maxDeliveryDistanceKm);
+  const minOnlineOrderAmount = normalizeNonNegativeNumber(o.minOnlineOrderAmount);
   const restaurantLatitude = normalizeCoordinate(o.restaurantLatitude, "lat");
   const restaurantLongitude = normalizeCoordinate(o.restaurantLongitude, "lng");
   if (
@@ -179,6 +180,7 @@ export async function PUT(request: Request) {
     baseDeliveryCharge,
     deliveryPerKmCharge,
     maxDeliveryDistanceKm,
+    minOnlineOrderAmount,
     restaurantLatitude,
     restaurantLongitude,
     paymentMethods: pmParsed,

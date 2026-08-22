@@ -9,6 +9,11 @@ import { QuantitySelector } from "@/components/QuantitySelector";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useCartTotals } from "@/hooks/use-cart-totals";
+import { useRestaurantSettings } from "@/contexts/restaurant-settings-context";
+import {
+  minOnlineOrderMessage,
+  onlineOrderMinShortfallRupees,
+} from "@/lib/min-online-order";
 import { isCartComboLine, isCartItemLine, isCartOpenLine } from "@/types/menu";
 import { useCartStore } from "@/store/cartStore";
 import { cn } from "@/lib/utils";
@@ -19,6 +24,13 @@ export default function CartPage() {
   const decreaseQty = useCartStore((s) => s.decreaseQty);
   const removeItem = useCartStore((s) => s.removeItem);
   const { totalAmount } = useCartTotals();
+  const { data: settings } = useRestaurantSettings();
+  const minOnlineOrderAmount = settings?.minOnlineOrderAmount ?? 0;
+  const minOrderShortfall = onlineOrderMinShortfallRupees(
+    totalAmount,
+    minOnlineOrderAmount,
+  );
+  const belowMinOrder = minOrderShortfall > 0;
 
   return (
     <div className="min-h-[100dvh] pb-24 md:pb-8">
@@ -109,15 +121,31 @@ export default function CartPage() {
                 ₹{totalAmount}
               </span>
             </div>
-            <Link
-              href="/checkout"
-              className={cn(
-                buttonVariants({ size: "lg" }),
-                "bg-cta-gradient flex h-12 w-full items-center justify-center rounded-full font-semibold text-primary-foreground shadow-lg shadow-cta",
-              )}
-            >
-              Go to checkout
-            </Link>
+            {belowMinOrder ? (
+              <p className="text-amber-800 text-sm dark:text-amber-200">
+                {minOnlineOrderMessage(minOrderShortfall, minOnlineOrderAmount)}
+              </p>
+            ) : null}
+            {belowMinOrder ? (
+              <Button
+                type="button"
+                size="lg"
+                disabled
+                className="flex h-12 w-full items-center justify-center rounded-full font-semibold"
+              >
+                Go to checkout
+              </Button>
+            ) : (
+              <Link
+                href="/checkout"
+                className={cn(
+                  buttonVariants({ size: "lg" }),
+                  "bg-cta-gradient flex h-12 w-full items-center justify-center rounded-full font-semibold text-primary-foreground shadow-lg shadow-cta",
+                )}
+              >
+                Go to checkout
+              </Link>
+            )}
           </>
         )}
       </main>

@@ -20,6 +20,10 @@ import { isChannelOpenAt } from "@/lib/restaurant-hours";
 import { readRestaurantSettings } from "@/lib/settings-repository";
 import { getTravelDistance } from "@/lib/travel-distance";
 import {
+  itemsSubtotalRupeesFromLines,
+  onlineOrderMinShortfallRupees,
+} from "@/lib/min-online-order";
+import {
   isWhatsAppCloudConfigured,
   sendRestaurantOrderViaWhatsAppCloud,
 } from "@/lib/whatsapp-cloud";
@@ -71,6 +75,22 @@ export async function POST(req: Request) {
 
     const orderId = randomUUID();
     const settings = await readRestaurantSettings();
+
+    const itemsSubtotal = itemsSubtotalRupeesFromLines(parsed.lines);
+    const minShortfall = onlineOrderMinShortfallRupees(
+      itemsSubtotal,
+      settings.minOnlineOrderAmount,
+    );
+    if (minShortfall > 0) {
+      const minRounded = Math.round(settings.minOnlineOrderAmount);
+      const shortfallRounded = Math.round(minShortfall);
+      return Response.json(
+        {
+          error: `Minimum order is ₹${minRounded}. Add ₹${shortfallRounded} more to place this order.`,
+        },
+        { status: 400 },
+      );
+    }
 
     if (
       parsed.scheduleMode === "scheduled" &&

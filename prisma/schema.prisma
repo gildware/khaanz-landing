@@ -55,6 +55,8 @@ model RestaurantSettings {
   deliveryPerKmCharge Float    @default(0) @map("delivery_per_km_charge")
   /// Maximum delivery radius in km (0 = no limit).
   maxDeliveryDistanceKm Float  @default(0) @map("max_delivery_distance_km")
+  /// Minimum item subtotal (rupees) for website checkout. 0 = no minimum. Delivery fee is not counted.
+  minOnlineOrderAmount Float @default(0) @map("min_online_order_amount")
   /// Restaurant map pin / distance origin (falls back to RESTAURANT_LATITUDE/LONGITUDE env).
   restaurantLatitude  Float?  @map("restaurant_latitude")
   restaurantLongitude Float?  @map("restaurant_longitude")

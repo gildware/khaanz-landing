@@ -47,6 +47,7 @@ export default function AdminSettingsPage() {
   const [baseDeliveryCharge, setBaseDeliveryCharge] = useState("0");
   const [deliveryPerKmCharge, setDeliveryPerKmCharge] = useState("0");
   const [maxDeliveryDistanceKm, setMaxDeliveryDistanceKm] = useState("0");
+  const [minOnlineOrderAmount, setMinOnlineOrderAmount] = useState("0");
   const [restaurantLatitude, setRestaurantLatitude] = useState("");
   const [restaurantLongitude, setRestaurantLongitude] = useState("");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodConfig[]>([
@@ -92,6 +93,7 @@ export default function AdminSettingsPage() {
       setBaseDeliveryCharge(String(data.baseDeliveryCharge ?? 0));
       setDeliveryPerKmCharge(String(data.deliveryPerKmCharge ?? 0));
       setMaxDeliveryDistanceKm(String(data.maxDeliveryDistanceKm ?? 0));
+      setMinOnlineOrderAmount(String(data.minOnlineOrderAmount ?? 0));
       setRestaurantLatitude(
         data.restaurantLatitude != null ? String(data.restaurantLatitude) : "",
       );
@@ -133,6 +135,7 @@ export default function AdminSettingsPage() {
         baseDeliveryCharge: Math.max(0, Number(baseDeliveryCharge) || 0),
         deliveryPerKmCharge: Math.max(0, Number(deliveryPerKmCharge) || 0),
         maxDeliveryDistanceKm: Math.max(0, Number(maxDeliveryDistanceKm) || 0),
+        minOnlineOrderAmount: Math.max(0, Number(minOnlineOrderAmount) || 0),
         restaurantLatitude:
           restaurantLatitude.trim() === ""
             ? null
@@ -204,8 +207,8 @@ export default function AdminSettingsPage() {
       <div>
         <h1 className="font-semibold text-2xl">Settings</h1>
         <p className="text-muted-foreground text-sm">
-          Restaurant name, logo, hours, POS bill copy, and payment methods.
-          Stored in the database.
+          Restaurant name, logo, hours, minimum online order, POS bill copy, and
+          payment methods. Stored in the database.
         </p>
       </div>
 
@@ -340,6 +343,28 @@ export default function AdminSettingsPage() {
                   onChange={(e) => setDeliveryEnd(e.target.value)}
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 rounded-xl border bg-card p-4">
+            <p className="font-medium">Minimum online order</p>
+            <p className="text-muted-foreground text-xs">
+              Website pickup and delivery orders must reach this item total
+              before checkout. Delivery fee is not counted. Leave at 0 for no
+              minimum. Does not apply to POS.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="min-online-order">Minimum amount (₹)</Label>
+              <Input
+                id="min-online-order"
+                type="number"
+                min={0}
+                step="1"
+                inputMode="decimal"
+                value={minOnlineOrderAmount}
+                onChange={(e) => setMinOnlineOrderAmount(e.target.value)}
+                placeholder="0"
+              />
             </div>
           </div>
         </TabsContent>

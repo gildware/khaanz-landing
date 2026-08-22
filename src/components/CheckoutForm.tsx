@@ -21,6 +21,10 @@ import { toast } from "sonner";
 import { LocationMapPicker } from "@/components/map/location-map-picker";
 import { LocationSearch } from "@/components/map/location-search";
 import { computeDeliveryChargeRupees } from "@/lib/delivery-charge";
+import {
+  minOnlineOrderMessage,
+  onlineOrderMinShortfallRupees,
+} from "@/lib/min-online-order";
 import { DEFAULT_CENTER } from "@/lib/map-constants";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -168,6 +172,12 @@ export function CheckoutForm() {
     deliveryPricing,
   ]);
   const grandTotal = totalAmount + deliveryFee;
+  const minOnlineOrderAmount = settings?.minOnlineOrderAmount ?? 0;
+  const minOrderShortfall = onlineOrderMinShortfallRupees(
+    totalAmount,
+    minOnlineOrderAmount,
+  );
+  const belowMinOrder = minOrderShortfall > 0;
 
   const fetchAddress = useCallback(async (lat: number, lng: number) => {
     setAddressLoading(true);
@@ -473,6 +483,7 @@ export function CheckoutForm() {
       : latitude != null && longitude != null);
 
   const goNext = () => {
+    if (belowMinOrder) return;
     if (currentStepLabel === "When & how" && !canNextFromWhenHow) return;
     if (currentStepLabel === "Contact" && !canNextFromContact) return;
     if (currentStepLabel === "Location" && !canNextFromLocation) return;
@@ -605,6 +616,12 @@ export function CheckoutForm() {
         const loc = (steps as readonly string[]).indexOf("Location");
         return loc >= 0 ? loc : s;
       });
+      return;
+    }
+    if (belowMinOrder) {
+      toast.error(
+        minOnlineOrderMessage(minOrderShortfall, minOnlineOrderAmount),
+      );
       return;
     }
     let scheduledIso: string | null = null;
@@ -850,6 +867,24 @@ export function CheckoutForm() {
   return (
     <div className="space-y-8">
       <StepperHeader step={step} steps={steps} />
+
+      {belowMinOrder ? (
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+          <p className="font-medium text-amber-950 dark:text-amber-100">
+            Minimum order is ₹{Math.round(minOnlineOrderAmount)}
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            {minOnlineOrderMessage(minOrderShortfall, minOnlineOrderAmount)}{" "}
+            Delivery fee does not count toward this amount.
+          </p>
+          <Link
+            href="/"
+            className="mt-2 inline-block font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Back to menu
+          </Link>
+        </div>
+      ) : null}
 
       {currentStepLabel === "When & how" && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -1470,6 +1505,7 @@ export function CheckoutForm() {
             className="bg-cta-gradient min-h-12 flex-[2] rounded-full font-semibold text-primary-foreground shadow-md shadow-cta"
             onClick={goNext}
             disabled={
+              belowMinOrder ||
               (currentStepLabel === "When & how" && !canNextFromWhenHow) ||
               (currentStepLabel === "Contact" && !canNextFromContact) ||
               (currentStepLabel === "Location" && !canNextFromLocation)
@@ -1483,7 +1519,12 @@ export function CheckoutForm() {
             type="button"
             className="bg-cta-gradient min-h-12 flex-[2] rounded-full font-semibold text-primary-foreground shadow-md shadow-cta"
             onClick={() => void placeOrder()}
-            disabled={!settings || placingOrder || !customerMe?.loggedIn}
+            disabled={
+              !settings ||
+              placingOrder ||
+              !customerMe?.loggedIn ||
+              belowMinOrder
+            }
           >
             {placingOrder ? (
               <>
