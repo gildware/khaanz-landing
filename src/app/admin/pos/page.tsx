@@ -233,6 +233,7 @@ export default function AdminPosPage() {
       ) : null}
 
       {mainTab === "pos" ? (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-card lg:flex-row">
         <div className="flex min-h-0 min-w-0 flex-col border-b lg:border-r lg:border-b-0">
           <div className="shrink-0 space-y-3 border-b bg-muted/30 p-3">
             <Input

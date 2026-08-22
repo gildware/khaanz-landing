@@ -48,7 +48,7 @@ export async function persistOrderToDatabase(
       ? new Date(parsed.scheduledAt)
       : null;
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     if (customerSession.phoneDigits !== digits) {
       throw new Error("SESSION_PHONE_MISMATCH");
     }
@@ -143,7 +143,7 @@ export async function persistOrderToDatabase(
     createdAt: new Date().toISOString(),
   });
 
-  return { orderRef };
+  return result;
 }
 
 /** Walk-in / POS: upsert customer by phone and create order (no customer session). No outbound notifications. */
@@ -183,7 +183,7 @@ export async function persistPosOrderToDatabase(
       ? options.soldAt
       : null;
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const customer = await tx.customer.upsert({
       where: { phoneDigits: digits },
       create: {
@@ -297,5 +297,5 @@ export async function persistPosOrderToDatabase(
     createdAt: (soldAt ?? new Date()).toISOString(),
   });
 
-  return { orderRef };
+  return result;
 }
