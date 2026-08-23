@@ -97,7 +97,8 @@ export async function GET(request: Request) {
   const hasMore = rows.length > pageSize;
   const orders = rows.slice(0, pageSize);
 
-  const withTravel = view === "online";
+  const withTravel =
+    view === "online" && url.searchParams.get("travel") !== "0";
 
   const createdByLabelById = notifyLite
     ? new Map<string, string | null>()
@@ -134,6 +135,7 @@ export async function GET(request: Request) {
         customerPhone: o.customer.phoneDigits,
         customerName: o.customer.displayName,
         source: o.source,
+        paymentMethod: o.paymentMethod ?? "",
         dineInTable: o.dineInTable,
         address: o.address,
         landmark: o.landmark,

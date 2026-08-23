@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ChevronDownIcon,
   Loader2Icon,
+  MapPinIcon,
+  NavigationIcon,
   PencilIcon,
   RefreshCwIcon,
 } from "lucide-react";
@@ -26,16 +28,23 @@ import { formatIstDateInput } from "@/lib/ist-dates";
 import {
   ORDER_STATUS_LABEL,
   RESTAURANT_ORDER_STATUS_TAB_LABEL,
+  canAdminSetOrderStatus,
   canEditPosOrder,
-  nextOrderStatusStep,
   restaurantOrderStatusLabel,
 } from "@/lib/order-status-workflow";
 import {
   countOrdersByStatus,
   filterOrdersByStatusTab,
 } from "@/lib/order-tab-utils";
+import { isPosAnonymousPhoneDigits } from "@/lib/phone-digits";
 import { writePosMobileEditDraft } from "@/lib/pos-mobile-edit-draft";
 import { fulfillmentLabelFromKey } from "@/lib/pos-print";
+import {
+  buildCustomerMapUrl,
+  formatTravelDistanceLabel,
+  parseCoordinates,
+  type TravelDistance,
+} from "@/lib/travel-distance-client";
 import { cn } from "@/lib/utils";
 import type { FulfillmentMode } from "@/types/restaurant-settings";
 import type { RestaurantSettingsPayload } from "@/types/restaurant-settings";
@@ -55,11 +64,18 @@ export type PosMobileHistoryOrder = {
   createdAt: string;
   customerPhone: string;
   customerName: string | null;
-  paymentMethod: string;
+  paymentMethod?: string | null;
   dineInTable: string;
   address: string;
   landmark: string;
   notes: string;
+  scheduleMode?: string | null;
+  scheduledAt?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  mapUrl?: string | null;
+  locationUrl?: string | null;
+  distance?: TravelDistance | null;
   createdByUserId: string | null;
   createdByLabel: string | null;
   lines: { sortIndex: number; payload: unknown }[];
@@ -75,11 +91,6 @@ type PendingStatusChange = {
   destructive?: boolean;
 };
 
-type PendingDelete = {
-  orderId: string;
-  orderRef: string;
-};
-
 function formatMoneyMinor(minor: number): string {
   return `₹${(minor / 100).toFixed(0)}`;
 }
@@ -90,6 +101,171 @@ function formatOrderTime(iso: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function formatIstDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function resolveCustomerMapUrl(order: PosMobileHistoryOrder): string | null {
+  if (order.locationUrl?.trim()) return order.locationUrl.trim();
+  if (order.mapUrl?.trim()) return order.mapUrl.trim();
+  const coords = parseCoordinates(order.latitude, order.longitude);
+  if (coords) return buildCustomerMapUrl(coords.lat, coords.lng);
+  const address = order.address?.trim();
+  if (address) {
+    const params = new URLSearchParams({ api: "1", query: address });
+    return `https://www.google.com/maps/search/?${params.toString()}`;
+  }
+  return null;
+}
+
+function allowedStatusChanges(
+  status: string,
+  fulfillment: string,
+): OrderStatus[] {
+  const flow: OrderStatus[] = [
+    "ACCEPTED",
+    "PREPARING",
+    "OUT_FOR_DELIVERY",
+    "DELIVERED",
+    "TABLE_CLEARED",
+    "CANCELLED",
+  ];
+  return flow.filter(
+    (to) =>
+      to !== status &&
+      canAdminSetOrderStatus(status as OrderStatus, to, fulfillment),
+  );
+}
+
+function statusActionLabel(
+  to: OrderStatus,
+  fulfillment: string,
+  online: boolean,
+): string {
+  if (to === "ACCEPTED") return "Accept";
+  if (to === "CANCELLED") return "Cancel";
+  if (online) {
+    if (to === "OUT_FOR_DELIVERY") return "Sent for delivery";
+    return ORDER_STATUS_LABEL[to];
+  }
+  return restaurantOrderStatusLabel(to, fulfillment);
+}
+
+function customerMapsEmbedUrl(order: PosMobileHistoryOrder): string | null {
+  const coords = parseCoordinates(order.latitude, order.longitude);
+  if (coords) {
+    return `https://maps.google.com/maps?q=${coords.lat},${coords.lng}&z=16&output=embed`;
+  }
+  const address = order.address?.trim();
+  if (!address) return null;
+  return `https://maps.google.com/maps?q=${encodeURIComponent(address)}&z=16&output=embed`;
+}
+
+function OrderCustomerAndLocation({ order }: { order: PosMobileHistoryOrder }) {
+  const mapHref = resolveCustomerMapUrl(order);
+  const embedUrl = customerMapsEmbedUrl(order);
+  const coords = parseCoordinates(order.latitude, order.longitude);
+  const phone = order.customerPhone?.trim() ?? "";
+  const digits = phone.replace(/\D/g, "");
+  const phoneHref =
+    digits.length >= 10 ? `tel:+91${digits.slice(-10)}` : phone ? `tel:${phone}` : null;
+  const hasLocation = Boolean(order.address?.trim() || coords || mapHref);
+
+  return (
+    <div className="space-y-3 border-t pt-3">
+      <div>
+        <p className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide">
+          Customer
+        </p>
+        <p className="mt-0.5 text-sm font-medium">
+          {order.customerName?.trim() || "—"}
+        </p>
+        {phone ? (
+          isPosAnonymousPhoneDigits(digits.slice(-10) || phone) ? (
+            <p className="text-muted-foreground text-xs">No phone</p>
+          ) : phoneHref ? (
+            <a href={phoneHref} className="font-mono text-primary text-xs">
+              {phone}
+            </a>
+          ) : (
+            <p className="font-mono text-muted-foreground text-xs">{phone}</p>
+          )
+        ) : (
+          <p className="text-muted-foreground text-xs">No phone</p>
+        )}
+      </div>
+
+      {hasLocation ? (
+        <div className="space-y-2">
+          <div className="flex items-start gap-2">
+            <MapPinIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide">
+                Customer location
+              </p>
+              {order.address?.trim() ? (
+                <p className="mt-0.5 text-sm leading-snug">
+                  {order.address.trim()}
+                </p>
+              ) : coords ? (
+                <p className="mt-0.5 font-mono text-muted-foreground text-xs">
+                  {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
+                </p>
+              ) : null}
+              {order.landmark?.trim() ? (
+                <p className="text-muted-foreground text-xs">
+                  Landmark: {order.landmark.trim()}
+                </p>
+              ) : null}
+            </div>
+          </div>
+          {embedUrl ? (
+            <div className="overflow-hidden rounded-lg border bg-muted">
+              <iframe
+                title={`Map for ${order.orderRef ?? "order"}`}
+                src={embedUrl}
+                className="h-40 w-full border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            {order.distance ? (
+              <Badge
+                variant="outline"
+                className="gap-1 border-sky-600/40 bg-sky-500/12 font-medium text-sky-950 dark:border-sky-400/35 dark:bg-sky-400/12 dark:text-sky-50"
+              >
+                <NavigationIcon className="size-3" />
+                {formatTravelDistanceLabel(order.distance)}
+              </Badge>
+            ) : null}
+            {mapHref ? (
+              <a
+                href={mapHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-primary text-xs font-medium underline-offset-2 hover:underline"
+              >
+                <NavigationIcon className="size-3" />
+                Open in Google Maps
+              </a>
+            ) : null}
+          </div>
+        </div>
+      ) : order.fulfillment === "pickup" ? (
+        <p className="text-muted-foreground text-xs">Pickup — no delivery address</p>
+      ) : null}
+    </div>
+  );
 }
 
 function orderStatusBadgeClassName(status: string): string {
@@ -166,7 +342,6 @@ export function PosMobileOrderHistory({
   const [statusConfirm, setStatusConfirm] = useState<PendingStatusChange | null>(
     null,
   );
-  const [deleteConfirm, setDeleteConfirm] = useState<PendingDelete | null>(null);
 
   const openInPosCart = (order: PosMobileHistoryOrder) => {
     if (!canEditPosOrder(order.status, order.fulfillment)) {
@@ -223,8 +398,8 @@ export function PosMobileOrderHistory({
   }, []);
 
   const paymentLabel = useCallback(
-    (key: string) => {
-      const k = key.trim();
+    (key: string | null | undefined) => {
+      const k = (key ?? "").trim();
       if (!k) return "Unpaid";
       return paymentNames[k] ?? k;
     },
@@ -384,41 +559,6 @@ export function PosMobileOrderHistory({
     }
   };
 
-  const confirmDeleteOrder = async () => {
-    if (!deleteConfirm) return;
-    const pending = deleteConfirm;
-    setUpdatingId(pending.orderId);
-    setDeleteConfirm(null);
-    try {
-      const res = await fetch(
-        isOnline
-          ? `/api/admin/orders/${pending.orderId}`
-          : `/api/admin/pos/orders/${pending.orderId}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
-      );
-      const data = (await res.json()) as { ok?: boolean; error?: string };
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not delete order.");
-        return;
-      }
-      setOrders((prev) => prev.filter((o) => o.id !== pending.orderId));
-      if (expandedId === pending.orderId) setExpandedId(null);
-      onStatusUpdated?.({
-        id: pending.orderId,
-        status: "DELETED",
-        fulfillment: "",
-      });
-      toast.success(`${pending.orderRef} deleted`);
-    } catch {
-      toast.error("Network error.");
-    } finally {
-      setUpdatingId(null);
-    }
-  };
-
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       <div className="shrink-0 space-y-2 border-b px-3 py-2.5">
@@ -568,21 +708,30 @@ export function PosMobileOrderHistory({
                     o.fulfillment,
                   );
               const pay = paymentLabel(o.paymentMethod);
-              const unpaid = !o.paymentMethod.trim();
-              const step = nextOrderStatusStep(o.status, o.fulfillment);
+              const unpaid = !(o.paymentMethod ?? "").trim();
               const busy = updatingId === o.id;
               const editable = canEditPosOrder(o.status, o.fulfillment);
-              const canCancel =
-                o.status !== "CANCELLED" &&
-                o.status !== "DELIVERED" &&
-                o.status !== "TABLE_CLEARED";
+              const statusActions = allowedStatusChanges(
+                o.status,
+                o.fulfillment,
+              );
+              const advanceActions = statusActions.filter(
+                (s) => s !== "CANCELLED",
+              );
+              const canCancel = statusActions.includes("CANCELLED");
               const takenBy = o.createdByLabel?.trim() || "Unknown";
               const takenByMe =
                 Boolean(currentUserId) &&
                 o.createdByUserId === currentUserId;
               return (
                 <li key={o.id}>
-                  <article className="overflow-hidden rounded-xl border bg-card">
+                  <article
+                    className={cn(
+                      "overflow-hidden rounded-xl border bg-card",
+                      open &&
+                        "border-primary/40 bg-accent/50 ring-1 ring-primary/20",
+                    )}
+                  >
                     <button
                       type="button"
                       className="flex w-full items-start gap-3 px-3 py-3 text-left active:bg-muted/40"
@@ -657,73 +806,21 @@ export function PosMobileOrderHistory({
                       </div>
                     </button>
 
-                    <div className="space-y-2 border-t px-3 py-2.5">
-                      <div className="flex flex-wrap gap-2">
-                        {editable ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="!h-11 flex-1 gap-1.5 text-sm"
-                            disabled={busy}
-                            onClick={() => openInPosCart(o)}
-                          >
-                            <PencilIcon className="size-3.5" />
-                            Edit in POS
-                          </Button>
-                        ) : null}
-                        {step ? (
-                          <Button
-                            type="button"
-                            className="!h-11 min-w-0 flex-[1.4] text-sm"
-                            disabled={busy}
-                            onClick={() =>
-                              requestStatusChange(o, step.nextStatus, step.label)
-                            }
-                          >
-                            {busy ? (
-                              <Loader2Icon className="size-4 animate-spin" />
-                            ) : (
-                              step.label
-                            )}
-                          </Button>
-                        ) : null}
-                      </div>
-                      {canCancel ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="!h-11 w-full text-sm text-destructive hover:text-destructive"
-                          disabled={busy}
-                          onClick={() =>
-                            requestStatusChange(
-                              o,
-                              "CANCELLED",
-                              "Cancel order",
-                              true,
-                            )
-                          }
-                        >
-                          Cancel order
-                        </Button>
-                      ) : null}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="!h-11 w-full text-sm text-destructive hover:text-destructive"
-                        disabled={busy}
-                        onClick={() =>
-                          setDeleteConfirm({
-                            orderId: o.id,
-                            orderRef: o.orderRef ?? o.id.slice(0, 8),
-                          })
-                        }
-                      >
-                        Delete order
-                      </Button>
-                    </div>
-
                     {open ? (
-                      <div className="space-y-2 border-t px-3 py-3">
+                      <div className="space-y-3 border-t border-primary/20 bg-muted/70 px-3 py-3">
+                        <div>
+                          <p className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide">
+                            Order details
+                          </p>
+                          <p className="mt-0.5 text-sm">
+                            Received {formatIstDateTime(o.createdAt)}
+                          </p>
+                          {o.scheduleMode === "scheduled" && o.scheduledAt ? (
+                            <p className="mt-0.5 text-amber-800 text-xs dark:text-amber-200">
+                              Scheduled for {formatIstDateTime(o.scheduledAt)}
+                            </p>
+                          ) : null}
+                        </div>
                         {(o.lines ?? []).length === 0 ? (
                           <p className="text-muted-foreground text-sm">
                             No line items.
@@ -765,6 +862,74 @@ export function PosMobileOrderHistory({
                           <p className="text-muted-foreground text-xs">
                             Note: {o.notes.trim()}
                           </p>
+                        ) : null}
+                        <OrderCustomerAndLocation order={o} />
+                        {editable ||
+                        advanceActions.length > 0 ||
+                        canCancel ? (
+                          <div className="space-y-2 border-t border-primary/20 pt-3">
+                            <div className="flex flex-wrap gap-2">
+                              {advanceActions.map((to) => (
+                                <Button
+                                  key={to}
+                                  type="button"
+                                  className="!h-11 min-w-0 flex-1 text-sm"
+                                  disabled={busy}
+                                  onClick={() =>
+                                    requestStatusChange(
+                                      o,
+                                      to,
+                                      statusActionLabel(
+                                        to,
+                                        o.fulfillment,
+                                        isOnline,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  {busy ? (
+                                    <Loader2Icon className="size-4 animate-spin" />
+                                  ) : (
+                                    statusActionLabel(
+                                      to,
+                                      o.fulfillment,
+                                      isOnline,
+                                    )
+                                  )}
+                                </Button>
+                              ))}
+                              {editable ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="!h-11 flex-1 gap-1.5 text-sm"
+                                  disabled={busy}
+                                  onClick={() => openInPosCart(o)}
+                                >
+                                  <PencilIcon className="size-3.5" />
+                                  Edit in POS
+                                </Button>
+                              ) : null}
+                            </div>
+                            {canCancel ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="!h-11 w-full text-sm text-destructive hover:text-destructive"
+                                disabled={busy}
+                                onClick={() =>
+                                  requestStatusChange(
+                                    o,
+                                    "CANCELLED",
+                                    "Cancel",
+                                    true,
+                                  )
+                                }
+                              >
+                                Cancel
+                              </Button>
+                            ) : null}
+                          </div>
                         ) : null}
                       </div>
                     ) : null}
@@ -830,48 +995,6 @@ export function PosMobileOrderHistory({
               variant="outline"
               className="!h-12 w-full text-base"
               onClick={() => setStatusConfirm(null)}
-            >
-              Back
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={deleteConfirm !== null}
-        onOpenChange={(o) => {
-          if (!o) setDeleteConfirm(null);
-        }}
-      >
-        <DialogContent className="w-[calc(100%-1.5rem)] max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete order permanently?</DialogTitle>
-            <DialogDescription>
-              {deleteConfirm ? (
-                <>
-                  {deleteConfirm.orderRef} will be removed. This cannot be undone.
-                  Deducted inventory will be restored if needed.
-                </>
-              ) : null}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col gap-2 sm:flex-col">
-            <Button
-              type="button"
-              className="!h-12 w-full text-base"
-              variant="destructive"
-              disabled={
-                Boolean(deleteConfirm && updatingId === deleteConfirm.orderId)
-              }
-              onClick={() => void confirmDeleteOrder()}
-            >
-              Delete order
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="!h-12 w-full text-base"
-              onClick={() => setDeleteConfirm(null)}
             >
               Back
             </Button>
