@@ -7,6 +7,7 @@ import {
   deletePurchaseInTransaction,
   updatePurchaseInTransaction,
 } from "@/lib/inventory/purchase-flow";
+import { parsePurchaseBills } from "@/lib/inventory/purchase-bills";
 import { parseDecimalQty } from "@/lib/inventory/parse-quantity";
 import { getPrisma } from "@/lib/prisma";
 
@@ -46,6 +47,7 @@ function parsePurchaseBody(body: Record<string, unknown>):
       paymentType: PurchasePaymentType;
       creditDays?: number | null;
       notes: string;
+      bills: { url: string; fileName: string }[];
       lines: {
         inventoryItemId: string;
         qtyPurchase: Prisma.Decimal;
@@ -143,6 +145,7 @@ function parsePurchaseBody(body: Record<string, unknown>):
     paymentType,
     creditDays,
     notes: typeof body.notes === "string" ? body.notes : "",
+    bills: parsePurchaseBills(body.bills),
     lines,
   };
 }
@@ -158,7 +161,8 @@ export async function GET(_request: Request, context: Ctx) {
   }
 
   const prisma = getPrisma();
-  const purchase = await prisma.purchase.findUnique({
+  try {
+    const purchase = await prisma.purchase.findUnique({
     where: { id },
     select: {
       id: true,
@@ -170,6 +174,7 @@ export async function GET(_request: Request, context: Ctx) {
       dueAt: true,
       totalPaise: true,
       notes: true,
+      bills: true,
       createdAt: true,
       supplier: { select: { id: true, name: true, phone: true } },
       lines: {
@@ -240,6 +245,7 @@ export async function GET(_request: Request, context: Ctx) {
       dueAt: purchase.dueAt?.toISOString() ?? null,
       totalPaise: purchase.totalPaise,
       notes: purchase.notes,
+      bills: parsePurchaseBills(purchase.bills),
       createdAt: purchase.createdAt.toISOString(),
       editable,
       lines: purchase.lines.map((l) => ({
@@ -267,6 +273,11 @@ export async function GET(_request: Request, context: Ctx) {
       })),
     },
   });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to load purchase";
+    console.error("GET purchase", e);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }
 
 export async function PATCH(request: Request, context: Ctx) {
@@ -300,6 +311,7 @@ export async function PATCH(request: Request, context: Ctx) {
         paymentType: parsed.paymentType,
         creditDays: parsed.creditDays,
         notes: parsed.notes,
+        bills: parsed.bills,
         createdByUserId: session.userId,
         lines: parsed.lines,
       }),

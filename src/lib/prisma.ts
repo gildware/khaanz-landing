@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
   prismaLogQueries?: boolean;
+  prismaClientRev?: string;
 };
 
 export function getPrisma(): PrismaClient {
@@ -11,16 +12,20 @@ export function getPrisma(): PrismaClient {
     throw new Error("DATABASE_URL is not set.");
   }
   const logQueries = process.env.PRISMA_LOG_QUERIES === "1";
-  // Recreate client if log preference changed (HMR / restart without full process kill).
+  // Recreate if the generated client was regenerated (e.g. new columns) without
+  // a full process restart — still requires a restart to pick up a new DMMF.
+  const clientRev = "purchase-bills-json";
   if (
     globalForPrisma.prisma &&
-    globalForPrisma.prismaLogQueries !== logQueries
+    (globalForPrisma.prismaLogQueries !== logQueries ||
+      globalForPrisma.prismaClientRev !== clientRev)
   ) {
     void globalForPrisma.prisma.$disconnect();
     globalForPrisma.prisma = undefined;
   }
   if (!globalForPrisma.prisma) {
     globalForPrisma.prismaLogQueries = logQueries;
+    globalForPrisma.prismaClientRev = clientRev;
     globalForPrisma.prisma = new PrismaClient({
       log:
         process.env.NODE_ENV === "development"

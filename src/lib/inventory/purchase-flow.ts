@@ -3,6 +3,7 @@ import { Prisma, type PurchasePaymentType } from "@prisma/client";
 import { D0, d } from "@/lib/inventory/decimal-utils";
 import { createInboundBatch } from "@/lib/inventory/batch-ops";
 import { ensureInventorySettings } from "@/lib/inventory/inventory-settings";
+import { parsePurchaseBills } from "@/lib/inventory/purchase-bills";
 import {
   allocateNextPurchaseSequence,
   nextPurchaseBatchRef,
@@ -38,6 +39,7 @@ export type CreatePurchaseInput = {
   paymentType: PurchasePaymentType;
   creditDays?: number | null;
   notes?: string;
+  bills?: { url: string; fileName: string }[];
   createdByUserId?: string | null;
   lines: PurchaseLineInput[];
   /** Edit path: keep the same purchase id and batch ref after reverse. */
@@ -142,6 +144,7 @@ export async function createPurchaseInTransaction(
       dueAt,
       totalPaise,
       notes: (input.notes ?? "").trim().slice(0, 2000),
+      bills: parsePurchaseBills(input.bills),
       createdByUserId: input.createdByUserId ?? null,
     },
   });
@@ -438,7 +441,7 @@ export async function updatePurchaseInTransaction(
 ): Promise<{ purchaseId: string; batchRef: string }> {
   const existing = await tx.purchase.findUnique({
     where: { id: purchaseId },
-    select: { id: true, batchRef: true },
+    select: { id: true, batchRef: true, bills: true },
   });
   if (!existing) {
     throw new Error("PURCHASE_NOT_FOUND");
@@ -448,6 +451,7 @@ export async function updatePurchaseInTransaction(
 
   return createPurchaseInTransaction(tx, {
     ...input,
+    bills: input.bills ?? parsePurchaseBills(existing.bills),
     reuse: { id: existing.id, batchRef: existing.batchRef },
   });
 }

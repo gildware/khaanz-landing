@@ -1,0 +1,1654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KHAANZ — Handwritten stock mapping (preview)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --brand: #b91c1c;
+      --ink: #1c1917;
+      --muted: #78716c;
+      --border: #e7e5e4;
+      --white: #fff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+    body { font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #d6d3d1; color: var(--ink); }
+    .toolbar {
+      display: flex; justify-content: space-between; gap: 1rem; align-items: center;
+      padding: 0.4rem 0.85rem; background: rgba(28,25,23,.94); color: #fafaf9;
+    }
+    .toolbar h1 { font-size: 0.85rem; }
+    .toolbar p { display: none; }
+    .page { max-width: 1480px; margin: 0 auto; padding: 0.45rem 0.75rem 0.75rem; }
+    .banner { display: none; }
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
+      background: var(--white); border: 1px solid var(--border); border-radius: 0.5rem;
+      padding: 0.35rem 0.55rem; margin-bottom: 0.45rem;
+    }
+    input, select {
+      font: inherit; font-size: 0.85rem; border: 1px solid var(--border); border-radius: 0.45rem; padding: 0.3rem 0.45rem;
+    }
+    input { min-width: 160px; }
+    .wrap {
+      height: calc(100vh - 168px);
+      min-height: 280px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      background: var(--white);
+      -webkit-overflow-scrolling: touch;
+    }
+    .totals {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem;
+      margin-bottom: 0.45rem;
+    }
+    .tot {
+      background: var(--white); border: 1px solid var(--border); border-radius: 0.5rem;
+      padding: 0.4rem 0.65rem;
+    }
+    .tot span { display: block; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .tot strong { font-size: 1.05rem; }
+    .tot em { font-style: normal; font-size: 0.72rem; color: var(--muted); }
+    td.money, th.money { text-align: right; white-space: nowrap; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--white); }
+    th, td { padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--border); font-size: 0.82rem; vertical-align: top; }
+    th {
+      text-align: left; background: #f5f5f4; font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: .04em; color: var(--muted); position: sticky; top: 0; z-index: 2;
+    }
+    .num { color: var(--muted); width: 2.2rem; }
+    .written { color: #44403c; max-width: 280px; }
+    .note { max-width: 340px; color: #44403c; }
+    .muted { color: var(--muted); }
+    .pill { display: inline-block; border-radius: 999px; padding: 0.12rem 0.5rem; font-size: 0.72rem; font-weight: 600; }
+    .pill-mapped { background: #ecfdf5; color: #047857; }
+    .pill-ask { background: #fff7ed; color: #c2410c; }
+    .pill-no-db { background: #eff6ff; color: #1d4ed8; }
+    .pill-skip { background: #f5f5f4; color: #78716c; }
+    tr.row-skip { opacity: 0.7; }
+    tr.page-head td {
+      background: #1c1917; color: #fafaf9; font-weight: 700; font-size: 0.82rem;
+      letter-spacing: 0.02em; padding: 0.7rem 0.65rem;
+    }
+    tr.hidden { display: none; }
+    .ask-box {
+      background: var(--white); border: 1px solid var(--border); border-radius: 0.75rem;
+      padding: 0.5rem 1rem; margin-top: 0.5rem;
+    }
+    .ask-box summary { cursor: pointer; font-size: 0.9rem; font-weight: 700; }
+    .ask-box ol { padding: 0.5rem 0 0.2rem 1.2rem; display: grid; gap: 0.4rem; }
+    .ask-box li { font-size: 0.85rem; }
+    .ask-box .q-written { display: block; color: var(--muted); font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div>
+      <h1>Handwritten stock → DB mapping</h1>
+      <p>Preview only · no database writes · generated 5/9/2026, 4:00:19 pm</p>
+    </div>
+  </div>
+  <div class="page">
+    <div class="banner">
+      Notebook order P1 → P4. Preview only — nothing written to the DB yet.
+    </div>
+    <div class="controls">
+      <input id="q" type="search" placeholder="Search item…" />
+      <select id="page">
+        <option value="">All pages (notebook order)</option>
+        <option value="1">Page 1</option>
+        <option value="2">Page 2</option>
+        <option value="3">Page 3</option>
+        <option value="4">Page 4</option>
+      </select>
+      <select id="conf">
+        <option value="">All statuses</option>
+        <option value="mapped">Mapped</option>
+        <option value="no-db">New items</option>
+        <option value="skip">Skipped</option>
+      </select>
+      <span class="muted">95 lines · 79 mapped · 12 new · 4 skipped · costing WEIGHTED_AVERAGE</span>
+    </div>
+    <div class="totals">
+      <div class="tot"><span>Whole shop now (all DB items)</span><strong>₹55,124.89</strong></div>
+      <div class="tot"><span>These sheet items now (unique DB)</span><strong>₹16,963.92</strong><em></em></div>
+      <div class="tot"><span>This count (proposed qty × cost)</span><strong>₹1,71,955.71</strong><em></em></div>
+    </div>
+    <div class="wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Page</th>
+            <th>Written name</th>
+            <th>As written</th>
+            <th>Proposed qty</th>
+            <th>Current DB stock</th>
+            <th class="money">Cost</th>
+            <th class="money">Value now</th>
+            <th class="money">Count value</th>
+            <th>DB item</th>
+            <th>Status</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="page-head" data-page="1" data-conf="section" data-search="page 1">
+        <td colspan="12">Page 1 — sauces, ghee, olives, mojito syrups, Pepsi / Dew · 24 lines</td>
+      </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="pizza pasta sauce 25 packet · 1 kg pizza pasta sauce  confirmed 25 kg.">
+      <td class="num">1</td>
+      <td>P1</td>
+      <td><strong>PIZZA PASTA SAUCE</strong></td>
+      <td class="written">25 packet · 1 kg</td>
+      <td>25,000 g</td>
+      <td>29.97 kg</td>
+      <td class="money">₹145/kg</td>
+      <td class="money">₹4,345.65</td>
+      <td class="money">₹3,625</td>
+      <td>Pizza Pasta Sauce</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 25 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="mayonious (mayonnaise) 9 cas + 7 · 12/cas · 1 kg mayonnaise  (9×12)+7 = 115 jars × 1 kg">
+      <td class="num">2</td>
+      <td>P1</td>
+      <td><strong>Mayonious (Mayonnaise)</strong></td>
+      <td class="written">9 cas + 7 · 12/cas · 1 kg</td>
+      <td>115,000 g  (115 × 1 kg)</td>
+      <td>−57.94 kg</td>
+      <td class="money">₹200/kg</td>
+      <td class="money">-₹11,588</td>
+      <td class="money">₹23,000</td>
+      <td>Mayonnaise</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">(9×12)+7 = 115 jars × 1 kg</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="schezwan 1 cas + 8 · 12/cas · 1.13 kg schezwan sauce  confirmed 1 case (12) + 8 = 20 bottles × 1.13 kg.">
+      <td class="num">3</td>
+      <td>P1</td>
+      <td><strong>Schezwan</strong></td>
+      <td class="written">1 cas + 8 · 12/cas · 1.13 kg</td>
+      <td>22,600 g  (20 × 1.13 kg)</td>
+      <td>33.21 kg</td>
+      <td class="money">₹215/kg</td>
+      <td class="money">₹7,140.03</td>
+      <td class="money">₹4,859</td>
+      <td>Schezwan Sauce</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 1 case (12) + 8 = 20 bottles × 1.13 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="top taste 7 cas + 4 · 12/cas · 1.14 kg tomato sauce  confirmed top taste → tomato sauce. 7×12+4 = 88 bottles × 1.14 kg.">
+      <td class="num">4</td>
+      <td>P1</td>
+      <td><strong>Top Taste</strong></td>
+      <td class="written">7 cas + 4 · 12/cas · 1.14 kg</td>
+      <td>100,320 g  (88 × 1.14 kg)</td>
+      <td>−11.38 kg</td>
+      <td class="money">₹69.29/kg</td>
+      <td class="money">-₹788.85</td>
+      <td class="money">₹6,951.17</td>
+      <td>Tomato Sauce</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Top Taste → Tomato Sauce. 7×12+4 = 88 bottles × 1.14 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="green chilli sauce 1 cas + 12 · 18/cas · 650 g green chilli sauce  (1×18)+12 = 30 bottles × 650 g">
+      <td class="num">5</td>
+      <td>P1</td>
+      <td><strong>Green chilli sauce</strong></td>
+      <td class="written">1 cas + 12 · 18/cas · 650 g</td>
+      <td>19,500 g  (30 × 650 g)</td>
+      <td>316.3 g</td>
+      <td class="money">₹103.84/kg</td>
+      <td class="money">₹32.84</td>
+      <td class="money">₹2,024.88</td>
+      <td>Green Chilli Sauce</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">(1×18)+12 = 30 bottles × 650 g</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="ketchup 2 cas + 6 packet · 18 pkt/cas · 72 pc/pkt ketchup  confirmed sachets. (2×18)+6 = 42 packets × 72 = 3,024 pc.">
+      <td class="num">6</td>
+      <td>P1</td>
+      <td><strong>Ketchup</strong></td>
+      <td class="written">2 cas + 6 packet · 18 pkt/cas · 72 pc/pkt</td>
+      <td>3,024 pc</td>
+      <td>1,944 pc</td>
+      <td class="money">₹0.70/pc</td>
+      <td class="money">₹1,367.28</td>
+      <td class="money">₹2,126.88</td>
+      <td>Ketchup</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed sachets. (2×18)+6 = 42 packets × 72 = 3,024 pc.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="thousand island dressing 8 packet · 1 kg thousand island dressing  confirmed 8 packets × 1 kg.">
+      <td class="num">7</td>
+      <td>P1</td>
+      <td><strong>Thousand island Dressing</strong></td>
+      <td class="written">8 packet · 1 kg</td>
+      <td>8,000 g</td>
+      <td>12 kg</td>
+      <td class="money">₹240/kg</td>
+      <td class="money">₹2,880</td>
+      <td class="money">₹1,920</td>
+      <td>Thousand Island Dressing</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 8 packets × 1 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="soya sauce 1 cas · 18 bottles · 760 g soya sauce  corrected: 1 case = 18 bottles × 760 g.">
+      <td class="num">8</td>
+      <td>P1</td>
+      <td><strong>Soya Sauce</strong></td>
+      <td class="written">1 cas · 18 bottles · 760 g</td>
+      <td>13,680 g</td>
+      <td>−16.34 g</td>
+      <td class="money">₹91.22/kg</td>
+      <td class="money">-₹1.49</td>
+      <td class="money">₹1,247.89</td>
+      <td>Soya Sauce</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Corrected: 1 case = 18 bottles × 760 g.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="gagan (ghee) 2 cas · 20 pkt/cas · 840 g ghee  confirmed 2 cases × 20 packets × 840 g.">
+      <td class="num">9</td>
+      <td>P1</td>
+      <td><strong>Gagan (Ghee)</strong></td>
+      <td class="written">2 cas · 20 pkt/cas · 840 g</td>
+      <td>33,600 g</td>
+      <td>19.24 kg</td>
+      <td class="money">₹156.36/kg</td>
+      <td class="money">₹3,008.13</td>
+      <td class="money">₹5,253.64</td>
+      <td>Ghee</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 2 cases × 20 packets × 840 g.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="chilli flakes 4 packet · 250 sachet/pkt red chiili sachet  confirmed red chiili sachet. 4 × 250 = 1,000 pc.">
+      <td class="num">10</td>
+      <td>P1</td>
+      <td><strong>Chilli flakes</strong></td>
+      <td class="written">4 packet · 250 sachet/pkt</td>
+      <td>1,000 pc</td>
+      <td>250 pc</td>
+      <td class="money">₹0.72/pc</td>
+      <td class="money">₹180</td>
+      <td class="money">₹720</td>
+      <td>Red Chiili Sachet</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Red Chiili Sachet. 4 × 250 = 1,000 pc.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="organic flakes 4 packet · 300 sachet/pkt oregano sachet  confirmed oregano sachet. 4 × 300 = 1,200 pc.">
+      <td class="num">11</td>
+      <td>P1</td>
+      <td><strong>Organic flakes</strong></td>
+      <td class="written">4 packet · 300 sachet/pkt</td>
+      <td>1,200 pc</td>
+      <td>290 pc</td>
+      <td class="money">₹0.60/pc</td>
+      <td class="money">₹174</td>
+      <td class="money">₹720</td>
+      <td>Oregano Sachet</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Oregano Sachet. 4 × 300 = 1,200 pc.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="yeast 1 · 500 grm yeast  ">
+      <td class="num">12</td>
+      <td>P1</td>
+      <td><strong>Yeast</strong></td>
+      <td class="written">1 · 500 grm</td>
+      <td>500 g</td>
+      <td>382.08 g</td>
+      <td class="money">₹380/kg</td>
+      <td class="money">₹145.19</td>
+      <td class="money">₹190</td>
+      <td>Yeast</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="sliced green olives 4 · 500 grm green olives  confirmed full tin 500 g × 4.">
+      <td class="num">13</td>
+      <td>P1</td>
+      <td><strong>Sliced green olives</strong></td>
+      <td class="written">4 · 500 grm</td>
+      <td>2,000 g</td>
+      <td>1.37 kg</td>
+      <td class="money">₹377.77/kg</td>
+      <td class="money">₹516.04</td>
+      <td class="money">₹755.55</td>
+      <td>Green Olives</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed full tin 500 g × 4.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="tandoori tikka base 1 · 500 g tandoori masala  confirmed tandoori tikka base → tandoori masala, 500 g.">
+      <td class="num">14</td>
+      <td>P1</td>
+      <td><strong>Tandoori Tikka Base</strong></td>
+      <td class="written">1 · 500 g</td>
+      <td>500 g</td>
+      <td>271.93 g</td>
+      <td class="money">₹440/kg</td>
+      <td class="money">₹119.65</td>
+      <td class="money">₹220</td>
+      <td>Tandoori Masala</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Tandoori Tikka Base → Tandoori Masala, 500 g.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="container small 7 packet · 100 pc/pkt container small  confirmed 7 × 100 = 700 pc.">
+      <td class="num">15</td>
+      <td>P1</td>
+      <td><strong>Container Small</strong></td>
+      <td class="written">7 packet · 100 pc/pkt</td>
+      <td>700 pc</td>
+      <td>400 pc</td>
+      <td class="money">₹2.40/pc</td>
+      <td class="money">₹960</td>
+      <td class="money">₹1,680</td>
+      <td>Container Small</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 7 × 100 = 700 pc.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="blue curaco 2 · 775 ml blue curacao  ">
+      <td class="num">16</td>
+      <td>P1</td>
+      <td><strong>Blue curaco</strong></td>
+      <td class="written">2 · 775 ml</td>
+      <td>1,550 ml</td>
+      <td>890 ml</td>
+      <td class="money">₹499.01/L</td>
+      <td class="money">₹444.12</td>
+      <td class="money">₹773.47</td>
+      <td>Blue Curacao</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="green apple 1 · 775 ml green apple  ">
+      <td class="num">17</td>
+      <td>P1</td>
+      <td><strong>Green apple</strong></td>
+      <td class="written">1 · 775 ml</td>
+      <td>775 ml</td>
+      <td>20 ml</td>
+      <td class="money">₹510/L</td>
+      <td class="money">₹10.20</td>
+      <td class="money">₹395.25</td>
+      <td>Green Apple</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="water melon 1 · 775 ml water melon mojito  ">
+      <td class="num">18</td>
+      <td>P1</td>
+      <td><strong>water melon</strong></td>
+      <td class="written">1 · 775 ml</td>
+      <td>775 ml</td>
+      <td>120 ml</td>
+      <td class="money">₹503/L</td>
+      <td class="money">₹60.36</td>
+      <td class="money">₹389.83</td>
+      <td>Water Melon Mojito</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="virgin mojito 2 · 775 ml virgin mojito  confirmed 2 × 775 ml.">
+      <td class="num">19</td>
+      <td>P1</td>
+      <td><strong>Virgin Mojito</strong></td>
+      <td class="written">2 · 775 ml</td>
+      <td>1,550 ml</td>
+      <td>670 ml</td>
+      <td class="money">₹532.28/L</td>
+      <td class="money">₹356.63</td>
+      <td class="money">₹825.04</td>
+      <td>Virgin Mojito</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 2 × 775 ml.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="strawberry crush 1 · 1 ltr  (one read 775 ml) strawberry crush  db unit is grams; 1 l treated as 1,000 g.">
+      <td class="num">20</td>
+      <td>P1</td>
+      <td><strong>Strawberry crush</strong></td>
+      <td class="written">1 · 1 LTR  (one read 775 ml)</td>
+      <td>1,000 g</td>
+      <td>666 g</td>
+      <td class="money">₹200/kg</td>
+      <td class="money">₹133.20</td>
+      <td class="money">₹200</td>
+      <td>Strawberry Crush</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">DB unit is grams; 1 L treated as 1,000 g.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="black currant crush 1 · 1 ltr black current crush  ">
+      <td class="num">21</td>
+      <td>P1</td>
+      <td><strong>Black currant crush</strong></td>
+      <td class="written">1 · 1 LTR</td>
+      <td>1,000 ml</td>
+      <td>790 ml</td>
+      <td class="money">₹230/L</td>
+      <td class="money">₹181.70</td>
+      <td class="money">₹230</td>
+      <td>Black Current Crush</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="cholate sirop (chocolate syrup) 1 · 1.13 kg chocolate syrup  confirmed 1.13 kg.">
+      <td class="num">22</td>
+      <td>P1</td>
+      <td><strong>Cholate sirop (Chocolate syrup)</strong></td>
+      <td class="written">1 · 1.13 kg</td>
+      <td>1,130 g</td>
+      <td>−425 g</td>
+      <td class="money">₹170/kg</td>
+      <td class="money">-₹72.25</td>
+      <td class="money">₹192.10</td>
+      <td>Chocolate Syrup</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 1.13 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="pepsi 4 cas 41 bottle · 24/cas · 400 ml pepsi @ 20  (4×24)+41 = 137 bottles">
+      <td class="num">23</td>
+      <td>P1</td>
+      <td><strong>Pepsi</strong></td>
+      <td class="written">4 cas 41 Bottle · 24/cas · 400 ml</td>
+      <td>137 pc</td>
+      <td>−364 pc</td>
+      <td class="money">₹18.55/pc</td>
+      <td class="money">-₹6,752.40</td>
+      <td class="money">₹2,541.43</td>
+      <td>Pepsi @ 20</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">(4×24)+41 = 137 bottles</td>
+    </tr>
+<tr class="row-mapped" data-page="1" data-conf="mapped"
+      data-search="dew 1 cas 17 bottle · 30/cas · 250 ml dew @ 20  (1×30)+17 = 47 bottles. separate from page-2 “dew 35”.">
+      <td class="num">24</td>
+      <td>P1</td>
+      <td><strong>Dew</strong></td>
+      <td class="written">1 cas 17 Bottle · 30/cas · 250 ml</td>
+      <td>47 pc</td>
+      <td>−119 pc</td>
+      <td class="money">₹17.33/pc</td>
+      <td class="money">-₹2,062.27</td>
+      <td class="money">₹814.51</td>
+      <td>Dew @ 20</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">(1×30)+17 = 47 bottles. Separate from page-2 “Dew 35”.</td>
+    </tr>
+<tr class="page-head" data-page="2" data-conf="section" data-search="page 2">
+        <td colspan="12">Page 2 — drinks, noodles, ice cream, veg, rice · 24 lines</td>
+      </tr>
+<tr class="row-no-db" data-page="2" data-conf="no-db"
+      data-search="dew 35 20 · 750 ml · ₹35  new item dew @ 35 (750 ml) — create when applying stock. user: add dew @ 35, 750 ml, 20 bottles. cost ₹33.">
+      <td class="num">1</td>
+      <td>P2</td>
+      <td><strong>Dew 35</strong></td>
+      <td class="written">20 · 750 ml · ₹35</td>
+      <td>20 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹33/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹660</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: add Dew @ 35, 750 ml, 20 bottles. Cost ₹33.</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="mirinda 11 · 400 ml mirinda @ 20  ">
+      <td class="num">2</td>
+      <td>P2</td>
+      <td><strong>MIRINDA</strong></td>
+      <td class="written">11 · 400 ML</td>
+      <td>11 pc</td>
+      <td>2 pc</td>
+      <td class="money">₹17.33/pc</td>
+      <td class="money">₹34.66</td>
+      <td class="money">₹190.63</td>
+      <td>Mirinda @ 20</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="coco cola 2 cas + 20 bottle · 28/cas · 250 ml coca cola @ 20  corrected: 2×28 + 20 = 76 bottles.">
+      <td class="num">3</td>
+      <td>P2</td>
+      <td><strong>Coco cola</strong></td>
+      <td class="written">2 cas + 20 bottle · 28/cas · 250 ML</td>
+      <td>76 pc</td>
+      <td>−166 pc</td>
+      <td class="money">₹17.85/pc</td>
+      <td class="money">-₹2,963.10</td>
+      <td class="money">₹1,356.60</td>
+      <td>Coca Cola @ 20</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Corrected: 2×28 + 20 = 76 bottles.</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="dalda 7 packet · 840 grm ghee  confirmed dalda → ghee. add to gagan. 7 × 840 g.">
+      <td class="num">4</td>
+      <td>P2</td>
+      <td><strong>Dalda</strong></td>
+      <td class="written">7 Packet · 840 GRM</td>
+      <td>5,880 g</td>
+      <td>19.24 kg</td>
+      <td class="money">₹156.36/kg</td>
+      <td class="money">₹3,008.13</td>
+      <td class="money">₹919.39</td>
+      <td>Ghee</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Dalda → Ghee. Add to Gagan. 7 × 840 g.</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="noodles (moddles) 1 case · 18 pkt · 650 g noodles  confirmed 1 case only. 18 × 650 g.">
+      <td class="num">5</td>
+      <td>P2</td>
+      <td><strong>Noodles (Moddles)</strong></td>
+      <td class="written">1 case · 18 pkt · 650 g</td>
+      <td>11,700 g</td>
+      <td>−91.69 kg</td>
+      <td class="money">₹104.63/kg</td>
+      <td class="money">-₹9,593.20</td>
+      <td class="money">₹1,224.13</td>
+      <td>Noodles</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 1 case only. 18 × 650 g.</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="soya chunk 1 bag + 4 kg · bag 10 kg soya granules  ">
+      <td class="num">6</td>
+      <td>P2</td>
+      <td><strong>Soya Chunk</strong></td>
+      <td class="written">1 Bag + 4 kg · bag 10 kg</td>
+      <td>14,000 g</td>
+      <td>426.7 g</td>
+      <td class="money">₹115/kg</td>
+      <td class="money">₹49.07</td>
+      <td class="money">₹1,610</td>
+      <td>Soya Granules</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="diet coco 11 · 300 ml diet coke @ 50  ">
+      <td class="num">7</td>
+      <td>P2</td>
+      <td><strong>Diet Coco</strong></td>
+      <td class="written">11 · 300 ML</td>
+      <td>11 pc</td>
+      <td>6 pc</td>
+      <td class="money">₹41.66/pc</td>
+      <td class="money">₹249.96</td>
+      <td class="money">₹458.26</td>
+      <td>Diet Coke @ 50</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="coco tin 11 · 300 ml coke tin @ 40  ">
+      <td class="num">8</td>
+      <td>P2</td>
+      <td><strong>COCO TIN</strong></td>
+      <td class="written">11 · 300 ML</td>
+      <td>11 pc</td>
+      <td>6 pc</td>
+      <td class="money">₹35/pc</td>
+      <td class="money">₹210</td>
+      <td class="money">₹385</td>
+      <td>Coke Tin @ 40</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="limca zero / nimbeerz / nimbu 3 · 400 ml nimbu jeera  confirmed nimbu jeera, 3 bottles.">
+      <td class="num">9</td>
+      <td>P2</td>
+      <td><strong>Limca zero / NimBeerz / Nimbu</strong></td>
+      <td class="written">3 · 400 ML</td>
+      <td>3 pc</td>
+      <td>9 pc</td>
+      <td class="money">₹17.50/pc</td>
+      <td class="money">₹157.50</td>
+      <td class="money">₹52.50</td>
+      <td>Nimbu Jeera</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Nimbu Jeera, 3 bottles.</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="milk amul 4 packet · 1 ltr milk (tonned)  confirmed milk (tonned), 4 l.">
+      <td class="num">10</td>
+      <td>P2</td>
+      <td><strong>Milk AMUL</strong></td>
+      <td class="written">4 packet · 1 LTR</td>
+      <td>4,000 ml</td>
+      <td>27.93 L</td>
+      <td class="money">₹59.94/L</td>
+      <td class="money">₹1,674.50</td>
+      <td class="money">₹239.77</td>
+      <td>Milk (Tonned)</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Milk (Tonned), 4 L.</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="thums up 13 bottle · 250 ml thumbs up @ 20  ">
+      <td class="num">11</td>
+      <td>P2</td>
+      <td><strong>Thums up</strong></td>
+      <td class="written">13 Bottle · 250 ML</td>
+      <td>13 pc</td>
+      <td>−24 pc</td>
+      <td class="money">₹17.85/pc</td>
+      <td class="money">-₹428.40</td>
+      <td class="money">₹232.05</td>
+      <td>Thumbs Up @ 20</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-no-db" data-page="2" data-conf="no-db"
+      data-search="minute maid 28 bottle · cost ₹18  new item minute maid — 28 bottles, cost ₹18. create when applying stock. user: add minute maid, 28 bottles, cost ₹18.">
+      <td class="num">12</td>
+      <td>P2</td>
+      <td><strong>minute maid</strong></td>
+      <td class="written">28 Bottle · cost ₹18</td>
+      <td>28 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹18/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹504</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: add Minute Maid, 28 bottles, cost ₹18.</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="sprite 4 · 250 ml sprite @ 20  ">
+      <td class="num">13</td>
+      <td>P2</td>
+      <td><strong>Sprite</strong></td>
+      <td class="written">4 · 250 ML</td>
+      <td>4 pc</td>
+      <td>−218.8 pc</td>
+      <td class="money">₹17.85/pc</td>
+      <td class="money">-₹3,905.58</td>
+      <td class="money">₹71.40</td>
+      <td>Sprite @ 20</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="soda 1 · 750 ml soda  ">
+      <td class="num">14</td>
+      <td>P2</td>
+      <td><strong>Soda</strong></td>
+      <td class="written">1 · 750 ML</td>
+      <td>750 ml</td>
+      <td>−2.5 L</td>
+      <td class="money">₹21/L</td>
+      <td class="money">-₹52.50</td>
+      <td class="money">₹15.75</td>
+      <td>Soda</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="water 1 case + 17 · 12/cas water @ 20  confirmed 12/case + 17 = 29 bottles → water @ 20.">
+      <td class="num">15</td>
+      <td>P2</td>
+      <td><strong>water</strong></td>
+      <td class="written">1 Case + 17 · 12/cas</td>
+      <td>29 pc</td>
+      <td>−334 pc</td>
+      <td class="money">₹40.34/pc</td>
+      <td class="money">-₹13,472.36</td>
+      <td class="money">₹1,169.76</td>
+      <td>Water @ 20</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 12/case + 17 = 29 bottles → Water @ 20.</td>
+    </tr>
+<tr class="row-no-db" data-page="2" data-conf="no-db"
+      data-search="cassatta ice cream 2  new item cassata — 2 pieces. create when applying stock. user: add cassata, 2 pieces. sell ₹70, cost ₹67.">
+      <td class="num">16</td>
+      <td>P2</td>
+      <td><strong>Cassatta ice cream</strong></td>
+      <td class="written">2</td>
+      <td>2 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹67/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹134</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: add Cassata, 2 pieces. Sell ₹70, cost ₹67.</td>
+    </tr>
+<tr class="row-no-db" data-page="2" data-conf="no-db"
+      data-search="ice cream lickleur 10 36 · ₹10  new item lemon candy (like orange @ 10) — 36 pieces. user: name it lemon candy, 36 pc. rate copied from orange @ 10.">
+      <td class="num">17</td>
+      <td>P2</td>
+      <td><strong>ice cream lickleur 10</strong></td>
+      <td class="written">36 · ₹10</td>
+      <td>36 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹8.38/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹301.68</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: name it Lemon Candy, 36 pc. Rate copied from Orange @ 10.</td>
+    </tr>
+<tr class="row-no-db" data-page="2" data-conf="no-db"
+      data-search="rocket 10 6 · rocket cone ₹10  new item rocket cone @ 10 — 6 pieces. user: add rocket cone ₹10, 6 pieces. rate copied from orange @ 10.">
+      <td class="num">18</td>
+      <td>P2</td>
+      <td><strong>Rocket 10</strong></td>
+      <td class="written">6 · Rocket cone ₹10</td>
+      <td>6 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹8.38/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹50.28</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: add Rocket cone ₹10, 6 pieces. Rate copied from Orange @ 10.</td>
+    </tr>
+<tr class="row-no-db" data-page="2" data-conf="no-db"
+      data-search="double magic 25 1 · ₹25  new item double magic @ 25 — 1 piece. user: add double magic @ 25, 1 pc. cost ₹23. royal rabdi @ 25 also ₹23 (update on apply).">
+      <td class="num">19</td>
+      <td>P2</td>
+      <td><strong>Double magic 25</strong></td>
+      <td class="written">1 · ₹25</td>
+      <td>1 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹23/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹23</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: add Double Magic @ 25, 1 pc. Cost ₹23. Royal Rabdi @ 25 also ₹23 (update on apply).</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="butter paper 1 packet · 100 pc butter paper  confirmed 1 packet = 100 pc.">
+      <td class="num">20</td>
+      <td>P2</td>
+      <td><strong>Butter paper</strong></td>
+      <td class="written">1 packet · 100 pc</td>
+      <td>100 pc</td>
+      <td>300 pc</td>
+      <td class="money">₹1/pc</td>
+      <td class="money">₹300</td>
+      <td class="money">₹100</td>
+      <td>Butter Paper</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 1 packet = 100 pc.</td>
+    </tr>
+<tr class="row-no-db" data-page="2" data-conf="no-db"
+      data-search="disposible plate 37  new item disposable plate — 37 pc. user: add disposable plate, 37. cost ₹5.">
+      <td class="num">21</td>
+      <td>P2</td>
+      <td><strong>Disposible plate</strong></td>
+      <td class="written">37</td>
+      <td>37 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹5/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹185</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: add Disposable Plate, 37. Cost ₹5.</td>
+    </tr>
+<tr class="row-skip" data-page="2" data-conf="skip"
+      data-search="potato crossed out / 87 kg written potato  duplicate. use page 4: 27 kg.">
+      <td class="num">22</td>
+      <td>P2</td>
+      <td><strong>Potato</strong></td>
+      <td class="written">crossed out / 87 kg written</td>
+      <td>—</td>
+      <td>44.06 kg</td>
+      <td class="money">₹15.05/kg</td>
+      <td class="money">₹663.12</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td>Potato</td>
+      <td><span class="pill pill-skip">Skipped</span></td>
+      <td class="note">Duplicate. Use page 4: 27 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="onion (onin) 21 kg + 1 bag (50 kg)  (total blotted) onion  21 + 50 = 71 kg assumed.">
+      <td class="num">23</td>
+      <td>P2</td>
+      <td><strong>Onion (Onin)</strong></td>
+      <td class="written">21 kg + 1 Bag (50 kg)  (total blotted)</td>
+      <td>71,000 g</td>
+      <td>103.87 kg</td>
+      <td class="money">₹31.29/kg</td>
+      <td class="money">₹3,249.71</td>
+      <td class="money">₹2,221.36</td>
+      <td>Onion</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">21 + 50 = 71 kg assumed.</td>
+    </tr>
+<tr class="row-mapped" data-page="2" data-conf="mapped"
+      data-search="basmati rice 4 bag + 8 kg · 30 kg/bag basmati rice  4×30 + 8 = 128 kg">
+      <td class="num">24</td>
+      <td>P2</td>
+      <td><strong>Basmati rice</strong></td>
+      <td class="written">4 Bag + 8 kg · 30 kg/bag</td>
+      <td>128,000 g</td>
+      <td>−11.1 kg</td>
+      <td class="money">₹110/kg</td>
+      <td class="money">-₹1,221.04</td>
+      <td class="money">₹14,080</td>
+      <td>Basmati Rice</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">4×30 + 8 = 128 kg</td>
+    </tr>
+<tr class="page-head" data-page="3" data-conf="section" data-search="page 3">
+        <td colspan="12">Page 3 — tissue, maida, cheese, packing, boxes · 24 lines</td>
+      </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="tissue 12 + 55 packet = 67 pkts tissue  confirmed 12 + 55 = 67 packets. db tissue counted as pc.">
+      <td class="num">1</td>
+      <td>P3</td>
+      <td><strong>Tissue</strong></td>
+      <td class="written">12 + 55 packet = 67 pkts</td>
+      <td>67 pc</td>
+      <td>217 pc</td>
+      <td class="money">₹16.17/pc</td>
+      <td class="money">₹3,509.68</td>
+      <td class="money">₹1,083.63</td>
+      <td>Tissue</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 12 + 55 = 67 packets. DB Tissue counted as pc.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="salt 13 packet · 1 kg salt  ">
+      <td class="num">2</td>
+      <td>P3</td>
+      <td><strong>Salt</strong></td>
+      <td class="written">13 packet · 1 kg</td>
+      <td>13,000 g</td>
+      <td>3.32 kg</td>
+      <td class="money">₹25/kg</td>
+      <td class="money">₹83</td>
+      <td class="money">₹325</td>
+      <td>Salt</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="maida 125 kg maida  confirmed 125 kg.">
+      <td class="num">3</td>
+      <td>P3</td>
+      <td><strong>Maida</strong></td>
+      <td class="written">125 kg</td>
+      <td>125,000 g</td>
+      <td>−173.3 kg</td>
+      <td class="money">₹35.20/kg</td>
+      <td class="money">-₹6,100.13</td>
+      <td class="money">₹4,400</td>
+      <td>Maida</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 125 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="cookie crunch = 50 3 cookey crunch @ 50  ">
+      <td class="num">4</td>
+      <td>P3</td>
+      <td><strong>Cookie crunch = 50</strong></td>
+      <td class="written">3</td>
+      <td>3 pc</td>
+      <td>−10 pc</td>
+      <td class="money">₹41.67/pc</td>
+      <td class="money">-₹416.70</td>
+      <td class="money">₹125.01</td>
+      <td>Cookey Crunch @ 50</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-no-db" data-page="3" data-conf="no-db"
+      data-search="kesar pissta = 30 6 · ₹30  new item kesar pista ice cream @ 30 — 6 pieces. user: add kesar pista ice cream @ 30, 6 pc. rate copied from rasmalai @ 30.">
+      <td class="num">5</td>
+      <td>P3</td>
+      <td><strong>kesar pissta = 30</strong></td>
+      <td class="written">6 · ₹30</td>
+      <td>6 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹27/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹162</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: add Kesar Pista ice cream @ 30, 6 pc. Rate copied from Rasmalai @ 30.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="cheese 10 packet · 1 kg cheese  ">
+      <td class="num">6</td>
+      <td>P3</td>
+      <td><strong>cheese</strong></td>
+      <td class="written">10 packet · 1 kg</td>
+      <td>10,000 g</td>
+      <td>−26.61 kg</td>
+      <td class="money">₹467.36/kg</td>
+      <td class="money">-₹12,434.18</td>
+      <td class="money">₹4,673.62</td>
+      <td>Cheese</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="mango geiline / gelato one half · 2 kg · remaining 1 kg mango gallon  confirmed mango gallon remaining 1 kg.">
+      <td class="num">7</td>
+      <td>P3</td>
+      <td><strong>mango geiline / gelato</strong></td>
+      <td class="written">one half · 2 kg · remaining 1 kg</td>
+      <td>1,000 g</td>
+      <td>1.3 kg</td>
+      <td class="money">₹252.38/kg</td>
+      <td class="money">₹328.09</td>
+      <td class="money">₹252.38</td>
+      <td>Mango Gallon</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Mango Gallon remaining 1 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="black current one half · 5 ltr · remaining 2.5 kg black current gallon  confirmed remaining 2.5 kg.">
+      <td class="num">8</td>
+      <td>P3</td>
+      <td><strong>Black current</strong></td>
+      <td class="written">one half · 5 LTR · remaining 2.5 kg</td>
+      <td>2,500 g</td>
+      <td>1.97 kg</td>
+      <td class="money">₹316/kg</td>
+      <td class="money">₹623.78</td>
+      <td class="money">₹790</td>
+      <td>Black Current Gallon</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed remaining 2.5 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="chicken patty 14 pieces chicken patty  confirmed 14 pieces.">
+      <td class="num">9</td>
+      <td>P3</td>
+      <td><strong>chicken patty</strong></td>
+      <td class="written">14 pieces</td>
+      <td>14 pc</td>
+      <td>−4 pc</td>
+      <td class="money">₹34.40/pc</td>
+      <td class="money">-₹137.62</td>
+      <td class="money">₹481.67</td>
+      <td>Chicken Patty</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 14 pieces.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="veg patty 10 pieces veg. patty  confirmed 10 pieces.">
+      <td class="num">10</td>
+      <td>P3</td>
+      <td><strong>veg patty</strong></td>
+      <td class="written">10 pieces</td>
+      <td>10 pc</td>
+      <td>33 pc</td>
+      <td class="money">₹17.50/pc</td>
+      <td class="money">₹577.50</td>
+      <td class="money">₹175</td>
+      <td>Veg. Patty</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 10 pieces.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="pizza box large 1 bundle · 100 box pizza box (large)  confirmed 1 bundle = 100 boxes.">
+      <td class="num">11</td>
+      <td>P3</td>
+      <td><strong>Pizza Box large</strong></td>
+      <td class="written">1 bundle · 100 box</td>
+      <td>100 pc</td>
+      <td>100 pc</td>
+      <td class="money">₹14.50/pc</td>
+      <td class="money">₹1,450</td>
+      <td class="money">₹1,450</td>
+      <td>Pizza Box (Large)</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 1 bundle = 100 boxes.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="pizza box small 8 pizza box (small)  ">
+      <td class="num">12</td>
+      <td>P3</td>
+      <td><strong>Pizza Box Small</strong></td>
+      <td class="written">8</td>
+      <td>8 pc</td>
+      <td>0 pc</td>
+      <td class="money">₹6/pc</td>
+      <td class="money">₹0</td>
+      <td class="money">₹48</td>
+      <td>Pizza Box (Small)</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="pizza box medium 95 box pizza box (medium)  ">
+      <td class="num">13</td>
+      <td>P3</td>
+      <td><strong>pizza Box medium</strong></td>
+      <td class="written">95 Box</td>
+      <td>95 pc</td>
+      <td>180 pc</td>
+      <td class="money">₹7.50/pc</td>
+      <td class="money">₹1,350</td>
+      <td class="money">₹712.50</td>
+      <td>Pizza Box (Medium)</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="bages packing large 1.700 grm packing bags (large)  read as 1,700 g remaining (not 1.7 g).">
+      <td class="num">14</td>
+      <td>P3</td>
+      <td><strong>Bages packing large</strong></td>
+      <td class="written">1.700 grm</td>
+      <td>1,700 g</td>
+      <td>10 kg</td>
+      <td class="money">₹253.40/kg</td>
+      <td class="money">₹2,533.99</td>
+      <td class="money">₹430.78</td>
+      <td>Packing Bags (Large)</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Read as 1,700 g remaining (not 1.7 g).</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="bages medium 541 grm packing bags (medium)  ">
+      <td class="num">15</td>
+      <td>P3</td>
+      <td><strong>Bages medium</strong></td>
+      <td class="written">541 grm</td>
+      <td>541 g</td>
+      <td>4.23 kg</td>
+      <td class="money">₹249.46/kg</td>
+      <td class="money">₹1,055.20</td>
+      <td class="money">₹134.96</td>
+      <td>Packing Bags (Medium)</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="fork wooden 6 packet · 100 pc/pkt disposable fork  corrected 6 × 100 = 600 pc.">
+      <td class="num">16</td>
+      <td>P3</td>
+      <td><strong>Fork wooden</strong></td>
+      <td class="written">6 packet · 100 pc/pkt</td>
+      <td>600 pc</td>
+      <td>1,100 pc</td>
+      <td class="money">₹0.60/pc</td>
+      <td class="money">₹660</td>
+      <td class="money">₹360</td>
+      <td>Disposable Fork</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Corrected 6 × 100 = 600 pc.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="spoon wooden 1 packet · 100 pc/pkt disposable spoon  confirmed 1 × 100 = 100 pc.">
+      <td class="num">17</td>
+      <td>P3</td>
+      <td><strong>spoon wooden</strong></td>
+      <td class="written">1 packet · 100 pc/pkt</td>
+      <td>100 pc</td>
+      <td>500 pc</td>
+      <td class="money">₹0.60/pc</td>
+      <td class="money">₹300</td>
+      <td class="money">₹60</td>
+      <td>Disposable Spoon</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 1 × 100 = 100 pc.</td>
+    </tr>
+<tr class="row-no-db" data-page="3" data-conf="no-db"
+      data-search="popcorn box large 59  new item popcorn box (large) — 59 pc. user: add popcorn box (large), 59. cost ₹7.">
+      <td class="num">18</td>
+      <td>P3</td>
+      <td><strong>popcorn Box large</strong></td>
+      <td class="written">59</td>
+      <td>59 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹7/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹413</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: add Popcorn Box (Large), 59. Cost ₹7.</td>
+    </tr>
+<tr class="row-no-db" data-page="3" data-conf="no-db"
+      data-search="popcorn small 52  new item popcorn box (small) — 52 pc. user: add popcorn box (small), 52. cost ₹5.">
+      <td class="num">19</td>
+      <td>P3</td>
+      <td><strong>popcorn Small</strong></td>
+      <td class="written">52</td>
+      <td>52 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹5/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹260</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: add Popcorn Box (Small), 52. Cost ₹5.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="polathene bag 800 grm packing bags (small)  confirmed polythene → packing bags (small), 800 g.">
+      <td class="num">20</td>
+      <td>P3</td>
+      <td><strong>Polathene Bag</strong></td>
+      <td class="written">800 grm</td>
+      <td>800 g</td>
+      <td>500 g</td>
+      <td class="money">₹240/kg</td>
+      <td class="money">₹120</td>
+      <td class="money">₹192</td>
+      <td>Packing Bags (Small)</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Polythene → Packing Bags (Small), 800 g.</td>
+    </tr>
+<tr class="row-no-db" data-page="3" data-conf="no-db"
+      data-search="paper bag 2 packets  new item paper bag — 2 packets. user: add paper bag, two packets. cost ₹50 per packet.">
+      <td class="num">21</td>
+      <td>P3</td>
+      <td><strong>paper Bag</strong></td>
+      <td class="written">2 packets</td>
+      <td>2 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹50/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹100</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: add Paper bag, two packets. Cost ₹50 per packet.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="silver foil / silver file 1 packet · 1 kg silver foil  confirmed 1 kg.">
+      <td class="num">22</td>
+      <td>P3</td>
+      <td><strong>silver foil / Silver file</strong></td>
+      <td class="written">1 packet · 1 kg</td>
+      <td>1,000 g</td>
+      <td>2 kg</td>
+      <td class="money">₹550/kg</td>
+      <td class="money">₹1,100</td>
+      <td class="money">₹550</td>
+      <td>Silver Foil</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 1 kg.</td>
+    </tr>
+<tr class="row-no-db" data-page="3" data-conf="no-db"
+      data-search="strips box 20 box  new item strips box — 20 pc. user: add strips box, 20. cost ₹8.">
+      <td class="num">23</td>
+      <td>P3</td>
+      <td><strong>Strips BOX</strong></td>
+      <td class="written">20 Box</td>
+      <td>20 pc</td>
+      <td><span class="muted">—</span></td>
+      <td class="money">₹8/pc</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td class="money">₹160</td>
+      <td><em>will create</em></td>
+      <td><span class="pill pill-no-db">New item</span></td>
+      <td class="note">User: add Strips Box, 20. Cost ₹8.</td>
+    </tr>
+<tr class="row-mapped" data-page="3" data-conf="mapped"
+      data-search="cleaning file 1 bundle · 1 roll cling foil  confirmed cling foil, 1 roll.">
+      <td class="num">24</td>
+      <td>P3</td>
+      <td><strong>cleaning file</strong></td>
+      <td class="written">1 bundle · 1 roll</td>
+      <td>1 pc</td>
+      <td>7 pc</td>
+      <td class="money">₹182.86/pc</td>
+      <td class="money">₹1,280.01</td>
+      <td class="money">₹182.86</td>
+      <td>Cling Foil</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Cling Foil, 1 roll.</td>
+    </tr>
+<tr class="page-head" data-page="4" data-conf="section" data-search="page 4">
+        <td colspan="12">Page 4 — masalas, oil, chicken, fish, gas · 23 lines</td>
+      </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="chat masala 9 · 50 grm chat masala  ">
+      <td class="num">1</td>
+      <td>P4</td>
+      <td><strong>Chat masala</strong></td>
+      <td class="written">9 · 50 GRM</td>
+      <td>450 g</td>
+      <td>−520 g</td>
+      <td class="money">₹812/kg</td>
+      <td class="money">-₹422.24</td>
+      <td class="money">₹365.40</td>
+      <td>Chat Masala</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="biryani masala 3 · 50 grm biryani masala  ">
+      <td class="num">2</td>
+      <td>P4</td>
+      <td><strong>Biryani masala</strong></td>
+      <td class="written">3 · 50 GRM</td>
+      <td>150 g</td>
+      <td>638.6 g</td>
+      <td class="money">₹564.14/kg</td>
+      <td class="money">₹360.26</td>
+      <td class="money">₹84.62</td>
+      <td>Biryani Masala</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="chana masala 8 · 50 grm channa masala  ">
+      <td class="num">3</td>
+      <td>P4</td>
+      <td><strong>chana masala</strong></td>
+      <td class="written">8 · 50 GRM</td>
+      <td>400 g</td>
+      <td>439.35 g</td>
+      <td class="money">₹770/kg</td>
+      <td class="money">₹338.30</td>
+      <td class="money">₹308</td>
+      <td>Channa Masala</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="momos masala 18 · 50 grm momos masala  confirmed 18 × 50 g.">
+      <td class="num">4</td>
+      <td>P4</td>
+      <td><strong>Momos masala</strong></td>
+      <td class="written">18 · 50 GRM</td>
+      <td>900 g</td>
+      <td>829.9 g</td>
+      <td class="money">₹786.66/kg</td>
+      <td class="money">₹652.85</td>
+      <td class="money">₹707.99</td>
+      <td>Momos Masala</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 18 × 50 g.</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="meat masala 3 · 50 grm meat masala  ">
+      <td class="num">5</td>
+      <td>P4</td>
+      <td><strong>meat masala</strong></td>
+      <td class="written">3 · 50 GRM</td>
+      <td>150 g</td>
+      <td>5.45 kg</td>
+      <td class="money">₹833.26/kg</td>
+      <td class="money">₹4,541.65</td>
+      <td class="money">₹124.99</td>
+      <td>Meat Masala</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="black pepper powder 2 · 50 grm black pepper powder  ">
+      <td class="num">6</td>
+      <td>P4</td>
+      <td><strong>Black pepper powder</strong></td>
+      <td class="written">2 · 50 GRM</td>
+      <td>100 g</td>
+      <td>75.53 g</td>
+      <td class="money">₹1,500/kg</td>
+      <td class="money">₹113.29</td>
+      <td class="money">₹150</td>
+      <td>Black Pepper Powder</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="kasuri methi 7 + 1 = 8 · 25 grm kasoori methi  ">
+      <td class="num">7</td>
+      <td>P4</td>
+      <td><strong>Kasuri methi</strong></td>
+      <td class="written">7 + 1 = 8 · 25 GRM</td>
+      <td>200 g</td>
+      <td>−293.95 g</td>
+      <td class="money">₹504/kg</td>
+      <td class="money">-₹148.15</td>
+      <td class="money">₹100.80</td>
+      <td>Kasoori Methi</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="zeera powder 5 · 50 grm zeera powder  ">
+      <td class="num">8</td>
+      <td>P4</td>
+      <td><strong>Zeera powder</strong></td>
+      <td class="written">5 · 50 GRM</td>
+      <td>250 g</td>
+      <td>−34.35 g</td>
+      <td class="money">₹704/kg</td>
+      <td class="money">-₹24.18</td>
+      <td class="money">₹176</td>
+      <td>Zeera Powder</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="white pepper powder 8 · 50 grm white pepper  ">
+      <td class="num">9</td>
+      <td>P4</td>
+      <td><strong>white pepper powder</strong></td>
+      <td class="written">8 · 50 GRM</td>
+      <td>400 g</td>
+      <td>−2.06 kg</td>
+      <td class="money">₹2,100/kg</td>
+      <td class="money">-₹4,326.90</td>
+      <td class="money">₹840</td>
+      <td>White Pepper</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="coriander powder 1 · 50 grm corriandor powder  ">
+      <td class="num">10</td>
+      <td>P4</td>
+      <td><strong>Coriander powder</strong></td>
+      <td class="written">1 · 50 GRM</td>
+      <td>50 g</td>
+      <td>81.76 g</td>
+      <td class="money">₹420/kg</td>
+      <td class="money">₹34.34</td>
+      <td class="money">₹21</td>
+      <td>Corriandor Powder</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="fish fry masala 10 · 50 grm fish fry masala  ">
+      <td class="num">11</td>
+      <td>P4</td>
+      <td><strong>fish fry masala</strong></td>
+      <td class="written">10 · 50 GRM</td>
+      <td>500 g</td>
+      <td>89.88 g</td>
+      <td class="money">₹660/kg</td>
+      <td class="money">₹59.32</td>
+      <td class="money">₹330</td>
+      <td>Fish Fry Masala</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="vinger (vinegar) 7 · 610 ml vinegar  ">
+      <td class="num">12</td>
+      <td>P4</td>
+      <td><strong>vinger (Vinegar)</strong></td>
+      <td class="written">7 · 610 ML</td>
+      <td>4,270 ml</td>
+      <td>2.55 L</td>
+      <td class="money">₹86.06/L</td>
+      <td class="money">₹219.55</td>
+      <td class="money">₹367.48</td>
+      <td>Vinegar</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-skip" data-page="4" data-conf="skip"
+      data-search="dark soya sauce 10 · 740 grm soya sauce  user: skip. keep page 1 soya sauce only.">
+      <td class="num">13</td>
+      <td>P4</td>
+      <td><strong>Dark Soya Sauce</strong></td>
+      <td class="written">10 · 740 GRM</td>
+      <td>—</td>
+      <td>−16.34 g</td>
+      <td class="money">₹91.22/kg</td>
+      <td class="money">-₹1.49</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td>Soya Sauce</td>
+      <td><span class="pill pill-skip">Skipped</span></td>
+      <td class="note">User: skip. Keep page 1 Soya Sauce only.</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="cornflower (cornflour) 3 pocket · 1 kg corn flour  ">
+      <td class="num">14</td>
+      <td>P4</td>
+      <td><strong>Cornflower (Cornflour)</strong></td>
+      <td class="written">3 pocket · 1 kg</td>
+      <td>3,000 g</td>
+      <td>11.74 kg</td>
+      <td class="money">₹61.19/kg</td>
+      <td class="money">₹718.34</td>
+      <td class="money">₹183.57</td>
+      <td>Corn Flour</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-skip" data-page="4" data-conf="skip"
+      data-search="butter (crossed out) scribbled out butter  crossed out on the page — not counted.">
+      <td class="num">15</td>
+      <td>P4</td>
+      <td><strong>Butter (crossed out)</strong></td>
+      <td class="written">scribbled out</td>
+      <td>—</td>
+      <td>−139 pc</td>
+      <td class="money">₹5.65/pc</td>
+      <td class="money">-₹784.79</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td>Butter</td>
+      <td><span class="pill pill-skip">Skipped</span></td>
+      <td class="note">Crossed out on the page — not counted.</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="oil 15 tins · 13 kg oil  confirmed 15 × 13 kg.">
+      <td class="num">16</td>
+      <td>P4</td>
+      <td><strong>oil</strong></td>
+      <td class="written">15 tins · 13 kg</td>
+      <td>195,000 g</td>
+      <td>125.01 kg</td>
+      <td class="money">₹195.96/kg</td>
+      <td class="money">₹24,496.37</td>
+      <td class="money">₹38,212.47</td>
+      <td>Oil</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 15 × 13 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="potato 27 kg  2 big 1 small potato  confirmed 27 kg (page 4). page 2 ignored.">
+      <td class="num">17</td>
+      <td>P4</td>
+      <td><strong>Potato</strong></td>
+      <td class="written">27 kg  2 Big 1 Small</td>
+      <td>27,000 g</td>
+      <td>44.06 kg</td>
+      <td class="money">₹15.05/kg</td>
+      <td class="money">₹663.12</td>
+      <td class="money">₹406.35</td>
+      <td>Potato</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed 27 kg (page 4). Page 2 ignored.</td>
+    </tr>
+<tr class="row-skip" data-page="4" data-conf="skip"
+      data-search="soya sauce (crossed out) scribbled out soya sauce  crossed out — not counted.">
+      <td class="num">18</td>
+      <td>P4</td>
+      <td><strong>Soya sauce (crossed out)</strong></td>
+      <td class="written">scribbled out</td>
+      <td>—</td>
+      <td>−16.34 g</td>
+      <td class="money">₹91.22/kg</td>
+      <td class="money">-₹1.49</td>
+      <td class="money"><span class="muted">—</span></td>
+      <td>Soya Sauce</td>
+      <td><span class="pill pill-skip">Skipped</span></td>
+      <td class="note">Crossed out — not counted.</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="garlic 11 kg garlic  ">
+      <td class="num">19</td>
+      <td>P4</td>
+      <td><strong>Garlic</strong></td>
+      <td class="written">11 kg</td>
+      <td>11,000 g</td>
+      <td>41.38 kg</td>
+      <td class="money">₹62.48/kg</td>
+      <td class="money">₹2,585.80</td>
+      <td class="money">₹687.30</td>
+      <td>Garlic</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">—</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="halal chicken 22 packet · 2 kg each frozen chicken boneless  confirmed frozen chicken boneless, 22 × 2 kg.">
+      <td class="num">20</td>
+      <td>P4</td>
+      <td><strong>Halal Chicken</strong></td>
+      <td class="written">22 packet · 2 kg each</td>
+      <td>44,000 g</td>
+      <td>318.08 g</td>
+      <td class="money">₹317.69/kg</td>
+      <td class="money">₹101.05</td>
+      <td class="money">₹13,978.42</td>
+      <td>Frozen Chicken Boneless</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Frozen Chicken Boneless, 22 × 2 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="fish 4 packet · 5 kg each frozen fish  confirmed frozen fish, 4 × 5 kg.">
+      <td class="num">21</td>
+      <td>P4</td>
+      <td><strong>fish</strong></td>
+      <td class="written">4 packet · 5 kg each</td>
+      <td>20,000 g</td>
+      <td>−8.97 kg</td>
+      <td class="money">₹226.34/kg</td>
+      <td class="money">-₹2,030.37</td>
+      <td class="money">₹4,526.73</td>
+      <td>Frozen Fish</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">Confirmed Frozen Fish, 4 × 5 kg.</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="gas 15.4 1 cylinder full · 15.4 kg gas  1 × 15.4 kg cylinder.">
+      <td class="num">22</td>
+      <td>P4</td>
+      <td><strong>Gas 15.4</strong></td>
+      <td class="written">1 cylinder full · 15.4 kg</td>
+      <td>15,400 g</td>
+      <td>194.3 kg</td>
+      <td class="money">₹93/kg</td>
+      <td class="money">₹18,069.90</td>
+      <td class="money">₹1,432.20</td>
+      <td>GAS</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">1 × 15.4 kg cylinder.</td>
+    </tr>
+<tr class="row-mapped" data-page="4" data-conf="mapped"
+      data-search="gas 19.3 2 cylinders · 19.3 kg each gas  2 × 19.3 kg. combined gas = 54 kg with 15.4.">
+      <td class="num">23</td>
+      <td>P4</td>
+      <td><strong>Gas 19.3</strong></td>
+      <td class="written">2 cylinders · 19.3 kg each</td>
+      <td>38,600 g</td>
+      <td>194.3 kg</td>
+      <td class="money">₹93/kg</td>
+      <td class="money">₹18,069.90</td>
+      <td class="money">₹3,589.80</td>
+      <td>GAS</td>
+      <td><span class="pill pill-mapped">Mapped</span></td>
+      <td class="note">2 × 19.3 kg. Combined GAS = 54 kg with 15.4.</td>
+    </tr>
+        </tbody>
+      </table>
+    </div>
+    <details class="ask-box">
+      <summary>New items to create (12)</summary>
+      <ol><li>
+        <strong>P2 · Dew 35</strong>
+        <span class="q-written">20 pc · User: add Dew @ 35, 750 ml, 20 bottles. Cost ₹33.</span>
+      </li>
+<li>
+        <strong>P2 · minute maid</strong>
+        <span class="q-written">28 pc · User: add Minute Maid, 28 bottles, cost ₹18.</span>
+      </li>
+<li>
+        <strong>P2 · Cassatta ice cream</strong>
+        <span class="q-written">2 pc · User: add Cassata, 2 pieces. Sell ₹70, cost ₹67.</span>
+      </li>
+<li>
+        <strong>P2 · ice cream lickleur 10</strong>
+        <span class="q-written">36 pc · User: name it Lemon Candy, 36 pc. Rate copied from Orange @ 10.</span>
+      </li>
+<li>
+        <strong>P2 · Rocket 10</strong>
+        <span class="q-written">6 pc · User: add Rocket cone ₹10, 6 pieces. Rate copied from Orange @ 10.</span>
+      </li>
+<li>
+        <strong>P2 · Double magic 25</strong>
+        <span class="q-written">1 pc · User: add Double Magic @ 25, 1 pc. Cost ₹23. Royal Rabdi @ 25 also ₹23 (update on apply).</span>
+      </li>
+<li>
+        <strong>P2 · Disposible plate</strong>
+        <span class="q-written">37 pc · User: add Disposable Plate, 37. Cost ₹5.</span>
+      </li>
+<li>
+        <strong>P3 · kesar pissta = 30</strong>
+        <span class="q-written">6 pc · User: add Kesar Pista ice cream @ 30, 6 pc. Rate copied from Rasmalai @ 30.</span>
+      </li>
+<li>
+        <strong>P3 · popcorn Box large</strong>
+        <span class="q-written">59 pc · User: add Popcorn Box (Large), 59. Cost ₹7.</span>
+      </li>
+<li>
+        <strong>P3 · popcorn Small</strong>
+        <span class="q-written">52 pc · User: add Popcorn Box (Small), 52. Cost ₹5.</span>
+      </li>
+<li>
+        <strong>P3 · paper Bag</strong>
+        <span class="q-written">2 pc · User: add Paper bag, two packets. Cost ₹50 per packet.</span>
+      </li>
+<li>
+        <strong>P3 · Strips BOX</strong>
+        <span class="q-written">20 pc · User: add Strips Box, 20. Cost ₹8.</span>
+      </li></ol>
+    </details>
+  </div>
+  <script>
+    const q = document.getElementById("q");
+    const page = document.getElementById("page");
+    const conf = document.getElementById("conf");
+    function apply() {
+      const s = q.value.trim().toLowerCase();
+      const p = page.value;
+      const c = conf.value;
+      document.querySelectorAll("tbody tr").forEach((tr) => {
+        const okPage = !p || tr.dataset.page === p;
+        const okConf = !c || tr.dataset.conf === c || tr.dataset.conf === "section";
+        const okQ = !s || (tr.dataset.search || "").includes(s);
+        tr.classList.toggle("hidden", !(okPage && okConf && okQ));
+      });
+    }
+    q.addEventListener("input", apply);
+    page.addEventListener("change", apply);
+    conf.addEventListener("change", apply);
+  </script>
+</body>
+</html>

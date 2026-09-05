@@ -10,6 +10,7 @@ import {
   FlameIcon,
   HistoryIcon,
   IndianRupeeIcon,
+  PaperclipIcon,
   PencilIcon,
   PlusCircleIcon,
   PlusIcon,
@@ -36,6 +37,7 @@ import {
   AdminKpiGridSkeleton,
   AdminTableSkeleton,
 } from "@/components/admin/admin-page-skeleton";
+import { PurchaseBillField } from "@/components/admin/purchase-bill-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -80,6 +82,7 @@ import {
   rupeesToPaise,
 } from "@/lib/payroll/payroll-utils";
 import { formatRecipeQtyBase } from "@/lib/inventory/decimal-utils";
+import type { PurchaseBill } from "@/lib/inventory/purchase-bills";
 import { useQueryParam } from "@/hooks/use-query-param";
 import { usePermittedTabs } from "@/hooks/use-permitted-tabs";
 import { useTabParam } from "@/hooks/use-tab-param";
@@ -684,6 +687,7 @@ type PurchaseRow = {
   dueAt: string | null;
   totalPaise: number;
   lineCount: number;
+  bills?: PurchaseBill[];
 };
 
 type PurchaseDetailLine = {
@@ -715,6 +719,7 @@ type PurchaseDetail = {
   dueAt: string | null;
   totalPaise: number;
   notes: string;
+  bills?: PurchaseBill[];
   createdAt: string;
   editable: boolean;
   lines: PurchaseDetailLine[];
@@ -2049,6 +2054,7 @@ export default function AdminInventoryPage() {
     creditDays: "",
     notes: "",
   });
+  const [purchaseBills, setPurchaseBills] = useState<PurchaseBill[]>([]);
 
   type PurchaseLineDraft = {
     id: string;
@@ -2108,6 +2114,7 @@ export default function AdminInventoryPage() {
     ]);
     setEditingPurchaseId(null);
     setEditingPurchaseBatchRef(null);
+    setPurchaseBills([]);
   };
 
   const openNewPurchase = () => {
@@ -2134,6 +2141,7 @@ export default function AdminInventoryPage() {
           : "",
       notes: detail.notes,
     });
+    setPurchaseBills(detail.bills ?? []);
     setPurchaseLines(
       detail.lines.map((ln) => ({
         id: crypto.randomUUID(),
@@ -2172,6 +2180,7 @@ export default function AdminInventoryPage() {
             ? Number(purchase.creditDays)
             : undefined,
         notes: purchase.notes.trim() || undefined,
+        bills: purchaseBills,
         lines: purchaseLines.map((l) => ({
           inventoryItemId: l.inventoryItemId,
           qtyPurchase: l.qtyPurchase,
@@ -2243,6 +2252,24 @@ export default function AdminInventoryPage() {
         setPurchaseDetailLoading(false);
       }
     })();
+  };
+
+  const savePurchaseBills = async (purchaseId: string, bills: PurchaseBill[]) => {
+    try {
+      const r = await adminFetch<{ bills: PurchaseBill[] }>(
+        `/api/admin/inventory/purchases/${purchaseId}/bills`,
+        { method: "PUT", body: JSON.stringify({ bills }) },
+      );
+      setPurchaseDetail((prev) => (prev ? { ...prev, bills: r.bills } : prev));
+      setPurchases((prev) =>
+        prev.map((p) => (p.id === purchaseId ? { ...p, bills: r.bills } : p)),
+      );
+      setViewingPurchase((prev) =>
+        prev && prev.id === purchaseId ? { ...prev, bills: r.bills } : prev,
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save bill");
+    }
   };
 
   const [deletingPurchase, setDeletingPurchase] = useState<PurchaseRow | null>(null);
@@ -5135,6 +5162,7 @@ export default function AdminInventoryPage() {
                                     <TableHead>Date</TableHead>
                                     <TableHead>Batch</TableHead>
                                     <TableHead>Payment</TableHead>
+                                    <TableHead className="text-center">Bill</TableHead>
                                     <TableHead className="text-right">Total</TableHead>
                                   </TableRow>
                                 </TableHeader>
@@ -5142,7 +5170,7 @@ export default function AdminInventoryPage() {
                                   {profilePurchases.length === 0 ? (
                                     <TableRow>
                                       <TableCell
-                                        colSpan={4}
+                                        colSpan={5}
                                         className="py-8 text-center text-muted-foreground text-sm"
                                       >
                                         No purchases for this supplier yet.
@@ -5159,6 +5187,13 @@ export default function AdminInventoryPage() {
                                         </TableCell>
                                         <TableCell className="text-sm">
                                           {p.paymentType}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                          {(p.bills?.length ?? 0) > 0 ? (
+                                            <PaperclipIcon className="mx-auto size-3.5" aria-hidden />
+                                          ) : (
+                                            <span className="text-muted-foreground">—</span>
+                                          )}
                                         </TableCell>
                                         <TableCell className="text-right text-sm tabular-nums">
                                           {formatRupees(p.totalPaise)}
@@ -5483,6 +5518,7 @@ export default function AdminInventoryPage() {
                   <TableHead>Supplier</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Payment</TableHead>
+                  <TableHead className="text-center">Bill</TableHead>
                   <TableHead className="text-right">Lines</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="w-[8.5rem] text-right">Actions</TableHead>
@@ -5491,13 +5527,13 @@ export default function AdminInventoryPage() {
               <TableBody>
                 {purchases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                       No purchases yet. Record your first purchase.
                     </TableCell>
                   </TableRow>
                 ) : filteredPurchases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                       No purchases match your search or filters.
                     </TableCell>
                   </TableRow>
@@ -5515,6 +5551,16 @@ export default function AdminInventoryPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{p.paymentType}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {(p.bills?.length ?? 0) > 0 ? (
+                          <span className="inline-flex items-center gap-1 text-sm text-foreground">
+                            <PaperclipIcon className="size-3.5" aria-hidden />
+                            {p.bills!.length}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{p.lineCount}</TableCell>
                       <TableCell className="text-right tabular-nums">
@@ -5648,6 +5694,18 @@ export default function AdminInventoryPage() {
                               <p className="text-sm">{purchaseDetail.notes}</p>
                             </div>
                           ) : null}
+                          <div className="sm:col-span-4">
+                            <PurchaseBillField
+                              bills={purchaseDetail.bills ?? []}
+                              supplierName={purchaseDetail.supplierName}
+                              onChange={(next) => {
+                                setPurchaseDetail((prev) =>
+                                  prev ? { ...prev, bills: next } : prev,
+                                );
+                                void savePurchaseBills(purchaseDetail.id, next);
+                              }}
+                            />
+                          </div>
                         </div>
 
                         <div className="overflow-hidden rounded-xl border bg-card">
@@ -5886,6 +5944,14 @@ export default function AdminInventoryPage() {
                       placeholder="e.g. Invoice #, delivery note…"
                     />
                   </div>
+                  <PurchaseBillField
+                    bills={purchaseBills}
+                    supplierName={
+                      suppliers.find((s) => s.id === purchase.supplierId)?.name ?? ""
+                    }
+                    onChange={setPurchaseBills}
+                    disabled={purchaseSubmitting}
+                  />
                 </div>
 
                 <div className="rounded-lg border p-3">

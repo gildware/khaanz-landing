@@ -76,6 +76,27 @@ export async function uploadMenuImageToCloudinary(input: {
   return result.secure_url;
 }
 
+/** Images or PDFs (purchase invoices). */
+export async function uploadFileToCloudinary(input: {
+  source: string;
+  folder: string;
+  publicId: string;
+  resourceType?: "image" | "raw" | "auto";
+}): Promise<string> {
+  const cld = client();
+  const result = await cld.uploader.upload(input.source, {
+    folder: input.folder,
+    public_id: sanitizePublicId(input.publicId),
+    overwrite: true,
+    resource_type: input.resourceType ?? "auto",
+    invalidate: true,
+  });
+  if (!result.secure_url) {
+    throw new Error("Cloudinary upload returned no URL");
+  }
+  return result.secure_url;
+}
+
 /**
  * Never persist base64 in the database. Data URLs are uploaded; Cloudinary
  * URLs are kept; other http(s) or site paths are left for the migrator.

@@ -1,0 +1,4910 @@
+{
+  "title": "Khaanz notebook review · Aug 2026",
+  "notice": "Preview only. Nothing is inserted until a date is verified. Aug 1 was mapped in chat; other days are first-pass readings from photos.",
+  "categories": [
+    {
+      "id": "sale",
+      "label": "Sales"
+    },
+    {
+      "id": "inventory_purchase",
+      "label": "Inventory purchases"
+    },
+    {
+      "id": "kitchen_use",
+      "label": "Kitchen use"
+    },
+    {
+      "id": "supplier_payment",
+      "label": "Supplier payments"
+    },
+    {
+      "id": "business_expense",
+      "label": "Business expenses"
+    },
+    {
+      "id": "personal_use",
+      "label": "Personal use"
+    },
+    {
+      "id": "advance_salary",
+      "label": "Advance salary"
+    },
+    {
+      "id": "attendance",
+      "label": "Attendance notes"
+    },
+    {
+      "id": "cashbook",
+      "label": "Cashbook (not inserted)"
+    },
+    {
+      "id": "note",
+      "label": "Notes / unpaid / skip"
+    }
+  ],
+  "days": [
+    {
+      "date": "2026-08-01",
+      "status": "inserted",
+      "label": "1 Aug — inserted",
+      "notebookExp": 8580,
+      "notebookStaffExp": 450,
+      "lines": [
+        {
+          "raw": "Milk",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Curd @ ₹50/kg",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "5 kg",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Chicken 7.200 kg @140",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "7.2 kg",
+          "amount": 1000,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Chicken 7.800 kg @140",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "7.8 kg",
+          "amount": 1090,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "1 kg Ginger",
+          "category": "inventory_purchase",
+          "db": "Ginger",
+          "qty": "1 kg",
+          "amount": 300,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Potato",
+          "category": "inventory_purchase",
+          "db": "Potato",
+          "qty": "19 kg",
+          "amount": 300,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Eggs",
+          "category": "inventory_purchase",
+          "db": "Egg",
+          "qty": "30 pcs",
+          "amount": 190,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "18 kg Onion",
+          "category": "inventory_purchase",
+          "db": "Onion",
+          "qty": "18 kg",
+          "amount": 360,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "12 kg Garlic",
+          "category": "inventory_purchase",
+          "db": "Garlic",
+          "qty": "12 kg",
+          "amount": 540,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "2 L Cling flow",
+          "category": "inventory_purchase",
+          "db": "Cling Foil",
+          "qty": "2 rolls",
+          "amount": 400,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Container big",
+          "category": "inventory_purchase",
+          "db": "Container Big",
+          "qty": "100 pcs",
+          "amount": 330,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Lemon 10 pc",
+          "category": "inventory_purchase",
+          "db": "Lemon",
+          "qty": "0.25 kg",
+          "amount": 50,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Paper",
+          "category": "inventory_purchase",
+          "db": "Butter Paper",
+          "qty": "100 pcs",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "1 kg Simla",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Replaces lump Sabzi 500 (+₹10 vs notebook)"
+        },
+        {
+          "raw": "1 kg Carrot",
+          "category": "inventory_purchase",
+          "db": "Carrot",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "1 kg Dhaniya",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "1 kg",
+          "amount": 110,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "2 kg Tomato",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "2 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Cabbage 4 kg",
+          "category": "inventory_purchase",
+          "db": "Cabbage",
+          "qty": "4 kg",
+          "amount": 150,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "4 lighter = 20",
+          "category": "business_expense",
+          "db": "Lighter (new category)",
+          "qty": "4",
+          "amount": 20,
+          "flag": "ready"
+        },
+        {
+          "raw": "Surf & Soap = 50",
+          "category": "business_expense",
+          "db": "Surf & Soap (new category)",
+          "amount": 50,
+          "flag": "ready",
+          "note": "Insert as OPERATING expense"
+        },
+        {
+          "raw": "Roti *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Staff sabzi *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Sabzi **",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Kaju Badam Pista",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 860,
+          "flag": "ready",
+          "note": "Kaju Badam"
+        },
+        {
+          "raw": "Gas 1 cylinder (top, personal)",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 1200,
+          "flag": "ready",
+          "note": "Personal cylinder"
+        },
+        {
+          "raw": "Ed loan = 2500",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 2500,
+          "flag": "ready",
+          "note": "Education loan"
+        },
+        {
+          "raw": "Recharge Ebran → 353",
+          "category": "advance_salary",
+          "db": "Ebran KH-006",
+          "amount": 353,
+          "pay": "RECHARGE",
+          "flag": "ready"
+        },
+        {
+          "raw": "Maya/Nazir gas = 3000",
+          "category": "supplier_payment",
+          "db": "Nazir Gas",
+          "amount": 3000,
+          "pay": "CASH",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tops → 2054",
+          "category": "supplier_payment",
+          "db": "Tops",
+          "amount": 2054,
+          "pay": "CASH",
+          "flag": "ready",
+          "note": "Settles 28/7 credit ₹2,053.49"
+        },
+        {
+          "raw": "Oil 1 tin (consumable page)",
+          "category": "kitchen_use",
+          "db": "Oil",
+          "qty": "15 kg",
+          "flag": "ready"
+        },
+        {
+          "raw": "Corn flour 1 kg",
+          "category": "kitchen_use",
+          "db": "Corn Flour",
+          "qty": "1 kg",
+          "flag": "ready"
+        },
+        {
+          "raw": "Gas 1 cylinder 14 kg",
+          "category": "kitchen_use",
+          "db": "GAS",
+          "qty": "14 kg",
+          "flag": "ready"
+        },
+        {
+          "raw": "Cash 16100 + mpay 620 + bank 16259 +120 = 33099",
+          "category": "cashbook",
+          "flag": "skip",
+          "note": "Closing money, not sale"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 33090,
+          "flag": "ready",
+          "note": "User confirmed"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 32992,
+          "flag": "ready",
+          "note": "117 POS orders, none cancelled"
+        },
+        {
+          "raw": "Mismatch (system short)",
+          "category": "sale",
+          "amount": 98,
+          "flag": "ready",
+          "note": "POS ₹32,992 vs actual ₹33,090. Cash 16,657 + UPI 14,930 + blank 1,405"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-02",
+      "status": "inserted",
+      "label": "2 Aug — inserted",
+      "notebookExp": null,
+      "lines": [
+        {
+          "raw": "Milk (same as 1 Aug)",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "From Milk Dahi 400"
+        },
+        {
+          "raw": "Curd (rest of Milk Dahi 400)",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "6 kg",
+          "amount": 300,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "₹50/kg same as 1 Aug"
+        },
+        {
+          "raw": "Sabzi lump 400",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by veg list"
+        },
+        {
+          "raw": "Cucumber 2.5 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Cucumber",
+          "qty": "2.5 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tamatar 1 kg = 60",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "1 kg",
+          "amount": 60,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Carrot 1 kg = 80",
+          "category": "inventory_purchase",
+          "db": "Carrot",
+          "qty": "1 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Simla 0.5 kg = 40",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "0.5 kg",
+          "amount": 40,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Dhaniya 0.5 kg = 120",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "0.5 kg",
+          "amount": 120,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Chicken @160 = 1800",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "11.25 kg",
+          "amount": 1800,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready",
+          "note": "11.25 kg × ₹160 = ₹1,800"
+        },
+        {
+          "raw": "Tariq chicken last balance = 425",
+          "category": "supplier_payment",
+          "db": "Tariq Chicken",
+          "amount": 425,
+          "pay": "CASH",
+          "flag": "ready",
+          "note": "Last balance, not today's kg"
+        },
+        {
+          "raw": "Surf = 120",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 120,
+          "flag": "ready",
+          "note": "Top corner — personal"
+        },
+        {
+          "raw": "Roti = 120",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 120,
+          "flag": "ready",
+          "note": "Top corner — personal"
+        },
+        {
+          "raw": "Sabji = 150 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Staff chicken = 500",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 500,
+          "flag": "ready",
+          "note": "Chicken"
+        },
+        {
+          "raw": "Green chilli 2 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "2 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tissue = 300",
+          "category": "inventory_purchase",
+          "db": "Tissue",
+          "qty": "20 pcs",
+          "amount": 300,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Simla 4 kg = 160",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "4 kg",
+          "amount": 160,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Lemon = 80",
+          "category": "inventory_purchase",
+          "db": "Lemon",
+          "qty": "0.25 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Petrol = 1000",
+          "category": "business_expense",
+          "db": "Petrol",
+          "amount": 1000,
+          "flag": "ready"
+        },
+        {
+          "raw": "Eggs = 200",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 200,
+          "flag": "ready",
+          "note": "Top corner — personal"
+        },
+        {
+          "raw": "Farhan cash = 300",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 300,
+          "flag": "ready",
+          "note": "Top corner — personal, not advance"
+        },
+        {
+          "raw": "Cash 9600 / Online 19337 / M-pay 1000 = 29937",
+          "category": "cashbook",
+          "flag": "skip",
+          "note": "Closing money, not sale"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 29937,
+          "flag": "needs_confirm",
+          "note": "Cash 9600 + online 19337 + m-pay 1000"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 28507,
+          "flag": "ready",
+          "note": "74 POS orders, none cancelled"
+        },
+        {
+          "raw": "Mismatch (system short)",
+          "category": "sale",
+          "amount": 1430,
+          "flag": "needs_confirm",
+          "note": "POS ₹28,507 vs notebook ₹29,937. Cash 14,610 + UPI 11,637 + blank 2,260"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-03",
+      "status": "inserted",
+      "label": "3 Aug — inserted",
+      "notebookExp": null,
+      "lines": [
+        {
+          "raw": "Milk (from Milk-Curd 350)",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Curd (from Milk-Curd 350)",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "5 kg",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "₹50/kg same as 1 Aug"
+        },
+        {
+          "raw": "Fresh Milk = 250",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "5 L",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Sabzi = 380",
+          "category": "inventory_purchase",
+          "db": "Mixed Vegetable",
+          "qty": "1 kg",
+          "amount": 380,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Lump veg, no breakdown"
+        },
+        {
+          "raw": "Chicken 7 kg credit = 1600",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "7 kg",
+          "amount": 1600,
+          "pay": "CREDIT",
+          "supplier": "Tariq Chicken",
+          "flag": "ready"
+        },
+        {
+          "raw": "Fare Auto = 170",
+          "category": "business_expense",
+          "db": "Auto Fare (new category)",
+          "amount": 170,
+          "flag": "ready"
+        },
+        {
+          "raw": "Pane Ang = 120",
+          "category": "business_expense",
+          "db": "Auto Fare",
+          "amount": 120,
+          "flag": "ready",
+          "note": "Auto fare"
+        },
+        {
+          "raw": "Big Pizza Box = 1450",
+          "category": "inventory_purchase",
+          "db": "Pizza Box (Large)",
+          "qty": "100 pcs",
+          "amount": 1450,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Pizza Box medium = 750",
+          "category": "inventory_purchase",
+          "db": "Pizza Box (Medium)",
+          "qty": "100 pcs",
+          "amount": 750,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Veg Burger Patty = 350",
+          "category": "inventory_purchase",
+          "db": "Veg. Patty",
+          "qty": "20 pcs",
+          "amount": 350,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Chicken Burger Patty = 700",
+          "category": "inventory_purchase",
+          "db": "Chicken Patty",
+          "qty": "20 pcs",
+          "amount": 700,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mozzarella / Motsoy = 1150",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by Cheese 2 kg = 980"
+        },
+        {
+          "raw": "Cheese Mozzarella = 980",
+          "category": "inventory_purchase",
+          "db": "Cheese",
+          "qty": "2 kg",
+          "amount": 980,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Lifafa = 500",
+          "category": "inventory_purchase",
+          "db": "Packing Bags (Medium)",
+          "qty": "2 kg",
+          "amount": 500,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Roti = 160 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 160,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Staff Sabzi = 200 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 200,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Washing = 100",
+          "category": "business_expense",
+          "db": "Washing (new category)",
+          "amount": 100,
+          "flag": "ready"
+        },
+        {
+          "raw": "Container Big = 330",
+          "category": "inventory_purchase",
+          "db": "Container Big",
+          "qty": "100 pcs",
+          "amount": 330,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Container Small = 230",
+          "category": "inventory_purchase",
+          "db": "Container Small",
+          "qty": "100 pcs",
+          "amount": 230,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tissue = 200",
+          "category": "inventory_purchase",
+          "db": "Tissue",
+          "qty": "20 pcs",
+          "amount": 200,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Eggs = 200",
+          "category": "inventory_purchase",
+          "db": "Egg",
+          "qty": "30 pcs",
+          "amount": 200,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tayab vegs = 200",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 200,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Tayab Amul = 200",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 200,
+          "flag": "ready",
+          "note": "Amul (third ₹200 of the ₹600)"
+        },
+        {
+          "raw": "Tayab Apple = 200",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 200,
+          "flag": "ready",
+          "note": "Apple"
+        },
+        {
+          "raw": "Holiday Anwarul",
+          "category": "attendance",
+          "flag": "skip",
+          "note": "Not inserted"
+        },
+        {
+          "raw": "Pepsi cheque 7000 + 6000",
+          "category": "note",
+          "amount": 13000,
+          "flag": "skip"
+        },
+        {
+          "raw": "PG Dahi cheque 7000 × 3 = 21000",
+          "category": "note",
+          "amount": 21000,
+          "flag": "skip"
+        },
+        {
+          "raw": "Five tin EMPTY (2)",
+          "category": "kitchen_use",
+          "flag": "skip"
+        },
+        {
+          "raw": "Cash 10100 / Online 11349 / M-pay 2150 = 23599",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 23599,
+          "flag": "needs_confirm"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 23721,
+          "flag": "ready",
+          "note": "81 POS orders, none cancelled"
+        },
+        {
+          "raw": "Mismatch (system over)",
+          "category": "sale",
+          "amount": 122,
+          "flag": "needs_confirm",
+          "note": "POS ₹23,721 vs notebook ₹23,599"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-04",
+      "status": "inserted",
+      "label": "4 Aug — inserted",
+      "notebookExp": 11290,
+      "lines": [
+        {
+          "raw": "Sabzi = 410",
+          "category": "inventory_purchase",
+          "db": "Mixed Vegetable",
+          "qty": "1 kg",
+          "amount": 410,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Lump veg"
+        },
+        {
+          "raw": "Roti = 160 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 160,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Dahi 8 kg = 480",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "8 kg",
+          "amount": 480,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Milk = 120",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2.4 L",
+          "amount": 120,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "9 kg Chicken = 1600",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "9 kg",
+          "amount": 1600,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready"
+        },
+        {
+          "raw": "Chicken liver = 1200",
+          "category": "supplier_payment",
+          "db": "Tariq Chicken",
+          "amount": 1200,
+          "pay": "CASH",
+          "flag": "ready",
+          "note": "Payment to Tariq, not liver stock"
+        },
+        {
+          "raw": "Onion 19 kg = 700",
+          "category": "inventory_purchase",
+          "db": "Onion",
+          "qty": "19 kg",
+          "amount": 700,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Petrol = 1000",
+          "category": "business_expense",
+          "db": "Petrol",
+          "amount": 1000,
+          "flag": "ready"
+        },
+        {
+          "raw": "Soap & Surf = 50",
+          "category": "business_expense",
+          "db": "Surf & Soap",
+          "amount": 50,
+          "flag": "ready"
+        },
+        {
+          "raw": "20 L water = 220",
+          "category": "inventory_purchase",
+          "db": "Water",
+          "qty": "20 L",
+          "amount": 220,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Soap Surf = 150",
+          "category": "business_expense",
+          "db": "Surf & Soap",
+          "amount": 150,
+          "flag": "ready"
+        },
+        {
+          "raw": "Cutting blade = 60",
+          "category": "business_expense",
+          "db": "Cutting blade (new category)",
+          "amount": 60,
+          "flag": "ready"
+        },
+        {
+          "raw": "Staff sabzi = 140",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 140,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Virgin Mojito = 400 online",
+          "category": "inventory_purchase",
+          "db": "Virgin Mojito",
+          "qty": "0.75 L",
+          "amount": 400,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Paid online · 750 ml"
+        },
+        {
+          "raw": "Blue Curacao = 400 online",
+          "category": "inventory_purchase",
+          "db": "Blue Curacao",
+          "qty": "0.75 L",
+          "amount": 400,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Paid online · 750 ml"
+        },
+        {
+          "raw": "Amul Cream 6 × 250 ml = 450 online",
+          "category": "inventory_purchase",
+          "db": "Fresh Cream",
+          "qty": "1.5 L",
+          "amount": 450,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Paid online · 6 packs"
+        },
+        {
+          "raw": "Mango Crush = 200 online",
+          "category": "inventory_purchase",
+          "db": "Mango Crush",
+          "qty": "1 L",
+          "amount": 200,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Paid online"
+        },
+        {
+          "raw": "Mirchi 2 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "2 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "2 case water 24 bottles = 1000",
+          "category": "inventory_purchase",
+          "db": "Water @ 20",
+          "qty": "24 pcs",
+          "amount": 1000,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Milk Amul = 230",
+          "category": "inventory_purchase",
+          "db": "Milk (Tonned)",
+          "qty": "4 L",
+          "amount": 230,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Container Big = 330",
+          "category": "inventory_purchase",
+          "db": "Container Big",
+          "qty": "100 pcs",
+          "amount": 330,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Container Small = 230",
+          "category": "inventory_purchase",
+          "db": "Container Small",
+          "qty": "100 pcs",
+          "amount": 230,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Farhan cash = 500",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 500,
+          "flag": "ready",
+          "note": "Was written 1000; user said 500 personal"
+        },
+        {
+          "raw": "Dips = 450",
+          "category": "inventory_purchase",
+          "db": "Dips",
+          "qty": "1000 pcs",
+          "amount": 450,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Atta 10 kg = 370",
+          "category": "inventory_purchase",
+          "db": "Atta",
+          "qty": "10 kg",
+          "amount": 370,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Kitchen King 10 × 100 g (Mirab Sales)",
+          "category": "inventory_purchase",
+          "db": "Kitchen King",
+          "qty": "1 kg",
+          "amount": 660,
+          "pay": "CREDIT",
+          "supplier": "Mirab Sales",
+          "flag": "ready",
+          "note": "Last rate ₹660/kg"
+        },
+        {
+          "raw": "Black Pepper 10 × 50 g (Mirab Sales)",
+          "category": "inventory_purchase",
+          "db": "Black Pepper Powder",
+          "qty": "0.5 kg",
+          "amount": 750,
+          "pay": "CREDIT",
+          "supplier": "Mirab Sales",
+          "flag": "ready",
+          "note": "Last rate ₹1,500/kg"
+        },
+        {
+          "raw": "Garam Masala 10 × 50 g (Mirab Sales)",
+          "category": "inventory_purchase",
+          "db": "Garam Masala",
+          "qty": "0.5 kg",
+          "amount": 432,
+          "pay": "CREDIT",
+          "supplier": "Mirab Sales",
+          "flag": "ready",
+          "note": "Last rate ₹864/kg"
+        },
+        {
+          "raw": "Chilli Powder 1.5 kg (Mirab Sales)",
+          "category": "inventory_purchase",
+          "db": "Red Chilli Powder",
+          "qty": "1.5 kg",
+          "amount": 600,
+          "pay": "CREDIT",
+          "supplier": "Mirab Sales",
+          "flag": "ready",
+          "note": "Last rate ₹400/kg (27/7)"
+        },
+        {
+          "raw": "Water 5 cases credit",
+          "category": "inventory_purchase",
+          "db": "Water @ 20",
+          "qty": "60 pcs",
+          "amount": 500,
+          "pay": "CREDIT",
+          "supplier": "Water Supplier",
+          "flag": "ready",
+          "note": "Last cost ₹8.33/bottle × 60"
+        },
+        {
+          "raw": "Sugar = 100",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 100,
+          "flag": "ready"
+        },
+        {
+          "raw": "Tea = 200",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 200,
+          "flag": "ready"
+        },
+        {
+          "raw": "Roti box = 100",
+          "category": "personal_use",
+          "db": "Personal CASH",
+          "amount": 100,
+          "flag": "ready"
+        },
+        {
+          "raw": "Tasleem 150 from sale",
+          "category": "advance_salary",
+          "db": "Tasleem KH-010",
+          "amount": 150,
+          "pay": "CASH",
+          "flag": "ready"
+        },
+        {
+          "raw": "To Sys / Togs = 40000",
+          "category": "supplier_payment",
+          "amount": 40000,
+          "flag": "skip"
+        },
+        {
+          "raw": "Exp 11290 · Cash 15800 / Online 13733 / M-pay 500 = 30403",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 30403,
+          "flag": "needs_confirm"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 29376,
+          "flag": "ready",
+          "note": "108 POS orders, none cancelled"
+        },
+        {
+          "raw": "Mismatch (system short)",
+          "category": "sale",
+          "amount": 1027,
+          "flag": "needs_confirm",
+          "note": "POS ₹29,376 vs notebook ₹30,403"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-05",
+      "status": "inserted",
+      "label": "5 Aug — inserted",
+      "notebookExp": 6440,
+      "lines": [
+        {
+          "raw": "Roti = 150 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Sabzi = 350",
+          "category": "inventory_purchase",
+          "db": "Mixed Vegetable",
+          "qty": "1 kg",
+          "amount": 350,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Lump veg"
+        },
+        {
+          "raw": "Milk = 150",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "3 L",
+          "amount": 150,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Chicken 16 kg = 2700 M.Pay",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "16 kg",
+          "amount": 2700,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready",
+          "note": "Paid M-pay · ₹168.75/kg"
+        },
+        {
+          "raw": "Sabzi lump 1200",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by veg list ₹1,155"
+        },
+        {
+          "raw": "Gobi 17 kg = 595",
+          "category": "inventory_purchase",
+          "db": "Cabbage",
+          "qty": "17 kg",
+          "amount": 595,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Simla 1 kg = 50",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1 kg",
+          "amount": 50,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Nimboo 500 g = 80",
+          "category": "inventory_purchase",
+          "db": "Lemon",
+          "qty": "0.5 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tamatar 5 kg = 250",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "5 kg",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mirchi 1 kg = 80",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "1 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Phool gobi & mooli = 100",
+          "category": "inventory_purchase",
+          "db": "Cabbage",
+          "qty": "1 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "User said cabbage"
+        },
+        {
+          "raw": "Ghee 2 kg = 320",
+          "category": "inventory_purchase",
+          "db": "Ghee",
+          "qty": "2 kg",
+          "amount": 320,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Staff sabzi = 100",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 100,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Eggs 30 pcs = 200",
+          "category": "inventory_purchase",
+          "db": "Egg",
+          "qty": "30 pcs",
+          "amount": 200,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mistree welding = 800",
+          "category": "business_expense",
+          "db": "Welding",
+          "amount": 800,
+          "flag": "ready",
+          "note": "Mistri welding"
+        },
+        {
+          "raw": "Disposable glasses 12 pcs = 60",
+          "category": "inventory_purchase",
+          "db": "Tea Glasses",
+          "qty": "12 pcs",
+          "amount": 60,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Qty from last disposable glass rate ₹5/pc"
+        },
+        {
+          "raw": "Tissue = 200",
+          "category": "inventory_purchase",
+          "db": "Tissue",
+          "qty": "20 pcs",
+          "amount": 200,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Food grade bags 2 kg = 360",
+          "category": "inventory_purchase",
+          "db": "Food Grade Bags",
+          "qty": "2 kg",
+          "amount": 360,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Parking = 70",
+          "category": "business_expense",
+          "db": "Parking",
+          "amount": 70,
+          "flag": "ready"
+        },
+        {
+          "raw": "Faisal Holiday",
+          "category": "attendance",
+          "flag": "skip",
+          "note": "LEAVE marked 5 Aug KH-011"
+        },
+        {
+          "raw": "Pizza 350 free (food dept)",
+          "category": "note",
+          "amount": 350,
+          "flag": "skip",
+          "note": "Complimentary"
+        },
+        {
+          "raw": "Exp 6440 · Cash 9400+400 / Online 14488 / M-pay 700 = 25488",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 25488,
+          "flag": "skip",
+          "note": "Cashbook / money on hand, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 9957,
+          "flag": "skip",
+          "note": "39 POS orders already in system"
+        },
+        {
+          "raw": "Mismatch (notebook higher)",
+          "category": "sale",
+          "amount": 15531,
+          "flag": "skip"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-06",
+      "status": "inserted",
+      "label": "6 Aug — inserted",
+      "notebookExp": 8110,
+      "lines": [
+        {
+          "raw": "Roti = 150",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Sabzi lump 400",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by veg list ₹400"
+        },
+        {
+          "raw": "Simla 1 kg = 50",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1 kg",
+          "amount": 50,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Dhaniya 0.5 kg = 120",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "0.5 kg",
+          "amount": 120,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tomato 1 kg = 60",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "1 kg",
+          "amount": 60,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Gajar 1 kg = 70",
+          "category": "inventory_purchase",
+          "db": "Carrot",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mirchi 2 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "2 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Chicken 9 kg = 1600",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "9 kg",
+          "amount": 1600,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready"
+        },
+        {
+          "raw": "Milk 2 L = 100",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi+milk ₹350, split like 1–3 Aug"
+        },
+        {
+          "raw": "Curd 5 kg = 250",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "5 kg",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi+milk ₹350, split like 1–3 Aug"
+        },
+        {
+          "raw": "Magaz tarbooz 0.5 kg = 330",
+          "category": "inventory_purchase",
+          "db": "Magaz Tarbooz",
+          "qty": "0.5 kg",
+          "amount": 330,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Kaju 1 kg = 450",
+          "category": "inventory_purchase",
+          "db": "Cashew",
+          "qty": "1 kg",
+          "amount": 450,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tomato 2 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "2 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Meat Masala 10 × 50 g = 440",
+          "category": "inventory_purchase",
+          "db": "Meat Masala",
+          "qty": "0.5 kg",
+          "amount": 440,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Meat Masala 440 (2nd)",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Duplicate of the 10 pc line"
+        },
+        {
+          "raw": "Soap 1 doz = 110",
+          "category": "business_expense",
+          "db": "Surf & Soap",
+          "qty": "12",
+          "amount": 110,
+          "flag": "ready",
+          "note": "Soap"
+        },
+        {
+          "raw": "Generator mobil oil = 270",
+          "category": "business_expense",
+          "db": "Generator oil",
+          "amount": 270,
+          "flag": "ready"
+        },
+        {
+          "raw": "Burger bun 36 pcs = 300",
+          "category": "inventory_purchase",
+          "db": "Burger Buns",
+          "qty": "36 pcs",
+          "amount": 300,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Qty from 28 Jul rate"
+        },
+        {
+          "raw": "Surf 1 doz = 110",
+          "category": "business_expense",
+          "db": "Surf & Soap",
+          "qty": "12",
+          "amount": 110,
+          "flag": "ready",
+          "note": "Surf"
+        },
+        {
+          "raw": "Nazir Gas = 3000",
+          "category": "supplier_payment",
+          "db": "Nazir Gas",
+          "amount": 3000,
+          "flag": "ready"
+        },
+        {
+          "raw": "Ajina Moto 2.5 kg @200 = 500",
+          "category": "inventory_purchase",
+          "db": "Ajina Moto",
+          "qty": "2.5 kg",
+          "amount": 500,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Roti = 100",
+          "category": "personal_use",
+          "amount": 100,
+          "flag": "ready",
+          "note": "Extra roti"
+        },
+        {
+          "raw": "Muzaffar nashta = 700",
+          "category": "personal_use",
+          "amount": 700,
+          "flag": "ready"
+        },
+        {
+          "raw": "Faisal Holiday",
+          "category": "attendance",
+          "flag": "skip",
+          "note": "LEAVE marked 6 Aug KH-011"
+        },
+        {
+          "raw": "Mehraj @ 500",
+          "category": "advance_salary",
+          "db": "Mehrej KH-001",
+          "amount": 500,
+          "flag": "ready"
+        },
+        {
+          "raw": "Anwarul @ 2700",
+          "category": "advance_salary",
+          "db": "Anwarul KH-004",
+          "amount": 2700,
+          "flag": "ready"
+        },
+        {
+          "raw": "Anwarul @ 2650",
+          "category": "advance_salary",
+          "db": "Anwarul KH-004",
+          "amount": 2650,
+          "flag": "ready"
+        },
+        {
+          "raw": "Farhan = 1250",
+          "category": "personal_use",
+          "amount": 1250,
+          "flag": "ready",
+          "note": "Farhan cash"
+        },
+        {
+          "raw": "Diesel = 500",
+          "category": "personal_use",
+          "amount": 500,
+          "flag": "ready",
+          "note": "Farhan diesel"
+        },
+        {
+          "raw": "Masala = 550",
+          "category": "personal_use",
+          "amount": 550,
+          "flag": "ready"
+        },
+        {
+          "raw": "Home = 3100",
+          "category": "personal_use",
+          "amount": 3100,
+          "flag": "ready"
+        },
+        {
+          "raw": "Mark Fresh Frozen Chicken Boneless 40 kg @350 = 14000",
+          "category": "inventory_purchase",
+          "db": "Frozen Chicken Boneless",
+          "qty": "40 kg",
+          "amount": 14000,
+          "pay": "CREDIT",
+          "supplier": "Mark Fresh - (Chicken Fish)",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mark Fresh Frozen Fish 20 kg @260 = 5200",
+          "category": "inventory_purchase",
+          "db": "Frozen Fish",
+          "qty": "20 kg",
+          "amount": 5200,
+          "pay": "CREDIT",
+          "supplier": "Mark Fresh - (Chicken Fish)",
+          "flag": "ready"
+        },
+        {
+          "raw": "Ad Sal 5850 · TE 17060 · Cash/Online/Mpay 22330",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 22330,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 36149,
+          "flag": "skip",
+          "note": "125 POS orders already in system"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-07",
+      "status": "inserted",
+      "label": "7 Aug — inserted",
+      "notebookExp": 17840,
+      "lines": [
+        {
+          "raw": "Roti = 150 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Milk 2 L = 100",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of milk-dahi ₹220"
+        },
+        {
+          "raw": "Curd 2.4 kg = 120",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "2.4 kg",
+          "amount": 120,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of milk-dahi ₹220"
+        },
+        {
+          "raw": "Sabzi lump 450",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by veg list ₹470"
+        },
+        {
+          "raw": "Dhaniya = 100",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "0.42 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹240/kg"
+        },
+        {
+          "raw": "Garlic = 100",
+          "category": "inventory_purchase",
+          "db": "Garlic",
+          "qty": "2.22 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹45/kg"
+        },
+        {
+          "raw": "Gajar 1 kg = 70",
+          "category": "inventory_purchase",
+          "db": "Carrot",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tomato 2 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "2 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mirchi 2 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "2 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Chicken 8 kg = 1300",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "8 kg",
+          "amount": 1300,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready"
+        },
+        {
+          "raw": "Chicken 9 kg = 1250",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "9 kg",
+          "amount": 1250,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready"
+        },
+        {
+          "raw": "Sabzi staff = 120",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 120,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Tissue 20 = 340",
+          "category": "inventory_purchase",
+          "db": "Tissue",
+          "qty": "20 pcs",
+          "amount": 340,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Cling foil 1 kg = 180",
+          "category": "inventory_purchase",
+          "db": "Cling Foil",
+          "qty": "1 roll",
+          "amount": 180,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "DB unit is roll (last ₹200/roll); notebook said 1 kg"
+        },
+        {
+          "raw": "Lifafa = 260",
+          "category": "inventory_purchase",
+          "db": "Packing Bags (Large)",
+          "qty": "1 kg",
+          "amount": 260,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "₹260/kg; not Medium"
+        },
+        {
+          "raw": "Ziplock large = 150",
+          "category": "inventory_purchase",
+          "db": "Food Grade Bags",
+          "qty": "1 kg",
+          "amount": 150,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Notebook 1 pack"
+        },
+        {
+          "raw": "Lifafa carry = 130",
+          "category": "inventory_purchase",
+          "db": "Packing Bags (Large)",
+          "qty": "0.5 kg",
+          "amount": 130,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Same ₹260/kg as lifafa"
+        },
+        {
+          "raw": "Nazir Gas pay = 2750",
+          "category": "supplier_payment",
+          "db": "Nazir Gas",
+          "amount": 2750,
+          "flag": "ready"
+        },
+        {
+          "raw": "5 cylinders credit Nazir",
+          "category": "inventory_purchase",
+          "db": "GAS",
+          "qty": "70.5 kg",
+          "amount": 6556.5,
+          "pay": "CREDIT",
+          "supplier": "Nazir Gas",
+          "flag": "ready",
+          "note": "5 × 14.1 kg cyl × last ₹93/kg"
+        },
+        {
+          "raw": "Ajina Moto 25 kg @174 = 4350",
+          "category": "inventory_purchase",
+          "db": "Ajina Moto",
+          "qty": "25 kg",
+          "amount": 4350,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Corn Flour 25 kg @62 = 1550",
+          "category": "inventory_purchase",
+          "db": "Corn Flour",
+          "qty": "25 kg",
+          "amount": 1550,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Meat Masala 120 × 50 g = 4870",
+          "category": "inventory_purchase",
+          "db": "Meat Masala",
+          "qty": "6 kg",
+          "amount": 4870,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Staff meds = 40 *",
+          "category": "business_expense",
+          "db": "Staff meds",
+          "amount": 40,
+          "flag": "ready"
+        },
+        {
+          "raw": "Mark Fresh pay = 30000",
+          "category": "supplier_payment",
+          "db": "Mark Fresh - (Chicken Fish)",
+          "amount": 30000,
+          "flag": "ready"
+        },
+        {
+          "raw": "Cash 15700 / Online 16709 / M-pay 1020 = 33429",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 33429,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 33388,
+          "flag": "skip",
+          "note": "95 POS orders already in system"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-08",
+      "status": "inserted",
+      "label": "8 Aug — inserted",
+      "notebookExp": 4580,
+      "notebookStaffExp": 650,
+      "lines": [
+        {
+          "raw": "Roti = 150",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Milk 2 L = 100",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi-milk ₹250"
+        },
+        {
+          "raw": "Curd 3 kg = 150",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "3 kg",
+          "amount": 150,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi-milk ₹250"
+        },
+        {
+          "raw": "Chicken 9 kg = 1600",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "9 kg",
+          "amount": 1600,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready"
+        },
+        {
+          "raw": "Sabzi = 450",
+          "category": "inventory_purchase",
+          "db": "Mixed Vegetable",
+          "qty": "1 kg",
+          "amount": 450,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Lump veg"
+        },
+        {
+          "raw": "Atta 10 kg = 370",
+          "category": "inventory_purchase",
+          "db": "Atta",
+          "qty": "10 kg",
+          "amount": 370,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Onion 19 kg = 700",
+          "category": "inventory_purchase",
+          "db": "Onion",
+          "qty": "19 kg",
+          "amount": 700,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Dalda 2 kg = 340",
+          "category": "inventory_purchase",
+          "db": "Ghee",
+          "qty": "2 kg",
+          "amount": 340,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Dalda → Ghee"
+        },
+        {
+          "raw": "Ajwain 67 g = 40",
+          "category": "inventory_purchase",
+          "db": "Ajwain",
+          "qty": "0.067 kg",
+          "amount": 40,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Steel wool = 20",
+          "category": "business_expense",
+          "db": "Steel wool",
+          "amount": 20,
+          "flag": "ready",
+          "note": "Kitchen supplies"
+        },
+        {
+          "raw": "Staff meat = 500",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 500,
+          "flag": "ready",
+          "note": "Meat"
+        },
+        {
+          "raw": "Kit Kat 2 pcs = 40",
+          "category": "inventory_purchase",
+          "db": "Kit Kat",
+          "qty": "2 pcs",
+          "amount": 40,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Scan print = 20",
+          "category": "business_expense",
+          "db": "Photo Copy",
+          "amount": 20,
+          "flag": "ready"
+        },
+        {
+          "raw": "Band gobi 2.5 kg = 250",
+          "category": "inventory_purchase",
+          "db": "Cabbage",
+          "qty": "2.5 kg",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Dips 1000 pcs = 500",
+          "category": "inventory_purchase",
+          "db": "Dips",
+          "qty": "1000 pcs",
+          "amount": 500,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Pack size like 4 Aug"
+        },
+        {
+          "raw": "Shake Straw 80 pcs = 80",
+          "category": "inventory_purchase",
+          "db": "Shake Straw",
+          "qty": "80 pcs",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Garbage Bags 100 pcs = 140",
+          "category": "inventory_purchase",
+          "db": "Garbage Bags",
+          "qty": "100 pcs",
+          "amount": 140,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Disposable caps 100 pcs = 100",
+          "category": "inventory_purchase",
+          "db": "Disposable Caps",
+          "qty": "100 pcs",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mehraj = 100",
+          "category": "advance_salary",
+          "db": "Mehrej KH-001",
+          "amount": 100,
+          "flag": "ready"
+        },
+        {
+          "raw": "Anwarul = 100",
+          "category": "advance_salary",
+          "db": "Anwarul KH-004",
+          "amount": 100,
+          "flag": "ready"
+        },
+        {
+          "raw": "PE Fam = 1400",
+          "category": "personal_use",
+          "amount": 1400,
+          "flag": "ready",
+          "note": "Farhan"
+        },
+        {
+          "raw": "Shabir tall wala 2000 not paid",
+          "category": "note",
+          "amount": 2000,
+          "flag": "skip",
+          "note": "Unpaid — do not insert as payment"
+        },
+        {
+          "raw": "Maida 2 bags × 25 kg = 50 kg",
+          "category": "inventory_purchase",
+          "db": "Maida",
+          "qty": "50 kg",
+          "amount": 1760,
+          "pay": "CREDIT",
+          "supplier": "Mushtaq",
+          "flag": "ready",
+          "note": "Last ₹35.20/kg"
+        },
+        {
+          "raw": "Basmati 1 bag = 20 kg",
+          "category": "inventory_purchase",
+          "db": "Basmati Rice",
+          "qty": "20 kg",
+          "amount": 2200,
+          "pay": "CREDIT",
+          "supplier": "Mushtaq",
+          "flag": "ready",
+          "note": "Last ₹110/kg"
+        },
+        {
+          "raw": "To Bank = 14000",
+          "category": "cashbook",
+          "amount": 14000,
+          "flag": "skip",
+          "note": "Bank transfer, not expense"
+        },
+        {
+          "raw": "Chicken 250 g boiled",
+          "category": "personal_use",
+          "db": "Full Live chicken",
+          "qty": "0.25 kg",
+          "flag": "ready",
+          "note": "STOCK personal, not cash"
+        },
+        {
+          "raw": "TE 7450 · Cash 18350 / M-pay 1070 / Online 3539",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 22959,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 37210,
+          "flag": "skip",
+          "note": "110 POS orders already in system"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-09",
+      "status": "inserted",
+      "label": "9 Aug — inserted",
+      "notebookExp": 9000,
+      "notebookStaffExp": 300,
+      "lines": [
+        {
+          "raw": "Roti 4 = 160 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 160,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Milk 2.5 L = 125",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2.5 L",
+          "amount": 125,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi-milk ₹380; last ₹50/L"
+        },
+        {
+          "raw": "Curd 4 kg = 255",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "4 kg",
+          "amount": 255,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi-milk ₹380"
+        },
+        {
+          "raw": "Chicken 17 kg = 2400",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "17 kg",
+          "amount": 2400,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready"
+        },
+        {
+          "raw": "Sabzi lump 350",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by veg list ₹480"
+        },
+        {
+          "raw": "Dhaniya 1 kg = 120",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "1 kg",
+          "amount": 120,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Pudina/Matar",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Not in notebook"
+        },
+        {
+          "raw": "Simla 1 kg = 80",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Carrot 1 kg = 90",
+          "category": "inventory_purchase",
+          "db": "Carrot",
+          "qty": "1 kg",
+          "amount": 90,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mirchi 1 kg = 90",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "1 kg",
+          "amount": 90,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tomato 2 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "2 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of veg list ₹480"
+        },
+        {
+          "raw": "Petrol = 1000",
+          "category": "business_expense",
+          "db": "Petrol",
+          "amount": 1000,
+          "flag": "ready"
+        },
+        {
+          "raw": "Tissue 60 pcs = 1070",
+          "category": "inventory_purchase",
+          "db": "Tissue",
+          "qty": "60 pcs",
+          "amount": 1070,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Pepsi 24 pcs = 430",
+          "category": "inventory_purchase",
+          "db": "Pepsi @ 20",
+          "qty": "24 pcs",
+          "amount": 430,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Dew 30 pcs = 520",
+          "category": "inventory_purchase",
+          "db": "Dew @ 20",
+          "qty": "30 pcs",
+          "amount": 520,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Milk (Tonned) 4 L = 230",
+          "category": "inventory_purchase",
+          "db": "Milk (Tonned)",
+          "qty": "4 L",
+          "amount": 230,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Notebook 3 Milk = 230; same as 4 Aug"
+        },
+        {
+          "raw": "Staff sabzi = 140",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 140,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Staff nashta = 430",
+          "category": "business_expense",
+          "flag": "skip",
+          "note": "Not in notebook"
+        },
+        {
+          "raw": "Red Chilli Powder 0.5 kg = 210",
+          "category": "inventory_purchase",
+          "db": "Red Chilli Powder",
+          "qty": "0.5 kg",
+          "amount": 210,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Was read as extra mirchi"
+        },
+        {
+          "raw": "Onion 19 kg = 700",
+          "category": "inventory_purchase",
+          "db": "Onion",
+          "qty": "19 kg",
+          "amount": 700,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Auto fare = 400",
+          "category": "business_expense",
+          "db": "Auto Fare",
+          "amount": 400,
+          "flag": "ready",
+          "note": "Was read as chicken & maida"
+        },
+        {
+          "raw": "Butter Paper 200 pcs = 200",
+          "category": "inventory_purchase",
+          "db": "Butter Paper",
+          "qty": "200 pcs",
+          "amount": 200,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Garam Masala 10 × 50 g = 432",
+          "category": "inventory_purchase",
+          "db": "Garam Masala",
+          "qty": "0.5 kg",
+          "amount": 432,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹864/kg from 4 Aug"
+        },
+        {
+          "raw": "Cling foil 3 rolls = 500",
+          "category": "inventory_purchase",
+          "db": "Cling Foil",
+          "qty": "3 rolls",
+          "amount": 500,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Glasses skipped; notebook 550"
+        },
+        {
+          "raw": "Mark Fresh Frozen Chicken Boneless 80 kg @350 = 28000",
+          "category": "inventory_purchase",
+          "db": "Frozen Chicken Boneless",
+          "qty": "80 kg",
+          "amount": 28000,
+          "pay": "CREDIT",
+          "supplier": "Mark Fresh - (Chicken Fish)",
+          "flag": "ready",
+          "note": "User added; rate from 6 Aug ₹350/kg"
+        },
+        {
+          "raw": "Diesel = 500",
+          "category": "personal_use",
+          "amount": 500,
+          "flag": "ready",
+          "note": "Personal diesel"
+        },
+        {
+          "raw": "Extra roti = 130",
+          "category": "personal_use",
+          "amount": 130,
+          "flag": "ready"
+        },
+        {
+          "raw": "Cash = 1000",
+          "category": "personal_use",
+          "amount": 1000,
+          "flag": "ready"
+        },
+        {
+          "raw": "Staff chicken 1.5 kg = 250",
+          "category": "business_expense",
+          "flag": "skip",
+          "note": "Not in notebook"
+        },
+        {
+          "raw": "Faisal 1/2 holiday",
+          "category": "attendance",
+          "flag": "skip",
+          "note": "HALF_DAY_LEAVE marked 9 Aug KH-011"
+        },
+        {
+          "raw": "Shabbir Ahmad = 220",
+          "category": "note",
+          "amount": 220,
+          "flag": "skip"
+        },
+        {
+          "raw": "Fam 15k / Ab 10k",
+          "category": "personal_use",
+          "amount": 25000,
+          "flag": "skip"
+        },
+        {
+          "raw": "Cash 13250 / Online 14790 / M-pay 1370 = 29410",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 29410,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 28274,
+          "flag": "skip",
+          "note": "80 POS orders already in system"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-10",
+      "status": "inserted",
+      "label": "10 Aug — inserted",
+      "notebookExp": 15350,
+      "notebookStaffExp": 450,
+      "lines": [
+        {
+          "raw": "Roti = 160 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 160,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Sabzi Mandi lump 450",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by itemized ₹450"
+        },
+        {
+          "raw": "Dhaniya 1 kg = 120",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "1 kg",
+          "amount": 120,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Gajar 1 kg = 80",
+          "category": "inventory_purchase",
+          "db": "Carrot",
+          "qty": "1 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Simla 1 kg = 70",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mirch 1 kg = 80",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "1 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Patagobi 1 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Cabbage",
+          "qty": "1 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Methi = 80",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Crossed out in notebook"
+        },
+        {
+          "raw": "Chicken 14.17 kg = 2000",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "14.17 kg",
+          "amount": 2000,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready",
+          "note": "Same rate as 9 Aug ~₹141/kg"
+        },
+        {
+          "raw": "Butter 200 pcs = 1180",
+          "category": "inventory_purchase",
+          "db": "Butter",
+          "qty": "200 pcs",
+          "amount": 1180,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "User said @5, 200 pcs"
+        },
+        {
+          "raw": "Pepsi 48 pcs = 860",
+          "category": "inventory_purchase",
+          "db": "Pepsi @ 20",
+          "qty": "48 pcs",
+          "amount": 860,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Atta 10 kg = 370",
+          "category": "inventory_purchase",
+          "db": "Atta",
+          "qty": "10 kg",
+          "amount": 370,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Milk 2 L = 100",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi & milk ₹310"
+        },
+        {
+          "raw": "Curd 4.2 kg = 210",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "4.2 kg",
+          "amount": 210,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi & milk ₹310"
+        },
+        {
+          "raw": "Sabzi L-Carsonwala lump 1500",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by itemized ₹1,140"
+        },
+        {
+          "raw": "Onion 19 kg = 680",
+          "category": "inventory_purchase",
+          "db": "Onion",
+          "qty": "19 kg",
+          "amount": 680,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Patagobi 2.9 kg = 290",
+          "category": "inventory_purchase",
+          "db": "Cabbage",
+          "qty": "2.9 kg",
+          "amount": 290,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹100/kg"
+        },
+        {
+          "raw": "Nimboo 0.25 kg = 40",
+          "category": "inventory_purchase",
+          "db": "Lemon",
+          "qty": "0.25 kg",
+          "amount": 40,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹160/kg"
+        },
+        {
+          "raw": "Kheera 0.25 kg = 10",
+          "category": "inventory_purchase",
+          "db": "Cucumber",
+          "qty": "0.25 kg",
+          "amount": 10,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹40/kg"
+        },
+        {
+          "raw": "Ghiya 1 kg = 70",
+          "category": "inventory_purchase",
+          "db": "Ghiya",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Simla 1 kg = 50",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1 kg",
+          "amount": 50,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Staff sabzi = 160",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 160,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Ghee 20 kg = 3100",
+          "category": "inventory_purchase",
+          "db": "Ghee",
+          "qty": "20 kg",
+          "amount": 3100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Dalda"
+        },
+        {
+          "raw": "Water 20 L = 210",
+          "category": "inventory_purchase",
+          "db": "Water",
+          "qty": "20 L",
+          "amount": 210,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Lifafa 3 kg = 760",
+          "category": "inventory_purchase",
+          "db": "Packing Bags (Large)",
+          "qty": "3 kg",
+          "amount": 760,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Petrol 700+300 = 1000",
+          "category": "business_expense",
+          "db": "Petrol",
+          "amount": 1000,
+          "flag": "ready"
+        },
+        {
+          "raw": "Nazir Gas = 4000 m.pay",
+          "category": "supplier_payment",
+          "db": "Nazir Gas",
+          "amount": 4000,
+          "flag": "ready"
+        },
+        {
+          "raw": "Paneer = 200",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 200,
+          "flag": "ready",
+          "note": "Paneer"
+        },
+        {
+          "raw": "Modern = 4655",
+          "category": "supplier_payment",
+          "amount": 4655,
+          "flag": "skip"
+        },
+        {
+          "raw": "Kadoo = 13940",
+          "category": "supplier_payment",
+          "amount": 13940,
+          "flag": "skip"
+        },
+        {
+          "raw": "Shabir tailwala 2220 not paid",
+          "category": "note",
+          "amount": 2220,
+          "flag": "skip"
+        },
+        {
+          "raw": "HDFC to bank = 7000",
+          "category": "cashbook",
+          "amount": 7000,
+          "flag": "skip"
+        },
+        {
+          "raw": "Cash ~14200 / Online ~14431 / mpay 1630 = 30261",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 30261,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 31061,
+          "flag": "skip",
+          "note": "91 POS orders already in system"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-11",
+      "status": "inserted",
+      "label": "11 Aug — inserted",
+      "notebookExp": 12926,
+      "lines": [
+        {
+          "raw": "Milk 2 L = 100",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of daily milk ₹350"
+        },
+        {
+          "raw": "Curd 5 kg = 250",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "5 kg",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of daily milk ₹350"
+        },
+        {
+          "raw": "Dhaniya 1 kg = 120",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "1 kg",
+          "amount": 120,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Methi 1 kg = 80",
+          "category": "inventory_purchase",
+          "db": "Methi",
+          "qty": "1 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "New item"
+        },
+        {
+          "raw": "Paneer 0.5 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Paneer",
+          "qty": "0.5 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "New item"
+        },
+        {
+          "raw": "Chicken 23.38 kg = 3300",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "23.38 kg",
+          "amount": 3300,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready",
+          "note": "Same ~₹141/kg as 10 Aug"
+        },
+        {
+          "raw": "Roti = 160",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 160,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Onion 44 kg = 920",
+          "category": "inventory_purchase",
+          "db": "Onion",
+          "qty": "44 kg",
+          "amount": 920,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Staff sabzi = 140 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 140,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Sabzi wala lump 860",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by itemized ₹540"
+        },
+        {
+          "raw": "Simla 1 kg = 60",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1 kg",
+          "amount": 60,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Gajar 1 kg = 70",
+          "category": "inventory_purchase",
+          "db": "Carrot",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Adrak 0.4667 kg = 140",
+          "category": "inventory_purchase",
+          "db": "Ginger",
+          "qty": "0.46666667 kg",
+          "amount": 140,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹300/kg"
+        },
+        {
+          "raw": "Mirch 1 kg = 70",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tamatar 4 kg = 200",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "4 kg",
+          "amount": 200,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Water 12 cases = 144 pcs cash",
+          "category": "inventory_purchase",
+          "db": "Water @ 20",
+          "qty": "144 pcs",
+          "amount": 1200,
+          "pay": "CASH",
+          "supplier": "Water Supplier",
+          "flag": "ready",
+          "note": "12 cases × 12 · last ₹8.33/pc = ₹1,200 of the ₹2,300 line"
+        },
+        {
+          "raw": "Water Supplier pay = 1100",
+          "category": "supplier_payment",
+          "db": "Water Supplier",
+          "amount": 1100,
+          "flag": "ready",
+          "note": "Rest of ₹2,300 after 12 cases cash"
+        },
+        {
+          "raw": "Fresh Cream 9.3867 L = 2816",
+          "category": "inventory_purchase",
+          "db": "Fresh Cream",
+          "qty": "9.38666667 L",
+          "amount": 2816,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹300/L"
+        },
+        {
+          "raw": "Chicken Patty 40 pcs = 900",
+          "category": "inventory_purchase",
+          "db": "Chicken Patty",
+          "qty": "40 pcs",
+          "amount": 900,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "2 pkt × 20"
+        },
+        {
+          "raw": "Veg. Patty 20 pcs = 350",
+          "category": "inventory_purchase",
+          "db": "Veg. Patty",
+          "qty": "20 pcs",
+          "amount": 350,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "1 pkt"
+        },
+        {
+          "raw": "Burger Buns 36 pcs = 300",
+          "category": "inventory_purchase",
+          "db": "Burger Buns",
+          "qty": "36 pcs",
+          "amount": 300,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "3 pkt"
+        },
+        {
+          "raw": "Coffee Premix 181.82 g = 100",
+          "category": "inventory_purchase",
+          "db": "Coffee Premix",
+          "qty": "181.82 g",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹0.55/g"
+        },
+        {
+          "raw": "Eggs 30 pcs = 200",
+          "category": "inventory_purchase",
+          "db": "Egg",
+          "qty": "30 pcs",
+          "amount": 200,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Toothpick = 70",
+          "category": "business_expense",
+          "db": "Toothpick",
+          "amount": 70,
+          "flag": "ready",
+          "note": "New category"
+        },
+        {
+          "raw": "Adil fish 2 kg = 600 + bal 120",
+          "category": "inventory_purchase",
+          "amount": 720,
+          "flag": "skip"
+        },
+        {
+          "raw": "GAS 4 cylinders 56.4 kg credit",
+          "category": "inventory_purchase",
+          "db": "GAS",
+          "qty": "56.4 kg",
+          "amount": 5245.2,
+          "pay": "CREDIT",
+          "supplier": "Nazir Gas",
+          "flag": "ready",
+          "note": "4 × 14.1 kg @ last ₹93/kg"
+        },
+        {
+          "raw": "Cheque 10000 / To bank evening 6000",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "UPI 16065 / Cash 11800+950 / mpay 120 = 28685",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 28685,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 17479,
+          "flag": "skip",
+          "note": "60 POS orders already in system"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-12",
+      "status": "inserted",
+      "label": "12 Aug — inserted",
+      "notebookExp": 11145,
+      "lines": [
+        {
+          "raw": "Onion 19 kg = 700",
+          "category": "inventory_purchase",
+          "db": "Onion",
+          "qty": "19 kg",
+          "amount": 700,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of onion & potato ₹1,000"
+        },
+        {
+          "raw": "Potato 19 kg = 300",
+          "category": "inventory_purchase",
+          "db": "Potato",
+          "qty": "19 kg",
+          "amount": 300,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of onion & potato ₹1,000"
+        },
+        {
+          "raw": "Dahi 3.5 kg = 280",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "3.5 kg",
+          "amount": 280,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Roti = 160",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 160,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Dhaniya 0.8333 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "0.83333333 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Sabzi slip +100 · last ₹120/kg · not a second dhaniya"
+        },
+        {
+          "raw": "Chicken 15 kg = 2150",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "15 kg",
+          "amount": 2150,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready"
+        },
+        {
+          "raw": "Pepsi 24 pcs = 430",
+          "category": "inventory_purchase",
+          "db": "Pepsi @ 20",
+          "qty": "24 pcs",
+          "amount": 430,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of Dew & Pepsi ₹950"
+        },
+        {
+          "raw": "Dew 30 pcs = 520",
+          "category": "inventory_purchase",
+          "db": "Dew @ 20",
+          "qty": "30 pcs",
+          "amount": 520,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of Dew & Pepsi ₹950"
+        },
+        {
+          "raw": "Silver foil 1 kg = 600",
+          "category": "inventory_purchase",
+          "db": "Silver Foil",
+          "qty": "1 kg",
+          "amount": 600,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Achar 3.5714 kg = 250",
+          "category": "inventory_purchase",
+          "db": "Pickle",
+          "qty": "3.57142857 kg",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹70/kg"
+        },
+        {
+          "raw": "Elaichi/Badam/Kismish lump = 370 m-pay",
+          "category": "inventory_purchase",
+          "db": "Cardamom",
+          "qty": "0.09736842 kg",
+          "amount": 370,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Lump of 3 · qty at Cardamom last ₹3,800/kg"
+        },
+        {
+          "raw": "Kitchen King 1 kg = 660",
+          "category": "inventory_purchase",
+          "db": "Kitchen King",
+          "qty": "1 kg",
+          "amount": 660,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Sabzi wala lump 1000",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by itemized ₹620"
+        },
+        {
+          "raw": "Patta gobi 5 kg = 220",
+          "category": "inventory_purchase",
+          "db": "Cabbage",
+          "qty": "5 kg",
+          "amount": 220,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tomato 4 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "4 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Shimla 1 kg = 60",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1 kg",
+          "amount": 60,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Gajar 1 kg = 70",
+          "category": "inventory_purchase",
+          "db": "Carrot",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mirch 1 kg = 70",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Staff sabzi = 150 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Steel wool = 20",
+          "category": "business_expense",
+          "db": "Steel wool",
+          "amount": 20,
+          "flag": "ready"
+        },
+        {
+          "raw": "Dips 1000 pcs = 450",
+          "category": "inventory_purchase",
+          "db": "Dips",
+          "qty": "1000 pcs",
+          "amount": 450,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Dips 10 like 4 Aug"
+        },
+        {
+          "raw": "Petrol = 600",
+          "category": "business_expense",
+          "db": "Petrol",
+          "amount": 600,
+          "flag": "ready"
+        },
+        {
+          "raw": "Nazir Gas = 2250 m-pay",
+          "category": "supplier_payment",
+          "db": "Nazir Gas",
+          "amount": 2250,
+          "flag": "ready"
+        },
+        {
+          "raw": "Eggs 30 pcs = 185",
+          "category": "inventory_purchase",
+          "db": "Egg",
+          "qty": "30 pcs",
+          "amount": 185,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mehraj = 20",
+          "category": "advance_salary",
+          "db": "Mehrej KH-001",
+          "amount": 20,
+          "flag": "ready"
+        },
+        {
+          "raw": "Tasleem = 100",
+          "category": "advance_salary",
+          "db": "Tasleem KH-010",
+          "amount": 100,
+          "flag": "ready"
+        },
+        {
+          "raw": "Tasleem half day holiday",
+          "category": "note",
+          "db": "Tasleem KH-010 HALF_DAY_LEAVE",
+          "flag": "ready",
+          "note": "Mark attendance on insert"
+        },
+        {
+          "raw": "Empty 2 cylinder advance Nazir",
+          "category": "note",
+          "flag": "skip"
+        },
+        {
+          "raw": "Home rice 30 kg (no amount)",
+          "category": "personal_use",
+          "qty": "30 kg",
+          "flag": "skip",
+          "note": "Amount missing"
+        },
+        {
+          "raw": "Kans tin = 40000",
+          "category": "note",
+          "amount": 40000,
+          "flag": "skip",
+          "note": "Kamran cash into restaurant — not expense"
+        },
+        {
+          "raw": "Salary Mehraj = 12066",
+          "category": "note",
+          "amount": 12066,
+          "flag": "skip",
+          "note": "Salary paid · Mehrej KH-001 · ticked"
+        },
+        {
+          "raw": "Salary Anwarul = 1050",
+          "category": "note",
+          "amount": 1050,
+          "flag": "skip",
+          "note": "No tick · photo 1,050; notebook 79,579 fits 10,500"
+        },
+        {
+          "raw": "Salary Noor Mohd = 12466",
+          "category": "note",
+          "amount": 12466,
+          "flag": "skip",
+          "note": "Noor Mohd KH-005 · ticked"
+        },
+        {
+          "raw": "Salary Ebran = 10880",
+          "category": "note",
+          "amount": 10880,
+          "flag": "skip",
+          "note": "Ebran KH-006 · ticked"
+        },
+        {
+          "raw": "Salary Faizan = 12000",
+          "category": "note",
+          "amount": 12000,
+          "flag": "skip",
+          "note": "Faizan KH-009 · ticked"
+        },
+        {
+          "raw": "Salary Rafakat = 14000",
+          "category": "note",
+          "amount": 14000,
+          "flag": "skip",
+          "note": "Rafakat KH-008 · ticked"
+        },
+        {
+          "raw": "Salary Irfan = 7667",
+          "category": "note",
+          "amount": 7667,
+          "flag": "skip",
+          "note": "Irfan KH-007 · ticked"
+        },
+        {
+          "raw": "Salary Tasleem = 7784",
+          "category": "note",
+          "amount": 7784,
+          "flag": "skip",
+          "note": "Tasleem KH-010 · ticked"
+        },
+        {
+          "raw": "Salary Faisal = 12466",
+          "category": "note",
+          "amount": 12466,
+          "flag": "skip",
+          "note": "Faisal KH-011 · ticked"
+        },
+        {
+          "raw": "Salary Akbar (cut off)",
+          "category": "note",
+          "flag": "skip",
+          "note": "Akbar KH-003 amount not visible"
+        },
+        {
+          "raw": "Cash 10560 / HDFC 9593 / M-pay 1500 = 21653",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 21653,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 31350,
+          "flag": "skip",
+          "note": "100 POS orders already in system"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-13",
+      "status": "inserted",
+      "label": "13 Aug — inserted",
+      "notebookExp": 7050,
+      "lines": [
+        {
+          "raw": "Roti = 160",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 160,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Milk 2 L = 100",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of milk dahi ₹350"
+        },
+        {
+          "raw": "Curd 5 kg = 250",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "5 kg",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of milk dahi ₹350"
+        },
+        {
+          "raw": "Chicken 11.51 kg = 1650",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "11.51 kg",
+          "amount": 1650,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready",
+          "note": "Last ~₹143/kg from 12 Aug"
+        },
+        {
+          "raw": "Dhaniya 0.8333 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "0.83333333 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹120/kg"
+        },
+        {
+          "raw": "Pepsi 48 pcs = 860",
+          "category": "inventory_purchase",
+          "db": "Pepsi @ 20",
+          "qty": "48 pcs",
+          "amount": 860,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Dew 30 pcs = 520",
+          "category": "inventory_purchase",
+          "db": "Dew @ 20",
+          "qty": "30 pcs",
+          "amount": 520,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Sabziwala lump 1500",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by itemized ₹950 + ₹550 last-balance pay"
+        },
+        {
+          "raw": "Gajar 1.43 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Carrot",
+          "qty": "1.42857143 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹70/kg"
+        },
+        {
+          "raw": "Simla 1.5 kg = 90",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1.5 kg",
+          "amount": 90,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹60/kg"
+        },
+        {
+          "raw": "Adrak 0.4667 kg = 140",
+          "category": "inventory_purchase",
+          "db": "Ginger",
+          "qty": "0.46666667 kg",
+          "amount": 140,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹300/kg"
+        },
+        {
+          "raw": "Tomato 6 kg = 150",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "6 kg",
+          "amount": 150,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹25/kg"
+        },
+        {
+          "raw": "Patagobi 4.32 kg = 190",
+          "category": "inventory_purchase",
+          "db": "Cabbage",
+          "qty": "4.31818182 kg",
+          "amount": 190,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹44/kg"
+        },
+        {
+          "raw": "Apple 1 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Apple",
+          "qty": "1 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "New item"
+        },
+        {
+          "raw": "Potato 15 kg = 180",
+          "category": "inventory_purchase",
+          "db": "Potato",
+          "qty": "15 kg",
+          "amount": 180,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Sabziwala last balance pay = 550",
+          "category": "supplier_payment",
+          "db": "Other Supplier",
+          "amount": 550,
+          "flag": "ready",
+          "note": "Rest of ₹1,500 after itemized ₹950"
+        },
+        {
+          "raw": "Water 5 cases = 60 pcs credit",
+          "category": "inventory_purchase",
+          "db": "Water @ 20",
+          "qty": "60 pcs",
+          "amount": 500,
+          "pay": "CREDIT",
+          "supplier": "Water Supplier",
+          "flag": "ready",
+          "note": "5 × 12 · last ₹8.33/pc like 4 Aug"
+        },
+        {
+          "raw": "Sabzi = 150",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Haldi 0.5 kg = 200",
+          "category": "inventory_purchase",
+          "db": "Turmeric",
+          "qty": "0.5 kg",
+          "amount": 200,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Plain Rice 2 kg = 80",
+          "category": "inventory_purchase",
+          "db": "Plain Rice",
+          "qty": "2 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Hit spray = 90",
+          "category": "business_expense",
+          "db": "Hit spray",
+          "amount": 90,
+          "flag": "ready",
+          "note": "New category"
+        },
+        {
+          "raw": "Surf 2 kg = 220",
+          "category": "business_expense",
+          "db": "Surf & Soap",
+          "amount": 220,
+          "flag": "ready"
+        },
+        {
+          "raw": "2 kadchi = 500",
+          "category": "business_expense",
+          "db": "Utensils",
+          "amount": 500,
+          "flag": "ready",
+          "note": "Karchi"
+        },
+        {
+          "raw": "Handwash = 310",
+          "category": "business_expense",
+          "db": "Handwash",
+          "amount": 310,
+          "flag": "ready",
+          "note": "Purchased · new category"
+        },
+        {
+          "raw": "Dettol = 700",
+          "category": "business_expense",
+          "amount": 700,
+          "flag": "skip",
+          "note": "Keep only handwash ₹310"
+        },
+        {
+          "raw": "Kamran 610 (310+350-50)",
+          "category": "personal_use",
+          "amount": 610,
+          "flag": "skip",
+          "note": "Keep only handwash ₹310"
+        },
+        {
+          "raw": "Petrol = 700",
+          "category": "business_expense",
+          "db": "Petrol",
+          "amount": 700,
+          "flag": "ready"
+        },
+        {
+          "raw": "2 chicken Bal",
+          "category": "note",
+          "flag": "skip"
+        },
+        {
+          "raw": "Fish 10 kg = 2800 Pg Chicken credit",
+          "category": "inventory_purchase",
+          "db": "Fish",
+          "qty": "10 kg",
+          "amount": 2800,
+          "pay": "CREDIT",
+          "supplier": "Pg Chicken",
+          "flag": "ready",
+          "note": "Last ₹280/kg · no cash amount in notebook"
+        },
+        {
+          "raw": "Talib Mansuri = 210",
+          "category": "advance_salary",
+          "db": "Talib Mansuri KH-013",
+          "amount": 210,
+          "flag": "ready",
+          "note": "CASH · create employee salary ₹0"
+        },
+        {
+          "raw": "Recharge Talib = 350",
+          "category": "advance_salary",
+          "db": "Talib Mansuri",
+          "amount": 350,
+          "pay": "RECHARGE",
+          "flag": "ready"
+        },
+        {
+          "raw": "Amul milk (Tonned) 16.43 L = 945",
+          "category": "inventory_purchase",
+          "db": "Milk (Tonned)",
+          "qty": "16.43478261 L",
+          "amount": 945,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹57.5/L from 4 L = ₹230"
+        },
+        {
+          "raw": "Cash 11100 / Online 17023 / M-pay 620 = 28643",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 28643,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 23312,
+          "flag": "skip",
+          "note": "74 POS orders already in system"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-14",
+      "status": "inserted",
+      "label": "14 Aug — inserted",
+      "notebookExp": 12190,
+      "lines": [
+        {
+          "raw": "Roti = 160 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 160,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Milk 2 L = 100",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi-milk ₹350"
+        },
+        {
+          "raw": "Curd 5 kg = 250",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "5 kg",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi-milk ₹350"
+        },
+        {
+          "raw": "Dhaniya 0.8333 kg = 100",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "0.83333333 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹120/kg"
+        },
+        {
+          "raw": "Chicken 16 kg = 2650",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "16 kg",
+          "amount": 2650,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready"
+        },
+        {
+          "raw": "Water bill = 1000",
+          "category": "supplier_payment",
+          "db": "Water Supplier",
+          "amount": 1000,
+          "flag": "ready"
+        },
+        {
+          "raw": "Onion 19 kg = 700",
+          "category": "inventory_purchase",
+          "db": "Onion",
+          "qty": "19 kg",
+          "amount": 700,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of onion & potato ₹1,000"
+        },
+        {
+          "raw": "Potato 19 kg = 300",
+          "category": "inventory_purchase",
+          "db": "Potato",
+          "qty": "19 kg",
+          "amount": 300,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of onion & potato ₹1,000"
+        },
+        {
+          "raw": "Sabziwala lump 1000",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by itemized kitchen ₹330 + staff phool gobi ₹130 + ₹540 last-balance pay"
+        },
+        {
+          "raw": "Matargajar 1 kg = 70",
+          "category": "inventory_purchase",
+          "db": "Carrot",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Peas+carrot mix · no Peas item · last carrot ₹70/kg"
+        },
+        {
+          "raw": "Simla 1 kg = 60",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1 kg",
+          "amount": 60,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Nimboo 0.44 kg = 70",
+          "category": "inventory_purchase",
+          "db": "Lemon",
+          "qty": "0.4375 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹160/kg"
+        },
+        {
+          "raw": "Mirch 1 kg = 70",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Phool gobi = 130 Staff",
+          "category": "business_expense",
+          "flag": "skip",
+          "note": "Same as staff veg ₹130 — not inventory"
+        },
+        {
+          "raw": "Tamatar 2.4 kg = 60",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "2.4 kg",
+          "amount": 60,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹25/kg"
+        },
+        {
+          "raw": "Sabziwala last balance pay = 540",
+          "category": "supplier_payment",
+          "db": "Other Supplier",
+          "amount": 540,
+          "flag": "ready",
+          "note": "Rest of ₹1,000 after itemized ₹460"
+        },
+        {
+          "raw": "Butter 200 pcs = 1180",
+          "category": "inventory_purchase",
+          "db": "Butter",
+          "qty": "200 pcs",
+          "amount": 1180,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Butter 2 like 10 Aug"
+        },
+        {
+          "raw": "Staff veg = 130",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 130,
+          "flag": "ready",
+          "note": "Phool gobi from sabzi slip · was read as food & clothes"
+        },
+        {
+          "raw": "Atta 10 kg = 370",
+          "category": "inventory_purchase",
+          "db": "Atta",
+          "qty": "10 kg",
+          "amount": 370,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Dips 2000 pcs = 900",
+          "category": "inventory_purchase",
+          "db": "Dips",
+          "qty": "2000 pcs",
+          "amount": 900,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Dips 20 like 12 Aug 10 = 1000 pcs"
+        },
+        {
+          "raw": "Meat = 500 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 500,
+          "flag": "ready",
+          "note": "Meat"
+        },
+        {
+          "raw": "Nazir Gas = 3000",
+          "category": "supplier_payment",
+          "db": "Nazir Gas",
+          "amount": 3000,
+          "flag": "ready",
+          "note": "Payment · 2 cylinders note"
+        },
+        {
+          "raw": "Notebook diary = 100",
+          "category": "business_expense",
+          "db": "Diary",
+          "amount": 100,
+          "flag": "ready",
+          "note": "New category"
+        },
+        {
+          "raw": "Tops = 15082",
+          "category": "supplier_payment",
+          "db": "Tops",
+          "amount": 15082,
+          "flag": "ready"
+        },
+        {
+          "raw": "Cash 12350 / Online 12894 / M-pay 410 = 25654",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 25654,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 24527,
+          "flag": "skip",
+          "note": "77 POS orders already in system"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-15",
+      "status": "inserted",
+      "label": "15 Aug — inserted",
+      "notebookExp": 5900,
+      "notebookStaffExp": 450,
+      "lines": [
+        {
+          "raw": "Roti = 150 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Milk 2 L = 100",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi milk ₹320"
+        },
+        {
+          "raw": "Curd 4.4 kg = 220",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "4.4 kg",
+          "amount": 220,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of dahi milk ₹320"
+        },
+        {
+          "raw": "Chicken 9.06 kg = 1500",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "9.06 kg",
+          "amount": 1500,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready",
+          "note": "Last 16 kg = ₹2,650"
+        },
+        {
+          "raw": "Staff sabzi = 150 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Dhaniya 1 kg = 120",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "1 kg",
+          "amount": 120,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mirch 1.14 kg = 80",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "1.14285714 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹70/kg"
+        },
+        {
+          "raw": "Petrol = 800",
+          "category": "business_expense",
+          "db": "Petrol",
+          "amount": 800,
+          "flag": "ready"
+        },
+        {
+          "raw": "Petrol = 200",
+          "category": "business_expense",
+          "db": "Petrol",
+          "amount": 200,
+          "flag": "ready"
+        },
+        {
+          "raw": "Staff sabzi = 150 * (2nd)",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Veg"
+        },
+        {
+          "raw": "Thousand island 12 kg = 2880",
+          "category": "inventory_purchase",
+          "db": "Thousand Island Dressing",
+          "qty": "12 kg",
+          "amount": 2880,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "New item"
+        },
+        {
+          "raw": "Ebran = 100",
+          "category": "advance_salary",
+          "db": "Ebran KH-006",
+          "amount": 100,
+          "flag": "ready"
+        },
+        {
+          "raw": "Wifi recharge = 589",
+          "category": "business_expense",
+          "db": "Wifi",
+          "amount": 589,
+          "flag": "ready",
+          "note": "Restaurant wifi · new category"
+        },
+        {
+          "raw": "Missing = 1006",
+          "category": "note",
+          "amount": 1006,
+          "flag": "skip"
+        },
+        {
+          "raw": "Cash 10150 / Online 32969 / M-pay 1220 = 43769 sale",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 43769,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 44027,
+          "flag": "skip",
+          "note": "111 POS orders already in system"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-16",
+      "status": "inserted",
+      "label": "16 Aug — inserted",
+      "notebookExp": 43049,
+      "lines": [
+        {
+          "raw": "Shop phone recharge = 199 online",
+          "category": "business_expense",
+          "db": "Phone recharge",
+          "amount": 199,
+          "flag": "ready",
+          "note": "New category"
+        },
+        {
+          "raw": "Roti = 150 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Chicken 11.48 kg = 1900",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "11.48 kg",
+          "amount": 1900,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready"
+        },
+        {
+          "raw": "Milk 2 L = 100",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "2 L",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of milk dahi ₹350"
+        },
+        {
+          "raw": "Curd 5 kg = 250",
+          "category": "inventory_purchase",
+          "db": "Curd",
+          "qty": "5 kg",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Part of milk dahi ₹350"
+        },
+        {
+          "raw": "Sabzi lump 530",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by itemized ₹520 + ₹10 last-balance pay"
+        },
+        {
+          "raw": "Sabzi itemized 520 as Mixed Vegetable lump",
+          "category": "inventory_purchase",
+          "db": "Mixed Vegetable",
+          "qty": "1 kg",
+          "amount": 520,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Item list not received · lump"
+        },
+        {
+          "raw": "Sabzi last balance pay = 10",
+          "category": "supplier_payment",
+          "db": "Other Supplier",
+          "amount": 10,
+          "flag": "ready",
+          "note": "Rest of ₹530 after itemized ₹520"
+        },
+        {
+          "raw": "Onion 19 kg = 700",
+          "category": "inventory_purchase",
+          "db": "Onion",
+          "qty": "19 kg",
+          "amount": 700,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Potato 19 kg = 300",
+          "category": "inventory_purchase",
+          "db": "Potato",
+          "qty": "19 kg",
+          "amount": 300,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Pepsi 24 pcs = 400",
+          "category": "inventory_purchase",
+          "db": "Pepsi @ 20",
+          "qty": "24 pcs",
+          "amount": 400,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tissue 62 pcs = 1100",
+          "category": "inventory_purchase",
+          "db": "Tissue",
+          "qty": "62 pcs",
+          "amount": 1100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mark Fresh Frozen Chicken Boneless 60 kg @321 = 19260",
+          "category": "inventory_purchase",
+          "db": "Frozen Chicken Boneless",
+          "qty": "60 kg",
+          "amount": 19260,
+          "pay": "CREDIT",
+          "supplier": "Mark Fresh - (Chicken Fish)",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mark Fresh Frozen Fish 20 kg @255 = 5100",
+          "category": "inventory_purchase",
+          "db": "Frozen Fish",
+          "qty": "20 kg",
+          "amount": 5100,
+          "pay": "CREDIT",
+          "supplier": "Mark Fresh - (Chicken Fish)",
+          "flag": "ready"
+        },
+        {
+          "raw": "Mark Fresh pay = 35000",
+          "category": "supplier_payment",
+          "db": "Mark Fresh - (Chicken Fish)",
+          "amount": 35000,
+          "flag": "ready"
+        },
+        {
+          "raw": "Cashew 0.5 kg = 450 m-pay",
+          "category": "inventory_purchase",
+          "db": "Cashew",
+          "qty": "0.5 kg",
+          "amount": 450,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Bandgobi 5.68 kg = 250",
+          "category": "inventory_purchase",
+          "db": "Cabbage",
+          "qty": "5.68181818 kg",
+          "amount": 250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹44/kg · F.Sale"
+        },
+        {
+          "raw": "Butter 100 pcs = 630",
+          "category": "inventory_purchase",
+          "db": "Butter",
+          "qty": "100 pcs",
+          "amount": 630,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Was read as bonda/poultry box"
+        },
+        {
+          "raw": "Soap = 20 from sale",
+          "category": "business_expense",
+          "db": "Surf & Soap",
+          "amount": 20,
+          "flag": "ready"
+        },
+        {
+          "raw": "Fare Sgr = 400 from sale",
+          "category": "business_expense",
+          "db": "Auto Fare",
+          "amount": 400,
+          "flag": "ready"
+        },
+        {
+          "raw": "Kit Kat 10 pcs = 100",
+          "category": "inventory_purchase",
+          "db": "Kit Kat",
+          "qty": "10 pcs",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Eggs 30 pcs = 190",
+          "category": "inventory_purchase",
+          "db": "Egg",
+          "qty": "30 pcs",
+          "amount": 190,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Bandgobi = 80 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 80,
+          "flag": "ready",
+          "note": "Cabbage"
+        },
+        {
+          "raw": "Chicken = 270 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 270,
+          "flag": "ready",
+          "note": "Meat"
+        },
+        {
+          "raw": "To bank = 15000",
+          "category": "cashbook",
+          "amount": 15000,
+          "flag": "skip"
+        },
+        {
+          "raw": "Cash / Online / ICICI / M-pay = 36504",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 36504,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 33968,
+          "flag": "skip",
+          "note": "97 POS orders already in system"
+        }
+      ]
+    },
+    {
+      "date": "2026-08-17",
+      "status": "inserted",
+      "label": "17 Aug — inserted",
+      "notebookExp": 8270,
+      "lines": [
+        {
+          "raw": "Roti = 450 *",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 450,
+          "flag": "ready",
+          "note": "Roti"
+        },
+        {
+          "raw": "Sabzi = 150",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 150,
+          "flag": "ready",
+          "note": "Staff veg"
+        },
+        {
+          "raw": "Chicken 13.4 kg = 1900",
+          "category": "inventory_purchase",
+          "db": "Full Live chicken",
+          "qty": "13.4 kg",
+          "amount": 1900,
+          "pay": "CASH",
+          "supplier": "Tariq Chicken",
+          "flag": "ready"
+        },
+        {
+          "raw": "Milk 3 L = 300",
+          "category": "inventory_purchase",
+          "db": "Milk",
+          "qty": "3 L",
+          "amount": 300,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Butter 200 pcs = 1250",
+          "category": "inventory_purchase",
+          "db": "Butter",
+          "qty": "200 pcs",
+          "amount": 1250,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Notebook 2 kg"
+        },
+        {
+          "raw": "Hit spray = 100",
+          "category": "business_expense",
+          "db": "Hit spray",
+          "amount": 100,
+          "flag": "ready"
+        },
+        {
+          "raw": "Soap = 130",
+          "category": "business_expense",
+          "db": "Surf & Soap",
+          "amount": 130,
+          "flag": "ready"
+        },
+        {
+          "raw": "Packing Bags (Large) 3.9 kg = 1000",
+          "category": "inventory_purchase",
+          "db": "Packing Bags (Large)",
+          "qty": "3.9 kg",
+          "amount": 1000,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Was read as matar/lifafa"
+        },
+        {
+          "raw": "Sabzi lump = 1000",
+          "category": "inventory_purchase",
+          "flag": "skip",
+          "note": "Replaced by itemized sabzi wala ₹320 + sabzi auto ₹990"
+        },
+        {
+          "raw": "Disposable glasses 10 pcs = 50",
+          "category": "inventory_purchase",
+          "db": "Tea Glasses",
+          "qty": "10 pcs",
+          "amount": 50,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Same item as 5 Aug disposable glasses · last ₹5/pc"
+        },
+        {
+          "raw": "Auto fare = 100",
+          "category": "business_expense",
+          "db": "Auto Fare",
+          "amount": 100,
+          "flag": "ready",
+          "note": "Ukhara/Uber"
+        },
+        {
+          "raw": "Paneer = 220 * Staff",
+          "category": "business_expense",
+          "db": "Staff Food",
+          "amount": 220,
+          "flag": "ready",
+          "note": "Paneer"
+        },
+        {
+          "raw": "Nazir Gas pay = 2000 F.Sale",
+          "category": "supplier_payment",
+          "db": "Nazir Gas",
+          "amount": 2000,
+          "flag": "ready"
+        },
+        {
+          "raw": "Mustard oil 1 L = 190",
+          "category": "inventory_purchase",
+          "db": "Oil",
+          "qty": "1 kg",
+          "amount": 190,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "No separate mustard-oil item"
+        },
+        {
+          "raw": "Soap = 50",
+          "category": "business_expense",
+          "db": "Surf & Soap",
+          "amount": 50,
+          "flag": "ready"
+        },
+        {
+          "raw": "Sabzi wala Tamatar = 50",
+          "category": "inventory_purchase",
+          "db": "Tomato",
+          "qty": "2 kg",
+          "amount": 50,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹25/kg"
+        },
+        {
+          "raw": "Sabzi wala Dhaniya = 120",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "1 kg",
+          "amount": 120,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Sabzi wala Simla = 70",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1.16666667 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹60/kg"
+        },
+        {
+          "raw": "Sabzi wala Mirch = 80",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "1.14285714 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹70/kg"
+        },
+        {
+          "raw": "Sabzi auto Simla = 60",
+          "category": "inventory_purchase",
+          "db": "Capsicum",
+          "qty": "1 kg",
+          "amount": 60,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Sabzi auto Gajar = 100",
+          "category": "inventory_purchase",
+          "db": "Carrot",
+          "qty": "1.42857143 kg",
+          "amount": 100,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹70/kg"
+        },
+        {
+          "raw": "Sabzi auto Nimbu = 80",
+          "category": "inventory_purchase",
+          "db": "Lemon",
+          "qty": "0.5 kg",
+          "amount": 80,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹160/kg"
+        },
+        {
+          "raw": "Sabzi auto Adrak = 140",
+          "category": "inventory_purchase",
+          "db": "Ginger",
+          "qty": "0.46666667 kg",
+          "amount": 140,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹300/kg"
+        },
+        {
+          "raw": "Sabzi auto Nam = 300",
+          "category": "inventory_purchase",
+          "amount": 300,
+          "flag": "skip"
+        },
+        {
+          "raw": "Sabzi auto R/gobhi = 480",
+          "category": "inventory_purchase",
+          "db": "Cabbage",
+          "qty": "10.90909091 kg",
+          "amount": 480,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Patta gobi · last ₹44/kg"
+        },
+        {
+          "raw": "Sabzi auto Mirch = 70",
+          "category": "inventory_purchase",
+          "db": "Green Chilli",
+          "qty": "1 kg",
+          "amount": 70,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready"
+        },
+        {
+          "raw": "Sabzi auto Dhaniya = 60",
+          "category": "inventory_purchase",
+          "db": "Dhaniya",
+          "qty": "0.5 kg",
+          "amount": 60,
+          "pay": "CASH",
+          "supplier": "Other Supplier",
+          "flag": "ready",
+          "note": "Last ₹120/kg"
+        },
+        {
+          "raw": "Self = 520",
+          "category": "personal_use",
+          "amount": 520,
+          "flag": "skip"
+        },
+        {
+          "raw": "Salary = 5150",
+          "category": "note",
+          "amount": 5150,
+          "flag": "skip",
+          "note": "Salary total · not a payroll run"
+        },
+        {
+          "raw": "Chq 529 + 516 = 20000",
+          "category": "cashbook",
+          "amount": 20000,
+          "flag": "skip"
+        },
+        {
+          "raw": "Akbar = 2000 cash",
+          "category": "advance_salary",
+          "db": "Akbar KH-003",
+          "amount": 2000,
+          "pay": "CASH",
+          "flag": "ready"
+        },
+        {
+          "raw": "Tasleem = 150 cash",
+          "category": "advance_salary",
+          "db": "Tasleem KH-010",
+          "amount": 150,
+          "pay": "CASH",
+          "flag": "ready"
+        },
+        {
+          "raw": "Anwarul = 3000 M.Pay (dated Aug-16)",
+          "category": "advance_salary",
+          "db": "Anwarul KH-004",
+          "amount": 3000,
+          "pay": "MPAY",
+          "flag": "ready",
+          "note": "Booked on 17 Aug · method OTHER"
+        },
+        {
+          "raw": "Farhan paid = 125",
+          "category": "personal_use",
+          "amount": 125,
+          "flag": "skip"
+        },
+        {
+          "raw": "Faizan Holiday to home",
+          "category": "attendance",
+          "flag": "skip",
+          "note": "Not marked · Faizan vs Farhan not confirmed"
+        },
+        {
+          "raw": "Mustaq: Oil 2 tin, Maida 2 bori, Atta 2 bag, Basmati 1 bag, masalas — no amounts",
+          "category": "note",
+          "flag": "skip",
+          "note": "Order list, not priced"
+        },
+        {
+          "raw": "P/Sale 1200 + Cash 9250 + Online 14659 = 25109",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Change 1100 / Cash 9250 / M-pay 9524 / HDFC 40326 / ICICI 800 = 61000",
+          "category": "cashbook",
+          "flag": "skip"
+        },
+        {
+          "raw": "Actual sale (notebook)",
+          "category": "sale",
+          "amount": 25109,
+          "flag": "skip",
+          "note": "Cashbook, not inserted"
+        },
+        {
+          "raw": "System sale (POS)",
+          "category": "sale",
+          "amount": 12803,
+          "flag": "skip",
+          "note": "45 POS orders already in system"
+        }
+      ]
+    }
+  ]
+}

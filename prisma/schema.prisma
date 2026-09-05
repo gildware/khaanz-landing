@@ -548,6 +548,8 @@ model Purchase {
   dueAt           DateTime?           @map("due_at")
   totalPaise      Int                 @map("total_paise")
   notes           String              @default("")
+  /// Supplier invoice photos/PDFs: [{ url, fileName }]
+  bills           Json                @default("[]")
   createdByUserId String?             @map("created_by_user_id")
   createdAt       DateTime            @default(now()) @map("created_at")
 

@@ -2,6 +2,7 @@ import type { Prisma, PurchasePaymentType } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { requireAdminInventorySession } from "@/lib/admin-inventory-session";
+import { parsePurchaseBills } from "@/lib/inventory/purchase-bills";
 import { createPurchaseInTransaction } from "@/lib/inventory/purchase-flow";
 import { parseDecimalQty } from "@/lib/inventory/parse-quantity";
 import { getPrisma } from "@/lib/prisma";
@@ -30,6 +31,7 @@ export async function GET() {
       dueAt: true,
       totalPaise: true,
       notes: true,
+      bills: true,
       supplier: { select: { id: true, name: true } },
       _count: { select: { lines: true } },
     },
@@ -48,6 +50,7 @@ export async function GET() {
       totalPaise: p.totalPaise,
       lineCount: p._count.lines,
       notes: p.notes,
+      bills: parsePurchaseBills(p.bills),
     })),
   });
 }
@@ -151,6 +154,7 @@ export async function POST(request: Request) {
   }
 
   const notes = typeof body.notes === "string" ? body.notes : "";
+  const bills = parsePurchaseBills(body.bills);
 
   const prisma = getPrisma();
   try {
@@ -161,6 +165,7 @@ export async function POST(request: Request) {
         paymentType,
         creditDays,
         notes,
+        bills,
         createdByUserId: session.userId,
         lines,
       }),
